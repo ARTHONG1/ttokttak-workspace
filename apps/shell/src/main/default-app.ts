@@ -20,31 +20,31 @@ export const OFFICE_TYPES: readonly OfficeType[] = [
     ext: 'docx',
     uti: 'org.openxmlformats.wordprocessingml.document',
     mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    progId: 'IeumOffice.WordDocument',
+    progId: 'HangulAI.WordDocument',
   },
   {
     ext: 'xlsx',
     uti: 'org.openxmlformats.spreadsheetml.sheet',
     mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    progId: 'IeumOffice.ExcelWorkbook',
+    progId: 'HangulAI.ExcelWorkbook',
   },
   {
     ext: 'xlsm',
     uti: 'org.openxmlformats.spreadsheetml.sheet.macroenabled',
     mime: 'application/vnd.ms-excel.sheet.macroEnabled.12',
-    progId: 'IeumOffice.ExcelMacroEnabledWorkbook',
+    progId: 'HangulAI.ExcelMacroEnabledWorkbook',
   },
   {
     ext: 'xls',
     uti: 'com.microsoft.excel.xls',
     mime: 'application/vnd.ms-excel',
-    progId: 'IeumOffice.Excel972003Workbook',
+    progId: 'HangulAI.Excel972003Workbook',
   },
   {
     ext: 'pptx',
     uti: 'org.openxmlformats.presentationml.presentation',
     mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    progId: 'IeumOffice.PowerPointPresentation',
+    progId: 'HangulAI.PowerPointPresentation',
   },
 ]
 

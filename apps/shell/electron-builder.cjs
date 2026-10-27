@@ -19,13 +19,13 @@ const { join } = require('node:path')
 // folder, the executable name, the userData folder and the Windows ProgIds.
 // None of them may coincide with the upstream GenOffice app, so both can be
 // installed on one machine without touching each other's registration.
-const APP_ID = 'io.github.pblsketch.ieumoffice'
-const PRODUCT_NAME = 'IeumOffice'
+const APP_ID = 'local.hongchanu.hangul-ai-workbench'
+const PRODUCT_NAME = 'HangulAIWorkbench'
 // package.json "name" of the packaged app (the workspace keeps upstream's
 // "@genoffice/shell"): electron-builder and electron-updater name the per-user
 // folder that caches the installer and downloaded updates after it
 // (<local app data>/<name>-updater), so a shared name is a shared folder.
-const PACKAGED_APP_NAME = 'ieumoffice'
+const PACKAGED_APP_NAME = 'hangul-ai-workbench'
 const REPO_OWNER = 'pblsketch'
 const REPO_NAME = 'openoffice'
 const MAINTAINER = 'pblsketch <pblsketch@users.noreply.github.com>'
@@ -345,9 +345,10 @@ const WIN_OPEN_WITH_ONLY_EXTS = new Set(['txt', 'json', 'xmind', 'hwp', 'hwpx', 
 // (HKCU\Software\Classes\<name>). The upstream app registers the bare names
 // below ("Word Document"), so sharing them would let either install overwrite
 // the other's open command and either uninstall delete it: Windows gets
-// product-scoped ProgIds instead ("IeumOffice.WordDocument"). The same ids are
+// product-scoped ProgIds instead ("HangulAI.WordDocument"). The same ids are
 // spelled out in src/main/default-app.ts and build/installer.nsh.
-const winProgId = (name) => `${PRODUCT_NAME}.${name.replace(/[^A-Za-z0-9]/g, '')}`
+const PROG_ID_PREFIX = 'HangulAI' // Windows caps a ProgId at 39 characters
+const winProgId = (name) => `${PROG_ID_PREFIX}.${name.replace(/[^A-Za-z0-9]/g, '')}`
 const FILE_ASSOCIATIONS = [
   {
     ext: 'docx',

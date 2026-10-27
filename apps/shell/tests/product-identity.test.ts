@@ -80,7 +80,7 @@ describe('one product name', () => {
 
   it('shows the Korean name only in the Korean UI', () => {
     for (const lang of LANGS) {
-      expect(productName(lang), lang).toBe(lang === 'ko' ? '이음오피스' : PRODUCT_NAME)
+      expect(productName(lang), lang).toBe(lang === 'ko' ? '한글 AI 워크벤치' : PRODUCT_NAME)
     }
   })
 })
@@ -107,13 +107,13 @@ describe('the name in the shell UI', () => {
         expect(t(lang, key), `${lang}.${key}`).not.toContain(UPSTREAM_PRODUCT_NAME)
       }
     }
-    expect(t('ko', 'onbTitle1')).toContain('이음오피스')
-    expect(t('en', 'onbTitle1')).toContain('IeumOffice')
+    expect(t('ko', 'onbTitle1')).toContain('한글 AI 워크벤치')
+    expect(t('en', 'onbTitle1')).toContain('HangulAIWorkbench')
   })
 
   it('names the product in the manual: titles and bodies', async () => {
-    expect(topicTitle('install', 'en')).toBe('Installing IeumOffice')
-    expect(topicTitle('install', 'ko')).toBe('이음오피스 설치')
+    expect(topicTitle('install', 'en')).toBe('Installing HangulAIWorkbench')
+    expect(topicTitle('install', 'ko')).toBe('한글 AI 워크벤치 설치')
     for (const lang of ['en', 'ko', 'ja'] as const) {
       for (const topic of HELP_TOPICS) {
         expect(topicTitle(topic.id, lang)).not.toContain(UPSTREAM_PRODUCT_NAME)
@@ -122,14 +122,14 @@ describe('the name in the shell UI', () => {
       }
     }
     // file names keep the Latin name whatever the language
-    expect(await helpBody('install', 'ko')).toContain('IeumOffice-Setup-<version>.exe')
-    expect(await helpBody('getting-started', 'ko')).toContain('이음오피스')
+    expect(await helpBody('install', 'ko')).toContain('HangulAIWorkbench-Setup-<version>.exe')
+    expect(await helpBody('getting-started', 'ko')).toContain('한글 AI 워크벤치')
   })
 })
 
 describe('coexistence with the upstream app on one machine', () => {
   it('installs under its own product id and install name', () => {
-    expect(config.appId).toBe('io.github.pblsketch.ieumoffice')
+    expect(config.appId).toBe('local.hongchanu.hangul-ai-workbench')
     expect(config.appId).not.toBe(UPSTREAM.appId)
     expect(config.productName).not.toBe(UPSTREAM.productName)
     expect(config.nsis.artifactName).toBe('${productName}-Setup-${version}.${ext}')
@@ -137,10 +137,10 @@ describe('coexistence with the upstream app on one machine', () => {
       '${productName}-Setup-${version}-arm64.${ext}',
     )
     expect(shellPackage.desktopName).toBe('ieumoffice.desktop')
-    expect(config.linux.executableName).toBe('ieumoffice')
-    expect(config.deb.packageName).toBe('ieumoffice')
+    expect(config.linux.executableName).toBe('hangul-ai-workbench')
+    expect(config.deb.packageName).toBe('hangul-ai-workbench')
     expect(config.deb.artifactName).toBe('ieumoffice_${version}_${arch}.deb')
-    expect(config.rpm.packageName).toBe('ieumoffice')
+    expect(config.rpm.packageName).toBe('hangul-ai-workbench')
     expect(config.rpm.artifactName).toBe('ieumoffice-${version}.${arch}.rpm')
   })
 
@@ -148,8 +148,8 @@ describe('coexistence with the upstream app on one machine', () => {
     // packaged: Electron's default userData is <appData>/<productName>;
     // unpacked runs set DEV_USER_DATA_DIR_NAME explicitly (src/main/index.ts).
     // The single-instance lock lives in userData, so it is separate as well.
-    expect(USER_DATA_DIR_NAME).toBe('IeumOffice')
-    expect(DEV_USER_DATA_DIR_NAME).toBe('IeumOffice-Dev')
+    expect(USER_DATA_DIR_NAME).toBe('HangulAIWorkbench')
+    expect(DEV_USER_DATA_DIR_NAME).toBe('HangulAIWorkbench-Dev')
     const main = readFileSync(join(SHELL, 'src/main/index.ts'), 'utf8')
     expect(main).toContain(
       "app.setPath('userData', join(app.getPath('appData'), DEV_USER_DATA_DIR_NAME))",
@@ -165,7 +165,7 @@ describe('coexistence with the upstream app on one machine', () => {
     // <local app data>/<packaged package.json name>-updater
     const upstreamName = shellPackage.name
     expect(upstreamName).toBe('@genoffice/shell')
-    expect(config.extraMetadata.name).toBe('ieumoffice')
+    expect(config.extraMetadata.name).toBe('hangul-ai-workbench')
     expect(config.extraMetadata.name).not.toBe(upstreamName)
     // a plain name survives electron-builder's file-name sanitizing unchanged
     expect(config.extraMetadata.name).toMatch(/^[a-z][a-z0-9-]*$/)
@@ -180,7 +180,7 @@ describe('coexistence with the upstream app on one machine', () => {
     )
     expect(progIds.length).toBeGreaterThan(0)
     for (const progId of progIds) {
-      expect(progId).toMatch(/^IeumOffice\.[A-Za-z][A-Za-z0-9]*$/)
+      expect(progId).toMatch(/^HangulAI\.[A-Za-z][A-Za-z0-9]*$/)
       // Windows limits a ProgId to 39 characters
       expect(progId.length, progId).toBeLessThanOrEqual(39)
       expect(UPSTREAM.progIds).not.toContain(progId)
@@ -199,8 +199,8 @@ describe('coexistence with the upstream app on one machine', () => {
     expect(entry, '.xmind is not offered on mac / Linux').toBeTruthy()
     // the same derivation electron-builder.cjs applies to the Windows list;
     // the NSIS Open-With ProgId (build/installer.nsh) spells the same value out
-    const progId = `${PRODUCT_NAME}.${entry!.name.replace(/[^A-Za-z0-9]/g, '')}`
-    expect(progId).toMatch(/^IeumOffice\.[A-Za-z][A-Za-z0-9]*$/)
+    const progId = `HangulAI.${entry!.name.replace(/[^A-Za-z0-9]/g, '')}`
+    expect(progId).toMatch(/^HangulAI\.[A-Za-z][A-Za-z0-9]*$/)
     expect(progId.length, progId).toBeLessThanOrEqual(39)
     expect(UPSTREAM.progIds).not.toContain(progId)
     // the label is the product's own word for the type
@@ -222,8 +222,8 @@ describe('coexistence with the upstream app on one machine', () => {
     expect(entry, '.epub is not offered on mac / Linux').toBeTruthy()
     // the same derivation electron-builder.cjs applies to the Windows list;
     // the NSIS Open-With ProgId (build/installer.nsh) spells the same value out
-    const progId = `${PRODUCT_NAME}.${entry!.name.replace(/[^A-Za-z0-9]/g, '')}`
-    expect(progId).toMatch(/^IeumOffice\.[A-Za-z][A-Za-z0-9]*$/)
+    const progId = `HangulAI.${entry!.name.replace(/[^A-Za-z0-9]/g, '')}`
+    expect(progId).toMatch(/^HangulAI\.[A-Za-z][A-Za-z0-9]*$/)
     expect(progId.length, progId).toBeLessThanOrEqual(39)
     expect(UPSTREAM.progIds).not.toContain(progId)
     const winExts = config.win.fileAssociations.map((candidate: { ext: string }) => candidate.ext)
@@ -296,7 +296,7 @@ describe('what the installer no longer carries', () => {
       GENOFFICE_GA4_API_SECRET: 'secret',
       GENOFFICE_FONT_CDN_URL: 'https://fonts.example.test/v1',
     }
-    expect(loadBuilderConfig(env).extraMetadata).toEqual({ name: 'ieumoffice' })
+    expect(loadBuilderConfig(env).extraMetadata).toEqual({ name: 'hangul-ai-workbench' })
     expect(builderSource).not.toMatch(/GA4|FONT_CDN|genofficeAnalytics|genofficeFontCdn/)
   })
 })

@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace IeumOffice.QuickLook
+namespace HangulAIWorkbench.QuickLook
 {
     internal static class Program
     {

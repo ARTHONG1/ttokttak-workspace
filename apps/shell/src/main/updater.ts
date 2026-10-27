@@ -819,6 +819,9 @@ export function initAutoUpdater(
   // (electron-updater's AppImageUpdater needs the APPIMAGE env var the
   // AppImage runtime sets); deb installs update manually via apt.
   if (!app.isPackaged) return
+  // This local derivative has no release feed of its own; the inherited feed
+  // would offer the upstream IeumOffice build as an "update".
+  if (process.env.HANGUL_WORKBENCH_UPDATE_FEED !== '1') return
   const isLinuxAppImage = process.platform === 'linux' && Boolean(process.env.APPIMAGE)
   if (process.platform !== 'win32' && process.platform !== 'darwin' && !isLinuxAppImage) return
 
