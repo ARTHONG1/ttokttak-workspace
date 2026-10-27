@@ -82,7 +82,7 @@ const SKILL: AgentSessionSkill = {
   title: 'Meeting minutes',
   description: 'Writes minutes.',
   invoke: 'auto',
-  skillMd: 'C:\\Users\\me\\AppData\\Local\\IeumOffice\\agent-skills\\skills\\minutes\\SKILL.md',
+  skillMd: 'C:\\Users\\me\\AppData\\Local\\HangulAIWorkbench\\agent-skills\\skills\\minutes\\SKILL.md',
   template: undefined,
 }
 
@@ -347,7 +347,7 @@ describe('a chip in the agent window', () => {
     const withTemplate = {
       ...SKILL,
       template:
-        'C:\\Users\\me\\AppData\\Local\\IeumOffice\\agent-skills\\skills\\minutes\\assets\\form.hwpx',
+        'C:\\Users\\me\\AppData\\Local\\HangulAIWorkbench\\agent-skills\\skills\\minutes\\assets\\form.hwpx',
     }
     const text = agentSkillInstruction(withTemplate)
     expect(text).toContain(`Its template document is ${withTemplate.template}.`)
@@ -540,7 +540,7 @@ describe('the skill a change is for', () => {
 describe('reading a candidate in main', () => {
   it('never reads the sign-in stores, the original app’s folder or the app’s own data', async () => {
     const home = temp()
-    const userData = join(home, 'AppData', 'IeumOffice')
+    const userData = join(home, 'AppData', 'HangulAIWorkbench')
     const guard = {
       homeDir: home,
       protectedPaths: ['.claude', '.codex', '.genoffice', '.ieumoffice'].map((n) => join(home, n)),

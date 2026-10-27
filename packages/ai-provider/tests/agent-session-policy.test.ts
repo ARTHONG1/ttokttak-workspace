@@ -16,7 +16,7 @@ const ctx = (overrides: Partial<AgentPolicyContext> = {}): AgentPolicyContext =>
   mode: 'ask-commands',
   projectRoot: 'C:\\Users\\me\\Project',
   openDocuments: ['C:\\Users\\me\\Project\\report.docx', 'C:\\Users\\me\\Project\\notes.md'],
-  protectedPaths: ['C:\\Users\\me\\.codex', 'C:\\Users\\me\\AppData\\Roaming\\IeumOffice'],
+  protectedPaths: ['C:\\Users\\me\\.codex', 'C:\\Users\\me\\AppData\\Roaming\\HangulAIWorkbench'],
   skillBundleDir: 'C:\\Temp\\ieum-skills-1',
   platform: 'win32',
   ...overrides,

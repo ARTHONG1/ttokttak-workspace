@@ -131,7 +131,7 @@ describe('locateSubscriptionProgram on Windows', () => {
     const npm = join(env.APPDATA!, 'npm')
     await touch(join(npm, 'codex.cmd'), CODEX_SHIM)
     const entry = await touch(join(npm, 'node_modules', '@openai', 'codex', 'bin', 'codex.js'))
-    const runtime = { command: 'C:\\Program Files\\IeumOffice\\IeumOffice.exe', electron: true }
+    const runtime = { command: 'C:\\Program Files\\HangulAIWorkbench\\HangulAIWorkbench.exe', electron: true }
     const program = await locateSubscriptionProgram('codex', {
       env,
       platform: 'win32',

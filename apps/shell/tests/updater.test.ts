@@ -33,6 +33,11 @@ const appQuit = vi.hoisted(() => vi.fn())
 const installDir = { writable: true }
 
 const openExternal = vi.hoisted(() => vi.fn())
+// The local derivative keeps the update feed off unless this switch is set;
+// these tests exercise the feed itself, so they run with it on.
+vi.hoisted(() => {
+  process.env.HANGUL_WORKBENCH_UPDATE_FEED = '1'
+})
 const showMessageBox = vi.hoisted(() =>
   vi.fn<(opts: unknown) => Promise<{ response: number }>>(() => Promise.resolve({ response: 0 })),
 )
@@ -243,7 +248,7 @@ function releasesAtom(tags: string[], notes: Record<string, string> = {}): strin
 }
 
 function feedFile(version: string): string {
-  const installer = `IeumOffice-Setup-${version}.exe`
+  const installer = `HangulAIWorkbench-Setup-${version}.exe`
   return [
     `version: ${version}`,
     'files:',
@@ -911,8 +916,8 @@ describe('manual download fallback', () => {
     const actions = await failTwiceIntoManual({
       version: '0.2.0',
       files: [
-        { url: 'https://attacker.example/IeumOffice-Setup-0.2.0.exe' },
-        { url: 'IeumOffice-Setup-0.2.0.exe' },
+        { url: 'https://attacker.example/HangulAIWorkbench-Setup-0.2.0.exe' },
+        { url: 'HangulAIWorkbench-Setup-0.2.0.exe' },
       ],
     })
     actions.onOpenDownload()

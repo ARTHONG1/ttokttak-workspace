@@ -4,7 +4,6 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactElement,
 } from 'react'
-import logoLockup from './assets/genoffice-logo.svg'
 import { KbAskPanel } from './KbAskPanel'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
@@ -3089,6 +3088,20 @@ export function Home({
               <span className="hero-ask">{t(greetAskKey)}</span>
             </h1>
           </div>
+          <button
+            type="button"
+            className="upload-zone"
+            data-testid="home-upload-document"
+            onClick={() => void window.aiOffice.browse()}
+          >
+            <span className="upload-zone-icon" aria-hidden="true">
+              <FolderIcon size={22} />
+            </span>
+            <span className="upload-zone-text">
+              <span className="upload-zone-title">{t('uploadDocTitle')}</span>
+              <span className="upload-zone-sub">{t('uploadDocSub')}</span>
+            </span>
+          </button>
           {renderQuickCards()}
         </section>
 
@@ -3287,7 +3300,7 @@ export function Home({
         style={sidebarWidth === null ? undefined : { width: sidebarWidth }}
       >
         <div className="sidebar-logo">
-          <img className="logo-lockup" src={logoLockup} alt={productName(lang)} />
+          <span className="logo-text">{productName(lang)}</span>
           {RELEASE_IS_BETA && (
             <span className="beta-badge" title={t('betaTooltip')}>
               {t('betaBadge')}

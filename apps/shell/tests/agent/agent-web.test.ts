@@ -83,7 +83,7 @@ function manager() {
     statuses: () => ({ 'claude-code': ready('claude-code'), codex: ready('codex') }),
     aiSettings: () => normalizeAiSettings({ providers: {} }),
     openDocuments: () => [],
-    userData: join(home, 'AppData', 'IeumOffice'),
+    userData: join(home, 'AppData', 'HangulAIWorkbench'),
     homeDir: home,
     language: () => 'ko',
     emit: () => undefined,

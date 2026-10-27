@@ -230,7 +230,7 @@ describe('the launch and the thread', () => {
   })
 
   it('lets the session read its skill copy', () => {
-    const bundle = 'C:\\Users\\me\\AppData\\Local\\IeumOffice\\agent-skills'
+    const bundle = 'C:\\Users\\me\\AppData\\Local\\HangulAIWorkbench\\agent-skills'
     const filesystem = codexAgentFilesystem(options({ skillBundleDir: bundle }))
     expect(filesystem[bundle]).toBe('read')
     expect(filesystem['C:\\Users\\me\\.codex']).toBe('deny')

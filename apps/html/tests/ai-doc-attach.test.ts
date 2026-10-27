@@ -11,7 +11,7 @@ import { DOC_ATTACH_BRIDGE_KEY } from '@genoffice/electron-utils/doc-attach-chan
 import { AiPanel, type HtmlAiDeps } from '../src/renderer/ai/AiPanel'
 import { buildParseMap, type ParseMap } from '../src/renderer/document/parse-map'
 
-// The HTML panel's "attach from an IeumOffice document" button: the shell
+// The HTML panel's "attach from an HangulAIWorkbench document" button: the shell
 // document picker (window.aiOfficeDocs) hands back paths, and they enter the
 // composer's attachment list through the same path a Drive pick takes.
 

@@ -50,7 +50,7 @@ describe('unsigned Windows builds can update', () => {
         configOnDisk: { value: Promise.resolve(appUpdateYml) },
         _verifyUpdateCodeSignature: verify,
       },
-      'C:\\cache\\pending\\IeumOffice-Setup-0.2.0.exe',
+      'C:\\cache\\pending\\HangulAIWorkbench-Setup-0.2.0.exe',
     )
     return { outcome, verify }
   }

@@ -142,6 +142,14 @@ body.vib .home {
   filter: invert(var(--logo-invert));
 }
 
+.logo-text {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* shown while RELEASE_IS_BETA */
 .beta-badge {
   flex: none;
@@ -342,6 +350,59 @@ body.vib .home {
   margin-top: 0;
   color: var(--text-primary);
   font-weight: 500;
+}
+
+/* the first thing on the home page: bring an existing document in (click or drop) */
+.upload-zone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 22px 24px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+
+.upload-zone:hover {
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  box-shadow: 0 3px 12px rgb(0 0 0 / 8%);
+}
+
+.upload-zone-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.upload-zone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.upload-zone-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.upload-zone-sub {
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .quick-cards {

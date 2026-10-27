@@ -418,7 +418,7 @@ describe('what a force-killed app left behind', () => {
   it('does not touch the children of another running instance of the app', async () => {
     const file = await writeRecord([{ pid: 5001, command: 'C:\\npm\\claude.exe' }])
     const job = cleanup({
-      [OWNER]: { startedAt: OWNER_STARTED + 200, image: 'C:\\app\\IeumOffice.exe' },
+      [OWNER]: { startedAt: OWNER_STARTED + 200, image: 'C:\\app\\HangulAIWorkbench.exe' },
       5001: { startedAt: CHILD_STARTED, image: 'C:\\npm\\claude.exe' },
     })
     await job.run()

@@ -1,4 +1,4 @@
-// The docs AI panel's "attach from an IeumOffice document" button: a shell
+// The docs AI panel's "attach from an HangulAIWorkbench document" button: a shell
 // document picker (window.aiOfficeDocs) hands back paths, and they enter the
 // composer's attachment list through the same path a Drive pick takes.
 import { act, createElement } from 'react'

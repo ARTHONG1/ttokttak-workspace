@@ -438,7 +438,7 @@ function memoAuthorOf(author) {
     .slice(0, MAX_MEMO_AUTHOR)
   // the product's name (PRODUCT_NAME of @genoffice/i18n, which this plugin cannot import):
   // Hangul shows it as the author
-  return clean || 'IeumOffice'
+  return clean || 'HangulAIWorkbench'
 }
 
 /** An anchor the panel hands back, checked before it reaches the engine. */

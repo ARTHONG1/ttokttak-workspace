@@ -1,6 +1,6 @@
 // Trial of OpenRouter free models before they go into OPENROUTER_FREE_MODELS.
 // Spends the free daily requests of the OpenRouter key the installed app holds
-// (%APPDATA%/IeumOffice/ai-settings.json); the key is never printed. Needs a
+// (%APPDATA%/HangulAIWorkbench/ai-settings.json); the key is never printed. Needs a
 // build (`npm run build:all`).
 //
 //   node tools/trial-free-models.mjs              the candidates check-free-models finds
@@ -43,7 +43,7 @@ if (!existsSync(join(root, 'apps/shell/out/main/index.js'))) {
 }
 
 function storedKey() {
-  const path = join(process.env.APPDATA ?? '', 'IeumOffice', 'ai-settings.json')
+  const path = join(process.env.APPDATA ?? '', 'HangulAIWorkbench', 'ai-settings.json')
   try {
     const key = JSON.parse(readFileSync(path, 'utf8'))?.providers?.openrouter?.apiKey
     if (typeof key === 'string' && key.trim()) return key.trim()

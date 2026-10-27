@@ -67,14 +67,14 @@ describe('project folders', () => {
       projectFolderProblem(
         project,
         home,
-        agentProtectedPaths(home, join(home, 'AppData', 'IeumOffice')),
+        agentProtectedPaths(home, join(home, 'AppData', 'HangulAIWorkbench')),
       ),
     ).toBeUndefined()
   })
 
   it('refuses a drive root, the home folder, a parent of a protected folder, and a protected folder', () => {
     const home = temp()
-    const userData = join(home, 'AppData', 'IeumOffice')
+    const userData = join(home, 'AppData', 'HangulAIWorkbench')
     mkdirSync(join(home, '.codex'), { recursive: true })
     mkdirSync(userData, { recursive: true })
     const guards = agentProtectedPaths(home, userData)
@@ -218,7 +218,7 @@ function manager(
       overrides.statuses ?? { 'claude-code': ready('claude-code'), codex: ready('codex') },
     aiSettings: () => ({ ...normalizeAiSettings({ providers: {} }), ...overrides.settings }),
     openDocuments: () => [join(project, 'open.docx')],
-    userData: join(home, 'AppData', 'IeumOffice'),
+    userData: join(home, 'AppData', 'HangulAIWorkbench'),
     homeDir: home,
     language: () => 'ko',
     startAppMcp,
@@ -262,7 +262,7 @@ describe('starting a session', () => {
       openDocuments: [join(project, 'open.docx')],
     })
     expect(options.protectedPaths).toContain(join(home, '.codex'))
-    expect(options.protectedPaths).toContain(join(home, 'AppData', 'IeumOffice'))
+    expect(options.protectedPaths).toContain(join(home, 'AppData', 'HangulAIWorkbench'))
   })
 
   it('names the window and session the MCP server’s skill tools answer to, and gives the window the session’s skills', async () => {

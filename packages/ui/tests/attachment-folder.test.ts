@@ -47,11 +47,11 @@ describe('attachmentFolderLabel', () => {
   it('hides the file id folder under the Drive cache', () => {
     expect(
       attachmentFolderLabel(
-        'C:\\Users\\a\\AppData\\Roaming\\IeumOffice\\drive-cache\\abc_123\\계획서.docx',
+        'C:\\Users\\a\\AppData\\Roaming\\HangulAIWorkbench\\drive-cache\\abc_123\\계획서.docx',
       ),
     ).toBe('')
     expect(
-      attachmentFolderLabel('/home/a/.config/IeumOffice/drive-cache/abc_123/계획서.docx'),
+      attachmentFolderLabel('/home/a/.config/HangulAIWorkbench/drive-cache/abc_123/계획서.docx'),
     ).toBe('')
   })
 

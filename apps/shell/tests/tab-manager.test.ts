@@ -274,7 +274,7 @@ beforeEach(() => {
 describe('initial state', () => {
   it('starts with only the non-closable, active Home tab', () => {
     expect(manager.list()).toEqual([
-      { id: 'home', kind: 'home', title: 'IeumOffice', closable: false, active: true },
+      { id: 'home', kind: 'home', title: 'HangulAIWorkbench', closable: false, active: true },
     ])
   })
 })
@@ -345,7 +345,7 @@ describe('opening tabs', () => {
     expect(tabs[1]).toMatchObject({
       id,
       kind: 'docs',
-      title: 'IeumOffice Docs',
+      title: 'HangulAIWorkbench Docs',
       closable: true,
       active: true,
     })
@@ -361,7 +361,7 @@ describe('opening tabs', () => {
     manager.openSlidesTab('/tmp/deck.pptx')
     manager.openPdfTab('/tmp/scan.pdf')
     expect(manager.list().map((t) => t.title)).toEqual([
-      'IeumOffice',
+      'HangulAIWorkbench',
       'report.docx',
       'budget.xlsx',
       'deck.pptx',
@@ -372,7 +372,7 @@ describe('opening tabs', () => {
   it('uses module default titles for pathless tabs', () => {
     manager.openSheetsTab()
     manager.openSlidesTab()
-    expect(manager.list().map((t) => t.title)).toEqual(['IeumOffice', 'AI Sheets', 'AI Slides'])
+    expect(manager.list().map((t) => t.title)).toEqual(['HangulAIWorkbench', 'AI Sheets', 'AI Slides'])
   })
 
   it('opens a mind map tab for a file and for a new, untitled map', () => {
@@ -1276,7 +1276,7 @@ describe('detach / attach (Open in New Window, tear-off, dock)', () => {
       height: WINDOW_HEIGHT - TAB_STRIP_HEIGHT,
     })
     expect(manager.list().map((t) => [t.id, t.title, t.active])).toEqual([
-      ['home', 'IeumOffice', false],
+      ['home', 'HangulAIWorkbench', false],
       [newId, 'deck.pptx', true],
       ['t1', 'a.docx', false],
       ['t2', 'b.docx', false],
@@ -1291,12 +1291,12 @@ describe('detach / attach (Open in New Window, tear-off, dock)', () => {
     const second = manager.detachTab(manager.openSheetsTab('/tmp/y.xlsx'))!
     const third = manager.detachTab(manager.openSheetsTab('/tmp/z.xlsx'))!
     manager.attachTab(first, 0)
-    expect(manager.list().map((t) => t.title)).toEqual(['IeumOffice', 'x.xlsx', 'a.docx'])
+    expect(manager.list().map((t) => t.title)).toEqual(['HangulAIWorkbench', 'x.xlsx', 'a.docx'])
     manager.attachTab(second, -4)
-    expect(manager.list().map((t) => t.title)).toEqual(['IeumOffice', 'y.xlsx', 'x.xlsx', 'a.docx'])
+    expect(manager.list().map((t) => t.title)).toEqual(['HangulAIWorkbench', 'y.xlsx', 'x.xlsx', 'a.docx'])
     manager.attachTab(third, 99)
     expect(manager.list().map((t) => t.title)).toEqual([
-      'IeumOffice',
+      'HangulAIWorkbench',
       'y.xlsx',
       'x.xlsx',
       'a.docx',
@@ -1310,7 +1310,7 @@ describe('detach / attach (Open in New Window, tear-off, dock)', () => {
     manager.openDocsTab('/tmp/b.docx')
     manager.attachTab(record)
     expect(manager.list().map((t) => t.title)).toEqual([
-      'IeumOffice',
+      'HangulAIWorkbench',
       'a.docx',
       'b.docx',
       'scan.pdf',

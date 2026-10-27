@@ -192,7 +192,7 @@ describe('launchSubscriptionUpdate', () => {
 
   it('a JS entry on a Node runtime goes after the runtime, before the update argument', async () => {
     const { calls, spawn } = recorder()
-    const found = program('claude-code', 'C:\\app\\IeumOffice.exe', 'npm', {
+    const found = program('claude-code', 'C:\\app\\HangulAIWorkbench.exe', 'npm', {
       prefixArgs: ['D:\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js'],
       env: { ELECTRON_RUN_AS_NODE: '1' },
     })
