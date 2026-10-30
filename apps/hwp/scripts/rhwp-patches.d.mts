@@ -9,6 +9,7 @@ export type RhwpPatchName =
   | 'studio-nested-table-delete'
   | 'studio-nested-table-cut'
   | 'studio-nested-table-command'
+  | 'studio-table-split-pages'
   | 'studio-format-copy-safety'
   | 'studio-format-copy'
   | 'studio-format-copy-state'

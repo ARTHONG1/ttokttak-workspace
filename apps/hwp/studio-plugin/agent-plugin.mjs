@@ -1762,6 +1762,21 @@ function tableHtml(table, font, header, shadeHeader) {
  * colours each cell on its own. No table there leaves the paste as it is.
  */
 function shadeHeaderCells(doc, place, cols) {
+  const control = pastedTableControl(doc, place)
+  if (control === null) return
+  // pattern -1 is none: left out, the engine puts in 0, which Hangul draws as horizontal lines
+  const fill = JSON.stringify({
+    fillType: 'solid',
+    fillColor: TABLE_HEADER_FILL,
+    patternType: -1,
+  })
+  for (let cell = 0; cell < cols; cell++) {
+    expectOk(doc.setCellProperties(place.sec, place.para, control, cell, fill), 'shade the header')
+  }
+}
+
+/** The control index of the table just pasted in body paragraph `place`, or null if none. */
+function pastedTableControl(doc, place) {
   const controls = parse(doc.getControlTextPositions(place.sec, place.para)).length
   for (let control = controls - 1; control >= 0; control--) {
     try {
@@ -1770,23 +1785,33 @@ function shadeHeaderCells(doc, place, cols) {
         place.para,
         JSON.stringify([{ controlIndex: control, cellIndex: 0, cellParaIndex: 0 }]),
       )
+      return control
     } catch {
-      continue
+      // not a table
     }
-    // pattern -1 is none: left out, the engine puts in 0, which Hangul draws as horizontal lines
-    const fill = JSON.stringify({
-      fillType: 'solid',
-      fillColor: TABLE_HEADER_FILL,
-      patternType: -1,
-    })
-    for (let cell = 0; cell < cols; cell++) {
-      expectOk(
-        doc.setCellProperties(place.sec, place.para, control, cell, fill),
-        'shade the header',
-      )
-    }
-    return
   }
+  return null
+}
+
+/**
+ * Let a table just pasted in body paragraph `place` run on to the next page. A pasted table
+ * comes in "treated as a character", which keeps it in one piece: longer than the page, it
+ * was pushed whole to the next page and the rows past the bottom were cut off. Laid out as an
+ * object of its own and split at a page between rows (pageBreak 1, Hangul's "셀 단위로
+ * 나눔"), it breaks where the page ends, and its title row repeats on the next page.
+ */
+function letTableFlow(doc, place, header) {
+  const control = pastedTableControl(doc, place)
+  if (control === null) return
+  expectOk(
+    doc.setTableProperties(
+      place.sec,
+      place.para,
+      control,
+      JSON.stringify({ treatAsChar: false, pageBreak: 1, repeatHeader: header }),
+    ),
+    'let the table run on to the next page',
+  )
 }
 
 /** Which match a replace call means, or the reason it cannot be decided. */
@@ -4000,6 +4025,7 @@ export const agentPlugin = {
               box.pasteHtml(at, tableHtml(table, font, header === true, box.inTable))
               if (header === true && !box.inTable)
                 shadeHeaderCells(doc, box.place(at, 0), table[0].length)
+              if (!box.inTable) letTableFlow(doc, box.place(at, 0), header === true)
               const after = objectsOf(doc)
               // the new table is an object of its own; nothing that was there may be gone
               mustKeep(before, { ...after, controls: Math.min(after.controls, before.controls) })

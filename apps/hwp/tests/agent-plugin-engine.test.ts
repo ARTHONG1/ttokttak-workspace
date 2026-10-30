@@ -560,6 +560,70 @@ describe('a table with a header row', () => {
   })
 })
 
+describe('a table longer than a page', () => {
+  const ROWS = 70
+  const longTable = () => [
+    ['번호', '내용', '금액'],
+    ...Array.from({ length: ROWS }, (_, i) => [`R${i + 1}`, `설명 ${i + 1}`, String(i * 100)]),
+  ]
+
+  /** the row labels drawn on each page, and the lowest line of text against the body's bottom */
+  function pagesOf(doc: HwpDocument) {
+    const pages = []
+    for (let page = 0; page < doc.pageCount(); page++) {
+      const svg = doc.renderPageSvg(page)
+      const clip =
+        /<clipPath id="body-clip[^"]*"><rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/.exec(
+          svg,
+        )!
+      const bodyBottom = Number(clip[1]) + Number(clip[2])
+      // the engine draws a cell's text a glyph at a time: join the glyphs of a line by its y
+      const lines = new Map<number, string>()
+      for (const m of svg.matchAll(/<text[^>]*\by="([\d.]+)"[^>]*>([^<]*)<\/text>/g)) {
+        lines.set(Number(m[1]), (lines.get(Number(m[1])) ?? '') + m[2])
+      }
+      const rows: number[] = []
+      let lowest = 0
+      let headers = 0
+      for (const [y, line] of lines) {
+        const row = /^R(\d+)/.exec(line)
+        if (row) rows.push(Number(row[1]))
+        if (line.startsWith('번호')) headers++
+        if (row || line.startsWith('번호')) lowest = Math.max(lowest, y)
+      }
+      pages.push({ rows: rows.sort((a, b) => a - b), headers, lowest, bodyBottom })
+    }
+    return pages
+  }
+
+  it('flows on to the next page row by row, every row inside the body', () => {
+    const editor = openEditor()
+    editor.plugin.insertTable('첫째 문단', null, 'after', longTable(), true)
+    const pages = pagesOf(editor.doc()).filter((page) => page.rows.length > 0)
+    expect(pages.length).toBeGreaterThan(1)
+    // the table starts on the first page, where it was put, and no row is cut off or lost
+    expect(pages[0]!.rows[0]).toBe(1)
+    expect(pages.flatMap((page) => page.rows)).toEqual(
+      Array.from({ length: ROWS }, (_, i) => i + 1),
+    )
+    for (const page of pages) expect(page.lowest).toBeLessThanOrEqual(page.bodyBottom)
+  })
+
+  it('repeats the header row at the top of each page and keeps that through save and reopen', () => {
+    const editor = openEditor()
+    editor.plugin.insertTable('첫째 문단', null, 'after', longTable(), true)
+    for (const page of pagesOf(editor.doc()).filter((p) => p.rows.length > 0)) {
+      expect(page.headers).toBe(1)
+    }
+    for (const bytes of [editor.doc().exportHwp(), editor.doc().exportHwpx()]) {
+      const again = new HwpDocument(bytes)
+      const table = JSON.parse(again.getTableProperties(0, 2, 0))
+      expect(table).toMatchObject({ treatAsChar: false, pageBreak: 1, repeatHeader: true })
+      expect(pagesOf(again).filter((page) => page.rows.length > 0).length).toBeGreaterThan(1)
+    }
+  })
+})
+
 describe('form fields in the real engine', () => {
   it('fills the one asked for among fields that share a name', () => {
     const editor = openEditor({ fields: true })

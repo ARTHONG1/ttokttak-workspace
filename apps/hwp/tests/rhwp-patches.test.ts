@@ -268,6 +268,26 @@ describe('rhwp nested-table patches', () => {
   })
 })
 
+describe('rhwp table page split patch', () => {
+  // the studio's text after it makes a table from the menu, as the pinned release has it
+  const create = [
+    '              : wasm.createTable(pos.sectionIndex, pos.paragraphIndex, pos.charOffset, rows, cols);',
+    '            if (result.ok) {',
+    '              return {',
+  ].join('\n')
+
+  it('split a new table between rows at the page end, unless treated as a character', () => {
+    const patched = applyPatch('studio-table-split-pages', create)
+    expect(patched).toContain('if (result.ok && !options?.treatAsChar) {')
+    expect(patched).toContain(
+      'wasm.setTableProperties(pos.sectionIndex, result.paraIdx, result.controlIdx, { pageBreak: 1 });',
+    )
+    // the caret still goes into the new table's first cell
+    expect(patched.indexOf('if (result.ok) {')).toBeGreaterThan(patched.indexOf('pageBreak: 1'))
+    expect(STUDIO_PATCHES).toContain('studio-table-split-pages')
+  })
+})
+
 describe('rhwp memo menu patches', () => {
   // the studio's text around the command, as the pinned release has it
   const insert = [

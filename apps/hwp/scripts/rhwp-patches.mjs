@@ -70,6 +70,12 @@
  *   below the merge instead of growing it. A caret in a plain cell inside another merge
  *   keeps that cell's row, because Hangul grows the merge there.
  *
+ * studio-table-split-pages
+ *   The engine makes a new table with "쪽 경계에서: 나누지 않음" (pageBreak 0), which
+ *   Hancom Hangul keeps in one piece: a table longer than the page runs past its bottom.
+ *   A table made from the menu splits between rows instead, "셀 단위로 나눔"
+ *   (pageBreak 1), unless the user chose to treat it as a character.
+ *
  * studio-memo-command, studio-memo-label-ko, studio-memo-label-en
  *   The studio's Insert > Comment item is a stub. It becomes the app's memo: with a
  *   document open outside form mode it sends `ieum:memo-insert` to the window the app
@@ -511,6 +517,21 @@ const PATCHES = {
       },
     ],
   },
+  'studio-table-split-pages': {
+    file: /[\\/]rhwp-studio[\\/]src[\\/]command[\\/]commands[\\/]table\.ts$/,
+    find: [
+      '              : wasm.createTable(pos.sectionIndex, pos.paragraphIndex, pos.charOffset, rows, cols);',
+      '            if (result.ok) {',
+    ].join('\n'),
+    replace: [
+      '              : wasm.createTable(pos.sectionIndex, pos.paragraphIndex, pos.charOffset, rows, cols);',
+      '            // longer than the page, the table goes on to the next page between rows',
+      '            if (result.ok && !options?.treatAsChar) {',
+      '              wasm.setTableProperties(pos.sectionIndex, result.paraIdx, result.controlIdx, { pageBreak: 1 });',
+      '            }',
+      '            if (result.ok) {',
+    ].join('\n'),
+  },
   'studio-hancom-equal-cells': {
     file: /[\\/]rhwp-studio[\\/]src[\\/]command[\\/]commands[\\/]table\.ts$/,
     edits: [
@@ -768,6 +789,7 @@ export const STUDIO_PATCHES = /** @type {const} */ ([
   'studio-format-copy-state',
   'studio-single-cell-resize',
   'studio-merged-row-below',
+  'studio-table-split-pages',
   'studio-memo-command',
   'studio-memo-label-ko',
   'studio-memo-label-en',
