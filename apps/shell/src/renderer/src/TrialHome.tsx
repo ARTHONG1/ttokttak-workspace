@@ -10,6 +10,7 @@ import iconMd from './assets/file-md.svg'
 import iconHtml from './assets/file-html.svg'
 import iconMindmap from './assets/file-mindmap.svg'
 import iconEpub from './assets/file-epub.svg'
+import { SpecialFeatures } from './SpecialFeatures'
 import './trial-home.css'
 
 /**
@@ -221,6 +222,7 @@ export function TrialHome(): ReactElement {
   const sampleDir = useSampleDir()
   const recents = useRecents()
   const [dragging, setDragging] = useState(false)
+  const [featuresOpen, setFeaturesOpen] = useState(false)
 
   useEffect(() => {
     let depth = 0
@@ -253,6 +255,14 @@ export function TrialHome(): ReactElement {
 
   const openSample = (s: Sample) => {
     if (sampleDir) void window.aiOffice.openPath(sampleDir + s.file)
+  }
+
+  if (featuresOpen) {
+    return (
+      <div className="trial">
+        <SpecialFeatures variant="web" onExit={() => setFeaturesOpen(false)} />
+      </div>
+    )
   }
 
   return (
@@ -337,6 +347,61 @@ export function TrialHome(): ReactElement {
             </span>
           </li>
         </ol>
+
+        <button
+          type="button"
+          className="trial-features"
+          data-testid="trial-features"
+          onClick={() => setFeaturesOpen(true)}
+        >
+          <span className="trial-features-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
+              <rect
+                x="2"
+                y="2"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <rect
+                x="9"
+                y="2"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <rect
+                x="2"
+                y="9"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <path
+                d="M11.5 8.6l.55 1.35 1.35.55-1.35.55-.55 1.35-.55-1.35-1.35-.55 1.35-.55z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+          <span className="trial-features-body">
+            <span className="trial-features-title">
+              특화 기능 <i>NEW</i>
+            </span>
+            <span className="trial-features-sub">
+              품의서처럼 학교·기관에서 자주 쓰는 문서를 양식에 맞춰 만들어요
+            </span>
+          </span>
+          <span className="trial-features-go" aria-hidden="true">
+            둘러보기
+            <Arrow />
+          </span>
+        </button>
 
         <section className="trial-section" aria-labelledby="trial-new">
           <div className="trial-section-head">

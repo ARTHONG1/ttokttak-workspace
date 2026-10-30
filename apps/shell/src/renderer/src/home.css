@@ -221,6 +221,19 @@ body.vib .home {
   justify-content: center;
 }
 
+/* 특화 기능: a small mark for the new entry */
+.nav-new {
+  min-width: 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  letter-spacing: 0.04em;
+}
+
 /* ---- bottom-left settings entry: where the AI subscription connection stands ---- */
 /* clicking it opens the settings modal (settings.css) directly, which hosts
    the connection plus preferences (language / theme / save location / update channel) */

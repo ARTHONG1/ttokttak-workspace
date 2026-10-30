@@ -64,6 +64,7 @@ import { agentText } from './i18n/strings-agent'
 import { DriveNavIcon, DrivePanel, useDriveState } from './DrivePanel'
 import { driveUiText } from './i18n/strings-drive'
 import { isWebEdition } from './edition'
+import { SpecialFeatures } from './SpecialFeatures'
 
 declare global {
   interface Window {
@@ -1083,6 +1084,8 @@ export function Home({
   const [askMode, setAskMode] = useState(false)
   // Google Drive (decision 0033) takes over the content area the same way
   const [driveMode, setDriveMode] = useState(false)
+  // 특화 기능 (SpecialFeatures.tsx) takes over the content area the same way
+  const [featuresMode, setFeaturesMode] = useState(false)
   const driveState = useDriveState()
   const driveOffered = driveState !== null && driveState.state !== 'unavailable'
   const [filter, setFilter] = useState('all')
@@ -1570,6 +1573,7 @@ export function Home({
     setSelectedFolder(null)
     setAskMode(false)
     setDriveMode(false)
+    setFeaturesMode(false)
     setSelected(new Set())
     setRowMenu(null)
     setGroupFilter(null)
@@ -1591,6 +1595,7 @@ export function Home({
     setSelectedFolder(dir)
     setAskMode(false)
     setDriveMode(false)
+    setFeaturesMode(false)
     setSelected(new Set())
     setRowMenu(null)
     setFolderMenu(null)
@@ -2942,7 +2947,7 @@ export function Home({
           }
           return
         }
-      } else if (event.key === ' ' && !askMode && !driveMode) {
+      } else if (event.key === ' ' && !askMode && !driveMode && !featuresMode) {
         const checkedPath = selectedFolder ? folderSelectedPaths[0] : selectedPaths[0]
         const candidate = hoveredFilePathRef.current ?? checkedPath ?? null
         if (candidate) {
@@ -3275,7 +3280,8 @@ export function Home({
       return parent?.folders.some((f) => f.path === p) ?? false
     })
 
-  const activeNav = !selectedFolder && !driveMode ? (askMode ? 'ask' : view) : null
+  const activeNav =
+    !selectedFolder && !driveMode ? (askMode ? 'ask' : featuresMode ? 'features' : view) : null
 
   const onSidebarResizeStart = (e: ReactPointerEvent<HTMLDivElement>) => {
     const startX = e.clientX
@@ -3355,6 +3361,7 @@ export function Home({
             onClick={() => {
               setAskMode(true)
               setDriveMode(false)
+              setFeaturesMode(false)
               setSelectedFolder(null)
               setSelected(new Set())
               setRowMenu(null)
@@ -3375,6 +3382,55 @@ export function Home({
               />
             </svg>
             <span className="nav-label">{t('navAsk')}</span>
+          </button>
+          <button
+            className={`nav-item nav-item-features${activeNav === 'features' ? ' active' : ''}`}
+            aria-current={activeNav === 'features' ? 'page' : undefined}
+            data-testid="home-features-nav"
+            onClick={() => {
+              setFeaturesMode(true)
+              setAskMode(false)
+              setDriveMode(false)
+              setSelectedFolder(null)
+              setSelected(new Set())
+              setRowMenu(null)
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect
+                x="2"
+                y="2"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <rect
+                x="9"
+                y="2"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <rect
+                x="2"
+                y="9"
+                width="5"
+                height="5"
+                rx="1.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <path
+                d="M11.5 8.6l.55 1.35 1.35.55-1.35.55-.55 1.35-.55-1.35-1.35-.55 1.35-.55z"
+                fill="currentColor"
+              />
+            </svg>
+            <span className="nav-label">특화 기능</span>
+            <span className="nav-count nav-new">NEW</span>
           </button>
           {/* decision 0032: the agent opens a window of its own, hence the mark on the right */}
           {window.aiOfficeAgent && !isWebEdition() ? (
@@ -3416,6 +3472,7 @@ export function Home({
               onClick={() => {
                 setDriveMode(true)
                 setAskMode(false)
+                setFeaturesMode(false)
                 setSelectedFolder(null)
                 setSelected(new Set())
                 setRowMenu(null)
@@ -3453,6 +3510,8 @@ export function Home({
           onOpenPath={(path) => void window.aiOffice.openPath(path)}
           onGoToRecents={() => changeView('recent')}
         />
+      ) : featuresMode ? (
+        <SpecialFeatures variant="desktop" />
       ) : (
         renderGlobalContent()
       )}
