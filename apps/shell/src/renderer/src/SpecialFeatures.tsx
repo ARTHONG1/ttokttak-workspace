@@ -1,14 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
+import type { AiStreamChunk } from '@genoffice/ai-provider'
 import './special-features.css'
 
 /**
  * 특화 기능: tools made for Korean school and public-office work, opened from the
- * home sidebar (desktop) or the trial home (web). The list holds one feature so far,
- * 품의서 생성, whose page is laid out but not wired to a generator yet.
+ * home sidebar (desktop) or the trial home (web).
+ *
+ * 품의서 생성 follows the author's ACE AI 품의서 생성기 (studio--studio-8741441457-2b5fc):
+ * the same inputs (품의 제목 of 5+ characters, 장바구니 내용 of 10+), the same 기안문
+ * template, the same 품의 목록 columns, CSV columns and temporary-storage record. The AI
+ * only reads the cart into rows; the 기안문 is built from the rows, so its amount is
+ * always the table's total.
  */
 
-type FeatureId = 'approval'
+type FeatureId = 'proposal'
 
 interface Feature {
   id: FeatureId
@@ -19,47 +25,208 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    id: 'approval',
+    id: 'proposal',
     title: '품의서 생성',
-    summary: '목적·내용·예산만 적으면 결재 양식에 맞춘 품의서 초안을 한글 문서로 만들어요.',
-    tags: ['HWP', '결재 문서', '예산 자동 합계'],
+    summary: '장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.',
+    tags: ['AI', '기안문', '품의 목록', 'CSV'],
   },
 ]
 
-interface BudgetRow {
-  key: number
-  item: string
-  qty: string
-  price: string
+/** one row of the 품의 목록; the field names are the original's estimateData */
+interface EstimateRow {
+  description: string
+  specification: string
+  unit: string
+  quantity: number
+  unitPrice: number
+  amount: number
 }
 
-interface ApprovalForm {
+/** what 임시 저장 keeps, under the original's key and shape */
+interface StoredWork {
   title: string
-  dept: string
-  author: string
-  date: string
-  purpose: string
-  detail: string
-  account: string
-  basis: string
+  shoppingCartText: string
+  estimateData: EstimateRow[]
+  generatedArticle: string | null
 }
 
-const today = (): string => {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
-}
-
-const num = (s: string): number => {
-  const n = Number(s.replace(/[^\d.]/g, ''))
-  return Number.isFinite(n) ? n : 0
-}
+const STORAGE_KEY = 'procurement_temp_storage'
 
 const won = (n: number): string => n.toLocaleString('ko-KR')
 
-function dotDate(iso: string): string {
-  const [y, m, d] = iso.split('-')
-  return y && m && d ? y + '. ' + Number(m) + '. ' + Number(d) + '.' : ''
+const toNumber = (v: unknown): number => {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+  const n = parseFloat(String(v ?? '').replace(/[^\d.-]/g, ''))
+  return Number.isFinite(n) ? n : 0
+}
+
+const totalOf = (rows: EstimateRow[]): number => rows.reduce((sum, r) => sum + r.amount, 0)
+
+const itemLine = (rows: EstimateRow[]): string =>
+  rows.length === 0
+    ? ''
+    : rows[0].description + (rows.length > 1 ? ' 외 ' + (rows.length - 1) + '종' : '')
+
+/** the original's 기안문, line for line */
+export function proposalArticle(title: string, rows: EstimateRow[]): string {
+  return [
+    '1. 관련: ',
+    '2. ' + title + '을(를) 구입하고자 합니다.',
+    '   가. 품목: ' + itemLine(rows),
+    '   나. 금액: 금' + won(totalOf(rows)) + '원',
+    '   다. 구입처: 온라인 쇼핑몰',
+    '   .  끝.',
+  ].join('\n')
+}
+
+/** after a table edit the 기안문 keeps the user's wording; only its item and amount lines follow */
+function syncArticle(article: string, rows: EstimateRow[]): string {
+  return article
+    .replace(/나\. 금액: 금[\d,]+원/g, '나. 금액: 금' + won(totalOf(rows)) + '원')
+    .replace(/가\. 품목: [^\n]*/g, '가. 품목: ' + itemLine(rows))
+}
+
+const PARSE_SYSTEM = [
+  '너는 학교 물품 구입 품의를 돕는 도우미다. 사용자가 붙여 넣은 쇼핑몰 장바구니 내용에서 구입할 품목을 뽑아 JSON 하나로만 답한다.',
+  '형식: {"items":[{"description":"품명","specification":"규격","unit":"단위","quantity":수량,"unitPrice":단가}]}',
+  '규칙:',
+  '- description은 브랜드와 상품 이름이다. 옵션·색상·용량·묶음 수 같은 사양은 specification에 넣는다.',
+  '- unit은 개, 세트, 박스, 권, 팩처럼 세는 말이다. 알 수 없으면 개로 쓴다.',
+  '- quantity와 unitPrice는 쉼표 없는 숫자다. unitPrice는 한 단위의 가격(원)이다. 장바구니에 줄 합계만 있으면 수량으로 나눈다.',
+  '- 할인가와 정가가 함께 있으면 실제로 내는 가격을 쓴다.',
+  '- 배송비가 따로 적혀 있으면 description을 배송비, quantity를 1로 한 줄을 더한다.',
+  '- 품목이 아닌 안내 문구, 쿠폰, 적립금 줄은 넣지 않는다.',
+  '설명, 머리말, 코드 블록 없이 JSON만 출력한다.',
+].join('\n')
+
+function parseRows(reply: string): EstimateRow[] {
+  const start = reply.indexOf('{')
+  const end = reply.lastIndexOf('}')
+  if (start < 0 || end <= start) throw new Error('AI 답에서 품목을 찾지 못했어요. 다시 해 주세요.')
+  let data: unknown
+  try {
+    data = JSON.parse(reply.slice(start, end + 1))
+  } catch {
+    throw new Error('AI 답을 읽지 못했어요. 다시 해 주세요.')
+  }
+  const items = (data as { items?: unknown }).items
+  if (!Array.isArray(items)) throw new Error('AI 답에서 품목을 찾지 못했어요. 다시 해 주세요.')
+  const rows = items
+    .map((raw): EstimateRow => {
+      const item = (raw ?? {}) as Record<string, unknown>
+      const quantity = toNumber(item.quantity) || 1
+      const unitPrice = toNumber(item.unitPrice)
+      return {
+        description: String(item.description ?? '').trim(),
+        specification: String(item.specification ?? '').trim(),
+        unit: String(item.unit ?? '').trim() || '개',
+        quantity,
+        unitPrice,
+        amount: quantity * unitPrice,
+      }
+    })
+    .filter((row) => row.description)
+  if (rows.length === 0) throw new Error('장바구니에서 품목을 찾지 못했어요. 내용을 확인해 주세요.')
+  return rows
+}
+
+function aiErrorText(chunk: AiStreamChunk): string {
+  switch (chunk.errorCode) {
+    case 'not-connected':
+      return 'AI가 연결되어 있지 않아요. 설정에서 AI를 먼저 연결해 주세요.'
+    case 'metered-not-accepted':
+      return '고른 AI는 쓴 만큼 요금이 나가요. 설정에서 사용을 허락한 뒤 다시 해 주세요.'
+    case 'not-installed':
+    case 'signed-out':
+    case 'needs-update':
+      return 'AI 구독 프로그램 연결을 확인해 주세요.'
+    case 'rate-limit':
+    case 'free-limit':
+    case 'overloaded':
+    case 'headless-limit':
+      return 'AI 사용량이 많아요. 잠시 뒤 다시 해 주세요.'
+    case 'timeout':
+      return 'AI 답이 늦어요. 다시 해 주세요.'
+    case 'network':
+      return '인터넷 연결을 확인해 주세요.'
+    default:
+      return chunk.error || '품의서를 만들지 못했어요. 다시 해 주세요.'
+  }
+}
+
+/** one model turn over the shell's shared ai:stream handler, as the AI 질문 panel uses it */
+async function askAi(system: string, text: string): Promise<string> {
+  const api = window.aiOffice
+  if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
+  const settings = await api.aiGetSettings()
+  const requestId = crypto.randomUUID()
+  return new Promise<string>((resolve, reject) => {
+    let out = ''
+    const off = api.onAiStream((chunk) => {
+      if (chunk.requestId !== requestId) return
+      if (chunk.type === 'delta' && chunk.text) out += chunk.text
+      else if (chunk.type === 'done') {
+        off()
+        resolve(out)
+      } else if (chunk.type === 'error') {
+        off()
+        reject(new Error(aiErrorText(chunk)))
+      }
+    })
+    api
+      .aiStream({
+        requestId,
+        settings,
+        system,
+        messages: [{ role: 'user', text }],
+        tools: [],
+        maxTokens: 4000,
+      })
+      .catch((error: unknown) => {
+        off()
+        reject(error instanceof Error ? error : new Error(String(error)))
+      })
+  })
+}
+
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // a frame without clipboard permission (the web edition): the old way still works
+    const area = document.createElement('textarea')
+    area.value = text
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.appendChild(area)
+    area.select()
+    document.execCommand('copy')
+    area.remove()
+  }
+}
+
+function downloadCsv(title: string, rows: EstimateRow[]): void {
+  const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"'
+  const lines = ['내용,규격,단위,수량,예상단가,예상금액']
+  for (const r of rows) {
+    lines.push(
+      [
+        quote(r.description),
+        quote(r.specification),
+        quote(r.unit),
+        r.quantity,
+        r.unitPrice,
+        r.amount,
+      ].join(','),
+    )
+  }
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = (title.trim() || 'estimate') + '.csv'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function Back({ onClick, label }: { onClick: () => void; label: string }): ReactElement {
@@ -79,7 +246,7 @@ function Back({ onClick, label }: { onClick: () => void; label: string }): React
   )
 }
 
-function ApprovalIcon(): ReactElement {
+function ProposalIcon(): ReactElement {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="4.5" y="3" width="15" height="18" rx="2.2" stroke="currentColor" strokeWidth="1.7" />
@@ -113,7 +280,7 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
           >
             <span className="sf-card-top">
               <span className="sf-card-icon">
-                <ApprovalIcon />
+                <ProposalIcon />
               </span>
               <span className="sf-badge">NEW</span>
             </span>
@@ -154,40 +321,111 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
   )
 }
 
-function ApprovalDraft({ onBack }: { onBack: () => void }): ReactElement {
-  const [form, setForm] = useState<ApprovalForm>({
-    title: '',
-    dept: '',
-    author: '',
-    date: today(),
-    purpose: '',
-    detail: '',
-    account: '',
-    basis: '',
-  })
-  const [rows, setRows] = useState<BudgetRow[]>([
-    { key: 1, item: '', qty: '', price: '' },
-    { key: 2, item: '', qty: '', price: '' },
-  ])
-  const [nextKey, setNextKey] = useState(3)
+function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
+  const [title, setTitle] = useState('')
+  const [cart, setCart] = useState('')
+  const [errors, setErrors] = useState<{ title?: string; cart?: string }>({})
+  const [busy, setBusy] = useState(false)
+  const [article, setArticle] = useState<string | null>(null)
+  const [rows, setRows] = useState<EstimateRow[]>([])
+  const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const resultRef = useRef<HTMLElement>(null)
 
-  const set = (field: keyof ApprovalForm) => (value: string) =>
-    setForm((prev) => ({ ...prev, [field]: value }))
-  const setRow = (key: number, field: 'item' | 'qty' | 'price', value: string) =>
-    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, [field]: value } : r)))
-  const addRow = () => {
-    setRows((prev) => [...prev, { key: nextKey, item: '', qty: '', price: '' }])
-    setNextKey((k) => k + 1)
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
+
+  const say = (text: string, bad = false) => {
+    clearTimeout(toastTimer.current)
+    setToast({ text, bad })
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
   }
-  const removeRow = (key: number) => setRows((prev) => prev.filter((r) => r.key !== key))
 
-  const total = useMemo(() => rows.reduce((sum, r) => sum + num(r.qty) * num(r.price), 0), [rows])
-  const filledRows = rows.filter((r) => r.item.trim() || num(r.qty) || num(r.price))
-  const steps = [
-    { label: '기본 정보', done: !!(form.title.trim() && form.dept.trim() && form.author.trim()) },
-    { label: '품의 내용', done: !!(form.purpose.trim() && form.detail.trim()) },
-    { label: '소요 예산', done: filledRows.length > 0 },
-  ]
+  const total = totalOf(rows)
+
+  const changeRows = (next: EstimateRow[]) => {
+    setRows(next)
+    setArticle((prev) => (prev === null ? prev : syncArticle(prev, next)))
+  }
+
+  const editRow = (index: number, field: keyof EstimateRow, value: string) => {
+    const next = rows.map((r, i) => {
+      if (i !== index) return r
+      const row = { ...r }
+      if (field === 'quantity' || field === 'unitPrice' || field === 'amount')
+        row[field] = toNumber(value)
+      else row[field] = value
+      if (field === 'quantity' || field === 'unitPrice') row.amount = row.quantity * row.unitPrice
+      return row
+    })
+    changeRows(next)
+  }
+
+  const generate = async () => {
+    const found: { title?: string; cart?: string } = {}
+    if (title.trim().length < 5) found.title = '품의 제목을 5자 이상 입력해주세요.'
+    if (cart.trim().length < 10) found.cart = '장바구니 내용을 10자 이상 입력해주세요.'
+    setErrors(found)
+    if (found.title || found.cart) return
+    setBusy(true)
+    try {
+      const parsed = parseRows(await askAi(PARSE_SYSTEM, cart))
+      setRows(parsed)
+      setArticle(proposalArticle(title.trim(), parsed))
+      say('품의서를 만들었어요.')
+      requestAnimationFrame(() =>
+        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      )
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error), true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const saveTemp = () => {
+    const work: StoredWork = {
+      title,
+      shoppingCartText: cart,
+      estimateData: rows,
+      generatedArticle: article,
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(work))
+      say('지금 작업 내용을 이 브라우저에 저장했어요.')
+    } catch {
+      say('저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.', true)
+    }
+  }
+
+  const loadTemp = () => {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return say('저장된 작업이 없어요.', true)
+    try {
+      const work = JSON.parse(raw) as Partial<StoredWork>
+      setTitle(work.title || '')
+      setCart(work.shoppingCartText || '')
+      setRows(Array.isArray(work.estimateData) ? work.estimateData : [])
+      setArticle(work.generatedArticle || null)
+      setErrors({})
+      say('저장된 작업을 불러왔어요.')
+    } catch {
+      say('저장된 작업을 읽지 못했어요.', true)
+    }
+  }
+
+  const deleteTemp = () => {
+    localStorage.removeItem(STORAGE_KEY)
+    say('저장된 작업을 지웠어요.')
+  }
+
+  const resetAll = () => {
+    setTitle('')
+    setCart('')
+    setRows([])
+    setArticle(null)
+    setErrors({})
+    say('모든 내용을 지웠어요.')
+  }
 
   return (
     <div className="sf-page">
@@ -196,274 +434,250 @@ function ApprovalDraft({ onBack }: { onBack: () => void }): ReactElement {
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">
-          <ApprovalIcon />
+          <ProposalIcon />
         </span>
         <div>
           <h1>품의서 생성</h1>
-          <p>왼쪽에 내용을 적으면 오른쪽에 품의서 모양이 바로 보여요.</p>
+          <p>장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.</p>
         </div>
       </header>
 
-      <ol className="sf-steps" aria-label="작성 단계">
-        {steps.map((s, i) => (
-          <li key={s.label} className={s.done ? 'is-done' : undefined}>
-            <b>{s.done ? '✓' : i + 1}</b>
-            {s.label}
-          </li>
-        ))}
-      </ol>
-
-      <div className="sf-split">
-        <form className="sf-form" onSubmit={(e) => e.preventDefault()}>
-          <section className="sf-box">
-            <h2>기본 정보</h2>
-            <label className="sf-field sf-wide">
-              <span>제목</span>
-              <input
-                value={form.title}
-                onChange={(e) => set('title')(e.target.value)}
-                placeholder="예: 2027학년도 과학실 실험 기자재 구입"
-              />
-            </label>
-            <div className="sf-row3">
-              <label className="sf-field">
-                <span>기안 부서</span>
-                <input
-                  value={form.dept}
-                  onChange={(e) => set('dept')(e.target.value)}
-                  placeholder="예: 과학정보부"
-                />
-              </label>
-              <label className="sf-field">
-                <span>기안자</span>
-                <input
-                  value={form.author}
-                  onChange={(e) => set('author')(e.target.value)}
-                  placeholder="이름"
-                />
-              </label>
-              <label className="sf-field">
-                <span>기안일</span>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => set('date')(e.target.value)}
-                />
-              </label>
+      <div className="sf-stack">
+        <section className="sf-box sf-store" aria-labelledby="sf-store-title">
+          <div className="sf-box-head">
+            <div>
+              <h2 id="sf-store-title">임시 저장소</h2>
+              <p className="sf-box-sub">
+                작업 내용을 이 브라우저에 잠시 저장하거나 불러올 수 있어요.
+              </p>
             </div>
-          </section>
+            <div className="sf-btn-row">
+              <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
+                임시 저장
+              </button>
+              <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
+                불러오기
+              </button>
+              <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
+                삭제하기
+              </button>
+            </div>
+          </div>
+          <p className="sf-note">
+            저장한 내용은 외부 서버로 보내지 않고 이 브라우저의 저장소(Local Storage)에만 둡니다.
+          </p>
+        </section>
 
-          <section className="sf-box">
-            <h2>품의 내용</h2>
-            <label className="sf-field">
-              <span>목적</span>
-              <textarea
-                rows={2}
-                value={form.purpose}
-                onChange={(e) => set('purpose')(e.target.value)}
-                placeholder="무엇을 왜 하려는지 한두 문장으로 적어 주세요"
-              />
-            </label>
-            <label className="sf-field">
-              <span>세부 내용</span>
-              <textarea
-                rows={4}
-                value={form.detail}
-                onChange={(e) => set('detail')(e.target.value)}
-                placeholder={
-                  '줄마다 한 항목씩 적으면 번호가 붙어요\n예: 구입 시기 2027. 3. 중\n예: 사용 장소 본관 2층 과학실'
-                }
-              />
-            </label>
-            <label className="sf-field">
-              <span>
-                관련 근거 <em>선택</em>
-              </span>
-              <input
-                value={form.basis}
-                onChange={(e) => set('basis')(e.target.value)}
-                placeholder="예: 2027학년도 학교 교육과정 운영 계획"
-              />
-            </label>
-          </section>
+        <section className="sf-box" aria-labelledby="sf-input-title">
+          <div className="sf-box-head">
+            <div>
+              <h2 id="sf-input-title">정보 입력</h2>
+              <p className="sf-box-sub">품의서를 만들 내용을 입력하세요.</p>
+            </div>
+            <button type="button" className="sf-text-btn" onClick={resetAll}>
+              전체 초기화
+            </button>
+          </div>
+          <label className="sf-field">
+            <span>품의 제목</span>
+            <input
+              data-testid="proposal-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="예: 2025학년도 4학년 학급 용품 구입"
+              aria-invalid={errors.title ? true : undefined}
+            />
+            {errors.title && <em className="sf-error">{errors.title}</em>}
+          </label>
+          <label className="sf-field">
+            <span>장바구니 내용</span>
+            <textarea
+              data-testid="proposal-cart"
+              rows={8}
+              value={cart}
+              onChange={(e) => setCart(e.target.value)}
+              placeholder={
+                '쇼핑몰 장바구니 화면의 글을 그대로 복사해 붙여 넣으세요.\n예: 모나미 153 볼펜 흑색 12개입 3,600원 수량 5'
+              }
+              aria-invalid={errors.cart ? true : undefined}
+            />
+            {errors.cart && <em className="sf-error">{errors.cart}</em>}
+          </label>
+          <button
+            type="button"
+            className="sf-primary sf-wide-btn"
+            data-testid="proposal-generate"
+            disabled={busy}
+            onClick={() => void generate()}
+          >
+            {busy ? (
+              <>
+                <span className="sf-spinner" aria-hidden="true" />
+                품의서를 만드는 중…
+              </>
+            ) : (
+              '품의서 생성하기'
+            )}
+          </button>
+        </section>
 
-          <section className="sf-box">
+        {article !== null && (
+          <section
+            className="sf-box"
+            aria-labelledby="sf-result-title"
+            ref={resultRef}
+            data-testid="proposal-result"
+          >
             <div className="sf-box-head">
-              <h2>소요 예산</h2>
-              <label className="sf-inline">
-                <span>예산 과목</span>
-                <input
-                  value={form.account}
-                  onChange={(e) => set('account')(e.target.value)}
-                  placeholder="예: 교육활동 > 교과활동"
-                />
-              </label>
-            </div>
-            <div className="sf-budget" role="table" aria-label="예산 항목">
-              <div className="sf-budget-row sf-budget-headrow" role="row">
-                <span role="columnheader">품목</span>
-                <span role="columnheader">수량</span>
-                <span role="columnheader">단가(원)</span>
-                <span role="columnheader">금액(원)</span>
-                <span aria-hidden="true" />
+              <div>
+                <h2 id="sf-result-title">생성 결과</h2>
+                <p className="sf-box-sub">내용을 확인하고 고친 뒤 복사하거나 저장하세요.</p>
               </div>
-              {rows.map((r) => (
-                <div key={r.key} className="sf-budget-row" role="row">
-                  <input
-                    aria-label="품목"
-                    value={r.item}
-                    onChange={(e) => setRow(r.key, 'item', e.target.value)}
-                    placeholder="품목 이름"
-                  />
-                  <input
-                    aria-label="수량"
-                    inputMode="numeric"
-                    value={r.qty}
-                    onChange={(e) => setRow(r.key, 'qty', e.target.value)}
-                    placeholder="0"
-                  />
-                  <input
-                    aria-label="단가"
-                    inputMode="numeric"
-                    value={r.price}
-                    onChange={(e) => setRow(r.key, 'price', e.target.value)}
-                    placeholder="0"
-                  />
-                  <span className="sf-amount" role="cell">
-                    {won(num(r.qty) * num(r.price))}
-                  </span>
-                  <button
-                    type="button"
-                    className="sf-icon-btn"
-                    aria-label="이 줄 지우기"
-                    disabled={rows.length <= 1}
-                    onClick={() => removeRow(r.key)}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <div className="sf-budget-foot">
-                <button type="button" className="sf-ghost" onClick={addRow}>
-                  + 줄 추가
+              <div className="sf-btn-row">
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  onClick={() =>
+                    void copyText(article.trim()).then(() => say('기안문을 복사했어요.'))
+                  }
+                >
+                  본문 복사
                 </button>
-                <span>
-                  합계 <strong>{won(total)}</strong>원
-                </span>
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  disabled={rows.length === 0}
+                  onClick={() => downloadCsv(title, rows)}
+                >
+                  CSV 저장
+                </button>
               </div>
+            </div>
+
+            <label className="sf-field">
+              <span>품의 기안문</span>
+              <textarea
+                data-testid="proposal-article"
+                className="sf-article"
+                rows={7}
+                value={article}
+                onChange={(e) => setArticle(e.target.value)}
+              />
+            </label>
+
+            <div className="sf-field">
+              <span>품의 목록</span>
+              <div className="sf-table-wrap">
+                <table className="sf-table" data-testid="proposal-table">
+                  <thead>
+                    <tr>
+                      <th className="sf-col-no">#</th>
+                      <th>품명</th>
+                      <th>규격</th>
+                      <th className="sf-col-unit">단위</th>
+                      <th className="sf-col-qty">수량</th>
+                      <th className="sf-col-num">단가</th>
+                      <th className="sf-col-num">금액</th>
+                      <th className="sf-col-del" aria-label="지우기" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, i) => (
+                      <tr key={i}>
+                        <td className="sf-col-no">{i + 1}</td>
+                        <td>
+                          <input
+                            aria-label={i + 1 + '번 품명'}
+                            value={r.description}
+                            onChange={(e) => editRow(i, 'description', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={i + 1 + '번 규격'}
+                            value={r.specification}
+                            onChange={(e) => editRow(i, 'specification', e.target.value)}
+                          />
+                        </td>
+                        <td className="sf-col-unit">
+                          <input
+                            aria-label={i + 1 + '번 단위'}
+                            value={r.unit}
+                            onChange={(e) => editRow(i, 'unit', e.target.value)}
+                          />
+                        </td>
+                        <td className="sf-col-qty">
+                          <input
+                            aria-label={i + 1 + '번 수량'}
+                            inputMode="numeric"
+                            value={String(r.quantity)}
+                            onChange={(e) => editRow(i, 'quantity', e.target.value)}
+                          />
+                        </td>
+                        <td className="sf-col-num">
+                          <input
+                            aria-label={i + 1 + '번 단가'}
+                            inputMode="numeric"
+                            value={String(r.unitPrice)}
+                            onChange={(e) => editRow(i, 'unitPrice', e.target.value)}
+                          />
+                        </td>
+                        <td className="sf-col-num sf-amount">{won(r.amount)}</td>
+                        <td className="sf-col-del">
+                          <button
+                            type="button"
+                            className="sf-icon-btn"
+                            aria-label={i + 1 + '번 줄 지우기'}
+                            onClick={() => changeRows(rows.filter((_, j) => j !== i))}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={6} className="sf-sum-label">
+                        합계
+                      </td>
+                      <td className="sf-col-num sf-sum" data-testid="proposal-total">
+                        {won(total)}
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <button
+                type="button"
+                className="sf-ghost"
+                onClick={() =>
+                  changeRows([
+                    ...rows,
+                    {
+                      description: '',
+                      specification: '',
+                      unit: '개',
+                      quantity: 1,
+                      unitPrice: 0,
+                      amount: 0,
+                    },
+                  ])
+                }
+              >
+                + 줄 추가
+              </button>
             </div>
           </section>
-        </form>
-
-        <aside className="sf-preview" aria-label="품의서 미리보기">
-          <div className="sf-preview-label">
-            <span>미리보기</span>
-            <span className="sf-tag">HWP</span>
-          </div>
-          <div className="sf-paper">
-            <div className="sf-paper-top">
-              <h3>품 의 서</h3>
-              <table className="sf-sign">
-                <tbody>
-                  <tr>
-                    <th rowSpan={2}>결재</th>
-                    <td>담당</td>
-                    <td>검토</td>
-                    <td>결재</td>
-                  </tr>
-                  <tr>
-                    <td className="sf-sign-box">{form.author}</td>
-                    <td className="sf-sign-box" />
-                    <td className="sf-sign-box" />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <table className="sf-meta">
-              <tbody>
-                <tr>
-                  <th>기안 부서</th>
-                  <td>{form.dept || '—'}</td>
-                  <th>기안일</th>
-                  <td>{dotDate(form.date) || '—'}</td>
-                </tr>
-                <tr>
-                  <th>제목</th>
-                  <td colSpan={3} className="sf-meta-title">
-                    {form.title || '제목을 적어 주세요'}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div className="sf-paper-body">
-              {form.basis.trim() && (
-                <p>
-                  <b>1. 관련:</b> {form.basis}
-                </p>
-              )}
-              <p>
-                <b>{form.basis.trim() ? '2.' : '1.'} 목적:</b>{' '}
-                {form.purpose || <span className="sf-dim">목적이 여기에 들어가요.</span>}
-              </p>
-              <p>
-                <b>{form.basis.trim() ? '3.' : '2.'} 세부 내용</b>
-              </p>
-              {form.detail.trim() ? (
-                <ol className="sf-paper-list">
-                  {form.detail
-                    .split('\n')
-                    .map((line) => line.trim())
-                    .filter(Boolean)
-                    .map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                </ol>
-              ) : (
-                <p className="sf-dim sf-indent">줄마다 적은 항목이 번호를 달고 들어가요.</p>
-              )}
-              <p>
-                <b>{form.basis.trim() ? '4.' : '3.'} 소요 예산:</b> 금 {won(total)}원
-                {form.account.trim() ? ' (' + form.account + ')' : ''}
-              </p>
-              <table className="sf-paper-table">
-                <thead>
-                  <tr>
-                    <th>품목</th>
-                    <th>수량</th>
-                    <th>단가</th>
-                    <th>금액</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(filledRows.length ? filledRows : rows.slice(0, 1)).map((r) => (
-                    <tr key={r.key}>
-                      <td>{r.item || '—'}</td>
-                      <td>{num(r.qty) ? won(num(r.qty)) : ''}</td>
-                      <td>{num(r.price) ? won(num(r.price)) : ''}</td>
-                      <td>{won(num(r.qty) * num(r.price))}</td>
-                    </tr>
-                  ))}
-                  <tr className="sf-paper-sum">
-                    <td colSpan={3}>합계</td>
-                    <td>{won(total)}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="sf-paper-end">위와 같이 품의하오니 결재하여 주시기 바랍니다.</p>
-            </div>
-          </div>
-        </aside>
+        )}
       </div>
 
-      <div className="sf-actions">
-        <p>문서 만들기는 곧 연결돼요. 지금은 화면만 미리 볼 수 있어요.</p>
-        <button type="button" className="sf-secondary" disabled title="준비 중">
-          AI로 문장 다듬기
-        </button>
-        <button type="button" className="sf-primary" disabled title="준비 중">
-          한글 문서로 만들기
-        </button>
-      </div>
+      {toast && (
+        <div className={'sf-toast' + (toast.bad ? ' is-bad' : '')} role="status">
+          {toast.text}
+        </div>
+      )}
     </div>
   )
 }
@@ -485,8 +699,8 @@ export function SpecialFeatures({
           <Back onClick={onExit} label="처음 화면" />
         </div>
       )}
-      {open === 'approval' ? (
-        <ApprovalDraft onBack={() => setOpen(null)} />
+      {open === 'proposal' ? (
+        <ProposalGenerator onBack={() => setOpen(null)} />
       ) : (
         <FeatureList onOpen={setOpen} />
       )}
