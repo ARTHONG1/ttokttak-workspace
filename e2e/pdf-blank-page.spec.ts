@@ -21,6 +21,15 @@ test('Insert blank page is a pending, undoable edit that lands in the file on sa
   try {
     const page = await waitForPageWithUrl(launched.app, '://pdf/')
     const thumbs = page.locator('.pdf-thumb')
+    // Thumbnail DOM only exists while this persisted panel is open. Test the
+    // closed preference explicitly so suite ordering cannot affect this check.
+    await page.locator('.ribbon-tab', { hasText: /^View$/ }).click()
+    const thumbnailsButton = page.getByRole('button', { name: 'Thumbnails', exact: true }).first()
+    if (await thumbnailsButton.evaluate((el) => el.classList.contains('active'))) {
+      await thumbnailsButton.click()
+    }
+    await expect(thumbs).toHaveCount(0)
+    await thumbnailsButton.click()
     await expect(thumbs).toHaveCount(2)
 
     await thumbs.first().locator('.pdf-thumb-box').click({ button: 'right' })

@@ -14,7 +14,7 @@ test('multiple pages grid follows clicks and the caret, collapses at 100%', asyn
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'docs-multipage-view' })
   const { app, page } = launched
   try {
-    await page.locator('.quick-card').first().click()
+    await page.locator('.quick-card[data-ext="docx"]').click()
     const editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

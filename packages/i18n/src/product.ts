@@ -28,7 +28,7 @@ export const PRODUCT_NAME = 'HangulAIWorkbench'
 
 /** Languages that show a localized product name instead of PRODUCT_NAME. */
 const LOCALIZED_PRODUCT_NAMES: Readonly<Record<string, string>> = {
-  ko: '한글 AI 워크벤치',
+  ko: '똑딱작업실',
 }
 
 /** The product name as shown in a UI language (a Lang or a raw locale tag). */
@@ -78,11 +78,28 @@ function insideFileName(before: string, after: string): boolean {
 export function brandText(text: string, lang: string | null | undefined): string {
   if (!text.includes(UPSTREAM_PRODUCT_NAME)) return text
   const localized = productName(lang)
-  return text.replace(NAME_TOKEN, (match: string, offset: number) => {
+  const branded = text.replace(NAME_TOKEN, (match: string, offset: number) => {
     if (match !== UPSTREAM_PRODUCT_NAME) return UPSTREAM_PRODUCT_NAME
     const before = text.charAt(offset - 1)
     const after = text.slice(offset + match.length, offset + match.length + 2)
     if (insideIdentifier(before, after)) return match
     return insideFileName(before, after) ? PRODUCT_NAME : localized
+  })
+  return fixKoreanParticles(branded, localized)
+}
+
+/**
+ * Korean dictionaries attach particles to "GenOffice" as if the name ended in a
+ * vowel (GenOffice가/는/를/와). A localized name ending in a final consonant
+ * takes the other form (똑딱작업실이/은/을/과); 로 already suits a final ㄹ.
+ */
+function fixKoreanParticles(text: string, name: string): string {
+  const last = name.charCodeAt(name.length - 1)
+  if (last < 0xac00 || last > 0xd7a3 || (last - 0xac00) % 28 === 0) return text
+  const swap: Record<string, string> = { 가: '이', 는: '은', 를: '을', 와: '과' }
+  return text.split(name).reduce((out, part, i) => {
+    if (i === 0) return part
+    const first = part.charAt(0)
+    return out + name + (swap[first] ? swap[first] + part.slice(1) : part)
   })
 }

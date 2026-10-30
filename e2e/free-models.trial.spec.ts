@@ -46,7 +46,7 @@ test(`free model trial: ${MODEL}`, async () => {
   const report: Record<string, unknown> = { model: MODEL, pass: false }
   let editor: Page | undefined
   try {
-    await page.locator('.quick-card').first().click()
+    await page.locator('.quick-card[data-ext="docx"]').click()
     editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

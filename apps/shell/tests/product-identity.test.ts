@@ -80,7 +80,7 @@ describe('one product name', () => {
 
   it('shows the Korean name only in the Korean UI', () => {
     for (const lang of LANGS) {
-      expect(productName(lang), lang).toBe(lang === 'ko' ? '한글 AI 워크벤치' : PRODUCT_NAME)
+      expect(productName(lang), lang).toBe(lang === 'ko' ? '똑딱작업실' : PRODUCT_NAME)
     }
   })
 })
@@ -107,13 +107,13 @@ describe('the name in the shell UI', () => {
         expect(t(lang, key), `${lang}.${key}`).not.toContain(UPSTREAM_PRODUCT_NAME)
       }
     }
-    expect(t('ko', 'onbTitle1')).toContain('한글 AI 워크벤치')
+    expect(t('ko', 'onbTitle1')).toContain('똑딱작업실')
     expect(t('en', 'onbTitle1')).toContain('HangulAIWorkbench')
   })
 
   it('names the product in the manual: titles and bodies', async () => {
     expect(topicTitle('install', 'en')).toBe('Installing HangulAIWorkbench')
-    expect(topicTitle('install', 'ko')).toBe('한글 AI 워크벤치 설치')
+    expect(topicTitle('install', 'ko')).toBe('똑딱작업실 설치')
     for (const lang of ['en', 'ko', 'ja'] as const) {
       for (const topic of HELP_TOPICS) {
         expect(topicTitle(topic.id, lang)).not.toContain(UPSTREAM_PRODUCT_NAME)
@@ -123,7 +123,7 @@ describe('the name in the shell UI', () => {
     }
     // file names keep the Latin name whatever the language
     expect(await helpBody('install', 'ko')).toContain('HangulAIWorkbench-Setup-<version>.exe')
-    expect(await helpBody('getting-started', 'ko')).toContain('한글 AI 워크벤치')
+    expect(await helpBody('getting-started', 'ko')).toContain('똑딱작업실')
   })
 })
 

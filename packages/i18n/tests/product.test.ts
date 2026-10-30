@@ -17,15 +17,15 @@ import {
 
 describe('productName', () => {
   it('is the Korean name in the Korean UI and the Latin name everywhere else', () => {
-    expect(productName('ko')).toBe('한글 AI 워크벤치')
+    expect(productName('ko')).toBe('똑딱작업실')
     for (const lang of LANGS) {
       if (lang !== 'ko') expect(productName(lang), lang).toBe('HangulAIWorkbench')
     }
   })
 
   it('accepts raw locale tags and falls back to the Latin name', () => {
-    expect(productName('ko-KR')).toBe('한글 AI 워크벤치')
-    expect(productName('KO_kr')).toBe('한글 AI 워크벤치')
+    expect(productName('ko-KR')).toBe('똑딱작업실')
+    expect(productName('KO_kr')).toBe('똑딱작업실')
     expect(productName('en-US')).toBe('HangulAIWorkbench')
     expect(productName('')).toBe('HangulAIWorkbench')
     expect(productName(undefined)).toBe('HangulAIWorkbench')
@@ -42,7 +42,7 @@ describe('brandText', () => {
   it('swaps the upstream name for the product name of the language', () => {
     expect(brandText('Welcome to GenOffice', 'en')).toBe('Welcome to HangulAIWorkbench')
     expect(brandText('GenOffice에 오신 것을 환영합니다', 'ko')).toBe(
-      '한글 AI 워크벤치에 오신 것을 환영합니다',
+      '똑딱작업실에 오신 것을 환영합니다',
     )
     expect(brandText('GenOffice のインストール', 'ja')).toBe('HangulAIWorkbench のインストール')
     expect(brandText('关于 GenOffice', 'zh')).toBe('关于 HangulAIWorkbench')
@@ -52,7 +52,7 @@ describe('brandText', () => {
     expect(brandText('GenOffice Docs and GenOffice Sheets', 'en')).toBe(
       'HangulAIWorkbench Docs and HangulAIWorkbench Sheets',
     )
-    expect(brandText('GenOffice Markdown', 'ko')).toBe('한글 AI 워크벤치 Markdown')
+    expect(brandText('GenOffice Markdown', 'ko')).toBe('똑딱작업실 Markdown')
     expect(brandText('das GenOffice-Fenster', 'de')).toBe('das HangulAIWorkbench-Fenster')
     expect(brandText("GenOffice's window", 'en')).toBe("HangulAIWorkbench's window")
   })
@@ -78,7 +78,7 @@ describe('brandText', () => {
       'HangulAIWorkbench is based on GenOffice.',
     )
     expect(brandText('GenOffice는 {{GenOffice}}를 바탕으로 합니다.', 'ko')).toBe(
-      '한글 AI 워크벤치는 GenOffice를 바탕으로 합니다.',
+      '똑딱작업실은 GenOffice를 바탕으로 합니다.',
     )
   })
 
@@ -90,8 +90,8 @@ describe('brandText', () => {
     expect(brandText('%APPDATA%\\GenOffice', 'ko')).toBe('%APPDATA%\\HangulAIWorkbench')
     expect(brandText('GenOffice.exe를 실행합니다', 'ko')).toBe('HangulAIWorkbench.exe를 실행합니다')
     // a sentence-ending period is not a file extension
-    expect(brandText('이것은 GenOffice. 다음 문장', 'ko')).toBe('이것은 한글 AI 워크벤치. 다음 문장')
-    expect(brandText('GenOffice.', 'ko')).toBe('한글 AI 워크벤치.')
+    expect(brandText('이것은 GenOffice. 다음 문장', 'ko')).toBe('이것은 똑딱작업실. 다음 문장')
+    expect(brandText('GenOffice.', 'ko')).toBe('똑딱작업실.')
   })
 
   it('leaves identifiers that merely contain the name alone', () => {
@@ -120,7 +120,7 @@ describe('createI18n product name', () => {
   it('renders the product name of the requested language', () => {
     expect(t('en', 'about')).toBe('About HangulAIWorkbench')
     expect(t('zh', 'about')).toBe('关于 HangulAIWorkbench')
-    expect(t('ko', 'about')).toBe('한글 AI 워크벤치 정보')
+    expect(t('ko', 'about')).toBe('똑딱작업실 정보')
   })
 
   it('keeps the upstream name in the acknowledgement', () => {
@@ -133,7 +133,7 @@ describe('createI18n product name', () => {
     expect(t('en', 'open', { name: 'GenOffice notes.docx' })).toBe(
       'Open GenOffice notes.docx in HangulAIWorkbench',
     )
-    expect(t('ko', 'open', { name: 'GenOffice.docx' })).toBe('한글 AI 워크벤치에서 GenOffice.docx 열기')
+    expect(t('ko', 'open', { name: 'GenOffice.docx' })).toBe('똑딱작업실에서 GenOffice.docx 열기')
   })
 
   it('brands the fallback text of a language without its own entry', () => {

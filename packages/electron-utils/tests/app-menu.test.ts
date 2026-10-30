@@ -272,12 +272,12 @@ describe('checkUpdatesMenuItem / manual update check wiring', () => {
 
   it('names the product in the About entry of every language', () => {
     expect(en.about).toBe('About HangulAIWorkbench')
-    expect(appMenuLabels('ko').about).toBe('한글 AI 워크벤치 정보')
+    expect(appMenuLabels('ko').about).toBe('똑딱작업실 정보')
     expect(appMenuLabels('ja').about).toBe('HangulAIWorkbench について')
     for (const lang of [...LANGS, 'vi']) {
       const about = appMenuLabels(lang).about
       expect(about, lang).not.toContain('GenOffice')
-      expect(about, lang).toContain(lang === 'ko' ? '한글 AI 워크벤치' : 'HangulAIWorkbench')
+      expect(about, lang).toContain(lang === 'ko' ? '똑딱작업실' : 'HangulAIWorkbench')
     }
   })
 
@@ -294,8 +294,8 @@ describe('checkUpdatesMenuItem / manual update check wiring', () => {
       setUiLang('ko')
       await about.click()
       expect(electronMock.showMessageBox.mock.calls.at(-1)![0]).toMatchObject({
-        title: '한글 AI 워크벤치',
-        message: '한글 AI 워크벤치',
+        title: '똑딱작업실',
+        message: '똑딱작업실',
       })
     } finally {
       setUiLang('zh')

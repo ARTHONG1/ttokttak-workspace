@@ -41,7 +41,7 @@ describe('feedback strings', () => {
   })
 
   it('never types the product name', () => {
-    expect(JSON.stringify(FEEDBACK_STRINGS)).not.toMatch(/HangulAIWorkbench|한글 AI 워크벤치|GenOffice/)
+    expect(JSON.stringify(FEEDBACK_STRINGS)).not.toMatch(/HangulAIWorkbench|똑딱작업실|GenOffice/)
   })
 })
 

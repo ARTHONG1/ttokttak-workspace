@@ -18,7 +18,6 @@ import { join } from 'node:path'
 import { closeAndSaveVideo, launchShell, waitForPageWithUrl } from './helpers'
 
 const FIXTURES = join(__dirname, '..', 'apps', 'hwp', 'tests', 'fixtures')
-const MEMO_HWP = join(FIXTURES, 'memo.hwp')
 
 interface TabsApiOnWindow {
   aiOfficeTabs: {
@@ -32,7 +31,7 @@ interface TabsApiOnWindow {
 async function scratchCopy(name: string): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'genoffice-hwp-memo-'))
   const file = join(dir, name)
-  await copyFile(MEMO_HWP, file)
+  await copyFile(join(FIXTURES, name), file)
   return file
 }
 
@@ -133,53 +132,57 @@ async function answerSaveAs(app: ElectronApplication, target: string): Promise<v
   }, target)
 }
 
-test('lists the three memos and keeps an edited body through save and reopen', async () => {
-  const file = await scratchCopy('memo.hwp')
-  const launched = await launchShell({
-    onboardingSeen: true,
-    lang: 'ko',
-    openFile: file,
-    videoDir: 'hwp-memos-list',
-    recordVideo: false,
+for (const format of ['hwp', 'hwpx'] as const) {
+  test(`lists three memos and keeps an edited body through ${format.toUpperCase()} save and reopen`, async () => {
+    const file = await scratchCopy(`memo.${format}`)
+    const launched = await launchShell({
+      onboardingSeen: true,
+      lang: 'ko',
+      openFile: file,
+      videoDir: `hwp-memos-list-${format}`,
+      recordVideo: false,
+    })
+    try {
+      let page = await hwpPage(launched.app)
+      await openMemoPanel(page)
+      await expect(memoCards(page)).toHaveCount(3)
+      await expect(page.locator('.memo-card-author')).toContainText([
+        '상자작성자',
+        '본문작성자',
+        '표작성자',
+      ])
+      await expect(page.locator('.memo-card-text')).toContainText([
+        '글상자 메모입니다.',
+        '본문 메모입니다.',
+        '표 칸 메모입니다.',
+      ])
+
+      const body = memoCards(page).filter({ hasText: '본문 메모입니다.' })
+      await body.getByRole('button', { name: '고치기' }).click()
+      await expect(page.locator('.memo-modal-title')).toHaveText('메모 고치기')
+      await expect(page.locator('.memo-textarea')).toHaveValue(
+        '본문 메모입니다.\n두 번째 문단입니다.',
+      )
+      await page.locator('.memo-textarea').fill('고친 본문 메모입니다.')
+      await page.locator('.memo-modal .memo-button-primary').click()
+      await expect(page.locator('.memo-modal')).toHaveCount(0)
+      await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
+
+      const before = (await stat(file)).mtimeMs
+      await fileCommand(page, 'save')
+      await expect
+        .poll(async () => (await stat(file)).mtimeMs, { timeout: 20_000 })
+        .not.toBe(before)
+
+      page = await reopenFile(launched.app, file)
+      await openMemoPanel(page)
+      await expect(memoCards(page)).toHaveCount(3)
+      await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
+    } finally {
+      await closeAndSaveVideo(launched, `hwp-memos-list-${format}`)
+    }
   })
-  try {
-    let page = await hwpPage(launched.app)
-    await openMemoPanel(page)
-    await expect(memoCards(page)).toHaveCount(3)
-    await expect(page.locator('.memo-card-author')).toContainText([
-      '상자작성자',
-      '본문작성자',
-      '표작성자',
-    ])
-    await expect(page.locator('.memo-card-text')).toContainText([
-      '글상자 메모입니다.',
-      '본문 메모입니다.',
-      '표 칸 메모입니다.',
-    ])
-
-    const body = memoCards(page).filter({ hasText: '본문 메모입니다.' })
-    await body.getByRole('button', { name: '고치기' }).click()
-    await expect(page.locator('.memo-modal-title')).toHaveText('메모 고치기')
-    await expect(page.locator('.memo-textarea')).toHaveValue(
-      '본문 메모입니다.\n두 번째 문단입니다.',
-    )
-    await page.locator('.memo-textarea').fill('고친 본문 메모입니다.')
-    await page.locator('.memo-modal .memo-button-primary').click()
-    await expect(page.locator('.memo-modal')).toHaveCount(0)
-    await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
-
-    const before = (await stat(file)).mtimeMs
-    await fileCommand(page, 'save')
-    await expect.poll(async () => (await stat(file)).mtimeMs, { timeout: 20_000 }).not.toBe(before)
-
-    page = await reopenFile(launched.app, file)
-    await openMemoPanel(page)
-    await expect(memoCards(page)).toHaveCount(3)
-    await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
-  } finally {
-    await closeAndSaveVideo(launched, 'hwp-memos-list')
-  }
-})
+}
 
 test('adds a memo, then holds save and tab close until its editor is closed', async () => {
   const file = await scratchCopy('memo.hwp')

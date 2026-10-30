@@ -59,7 +59,7 @@ describe('the editor dictionaries', () => {
     for (const lang of LANGS) {
       for (const key of keys) {
         expect(strings[lang][key], `${lang}.${key}`).not.toMatch(/xmind/i)
-        expect(strings[lang][key], `${lang}.${key}`).not.toMatch(/HangulAIWorkbench|한글 AI 워크벤치/)
+        expect(strings[lang][key], `${lang}.${key}`).not.toMatch(/HangulAIWorkbench|똑딱작업실/)
       }
     }
   })

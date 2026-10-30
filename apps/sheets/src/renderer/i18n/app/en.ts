@@ -617,7 +617,7 @@ export const en = {
     'Formulas recalculated from your edits — {count} kept cached values (functions the fallback engine lacks).',
   appRecalcDone: 'Formulas recalculated from your edits ({count} cells, engine fallback).',
   appIndexing: 'Indexing {name}: {rows} rows ready.',
-  appStreamingRows: 'Streaming {name}: {rows} rows available.',
+  appStreamingRows: 'Loading the sheet: {rows} rows ready.',
   appLoadRangeFailed: 'Unable to load the visible range.',
   appFullyLoaded: 'Workbook fully loaded — formulas recalculate live, rows/columns editable.',
   appRangeMustBeVector: '{range} must be a single row or a single column of cells.',

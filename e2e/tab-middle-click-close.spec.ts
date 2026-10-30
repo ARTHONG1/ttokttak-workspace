@@ -6,7 +6,7 @@ test.describe('tab bar', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'tab-middle-click-close' })
     const { app, page } = launched
     try {
-      await page.locator('.quick-card').first().click()
+      await page.locator('.quick-card[data-ext="docx"]').click()
       const editorTab = page.locator('.tab-bar .tab-item:not(.tab-home)')
       await expect(editorTab).toHaveCount(1)
       await waitForPageWithUrl(app, '://docs/')

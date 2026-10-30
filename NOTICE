@@ -3,11 +3,13 @@ Copyright 2026 Mainfunc, Inc.
 
 This product includes software developed at Mainfunc, Inc.
 
-한글 AI 워크벤치 (HangulAIWorkbench)
+똑딱작업실 (HangulAIWorkbench)
 This program is a modified version of IeumOffice 0.12.5
 (https://github.com/pblsketch/openoffice, commit 4e4e9cc), itself based on
 GenOffice. Both are licensed under the Apache License 2.0. Modifications:
-product identity (name, app id, data folder) and disabled update feed.
+product identity (name, app id, data folder), disabled update feed, a web
+trial edition that runs the desktop app in a browser (web/), a trial home
+screen, and Gemini 4 Argon as the default Gemini model.
 
 Bundled third-party components are listed in THIRD-PARTY-NOTICES.txt, which
 tools/gen-third-party-notices.mjs generates at packaging time. It is not

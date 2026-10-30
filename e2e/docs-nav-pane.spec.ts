@@ -15,7 +15,7 @@ test('headings tree, search results, pages and heading edits', async () => {
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'docs-nav-pane' })
   const { app, page } = launched
   try {
-    await page.locator('.quick-card').first().click()
+    await page.locator('.quick-card[data-ext="docx"]').click()
     const editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

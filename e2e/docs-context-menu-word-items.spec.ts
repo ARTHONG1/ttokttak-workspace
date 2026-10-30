@@ -53,7 +53,7 @@ test('hyperlink context menu items and Review comment navigation', async () => {
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'ctx-word-items' })
   const { app, page } = launched
   try {
-    await page.locator('.quick-card').first().click()
+    await page.locator('.quick-card[data-ext="docx"]').click()
     const editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

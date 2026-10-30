@@ -16,7 +16,7 @@ test('the View tab toggles the sheet grid direction', async () => {
   test.setTimeout(240_000)
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'sheets-rtl-toggle' })
   try {
-    await launched.page.locator('.quick-card').nth(1).click()
+    await launched.page.locator('.quick-card[data-ext="xlsx"]').click()
     const page = await waitForPageWithUrl(launched.app, '://sheets/')
     // the sheet tab strip is DOM; a blank workbook's sheet must exist before
     // the toggle has an active worksheet to flip

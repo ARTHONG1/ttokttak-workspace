@@ -282,6 +282,7 @@ import {
   requestHwpPrint,
   requestHwpSave,
   setHwpFileSavedHook,
+  setHwpxSaveDefault,
 } from '../../../hwp/src/main/hwp-main'
 import {
   configureHtmlRuntime,
@@ -1589,8 +1590,8 @@ const tMain = createI18n({
     menuSplitRight: '오른쪽에 나누기',
     menuSplitDown: '아래에 나누기',
     menuUnsplit: '나누기 풀기',
-    menuNewDoc: 'AI Docs',
-    menuNewSheet: 'AI Sheets',
+    menuNewDoc: '워드 문서',
+    menuNewSheet: '엑셀 표',
     untitledSheet: '제목 없는 스프레드시트',
     untitledDoc: '제목 없는 문서',
     untitledDeck: '제목 없는 프레젠테이션',
@@ -1599,12 +1600,12 @@ const tMain = createI18n({
     untitledMindmap: '제목 없는 마인드맵',
     untitledHwp: '제목 없는 한글 문서',
     untitledPdf: '제목 없는 PDF',
-    menuNewSlide: 'AI Slides',
-    menuNewMarkdown: 'AI Markdown',
-    menuNewHtml: 'AI HTML',
+    menuNewSlide: 'PPT 발표 자료',
+    menuNewMarkdown: '마크다운',
+    menuNewHtml: 'HTML 페이지',
     menuNewMindmap: '마인드맵',
-    menuNewHwp: 'AI 한글',
-    menuNewPdf: 'AI PDF',
+    menuNewHwp: '한글 문서',
+    menuNewPdf: 'PDF 문서',
     menuExportPdf: 'PDF로 내보내기…',
     menuExportImages: '이미지로 내보내기…',
     menuExportHtml: '단일 파일 HTML로 내보내기…',
@@ -4888,6 +4889,8 @@ function createShellWindow(): void {
   })
   // the mind map's toolbar button "make another document from this one"
   setMindmapMakeFromDocumentHook((wc) => makeFromDocument(wc))
+  // HWP documents are saved as HWPX: an opened .hwp is saved beside it as .hwpx (user decision 2026-10-30)
+  setHwpxSaveDefault(true)
   // hwp Save As lands on a new path
   setHwpFileSavedHook((wc, path) => {
     manager.setTabFileFor(wc.id, path)

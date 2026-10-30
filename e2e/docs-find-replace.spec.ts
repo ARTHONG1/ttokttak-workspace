@@ -13,7 +13,7 @@ test('find, wildcards, regex replace, go to and the Editing group', async () => 
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'docs-find-replace' })
   const { app, page } = launched
   try {
-    await page.locator('.quick-card').first().click()
+    await page.locator('.quick-card[data-ext="docx"]').click()
     const editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

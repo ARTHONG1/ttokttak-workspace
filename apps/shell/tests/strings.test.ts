@@ -65,7 +65,9 @@ describe('home-screen locale tables', () => {
    * locale cannot quietly reintroduce a second name — the quick-create card,
    * the File > New menu and a new tab's title all have to agree.
    */
+  // Korean names each card by the kind of document it makes (한글 문서, 워드 문서,
+  // 마크다운 …); apps/shell/src/main/index.ts gives File > New the same names.
   it.each(locales)('locale %s calls the app AI Markdown on the quick-create card', (locale) => {
-    expect(strings[locale].newMarkdown).toBe('AI Markdown')
+    expect(strings[locale].newMarkdown).toBe(locale === 'ko' ? '마크다운' : 'AI Markdown')
   })
 })

@@ -341,7 +341,7 @@ describe('welcome copy', () => {
 
   it.each(LANGS)('names every document kind and both subscriptions in %s', (lang) => {
     const body = strings[lang].onbWelcomeBody
-    for (const name of ['Word', 'Excel', 'PowerPoint', 'PDF', 'Markdown', 'HTML']) {
+    for (const name of ['HWP', 'Word', 'Excel', 'PowerPoint', 'PDF', 'Markdown', 'HTML']) {
       expect(body, name).toContain(name)
     }
     expect(body).toContain('Claude')

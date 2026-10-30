@@ -3,6 +3,8 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { SplitViewState } from '../../shared/split-view-api'
 import { useFirstConnectionNotice } from './FirstConnectionNotice'
 import { Home } from './Home'
+import { TrialHome } from './TrialHome'
+import { isWebEdition } from './edition'
 import { Onboarding } from './Onboarding'
 import {
   SPLIT_EVEN_RATIO,
@@ -204,13 +206,18 @@ export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
       {/* docs/sheets tabs render as WebContentsView children of this window, positioned
        * by the main process to cover this area — only Home paints its own content here. */}
       <div className="app-frame-content" style={{ visibility: homeActive ? 'visible' : 'hidden' }}>
-        <Home
-          connection={connection}
-          aiSettings={notice.settings}
-          // during the onboarding its connect step shows the notice instead
-          noticeDue={notice.due && !showOnboarding}
-          onNoticeAcknowledge={notice.acknowledge}
-        />
+        {/* the web trial gets a home of its own: open a document, ask the AI */}
+        {isWebEdition() ? (
+          <TrialHome />
+        ) : (
+          <Home
+            connection={connection}
+            aiSettings={notice.settings}
+            // during the onboarding its connect step shows the notice instead
+            noticeDue={notice.due && !showOnboarding}
+            onNoticeAcknowledge={notice.acknowledge}
+          />
+        )}
       </div>
       {/* editor WebContentsViews paint above ALL shell DOM, so the overlay only
        * renders while the home tab is active — it comes back when home does */}

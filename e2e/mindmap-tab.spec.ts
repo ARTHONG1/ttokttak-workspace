@@ -508,8 +508,8 @@ test.describe('mind map editor in the shell', () => {
         },
         join(outside, 'picked.xmind'),
       )
-      // the browse card (the only one with a tip); the PDF tools card comes after it
-      await page.locator('.quick-card[data-tip]').click()
+      // the upload zone opens the browse dialog
+      await page.locator('[data-testid="home-upload-document"]').click()
       await expect(tab.locator('.tab-title')).toHaveText('picked.xmind')
       const asked = (
         await app.evaluate(

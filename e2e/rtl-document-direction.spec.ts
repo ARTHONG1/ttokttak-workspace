@@ -12,15 +12,15 @@ import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
  * `ctx.direction`.
  */
 
-/** The Home screen's new-document cards, in the order the shell lists them. */
+/** The Home screen's new-document cards, by the extension each one creates. */
 const APPS = [
-  { name: 'docs', card: 0, url: '://docs/', host: '.editor-scroll' },
-  { name: 'sheets', card: 1, url: '://sheets/', host: '#univer-container' },
-  { name: 'slides', card: 2, url: '://slides/', host: '.stage-wrap' },
-  { name: 'markdown', card: 3, url: '://markdown/', host: '.editor-scroll' },
-  { name: 'html', card: 4, url: '://html/', host: '.preview-stage' },
-  { name: 'mindmap', card: 5, url: '://mindmap/', host: '.mm-card' },
-  { name: 'pdf', card: 7, url: '://pdf/', host: '.pdf-scroll' },
+  { name: 'docs', card: 'docx', url: '://docs/', host: '.editor-scroll' },
+  { name: 'sheets', card: 'xlsx', url: '://sheets/', host: '#univer-container' },
+  { name: 'slides', card: 'pptx', url: '://slides/', host: '.stage-wrap' },
+  { name: 'markdown', card: 'md', url: '://markdown/', host: '.editor-scroll' },
+  { name: 'html', card: 'html', url: '://html/', host: '.preview-stage' },
+  { name: 'mindmap', card: 'xmind', url: '://mindmap/', host: '.mm-card' },
+  { name: 'pdf', card: 'pdf', url: '://pdf/', host: '.pdf-scroll' },
 ] as const
 
 const directionOf = (page: Page, host: string) =>
@@ -48,7 +48,7 @@ for (const { name, card, url, host } of APPS) {
       videoDir: `rtl-${name}`,
     })
     try {
-      await launched.page.locator('.quick-card').nth(card).click()
+      await launched.page.locator(`.quick-card[data-ext="${card}"]`).click()
       const page = await waitForPageWithUrl(launched.app, url)
       const surface = page.locator(host).first()
       await expect(surface).toBeVisible({ timeout: 45_000 })

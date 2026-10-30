@@ -54,7 +54,7 @@ interface Geometry {
 const STUDIO_IFRAME = '.hwp-editor-host iframe'
 
 async function openHwp(app: ElectronApplication, page: Page): Promise<Page> {
-  await page.locator('.quick-card').nth(6).click()
+  await page.locator('.quick-card[data-ext="hwp"]').click()
   const hwp = await waitForPageWithUrl(app, '://hwp/')
   await hwp.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
   return hwp

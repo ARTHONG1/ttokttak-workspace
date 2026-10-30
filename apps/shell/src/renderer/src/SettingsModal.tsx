@@ -70,6 +70,7 @@ import {
   writeAiSettings,
 } from './settings-ai'
 import type { MediaSpecialChoice } from './settings-ai'
+import { isWebEdition } from './edition'
 import './settings.css'
 
 // ── Settings modal (opened from the account menu) ─────────
@@ -206,6 +207,18 @@ const SECTIONS: readonly SectionEntry[] = [
   { id: 'integrations', labelKey: 'setSecIntegrations' },
   { id: 'about', labelKey: 'setSecAbout' },
 ]
+
+/** the web edition has no subscription programs on the server and no local coding agents to link */
+const WEB_HIDDEN_SECTIONS: readonly SectionId[] = ['account', 'integrations']
+
+function visibleSections(): readonly SectionEntry[] {
+  return isWebEdition() ? SECTIONS.filter((s) => !WEB_HIDDEN_SECTIONS.includes(s.id)) : SECTIONS
+}
+
+function openableSection(id: SectionId | undefined): SectionId {
+  if (id && !(isWebEdition() && WEB_HIDDEN_SECTIONS.includes(id))) return id
+  return isWebEdition() ? 'aiModel' : 'account'
+}
 
 function SectionIcon({ id }: { id: SectionId }) {
   if (id === 'aiModel') {
@@ -1529,9 +1542,9 @@ export function SettingsModal({
   target,
 }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
-  const [section, setSection] = useState<SectionId>(target?.section ?? 'account')
+  const [section, setSection] = useState<SectionId>(openableSection(target?.section))
   useEffect(() => {
-    if (target) setSection(target.section)
+    if (target) setSection(openableSection(target.section))
   }, [target])
   const [theme, setTheme] = useState<UiTheme>('system')
   const [docTheme, setDocTheme] = useState<DocTheme>('follow')
@@ -1694,7 +1707,7 @@ export function SettingsModal({
         </div>
         <div className="set-body">
           <nav className="set-nav" aria-label={t('settings')}>
-            {SECTIONS.map((s) => (
+            {visibleSections().map((s) => (
               <button
                 key={s.id}
                 className={`set-nav-item${navSection === s.id ? ' active' : ''}`}

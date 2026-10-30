@@ -256,8 +256,8 @@ test.describe.serial('docs Word interaction smoke', () => {
     })
     app = launched.app
     const { page } = launched
-    await expect(page.locator('.quick-card').first()).toContainText('AI Docs')
-    await page.locator('.quick-card').first().click()
+    await expect(page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
+    await page.locator('.quick-card[data-ext="docx"]').click()
     editor = await waitForPageWithUrl(app, '://docs/')
     await editor.waitForFunction(
       () => Boolean((window as unknown as AidocsWindow).__aidocs?.editor),

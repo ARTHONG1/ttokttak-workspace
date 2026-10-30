@@ -30,6 +30,7 @@ import {
   withReadUrlGithubToken,
 } from './settings-ai'
 import type { AiSelectionChoice, SubscriptionAccountAction } from './settings-ai'
+import { isWebEdition } from './edition'
 
 // ── AI section of the settings dialog ─────────────────────
 // What everyone sees is the subscription connection: the two connect cards and
@@ -250,99 +251,110 @@ export function AiSection({
   const blocked = running ? aiConnectPromptView(running) : null
   const codexSelectable = choices.some((choice) => choice.provider === 'codex')
   const headlessOn = settings?.headlessSubscriptionEnabled === true
+  // the web edition's AI is preset on the server: no subscription programs to
+  // log into, and disconnecting its Gemini card would leave the session without AI
+  const web = isWebEdition()
 
   return (
     <>
       <h3 className="set-pane-title">{t('setSecAi')}</h3>
-      <h4 className="set-pane-subtitle set-sub-title">{t('setSubTitle')}</h4>
-      <div className="set-field-desc set-ai-note">{aiSubscriptionText(lang, 'connectBody')}</div>
-      <div className="set-sub-cards">
-        {AI_SUBSCRIPTION_PROVIDERS.map((provider) => (
-          <Fragment key={provider}>
-            <AiSubscriptionCard
-              status={statuses[provider]}
-              lang={lang}
-              disabled={busy}
-              onInstall={connection.install}
-              onUpdate={connection.update}
-              onCancelLogin={connection.cancelLogin}
-              onLogin={connection.login}
-              onRecheck={connection.recheck}
-              onAcceptMetered={acceptMetered}
-              onOpenInstallHelp={connection.openInstallHelp}
-              showAccount
-              onSwitchAccount={(id) => setAccountAsked({ provider: id, action: 'switch' })}
-              onLogout={(id) => setAccountAsked({ provider: id, action: 'logout' })}
-            />
-            {accountAsked?.provider === provider && (
-              <div
-                className="set-adv-confirm set-sub-confirm"
-                role="alertdialog"
-                aria-label={accountActionLabel}
-                data-provider={provider}
-              >
-                <div className="set-field-desc set-adv-warning">
-                  {t(
-                    accountAsked.action === 'logout'
-                      ? 'setSubLogoutConfirm'
-                      : 'setSubSwitchConfirm',
-                    { program: subscriptionProgramName(provider) },
-                  )}
-                </div>
-                <div className="set-btn-row">
-                  <button className="set-btn" onClick={() => setAccountAsked(null)}>
-                    {t('cancel')}
-                  </button>
-                  <button className="set-btn danger" onClick={runAccountAction}>
-                    {accountActionLabel}
-                  </button>
-                </div>
-              </div>
-            )}
-            {failed[provider] === 'logout' ? (
-              <div className="set-sub-failed" role="alert" data-provider={provider}>
-                <span>{t('setSubLogoutFailed')}</span>
-              </div>
-            ) : (
-              failed[provider] && (
-                <div className="set-sub-failed" role="alert" data-provider={provider}>
-                  <span>
-                    {t(
-                      failed[provider] === 'install' ? 'setSubInstallFailed' : 'setSubLoginFailed',
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    className="set-link"
-                    onClick={() => connection.openInstallHelp(provider)}
+      {!web && (
+        <>
+          <h4 className="set-pane-subtitle set-sub-title">{t('setSubTitle')}</h4>
+          <div className="set-field-desc set-ai-note">
+            {aiSubscriptionText(lang, 'connectBody')}
+          </div>
+          <div className="set-sub-cards">
+            {AI_SUBSCRIPTION_PROVIDERS.map((provider) => (
+              <Fragment key={provider}>
+                <AiSubscriptionCard
+                  status={statuses[provider]}
+                  lang={lang}
+                  disabled={busy}
+                  onInstall={connection.install}
+                  onUpdate={connection.update}
+                  onCancelLogin={connection.cancelLogin}
+                  onLogin={connection.login}
+                  onRecheck={connection.recheck}
+                  onAcceptMetered={acceptMetered}
+                  onOpenInstallHelp={connection.openInstallHelp}
+                  showAccount
+                  onSwitchAccount={(id) => setAccountAsked({ provider: id, action: 'switch' })}
+                  onLogout={(id) => setAccountAsked({ provider: id, action: 'logout' })}
+                />
+                {accountAsked?.provider === provider && (
+                  <div
+                    className="set-adv-confirm set-sub-confirm"
+                    role="alertdialog"
+                    aria-label={accountActionLabel}
+                    data-provider={provider}
                   >
-                    {aiSubscriptionText(lang, 'actionInstallHelp')}
-                  </button>
-                </div>
-              )
-            )}
-          </Fragment>
-        ))}
-      </div>
-      <h4 className="set-pane-subtitle set-sub-title free-ai-title" id="set-free-ai">
-        {t('setFreeTitle')}
-      </h4>
-      <div className="set-field-desc set-ai-note">{t('setFreeDesc')}</div>
-      <FreeAiCards t={t} />
+                    <div className="set-field-desc set-adv-warning">
+                      {t(
+                        accountAsked.action === 'logout'
+                          ? 'setSubLogoutConfirm'
+                          : 'setSubSwitchConfirm',
+                        { program: subscriptionProgramName(provider) },
+                      )}
+                    </div>
+                    <div className="set-btn-row">
+                      <button className="set-btn" onClick={() => setAccountAsked(null)}>
+                        {t('cancel')}
+                      </button>
+                      <button className="set-btn danger" onClick={runAccountAction}>
+                        {accountActionLabel}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {failed[provider] === 'logout' ? (
+                  <div className="set-sub-failed" role="alert" data-provider={provider}>
+                    <span>{t('setSubLogoutFailed')}</span>
+                  </div>
+                ) : (
+                  failed[provider] && (
+                    <div className="set-sub-failed" role="alert" data-provider={provider}>
+                      <span>
+                        {t(
+                          failed[provider] === 'install'
+                            ? 'setSubInstallFailed'
+                            : 'setSubLoginFailed',
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        className="set-link"
+                        onClick={() => connection.openInstallHelp(provider)}
+                      >
+                        {aiSubscriptionText(lang, 'actionInstallHelp')}
+                      </button>
+                    </div>
+                  )
+                )}
+              </Fragment>
+            ))}
+          </div>
+          <h4 className="set-pane-subtitle set-sub-title free-ai-title" id="set-free-ai">
+            {t('setFreeTitle')}
+          </h4>
+          <div className="set-field-desc set-ai-note">{t('setFreeDesc')}</div>
+          <FreeAiCards t={t} />
+        </>
+      )}
       {settings && (
         <>
           <div className="set-field">
             <div className="set-field-text">
               <div className="set-field-stack">
                 <label className="set-field-label">{t('setAiUse')}</label>
-                <div className="set-field-desc">{t('setAiUseDesc')}</div>
+                {!web && <div className="set-field-desc">{t('setAiUseDesc')}</div>}
               </div>
             </div>
             <Dropdown
               className="set-dd"
               value={aiSelectionValue(settings)}
               ariaLabel={t('setAiUse')}
-              options={choices.map((choice) => ({
+              options={(web ? choices.filter((c) => c.kind === 'key') : choices).map((choice) => ({
                 value: choice.value,
                 label: choiceLabel(choice, t, lang),
                 disabled: choice.unavailable,
@@ -363,18 +375,20 @@ export function AiSection({
           )}
           {running?.connected && running.metered && <AiMeteredWarning lang={lang} />}
           {codexSelectable && <AiCodexNotice lang={lang} />}
-          <div className="set-field">
-            <div className="set-field-text">
-              <label className="set-field-label">{t('setAiNotice')}</label>
+          {!web && (
+            <div className="set-field">
+              <div className="set-field-text">
+                <label className="set-field-label">{t('setAiNotice')}</label>
+              </div>
+              <button
+                className="set-btn"
+                aria-expanded={noticeOpen}
+                onClick={() => setNoticeOpen((open) => !open)}
+              >
+                {noticeOpen ? aiSubscriptionText(lang, 'actionDismiss') : t('setAiNoticeView')}
+              </button>
             </div>
-            <button
-              className="set-btn"
-              aria-expanded={noticeOpen}
-              onClick={() => setNoticeOpen((open) => !open)}
-            >
-              {noticeOpen ? aiSubscriptionText(lang, 'actionDismiss') : t('setAiNoticeView')}
-            </button>
-          </div>
+          )}
           {noticeOpen && (
             <AiFirstConnectionNotice lang={lang} codexKeepsHistory={CODEX_MAY_KEEP_HISTORY} />
           )}

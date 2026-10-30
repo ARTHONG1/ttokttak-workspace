@@ -102,7 +102,24 @@ test('Form Design authors text, checkbox and signature fields that Done writes a
     await page.mouse.click(box.x + 300, box.y + 320)
     await props.getByLabel('Date format').selectOption('dd/mm/yyyy')
     await props.getByRole('button', { name: 'Done', exact: true }).click()
-    await expect(layer.locator('.pdf-formdesign-field.is-existing')).toHaveCount(7)
+    // Done starts an async write followed by pdf.js annotation reconstruction.
+    // A pending twin may still appear after the save has reached disk; wait for
+    // the disk result and the rendered widget identities separately.
+    await expect
+      .poll(
+        async () => {
+          const stored = await PDFDocument.load(await readFile(pdfPath))
+          return stored
+            .getForm()
+            .getFields()
+            .reduce((count, field) => count + field.acroField.getWidgets().length, 0)
+        },
+        { timeout: 45_000 },
+      )
+      .toBe(7)
+    await expect(layer.locator('.pdf-formdesign-field.is-existing'), {
+      timeout: 45_000,
+    }).toHaveCount(7)
     // The reload lists the saved widgets before it drops their pending twins and resets undo
     await expect(layer.locator('.pdf-formdesign-field')).toHaveCount(7)
 

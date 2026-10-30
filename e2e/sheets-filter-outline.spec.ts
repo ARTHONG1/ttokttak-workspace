@@ -105,8 +105,8 @@ test.describe('sheets: no outline around a filtered range', () => {
     try {
       const { app, page } = launched
 
-      await expect(page.locator('.quick-card').nth(1)).toContainText('AI Sheets')
-      await page.locator('.quick-card').nth(1).click()
+      await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
+      await page.locator('.quick-card[data-ext="xlsx"]').click()
 
       const sheets = await waitForPageWithUrl(app, '://sheets/')
       await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {

@@ -12,7 +12,7 @@ import type { UpdateNoteBlock } from '../src/shared/update-api'
  */
 
 /** the real v0.12.1 release body (2026-10-17), trimmed to the shapes that matter */
-const RELEASE_0_12_1 = `<p>한글 AI 워크벤치 0.12.1입니다. 아직 <strong>베타</strong>입니다. 일부 기능은 바뀌거나 제대로 동작하지 않을 수 있습니다.</p>
+const RELEASE_0_12_1 = `<p>똑딱작업실 0.12.1입니다. 아직 <strong>베타</strong>입니다. 일부 기능은 바뀌거나 제대로 동작하지 않을 수 있습니다.</p>
 <h2>설치</h2>
 <p><strong>Windows</strong></p>
 <ol>
@@ -52,7 +52,7 @@ describe('normalizeReleaseNotes — real feed body', () => {
     expect(blocks[0]).toEqual({
       kind: 'paragraph',
       runs: [
-        { text: '한글 AI 워크벤치 0.12.1입니다. 아직 ' },
+        { text: '똑딱작업실 0.12.1입니다. 아직 ' },
         { text: '베타', strong: true },
         { text: '입니다. 일부 기능은 바뀌거나 제대로 동작하지 않을 수 있습니다.' },
       ],

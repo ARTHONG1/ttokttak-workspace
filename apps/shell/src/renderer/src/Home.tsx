@@ -63,6 +63,7 @@ import type { QuickLookPayload } from '../../shared/quick-look-api'
 import { agentText } from './i18n/strings-agent'
 import { DriveNavIcon, DrivePanel, useDriveState } from './DrivePanel'
 import { driveUiText } from './i18n/strings-drive'
+import { isWebEdition } from './edition'
 
 declare global {
   interface Window {
@@ -1850,7 +1851,15 @@ export function Home({
       ? { dir: selectedFolder }
       : undefined
 
+  // Hangul first: it is the format this product is about; the rest follow the
+  // office order people expect (word processor, spreadsheet, slides, PDF)
   const NEW_ITEMS = [
+    {
+      ext: 'hwp',
+      title: t('newHwp'),
+      sub: '.hwp',
+      action: () => window.aiOffice.newHwp(newFileOpts),
+    },
     {
       ext: 'docx',
       title: t('newDoc'),
@@ -1870,6 +1879,12 @@ export function Home({
       action: () => window.aiOffice.newSlide(newFileOpts),
     },
     {
+      ext: 'pdf',
+      title: t('newPdf'),
+      sub: '.pdf',
+      action: () => window.aiOffice.newPdf(newFileOpts),
+    },
+    {
       ext: 'md',
       title: t('newMarkdown'),
       sub: '.md',
@@ -1887,60 +1902,64 @@ export function Home({
       sub: '.xmind',
       action: () => window.aiOffice.newMindmap(newFileOpts),
     },
-    {
-      ext: 'hwp',
-      title: t('newHwp'),
-      sub: '.hwp',
-      action: () => window.aiOffice.newHwp(newFileOpts),
-    },
-    {
-      ext: 'pdf',
-      title: t('newPdf'),
-      sub: '.pdf',
-      action: () => window.aiOffice.newPdf(newFileOpts),
-    },
   ]
 
+  // Opening an existing file has one entry, on the home and folder views alike:
+  // a zone that takes a click (browse) or a dropped file
+  function renderUploadZone() {
+    return (
+      <button
+        type="button"
+        className="upload-zone"
+        data-testid="home-upload-document"
+        onClick={() => void window.aiOffice.browse()}
+      >
+        <span className="upload-zone-icon" aria-hidden="true">
+          <FolderIcon size={22} />
+        </span>
+        <span className="upload-zone-text">
+          <span className="upload-zone-title">{t('uploadDocTitle')}</span>
+          <span className="upload-zone-sub">{t('uploadDocSub')}</span>
+        </span>
+        <span className="upload-zone-action" aria-hidden="true">
+          {t('openLocal')}
+        </span>
+      </button>
+    )
+  }
+
+  // every editor has AI, so the cards carry no per-card AI mark
   function renderQuickCards() {
     return (
-      <div className="quick-cards">
-        {NEW_ITEMS.map((item) => (
-          <button key={item.ext} className="quick-card" onClick={() => void item.action()}>
-            <FileBadge ext={item.ext} size={30} />
-            <span className="quick-text">
-              <span className="quick-title-row">
+      <div className="quick-new">
+        <h2 className="section-label quick-new-label">{t('secNewDoc')}</h2>
+        <div className="quick-cards">
+          {NEW_ITEMS.map((item) => (
+            <button
+              key={item.ext}
+              className="quick-card"
+              data-ext={item.ext}
+              onClick={() => void item.action()}
+            >
+              <FileBadge ext={item.ext} size={26} />
+              <span className="quick-text">
                 <span className="quick-title">{item.title}</span>
-                <span className="ai-chip">AI</span>
+                <span className="quick-sub">{item.sub}</span>
               </span>
-              <span className="quick-sub">{item.sub}</span>
+            </button>
+          ))}
+          {/* decision 0030: PDF tasks without AI, in their own window */}
+          <button
+            className="quick-card quick-card-tool"
+            onClick={() => void window.aiOfficePdfToolsHome.open()}
+          >
+            <FileBadge ext="pdf" size={26} />
+            <span className="quick-text">
+              <span className="quick-title">{t('pdfToolsCard')}</span>
+              <span className="quick-sub">{t('pdfToolsCardSub')}</span>
             </span>
           </button>
-        ))}
-        <button
-          className="quick-card"
-          onClick={() => void window.aiOffice.browse()}
-          data-tip={OPEN_LOCAL_EXTENSIONS}
-        >
-          <span className="quick-folder">
-            <FolderIcon size={18} />
-          </span>
-          <span className="quick-text">
-            <span className="quick-title-row">
-              <span className="quick-title">{t('openLocal')}</span>
-            </span>
-            <span className="quick-sub">{OPEN_LOCAL_EXTENSIONS}</span>
-          </span>
-        </button>
-        {/* decision 0030: PDF tasks without AI, in their own window */}
-        <button className="quick-card" onClick={() => void window.aiOfficePdfToolsHome.open()}>
-          <FileBadge ext="pdf" size={30} />
-          <span className="quick-text">
-            <span className="quick-title-row">
-              <span className="quick-title">{t('pdfToolsCard')}</span>
-            </span>
-            <span className="quick-sub">{t('pdfToolsCardSub')}</span>
-          </span>
-        </button>
+        </div>
       </div>
     )
   }
@@ -2960,9 +2979,7 @@ export function Home({
     return (
       <main className="content">
         <section className="quick-start" aria-label={t('secQuickStart')}>
-          <div className="section-head">
-            <span className="section-label">{t('secQuickStart')}</span>
-          </div>
+          {renderUploadZone()}
           {renderQuickCards()}
         </section>
 
@@ -3088,20 +3105,7 @@ export function Home({
               <span className="hero-ask">{t(greetAskKey)}</span>
             </h1>
           </div>
-          <button
-            type="button"
-            className="upload-zone"
-            data-testid="home-upload-document"
-            onClick={() => void window.aiOffice.browse()}
-          >
-            <span className="upload-zone-icon" aria-hidden="true">
-              <FolderIcon size={22} />
-            </span>
-            <span className="upload-zone-text">
-              <span className="upload-zone-title">{t('uploadDocTitle')}</span>
-              <span className="upload-zone-sub">{t('uploadDocSub')}</span>
-            </span>
-          </button>
+          {renderUploadZone()}
           {renderQuickCards()}
         </section>
 
@@ -3154,17 +3158,21 @@ export function Home({
               </div>
             ) : (
               <div className="toolbar-filters">
-                <div className="filter-pills" role="tablist" aria-label={t('filterAria')}>
-                  {FILTERS.map((f) => (
-                    <button
-                      key={f.key}
-                      className={`filter-pill${filter === f.key ? ' active' : ''}`}
-                      onClick={() => changeFilter(f.key)}
-                    >
-                      {t(f.label)}
-                    </button>
-                  ))}
-                </div>
+                {/* nothing to narrow down in an empty list; a chosen filter stays
+                    visible so the way back to "All" never disappears */}
+                {(navCounts[view === 'starred' ? 'starred' : 'recent'] > 0 || filter !== 'all') && (
+                  <div className="filter-pills" role="tablist" aria-label={t('filterAria')}>
+                    {FILTERS.map((f) => (
+                      <button
+                        key={f.key}
+                        className={`filter-pill${filter === f.key ? ' active' : ''}`}
+                        onClick={() => changeFilter(f.key)}
+                      >
+                        {t(f.label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {view === 'starred' && starredGroups.length > 0 && (
                   // the group pills refine the Starred view further; the type
                   // pills above them keep working on the group-scoped list
@@ -3369,7 +3377,7 @@ export function Home({
             <span className="nav-label">{t('navAsk')}</span>
           </button>
           {/* decision 0032: the agent opens a window of its own, hence the mark on the right */}
-          {window.aiOfficeAgent ? (
+          {window.aiOfficeAgent && !isWebEdition() ? (
             <button
               className="nav-item"
               title={agentText(lang, 'homeCardSub')}
