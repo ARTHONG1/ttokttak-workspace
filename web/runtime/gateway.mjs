@@ -397,7 +397,9 @@ async function serveFile(res, file, { inject = false, req = null } = {}) {
   const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream'
   if (inject && type.startsWith('text/html')) body = Buffer.from(injectFrame(body))
   const immutable = HASHED.test(file) && !type.startsWith('text/html')
-  // app files are the same for every session: compress them once
+  // app files are the same for every session: compress them once. Only a hashed name keeps
+  // its content; index.html changes with every build, and a copy kept from before a rebuild
+  // points at assets the build has deleted, which leaves the window blank.
   const appFile = file.startsWith(APP_ROOT + path.sep) || file.startsWith(CLIENT + path.sep)
   sendBody(
     req,
@@ -405,7 +407,7 @@ async function serveFile(res, file, { inject = false, req = null } = {}) {
     200,
     body,
     { 'Content-Type': type },
-    { cacheKey: appFile ? file + (inject ? '#i' : '') : null, immutable },
+    { cacheKey: appFile && immutable ? file + (inject ? '#i' : '') : null, immutable },
   )
 }
 
