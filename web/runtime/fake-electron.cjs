@@ -1209,7 +1209,7 @@ class FakeApp extends EventEmitter {
     return process.env.WEB_APP_PATH
   }
   getVersion() {
-    return process.env.WEB_APP_VERSION || '0.12.5'
+    return process.env.WEB_APP_VERSION || '0.13.0'
   }
   getName() {
     return this.name
