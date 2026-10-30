@@ -130,30 +130,33 @@ describe('lostMemoCountOf', () => {
     expect(rawCount).not.toHaveBeenCalled()
   })
 
-  it('reports nothing when the written file cannot be read back', async () => {
+  it('blocks when the written file cannot be read back', async () => {
     memoList.mockRejectedValueOnce(new Error('broken zip'))
-    expect(await lostMemoCountOf({ saved: SAVED, original: null, memos: [snapshot('확인')] })).toBe(
-      0,
-    )
+    await expect(
+      lostMemoCountOf({ saved: SAVED, original: null, memos: [snapshot('확인')] }),
+    ).rejects.toThrow(/verify HWPX memos/)
     expect(rawCount).not.toHaveBeenCalled()
   })
 
-  it('reports nothing when the opened file cannot be read', async () => {
+  it('blocks when memo listing failed rather than presuming an empty list', async () => {
+    await expect(lostMemoCountOf({ saved: SAVED, original: null, memos: null })).rejects.toThrow(
+      /memo listing/,
+    )
+  })
+
+  it('blocks when the opened file cannot be read', async () => {
     memoList.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('broken zip'))
-    expect(await lostMemoCountOf({ saved: SAVED, original: ORIGINAL, memos: null })).toBe(0)
+    await expect(
+      lostMemoCountOf({ saved: SAVED, original: ORIGINAL, memos: null }),
+    ).rejects.toThrow(/verify HWPX memos/)
     expect(rawCount).toHaveBeenCalledOnce()
   })
 
-  it('keeps the model result when the saved raw count cannot be read', async () => {
+  it('blocks when raw memo counts are unreadable', async () => {
     models([], [])
     rawCount.mockReturnValueOnce(2).mockReturnValueOnce(null)
-    expect(await lostMemoCountOf({ saved: SAVED, original: ORIGINAL, memos: null })).toBe(0)
-
-    rawCount.mockReset()
-    models([], [listed('확인')])
-    rawCount.mockReturnValueOnce(1).mockReturnValueOnce(null)
-    expect(
-      await lostMemoCountOf({ saved: SAVED, original: ORIGINAL, memos: [snapshot('확인')] }),
-    ).toBe(1)
+    await expect(
+      lostMemoCountOf({ saved: SAVED, original: ORIGINAL, memos: null }),
+    ).rejects.toThrow(/verify HWPX memos/)
   })
 })

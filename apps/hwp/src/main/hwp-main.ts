@@ -27,6 +27,8 @@ import { tm } from './dialog-strings'
 import { fieldKindsOf } from './field-kinds'
 import type { FieldKinds } from './field-kinds'
 import { lostMemoCountOf } from './memos'
+import { saveIntegrityBlocker } from './save-integrity'
+import { validateHwpxBeforeOverwrite } from './hwpx-save-validation'
 import {
   hwpRecoveryBeforeSave,
   hwpRecoveryDontSave,
@@ -41,7 +43,7 @@ import {
 } from './recovery'
 import type { HwpRecoveryHost } from './recovery'
 import { applySaveFixes } from './save-fixes'
-import { backupPathFor, bytesMatchFormat, needsBackup, withFormatExtension } from './save-plan'
+import { backupPathFor, bytesMatchFormat, hwpxSiblingOf, needsBackup, withFormatExtension } from './save-plan'
 import { sectionTailsOf } from './section-tails'
 import type { SectionTails } from './section-tails'
 import { newTabsOf } from './tab-widths'
@@ -174,6 +176,16 @@ async function rememberDiskState(wcId: number, path: string): Promise<void> {
 
 /** Fired after a save lands on a NEW path (Save As); the shell syncs tab title, recents, projects */
 let fileSavedHook: ((wc: WebContents, path: string) => void) | null = null
+
+/**
+ * Save new and opened .hwp documents as HWPX (user decision 2026-10-30). Off, every save
+ * keeps the format it was opened in; the shell turns it on at startup.
+ */
+let hwpxByDefault = false
+
+export function setHwpxSaveDefault(on: boolean): void {
+  hwpxByDefault = on
+}
 
 export function setHwpFileSavedHook(hook: (wc: WebContents, path: string) => void): void {
   fileSavedHook = hook
@@ -575,14 +587,22 @@ function registerHwpIpc(): void {
     try {
       const current = savePathByWc.get(wcId)
       const currentFormat = current ? hwpFormatOfPath(current) : null
+      // With HWPX as the default (setHwpxSaveDefault, user decision 2026-10-30) a plain Save
+      // of an opened .hwp writes <name>.hwpx beside it and leaves the .hwp untouched. When a
+      // file of that name is already there, the Save dialog asks instead of replacing it.
+      const sibling =
+        hwpxByDefault && current && currentFormat === 'hwp' ? hwpxSiblingOf(current) : null
+      const siblingTaken = !!sibling && existsSync(sibling)
       let target: string
-      if (mode !== 'saveAs' && current && currentFormat) {
-        target = current
+      if (mode !== 'saveAs' && current && currentFormat && !siblingTaken) {
+        target = sibling ?? current
       } else {
         const win =
           BrowserWindow.fromWebContents(e.sender) ?? BrowserWindow.getFocusedWindow() ?? undefined
         const copy = untitledCopyByWc.get(wcId)
-        const fallback: HwpFormat = currentFormat ?? copy?.format ?? 'hwp'
+        const fallback: HwpFormat = hwpxByDefault
+          ? 'hwpx'
+          : (currentFormat ?? copy?.format ?? 'hwp')
         const hwp = { name: tm('filterHwp'), extensions: ['hwp'] }
         const hwpx = { name: tm('filterHwpx'), extensions: ['hwpx'] }
         const picked = await showSaveDialogWithMemory(dialog, win, {
@@ -590,12 +610,15 @@ function registerHwpIpc(): void {
           // a new document has no file yet: it is offered under the untitled name in the
           // default save folder, where the shell moves it into the folder it was made from
           defaultPath: current
-            ? join(dirname(current), basename(current))
+            ? join(dirname(current), basename(sibling ?? current))
             : // a copy restored without its file is offered where that file was
               (hwpRecoverySaveAsDefault(wcId) ??
-              join(configuredDefaultSaveDir(app), copy?.name ?? `${tm('untitledFile')}.hwp`)),
-          // one type per format, so the user can pick the other one; the document's
-          // own format comes first, so it is the dialog's default type
+              join(
+                configuredDefaultSaveDir(app),
+                copy?.name ?? `${tm('untitledFile')}.${hwpxByDefault ? 'hwpx' : 'hwp'}`,
+              )),
+          // one type per format, so the user can pick the other one; the default format
+          // comes first, so it is the dialog's default type
           filters: fallback === 'hwpx' ? [hwpx, hwp] : [hwp, hwpx],
         })
         if (picked.canceled || !picked.filePath) {
@@ -685,21 +708,31 @@ function registerHwpIpc(): void {
         // and the written bytes, and report only what is actually gone. This must finish
         // before the write so a verification failure cannot stop the save.
         let memosLost = 0
-        if (pending.format === 'hwpx' && saveOptions.memos !== undefined) {
+        let openedHwpx: Uint8Array | null = null
+        // Autosave omits the editor's memo snapshot; still compare the opened
+        // HWPX memo records to the exported bytes before replacing any file.
+        if (pending.format === 'hwpx') {
           const opened = savePathByWc.get(wcId)
-          let original: Uint8Array | null = null
           if (opened && hwpFormatOfPath(opened) === 'hwpx') {
             try {
-              original = await readFile(opened)
-            } catch {
-              original = null
+              openedHwpx = await readFile(opened)
+            } catch (error) {
+              throw new Error(`hwp: cannot verify opened HWPX before save (${String(error)})`)
             }
           }
           memosLost = await lostMemoCountOf({
             saved: bytes,
-            original,
-            memos: saveOptions.memos,
+            original: openedHwpx,
+            memos: saveOptions.memos ?? null,
           })
+        }
+        // The document is still untouched here. A warning after replacing it
+        // cannot repair missing master pages or reviewer memos.
+        const integrityError = saveIntegrityBlocker(fixed.tailsSkipped, memosLost)
+        if (integrityError) return done({ ok: false, error: integrityError })
+        if (pending.format === 'hwpx') {
+          const invalidHwpx = await validateHwpxBeforeOverwrite(bytes, openedHwpx)
+          if (invalidHwpx) return done({ ok: false, error: invalidHwpx })
         }
         const recoveryBefore = hwpRecoveryBeforeSave(wcId)
         const written = writtenByWc.get(wcId) ?? new Set<string>()

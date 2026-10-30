@@ -95,7 +95,9 @@ let docPath: string
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'genoffice-hwp-save-conflict-'))
-  docPath = join(dir, 'doc.hwpx')
+  // This suite isolates conflict handling. Use HWP's lightweight signature
+  // fixture; HWPX now requires a complete, CRC-valid ZIP before any commit.
+  docPath = join(dir, 'doc.hwp')
   showMessageBox.mockClear()
   showMessageBox.mockResolvedValue({ response: 1 })
   setOpenPathProbe(null)
@@ -106,8 +108,8 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-/** HWPX bytes enough for the container check (ZIP magic). */
-const SAVED_BYTES = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0x21, 0x22, 0x23])
+/** HWP signature bytes for the conflict-only tests, not a valid HWP document. */
+const SAVED_BYTES = Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x21])
 
 const call = <T>(channel: string, contents: FakeContents, ...args: unknown[]): T =>
   handlers.get(channel)!({ sender: contents }, ...args) as T

@@ -40,3 +40,8 @@ export function bytesMatchFormat(bytes: Uint8Array, format: HwpFormat): boolean 
 export function withFormatExtension(path: string, fallback: HwpFormat): string {
   return /\.(hwpx?)$/i.test(path) ? path : `${path}.${fallback}`
 }
+
+/** Where a plain Save of an opened .hwp goes: the same name as HWPX, beside the original. */
+export function hwpxSiblingOf(path: string): string {
+  return /\.hwp$/i.test(path) ? path.replace(/\.hwp$/i, '.hwpx') : path
+}

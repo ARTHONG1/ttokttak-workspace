@@ -50,13 +50,19 @@ export interface MemoLossInput {
  * unmodelled records fell. A save is not failed over this: the number is only a warning.
  *
  * Anchor coordinates are not compared: a legitimate edit can move them. Content, date,
- * author and place identify a memo. Re-reading the written bytes can fail; that reads as
- * "nothing lost" so a save is never reported as losing memos it cannot check.
+ * author and place identify a memo. A failed check must reject the save: treating
+ * unreadable output as zero missing memos could silently destroy reviewer notes.
  */
 export async function lostMemoCountOf(input: MemoLossInput): Promise<number> {
+  if (input.memos === null && !input.original) {
+    throw new Error('hwp: HWPX save blocked: memo listing could not be verified')
+  }
   if ((input.memos?.length ?? 0) === 0 && !input.original) return 0
   try {
     const originalRaw = input.original ? hwpxMemoCountOf(input.original) : null
+    if (input.original && originalRaw === null) {
+      throw new Error('unreadable original memo records')
+    }
     // the usual document: the editor listed none and the opened file held none, so there is
     // nothing to lose and no reason to read either file with the engine
     if (input.memos?.length === 0 && originalRaw === 0) return 0
@@ -65,13 +71,15 @@ export async function lostMemoCountOf(input: MemoLossInput): Promise<number> {
     if (!input.original) return modelLost
     const originalModel = await hwpMemosOf(input.original)
     const savedRaw = hwpxMemoCountOf(input.saved)
-    if (originalRaw === null || savedRaw === null) return modelLost
+    if (originalRaw === null || savedRaw === null) {
+      throw new Error('unreadable saved or original memo records')
+    }
     // records the engine does not model: compare how many the opened file had that the
     // engine could not list with how many the saved file has in the same situation
     const unmodelledBefore = Math.max(0, originalRaw - originalModel.length)
     const unmodelledAfter = Math.max(0, savedRaw - savedModel.length)
     return modelLost + Math.max(0, unmodelledBefore - unmodelledAfter)
-  } catch {
-    return 0
+  } catch (error) {
+    throw new Error(`hwp: HWPX save blocked: cannot verify HWPX memos (${String(error)})`)
   }
 }

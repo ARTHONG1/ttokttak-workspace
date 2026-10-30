@@ -140,7 +140,12 @@ describe('an untitled copy in an HWP tab', () => {
     await call<Promise<Uint8Array>>(HWP_CHANNELS.readFile, contents, copyPath)
     const begin = await call<Promise<BeginSaveResult>>(HWP_CHANNELS.beginSave, contents, 'save')
     expect(begin).toMatchObject({ ok: true, path: target })
-    const done = await call<Promise<CommitSaveResult>>(HWP_CHANNELS.commitSave, contents, HWPX, [])
+    // a commit must be a complete HWPX package with the editor's memo listing, as the
+    // renderer sends it; the pre-write checks reject anything less
+    const saved = readFileSync(join(import.meta.dirname, 'fixtures/master-page-next-section.hwpx'))
+    const done = await call<Promise<CommitSaveResult>>(HWP_CHANNELS.commitSave, contents, saved, [], {
+      memos: [],
+    })
     expect(done).toMatchObject({ ok: true, path: target })
     expect(existsSync(target)).toBe(true)
     expect(call(HWP_CHANNELS.untitledCopy, contents)).toBeNull()

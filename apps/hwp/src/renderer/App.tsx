@@ -158,12 +158,20 @@ export default function App() {
   const copierRef = useRef<RecoveryCopier | null>(null)
   /** the editor holds a restored recovery copy that has not been saved since */
   const restoredRef = useRef(false)
+  /**
+   * the AI panel changed the document since the last save. The editor's own unsaved flag
+   * misses some AI edits, so the close prompt and autosave also look at this one.
+   */
+  const aiEditedRef = useRef(false)
   /** the AI panel's way into the document: the app's plugin inside the editor */
   const agentBridge = useMemo(
     () =>
       withChangeNotes(
         createAgentBridge(() => editorRef.current),
-        () => copierRef.current?.noteChange(),
+        () => {
+          aiEditedRef.current = true
+          copierRef.current?.noteChange()
+        },
       ),
     [],
   )
@@ -289,7 +297,10 @@ export default function App() {
       const seen = changes
       try {
         // a restored recovery copy stays unsaved until it is saved, whatever the editor says
-        const dirty = (await editor.commands.context()).isDirty === true || restoredRef.current
+        const dirty =
+          (await editor.commands.context()).isDirty === true ||
+          restoredRef.current ||
+          aiEditedRef.current
         if (seen === changes) report(dirty)
       } catch {
         // the editor is going away; the next tick or the unmount settles it
@@ -372,8 +383,11 @@ export default function App() {
         const outcome = await runSave(savePortOf(editor), window.hwpApi, mode, automatic)
         if (outcome.kind === 'saved') {
           restoredRef.current = false
+          aiEditedRef.current = false
           copierRef.current?.saved()
           setFilePath(outcome.path)
+          // a plain Save of a .hwp writes .hwpx beside it: the document is HWPX from now on
+          formatRef.current = hwpFormatOfPath(outcome.path) ?? formatRef.current
           const backup = outcome.backupPath ? { name: fileNameOf(outcome.backupPath) } : null
           if (outcome.memosLost) {
             // stays until dismissed: the file is written, but some memos are not in it
@@ -544,18 +558,11 @@ export default function App() {
         return
       }
       void (async () => {
-        // a plain Save with nothing to write does nothing; ask the editor now
-        // rather than trust the polled flag, which may not have seen the last key
-        const dirty =
-          mode === 'saveAs' ||
-          (await editorRef.current?.commands
-            .context()
-            .then((context) => context.isDirty !== false || restoredRef.current)
-            .catch(() => true))
+        // a Save the user asked for always writes: the editor's unsaved flag can miss an
+        // edit (an AI change it did not report), and a skipped save looks like a lost one.
         // save() queues behind an autosave already running; the main process is answered
         // when that one (and this save) finish
-        if (dirty) await save(mode)
-        else window.hwpApi.abortSave()
+        await save(mode)
       })()
     })
     const offClose = window.hwpApi.onCloseSaveRequest(() => {
@@ -574,7 +581,7 @@ export default function App() {
         if (savingRef.current && running) await running
         const dirty = await editorRef.current?.commands
           .context()
-          .then((context) => context.isDirty !== false || restoredRef.current)
+          .then((context) => context.isDirty !== false || restoredRef.current || aiEditedRef.current)
           .catch(() => true)
         window.hwpApi.sendCloseSaveResult(dirty ? await save('save') : true)
       })()
@@ -636,7 +643,7 @@ export default function App() {
         if (Date.now() - lastInputAtRef.current < AUTOSAVE_IDLE_MS) return false
         return editor.commands
           .context()
-          .then((context) => context.isDirty === true || restoredRef.current)
+          .then((context) => context.isDirty === true || restoredRef.current || aiEditedRef.current)
           .catch(() => false)
       },
       save: () => save('save', true),
