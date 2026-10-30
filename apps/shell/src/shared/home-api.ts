@@ -87,6 +87,15 @@ export interface McpStatus {
 }
 
 /** a recent file entry shown on the home screen; type derives from the extension */
+/** what 특화 기능 > 품의서 생성 reads a cart from (the original's 이미지·한글·PDF·엑셀 buttons) */
+export type CartFileKind = 'image' | 'hwp' | 'pdf' | 'excel'
+
+/** a cart read from a file: its text, or an image for the AI to read */
+export type CartFileResult =
+  | { ok: true; kind: 'text'; name: string; text: string; truncated: boolean }
+  | { ok: true; kind: 'image'; name: string; mime: string; base64: string }
+  | { ok: false; error: string }
+
 export interface RecentEntry {
   path: string
   name: string
@@ -247,6 +256,8 @@ export interface HomeApi {
   aiStreamCancel(requestId: string): Promise<void>
   /** subscribe to stream chunks; returns unsubscribe */
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
+  /** 특화 기능 > 품의서 생성: pick a file of one kind and read its cart text (null = canceled) */
+  readCartFile(kind: CartFileKind): Promise<CartFileResult | null>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>
   /** open an existing file, routing to the right module by extension */
@@ -522,6 +533,7 @@ export const HOME_CHANNELS = {
   setStarredGroup: 'home:set-starred-group',
   openPath: 'home:open-path',
   browse: 'home:browse',
+  readCartFile: 'home:read-cart-file',
   newDoc: 'home:new-doc',
   newSheet: 'home:new-sheet',
   newSlide: 'home:new-slide',

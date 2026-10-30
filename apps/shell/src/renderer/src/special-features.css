@@ -601,3 +601,24 @@ button.sf-card:hover .sf-card-go svg {
     animation: none !important;
   }
 }
+
+.sf-field > label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--sf-ink-2);
+}
+.sf-file-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sf-file-row .sf-spinner {
+  width: 13px;
+  height: 13px;
+}
+.sf-file-hint {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--sf-ink-3);
+}

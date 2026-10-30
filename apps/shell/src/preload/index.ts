@@ -239,6 +239,11 @@ const homeApi: HomeApi = {
   async browse() {
     await ipcRenderer.invoke(HOME_CHANNELS.browse)
   },
+  async readCartFile(kind) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.readCartFile, kind)) as Awaited<
+      ReturnType<HomeApi['readCartFile']>
+    >
+  },
   async newDoc(opts) {
     await ipcRenderer.invoke(HOME_CHANNELS.newDoc, opts)
   },

@@ -136,6 +136,12 @@ import {
   parseFileToText,
 } from '@genoffice/file-parse'
 import { createDocList } from './doc-picker/doc-list'
+import {
+  CART_FILE_EXTENSIONS,
+  CART_FILE_FILTER_NAMES,
+  isCartFileKind,
+  readCartFile,
+} from './cart-file'
 import { resolveDocAsker } from './doc-picker/doc-asker'
 import { createDocPicker } from './doc-picker/doc-picker-window'
 import { handleDroppedFiles } from './dropped-files'
@@ -5670,6 +5676,21 @@ function registerHomeIpc(): void {
       properties: ['openFile', 'multiSelections'],
     })
     if (!result.canceled) for (const path of result.filePaths) openDocumentPath(path)
+  })
+
+  // 특화 기능 > 품의서 생성: the cart is read only from a file the user picks here, never
+  // from a path the page sends
+  ipcMain.handle(HOME_CHANNELS.readCartFile, async (event, kind: unknown) => {
+    if (!isCartFileKind(kind)) return { ok: false, error: '지원하지 않는 파일 종류예요.' }
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const result = await showOpenDialogWithMemory(dialog, win, {
+      title: CART_FILE_FILTER_NAMES[kind] + ' 파일에서 장바구니 읽기',
+      filters: [{ name: CART_FILE_FILTER_NAMES[kind], extensions: CART_FILE_EXTENSIONS[kind] }],
+      properties: ['openFile'],
+    })
+    if (result.canceled || !result.filePaths[0]) return null
+    return readCartFile(result.filePaths[0], kind)
   })
 
   ipcMain.handle(HOME_CHANNELS.newDoc, (_event, opts?: NewFileOpts) => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
+import type { CartFileKind } from '../../shared/home-api'
 import './special-features.css'
 
 /**
@@ -99,6 +100,57 @@ const PARSE_SYSTEM = [
   '설명, 머리말, 코드 블록 없이 JSON만 출력한다.',
 ].join('\n')
 
+/** the original reads a cart screenshot into text first and appends it to the cart box */
+const IMAGE_SYSTEM = [
+  '너는 쇼핑몰 장바구니 화면 사진에서 글을 읽어 옮기는 도우미다.',
+  '사진 속 장바구니의 상품마다 한 줄로 상품명, 옵션(규격), 수량, 가격을 그대로 적는다.',
+  '예: 모나미 153 볼펜 흑색 12개입 / 수량 5 / 3,600원',
+  '배송비가 보이면 마지막 줄에 배송비 금액을 적는다. 광고, 추천 상품, 쿠폰 안내는 적지 않는다.',
+  '설명이나 머리말 없이 옮긴 줄만 출력한다.',
+].join('\n')
+
+const CART_BUTTONS: { kind: CartFileKind; label: string }[] = [
+  { kind: 'image', label: '이미지' },
+  { kind: 'hwp', label: '한글' },
+  { kind: 'pdf', label: 'PDF' },
+  { kind: 'excel', label: '엑셀' },
+]
+
+function CartFileIcon({ kind }: { kind: CartFileKind }): ReactElement {
+  const common = {
+    stroke: 'currentColor',
+    strokeWidth: 1.4,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  }
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      {kind === 'image' ? (
+        <>
+          <rect x="2" y="3" width="12" height="10" rx="1.6" {...common} />
+          <circle cx="6" cy="6.6" r="1.2" {...common} />
+          <path d="M2.5 11.5l3.3-3 2.6 2.3 2-1.7 3.1 2.6" {...common} />
+        </>
+      ) : kind === 'excel' ? (
+        <>
+          <rect x="2.5" y="2.5" width="11" height="11" rx="1.4" {...common} />
+          <path d="M2.5 6.2h11M2.5 9.8h11M6.4 2.5v11" {...common} />
+        </>
+      ) : (
+        <>
+          <path d="M4 1.8h5.2L12.5 5v9.2H4z" {...common} />
+          <path d="M9 1.8V5h3.5" {...common} />
+          {kind === 'pdf' ? (
+            <path d="M6 9h4.5M6 11.4h3" {...common} />
+          ) : (
+            <path d="M6.2 8.4h4M8.2 8.4v3.6M6.4 12h3.6" {...common} />
+          )}
+        </>
+      )}
+    </svg>
+  )
+}
+
 function parseRows(reply: string): EstimateRow[] {
   const start = reply.indexOf('{')
   const end = reply.lastIndexOf('}')
@@ -155,7 +207,11 @@ function aiErrorText(chunk: AiStreamChunk): string {
 }
 
 /** one model turn over the shell's shared ai:stream handler, as the AI 질문 panel uses it */
-async function askAi(system: string, text: string): Promise<string> {
+async function askAi(
+  system: string,
+  text: string,
+  images: { base64: string; mime: string }[] = [],
+): Promise<string> {
   const api = window.aiOffice
   if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
   const settings = await api.aiGetSettings()
@@ -178,7 +234,7 @@ async function askAi(system: string, text: string): Promise<string> {
         requestId,
         settings,
         system,
-        messages: [{ role: 'user', text }],
+        messages: [{ role: 'user', text, ...(images.length ? { images } : {}) }],
         tools: [],
         maxTokens: 4000,
       })
@@ -326,6 +382,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [cart, setCart] = useState('')
   const [errors, setErrors] = useState<{ title?: string; cart?: string }>({})
   const [busy, setBusy] = useState(false)
+  const [reading, setReading] = useState<CartFileKind | null>(null)
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
   const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null)
@@ -341,6 +398,41 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const total = totalOf(rows)
+
+  const appendCart = (piece: string) =>
+    setCart((prev) => (prev.trim() ? prev.replace(/\s+$/, '') + '\n\n' + piece : piece))
+
+  const readFromFile = async (kind: CartFileKind) => {
+    if (typeof window.aiOffice?.readCartFile !== 'function') return
+    setReading(kind)
+    try {
+      const result = await window.aiOffice.readCartFile(kind)
+      if (!result) return
+      if (!result.ok) return say(result.error, true)
+      if (result.kind === 'text') {
+        appendCart(result.text)
+        say(
+          result.name +
+            '에서 장바구니 내용을 가져왔어요.' +
+            (result.truncated ? ' 내용이 길어 앞부분만 넣었어요.' : ''),
+        )
+      } else {
+        const read = (
+          await askAi(IMAGE_SYSTEM, '이 장바구니 사진의 상품을 옮겨 줘.', [
+            { base64: result.base64, mime: result.mime },
+          ])
+        ).trim()
+        if (!read) return say('사진에서 상품을 찾지 못했어요.', true)
+        appendCart(read)
+        say(result.name + '에서 장바구니 내용을 읽었어요.')
+      }
+      setErrors((prev) => ({ ...prev, cart: undefined }))
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error), true)
+    } finally {
+      setReading(null)
+    }
+  }
 
   const changeRows = (next: EstimateRow[]) => {
     setRows(next)
@@ -489,9 +581,30 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
             />
             {errors.title && <em className="sf-error">{errors.title}</em>}
           </label>
-          <label className="sf-field">
-            <span>장바구니 내용</span>
+          <div className="sf-field">
+            <label htmlFor="sf-cart">장바구니 내용</label>
+            <div className="sf-file-row" role="group" aria-label="파일에서 장바구니 읽기">
+              {CART_BUTTONS.map((b) => (
+                <button
+                  key={b.kind}
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  data-testid={'proposal-file-' + b.kind}
+                  disabled={reading !== null || busy}
+                  onClick={() => void readFromFile(b.kind)}
+                >
+                  {reading === b.kind ? (
+                    <span className="sf-spinner" aria-hidden="true" />
+                  ) : (
+                    <CartFileIcon kind={b.kind} />
+                  )}
+                  {b.label}
+                </button>
+              ))}
+              <span className="sf-file-hint">파일 내용은 아래 칸에 덧붙여요</span>
+            </div>
             <textarea
+              id="sf-cart"
               data-testid="proposal-cart"
               rows={8}
               value={cart}
@@ -502,12 +615,12 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
               aria-invalid={errors.cart ? true : undefined}
             />
             {errors.cart && <em className="sf-error">{errors.cart}</em>}
-          </label>
+          </div>
           <button
             type="button"
             className="sf-primary sf-wide-btn"
             data-testid="proposal-generate"
-            disabled={busy}
+            disabled={busy || reading !== null}
             onClick={() => void generate()}
           >
             {busy ? (
