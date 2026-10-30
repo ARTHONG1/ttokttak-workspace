@@ -96,6 +96,19 @@ export type CartFileResult =
   | { ok: true; kind: 'image'; name: string; mime: string; base64: string }
   | { ok: false; error: string }
 
+/** 특화 기능 > 퀴즈 생성기: the 학습 자료 read from a file or a YouTube video */
+export type QuizSourceResult =
+  { ok: true; name: string; text: string; truncated: boolean } | { ok: false; error: string }
+
+/** what a quiz is saved as: the bytes the page made, under the name it suggests */
+export interface QuizSaveRequest {
+  name: string
+  /** the filter shown in the save dialog, e.g. 'PDF' with ['pdf'] */
+  filterName: string
+  extensions: string[]
+  bytes: Uint8Array
+}
+
 export interface RecentEntry {
   path: string
   name: string
@@ -258,6 +271,16 @@ export interface HomeApi {
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
   /** 특화 기능 > 품의서 생성: pick a file of one kind and read its cart text (null = canceled) */
   readCartFile(kind: CartFileKind): Promise<CartFileResult | null>
+  /** 특화 기능 > 퀴즈 생성기: pick a PDF or Hangul file and read its text (null = canceled) */
+  readQuizFile(kind: 'pdf' | 'hwp'): Promise<QuizSourceResult | null>
+  /** 특화 기능 > 퀴즈 생성기: the captions of a YouTube video */
+  readYoutubeTranscript(url: string): Promise<QuizSourceResult>
+  /** 특화 기능: save bytes the page made where the user picks; resolves to the path (null = canceled) */
+  saveFeatureFile(request: QuizSaveRequest): Promise<string | null>
+  /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
+  readFeatureAsset(name: string): Promise<Uint8Array | null>
+  /** 특화 기능: open one of the fixed partner sites (Blooket, QuizN) in the browser */
+  openFeatureLink(site: 'blooket' | 'quizn'): Promise<void>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>
   /** open an existing file, routing to the right module by extension */
@@ -534,6 +557,11 @@ export const HOME_CHANNELS = {
   openPath: 'home:open-path',
   browse: 'home:browse',
   readCartFile: 'home:read-cart-file',
+  readQuizFile: 'home:read-quiz-file',
+  readYoutubeTranscript: 'home:read-youtube-transcript',
+  saveFeatureFile: 'home:save-feature-file',
+  readFeatureAsset: 'home:read-feature-asset',
+  openFeatureLink: 'home:open-feature-link',
   newDoc: 'home:new-doc',
   newSheet: 'home:new-sheet',
   newSlide: 'home:new-slide',

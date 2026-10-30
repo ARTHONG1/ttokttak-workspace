@@ -66,6 +66,10 @@ function assertExtraResourceSources() {
     '../../packages/ui/template-fonts/README.md',
     '../../node_modules/@rhwp/core/rhwp_bg.wasm',
     'resources/builtin-skills/builtin-skills.json',
+    'resources/special-features/quiz-worksheet.pdf',
+    'resources/special-features/quiz-answers.pdf',
+    'resources/special-features/quizn-template.xlsx',
+    'resources/special-features/quiz-bgm.mp3',
   ]) {
     if (!existsSync(join(__dirname, rel))) {
       throw new Error(
@@ -645,6 +649,12 @@ const config = {
     {
       from: 'resources/builtin-skills',
       to: 'builtin-skills',
+    },
+    // 특화 기능 > 퀴즈 생성기: the 학습지·정답지 backgrounds and QuizN's upload sheet
+    // (src/main/special-feature-files.ts reads them by fixed name)
+    {
+      from: 'resources/special-features',
+      to: 'special-features',
     },
   ],
   // `mimeType` is read only by the Linux target, where it becomes the

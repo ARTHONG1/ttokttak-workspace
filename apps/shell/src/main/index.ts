@@ -142,6 +142,15 @@ import {
   isCartFileKind,
   readCartFile,
 } from './cart-file'
+import { readQuizFile, readYoutubeTranscript } from './quiz-source'
+import {
+  FEATURE_LINKS,
+  checkSaveRequest,
+  featureAssetsDirFor,
+  isFeatureAsset,
+  readFeatureAsset,
+  withSaveExtension,
+} from './special-feature-files'
 import { resolveDocAsker } from './doc-picker/doc-asker'
 import { createDocPicker } from './doc-picker/doc-picker-window'
 import { handleDroppedFiles } from './dropped-files'
@@ -5691,6 +5700,71 @@ function registerHomeIpc(): void {
     })
     if (result.canceled || !result.filePaths[0]) return null
     return readCartFile(result.filePaths[0], kind)
+  })
+
+  // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
+  // YouTube video's captions fetched by this process
+  ipcMain.handle(HOME_CHANNELS.readQuizFile, async (event, kind: unknown) => {
+    if (kind !== 'pdf' && kind !== 'hwp')
+      return { ok: false, error: '지원하지 않는 파일 종류예요.' }
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const result = await showOpenDialogWithMemory(dialog, win, {
+      title: CART_FILE_FILTER_NAMES[kind] + ' 파일에서 학습 자료 읽기',
+      filters: [{ name: CART_FILE_FILTER_NAMES[kind], extensions: CART_FILE_EXTENSIONS[kind] }],
+      properties: ['openFile'],
+    })
+    if (result.canceled || !result.filePaths[0]) return null
+    return readQuizFile(result.filePaths[0], kind)
+  })
+
+  ipcMain.handle(HOME_CHANNELS.readYoutubeTranscript, (_event, url: unknown) =>
+    typeof url === 'string' && url.length <= 2048
+      ? readYoutubeTranscript(url)
+      : { ok: false, error: '유튜브 주소를 확인해 주세요.' },
+  )
+
+  // 특화 기능's exports: the page makes the bytes, the user picks where they go
+  ipcMain.handle(HOME_CHANNELS.saveFeatureFile, async (event, raw: unknown) => {
+    const request = checkSaveRequest(raw)
+    if (!request) return null
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const result = await showSaveDialogWithMemory(
+      dialog,
+      win,
+      {
+        defaultPath: request.name,
+        filters: [{ name: request.filterName, extensions: request.extensions }],
+      },
+      app.getPath('documents'),
+    )
+    if (result.canceled || !result.filePath) return null
+    const path = withSaveExtension(result.filePath, request.extensions)
+    await atomicWriteFile(path, request.bytes)
+    return path
+  })
+
+  ipcMain.handle(HOME_CHANNELS.readFeatureAsset, (_event, name: unknown) =>
+    isFeatureAsset(name)
+      ? readFeatureAsset(
+          featureAssetsDirFor({
+            isPackaged: app.isPackaged,
+            resourcesPath: process.resourcesPath,
+            appPath: app.getAppPath(),
+          }),
+          name,
+        )
+      : null,
+  )
+
+  ipcMain.handle(HOME_CHANNELS.openFeatureLink, (_event, site: unknown) => {
+    if (site !== 'blooket' && site !== 'quizn') return
+    const url = safeExternalUrl(FEATURE_LINKS[site])
+    if (!url) return
+    shell.openExternal(url).catch(() => {
+      // no browser handler available; nothing actionable for the user here
+    })
   })
 
   ipcMain.handle(HOME_CHANNELS.newDoc, (_event, opts?: NewFileOpts) => {

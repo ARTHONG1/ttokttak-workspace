@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { AiStreamChunk } from '@genoffice/ai-provider'
 import type { CartFileKind } from '../../shared/home-api'
+import { Back, ToastView, askAi, copyText, downloadBlob, useToast } from './special-common'
+import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import './special-features.css'
+import './quiz-generator.css'
 
 /**
  * 특화 기능: tools made for Korean school and public-office work, opened from the
@@ -15,7 +17,7 @@ import './special-features.css'
  * always the table's total.
  */
 
-type FeatureId = 'proposal'
+type FeatureId = 'proposal' | 'quiz'
 
 interface Feature {
   id: FeatureId
@@ -30,6 +32,13 @@ const FEATURES: Feature[] = [
     title: '품의서 생성',
     summary: '장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.',
     tags: ['AI', '기안문', '품의 목록', 'CSV'],
+  },
+  {
+    id: 'quiz',
+    title: '퀴즈 생성기',
+    summary:
+      '학습 자료나 유튜브 영상으로 다섯 가지 유형의 퀴즈를 만들고, 바로 풀거나 학습지로 뽑아요.',
+    tags: ['AI', '5가지 유형', '학습지 PDF', '블루킷·퀴즈앤'],
   },
 ]
 
@@ -182,85 +191,6 @@ function parseRows(reply: string): EstimateRow[] {
   return rows
 }
 
-function aiErrorText(chunk: AiStreamChunk): string {
-  switch (chunk.errorCode) {
-    case 'not-connected':
-      return 'AI가 연결되어 있지 않아요. 설정에서 AI를 먼저 연결해 주세요.'
-    case 'metered-not-accepted':
-      return '고른 AI는 쓴 만큼 요금이 나가요. 설정에서 사용을 허락한 뒤 다시 해 주세요.'
-    case 'not-installed':
-    case 'signed-out':
-    case 'needs-update':
-      return 'AI 구독 프로그램 연결을 확인해 주세요.'
-    case 'rate-limit':
-    case 'free-limit':
-    case 'overloaded':
-    case 'headless-limit':
-      return 'AI 사용량이 많아요. 잠시 뒤 다시 해 주세요.'
-    case 'timeout':
-      return 'AI 답이 늦어요. 다시 해 주세요.'
-    case 'network':
-      return '인터넷 연결을 확인해 주세요.'
-    default:
-      return chunk.error || '품의서를 만들지 못했어요. 다시 해 주세요.'
-  }
-}
-
-/** one model turn over the shell's shared ai:stream handler, as the AI 질문 panel uses it */
-async function askAi(
-  system: string,
-  text: string,
-  images: { base64: string; mime: string }[] = [],
-): Promise<string> {
-  const api = window.aiOffice
-  if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
-  const settings = await api.aiGetSettings()
-  const requestId = crypto.randomUUID()
-  return new Promise<string>((resolve, reject) => {
-    let out = ''
-    const off = api.onAiStream((chunk) => {
-      if (chunk.requestId !== requestId) return
-      if (chunk.type === 'delta' && chunk.text) out += chunk.text
-      else if (chunk.type === 'done') {
-        off()
-        resolve(out)
-      } else if (chunk.type === 'error') {
-        off()
-        reject(new Error(aiErrorText(chunk)))
-      }
-    })
-    api
-      .aiStream({
-        requestId,
-        settings,
-        system,
-        messages: [{ role: 'user', text, ...(images.length ? { images } : {}) }],
-        tools: [],
-        maxTokens: 4000,
-      })
-      .catch((error: unknown) => {
-        off()
-        reject(error instanceof Error ? error : new Error(String(error)))
-      })
-  })
-}
-
-async function copyText(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    // a frame without clipboard permission (the web edition): the old way still works
-    const area = document.createElement('textarea')
-    area.value = text
-    area.style.position = 'fixed'
-    area.style.opacity = '0'
-    document.body.appendChild(area)
-    area.select()
-    document.execCommand('copy')
-    area.remove()
-  }
-}
-
 function downloadCsv(title: string, rows: EstimateRow[]): void {
   const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"'
   const lines = ['내용,규격,단위,수량,예상단가,예상금액']
@@ -277,29 +207,7 @@ function downloadCsv(title: string, rows: EstimateRow[]): void {
     )
   }
   const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = (title.trim() || 'estimate') + '.csv'
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
-function Back({ onClick, label }: { onClick: () => void; label: string }): ReactElement {
-  return (
-    <button type="button" className="sf-back" onClick={onClick}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path
-          d="M10 3.5L5.5 8l4.5 4.5"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      {label}
-    </button>
-  )
+  downloadBlob(blob, (title.trim() || 'estimate') + '.csv')
 }
 
 function ProposalIcon(): ReactElement {
@@ -336,7 +244,7 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
           >
             <span className="sf-card-top">
               <span className="sf-card-icon">
-                <ProposalIcon />
+                {f.id === 'quiz' ? <QuizIcon /> : <ProposalIcon />}
               </span>
               <span className="sf-badge">NEW</span>
             </span>
@@ -385,17 +293,8 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [reading, setReading] = useState<CartFileKind | null>(null)
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
-  const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null)
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [toast, say] = useToast()
   const resultRef = useRef<HTMLElement>(null)
-
-  useEffect(() => () => clearTimeout(toastTimer.current), [])
-
-  const say = (text: string, bad = false) => {
-    clearTimeout(toastTimer.current)
-    setToast({ text, bad })
-    toastTimer.current = setTimeout(() => setToast(null), 2600)
-  }
 
   const total = totalOf(rows)
 
@@ -786,11 +685,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
         )}
       </div>
 
-      {toast && (
-        <div className={'sf-toast' + (toast.bad ? ' is-bad' : '')} role="status">
-          {toast.text}
-        </div>
-      )}
+      <ToastView toast={toast} />
     </div>
   )
 }
@@ -814,6 +709,8 @@ export function SpecialFeatures({
       )}
       {open === 'proposal' ? (
         <ProposalGenerator onBack={() => setOpen(null)} />
+      ) : open === 'quiz' ? (
+        <QuizGenerator onBack={() => setOpen(null)} />
       ) : (
         <FeatureList onOpen={setOpen} />
       )}

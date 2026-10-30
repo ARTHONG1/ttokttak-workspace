@@ -244,6 +244,27 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['readCartFile']>
     >
   },
+  async readQuizFile(kind) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<
+      ReturnType<HomeApi['readQuizFile']>
+    >
+  },
+  async readYoutubeTranscript(url) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.readYoutubeTranscript, url)) as Awaited<
+      ReturnType<HomeApi['readYoutubeTranscript']>
+    >
+  },
+  async saveFeatureFile(request) {
+    const path: unknown = await ipcRenderer.invoke(HOME_CHANNELS.saveFeatureFile, request)
+    return typeof path === 'string' ? path : null
+  },
+  async readFeatureAsset(name) {
+    const bytes: unknown = await ipcRenderer.invoke(HOME_CHANNELS.readFeatureAsset, name)
+    return bytes instanceof Uint8Array ? bytes : null
+  },
+  async openFeatureLink(site) {
+    await ipcRenderer.invoke(HOME_CHANNELS.openFeatureLink, site)
+  },
   async newDoc(opts) {
     await ipcRenderer.invoke(HOME_CHANNELS.newDoc, opts)
   },
