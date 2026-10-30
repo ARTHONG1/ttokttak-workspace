@@ -1,6 +1,0 @@
-import {chromium} from 'playwright-core'
-const names={'docs':'AI Docs','hwp':'AI 한글','markdown':'AI Markdown','html':'AI HTML','mindmap':'마인드맵'}
-const b=await chromium.launch({channel:'chrome',headless:true})
-for(const [key,label] of Object.entries(names)){
- const c=await b.newContext({viewport:{width:1440,height:900}});await c.addInitScript(()=>{delete window.showSaveFilePicker;delete window.showOpenFilePicker});const p=await c.newPage();try{await p.goto('https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/');const sh=p.frameLocator('iframe[src*="/shell/"]');await sh.getByText('건너뛰기').last().click({timeout:12000}).catch(()=>{});await sh.getByText(label,{exact:true}).first().click();await p.waitForTimeout(key==='hwp'?11000:5200);const f=p.frames().find(f=>f.url().includes('/'+key+'/index.html'));const z=await f.evaluate(()=>({textarea:[...document.querySelectorAll('textarea')].map(x=>({ph:x.placeholder,parent:x.parentElement?.outerHTML.slice(0,1700)})),buttons:[...document.querySelectorAll('button')].slice(-36).map(x=>({txt:x.innerText?.trim().slice(0,40),aria:x.getAttribute('aria-label'),title:x.title,html:x.outerHTML.slice(0,230)})),body:document.body.innerText.slice(-370)}));console.log(key,JSON.stringify(z).slice(0,7000))}catch(e){console.log('FAIL',key,e.message.slice(0,180))}await c.close()
-}await b.close()

@@ -11,7 +11,8 @@ FAILED=0
 {
   printf '# Six-format desktop QA baseline — %s\n\n' "$(date '+%F %T %z')"
   printf 'Git SHA: `%s`; OS: `%s`; Node: `%s`\n\n' "$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)" "$(uname -sm)" "$(node --version)"
-  printf 'Each result is independent. Logs: `%s/logs`. A skipped real provider is not PASS.\n\n' "$REPORT_DIR"
+  # the report is committed, so name the log folder relative to the repository, never this machine's path
+  printf 'Each result is independent. Logs: `%s/logs`. A skipped real provider is not PASS.\n\n' "${REPORT_DIR#"$ROOT"/}"
   printf '| Suite | Command | Exit | Result |\n| --- | --- | ---: | --- |\n'
 } > "$REPORT"
 

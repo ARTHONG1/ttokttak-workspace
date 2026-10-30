@@ -1,9 +1,13 @@
 /**
  * After an edit the engine writes line caches (`<hp:lineseg>`) whose start positions can
  * point to the wrong character in a paragraph that holds controls (2026-10-30: typing at the
- * start of footnote-01's first paragraph wrote `textpos="7"` for a line that starts at 31,
- * and Hancom refused the file as damaged). The save drops those caches so Hancom lays the
- * paragraph out again when it opens the file.
+ * start of a first paragraph whose body is a table wrote `textpos="7"` for the line that holds
+ * the table, and Hancom refused the file as damaged). The save drops those caches so Hancom
+ * lays the paragraph out again when it opens the file.
+ *
+ * The document is built here: a first paragraph that holds the section and column
+ * definitions, a page-number slot and a full-width inline table, which is the shape that
+ * makes the engine write the wrong start.
  */
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -15,7 +19,6 @@ import { dropUntrustedLineCaches } from '../src/main/hwpx-line-cache'
 import { validateHwpxBeforeOverwrite } from '../src/main/hwpx-save-validation'
 
 const require = createRequire(import.meta.url)
-const fixture = (name: string) => readFileSync(join(import.meta.dirname, 'fixtures', name))
 
 beforeAll(async () => {
   await init({ module_or_path: readFileSync(join(dirname(require.resolve('@rhwp/core')), 'rhwp_bg.wasm')) })
@@ -42,8 +45,24 @@ function firstParagraphLines(xml: string): string[] {
   return [...own.matchAll(/<hp:lineseg textpos="(\d+)"/g)].map((m) => m[1]!)
 }
 
+/** A first paragraph that holds only controls: page number and a full-width inline table. */
+function tableFirstDocument(): HwpDocument {
+  const doc = HwpDocument.createEmpty()
+  doc.createBlankDocument()
+  doc.setPageNumberPos(0, 0, 5, false)
+  const table = JSON.parse(
+    doc.createTableEx(
+      JSON.stringify({ sectionIdx: 0, paraIdx: 0, charOffset: 0, rowCount: 1, colCount: 1, treatAsChar: true, colWidths: [47624] }),
+    ),
+  ) as { paraIdx: number; controlIdx: number }
+  doc.insertTextInCell(0, table.paraIdx, table.controlIdx, 0, 0, 0, '시험용 보고서 제목')
+  doc.insertParagraph(0, 1)
+  doc.insertText(0, 1, 0, '줄 정보 시험을 위해 만든 본문입니다.')
+  return doc
+}
+
 function editedExport(): Uint8Array {
-  const doc = new HwpDocument(fixture('footnote-table-first-para.hwp'))
+  const doc = tableFirstDocument()
   doc.insertText(0, 0, 0, '[검토완료] ')
   return doc.exportHwpx()
 }

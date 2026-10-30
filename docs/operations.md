@@ -103,7 +103,7 @@ cd apps/shell && npx vitest run tests/<파일>.test.ts   # 파일 하나만
 
 OpenRouter 무료 연결에서 고를 수 있는 모델은 `packages/ai-provider/src/free-ai.ts`의 `OPENROUTER_FREE_MODELS`다. 무료 모델은 예고 없이 생기고 사라지므로 두 단계로 살핀다.
 
-1. **목록 확인(매주, 자동).** `.github/workflows/free-models.yml`이 월요일 오전 9시에 OpenRouter의 공개 모델 목록과 비교한다. 키를 쓰지 않고 무료 요청도 쓰지 않는다. 앱이 보여 주는 모델이 사라졌거나 도구 호출 지원이 꺼졌으면, 또는 시험해 볼 새 무료 모델이 있으면 실행이 실패로 끝나고 실행 결과 요약에 보고서가 남는다. 실패한 예약 실행은 GitHub이 저장소 주인에게 메일로 알린다. 이 PC에서는 `npm run free-models:check`로 같은 보고서를 본다.
+1. **목록 확인(매주, 지금은 꺼 둠).** `.github/workflows-upstream/free-models.yml`(꺼 둔 이유는 같은 폴더의 README)이 월요일 오전 9시에 OpenRouter의 공개 모델 목록과 비교한다. 키를 쓰지 않고 무료 요청도 쓰지 않는다. 앱이 보여 주는 모델이 사라졌거나 도구 호출 지원이 꺼졌으면, 또는 시험해 볼 새 무료 모델이 있으면 실행이 실패로 끝나고 실행 결과 요약에 보고서가 남는다. 실패한 예약 실행은 GitHub이 저장소 주인에게 메일로 알린다. 이 PC에서는 `npm run free-models:check`로 같은 보고서를 본다.
 2. **앱에서 시험(사람이).** `npm run build:all` 뒤 `npm run free-models:trial`. 후보마다 도구 하나짜리 짧은 요청을 보내고, 통과하면 빌드된 앱의 워드 편집기에서 두 요청(문단 넣기, 제목 바꾸고 요약 목록 넣기)을 시킨 뒤 결과를 표로 낸다. 모델 이름을 붙이면 그 모델만, `--listed`를 붙이면 앱이 지금 보여 주는 모델을 다시 시험한다.
 
 - 시험은 설치된 앱에 저장된 OpenRouter 키(`%APPDATA%/IeumOffice/ai-settings.json`)로 하고 그 키의 하루 무료 요청을 쓴다. 키는 화면에 찍히지 않는다. 모델 하나에 짧은 확인 1번, 앱 시험 약 12번이 든다. 남은 수가 모자라면 그 모델은 건너뛴다.
