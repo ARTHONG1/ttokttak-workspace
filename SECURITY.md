@@ -3,33 +3,28 @@
 ## Reporting a Vulnerability
 
 Please report suspected vulnerabilities privately via GitHub's
-[private vulnerability reporting](https://github.com/pblsketch/openoffice/security/advisories/new)
-on this repository. Do not open public issues for security reports. IeumOffice
-is maintained by volunteers, so reports are handled on a best-effort basis.
+[private vulnerability reporting](https://github.com/ARTHONG1/ttokttak-studio/security/advisories/new)
+on this repository. Do not open public issues for security reports.
+ttokttak-studio is maintained by one person, so reports are handled on a
+best-effort basis.
 
-IeumOffice is a modified version of GenOffice (see
+ttokttak-studio is a modified version of IeumOffice, which is based on
+GenOffice (see
 [License and acknowledgement](README.en.md#license-and-acknowledgement)). If a
-problem is in code the two projects share (the document engines, for example),
-please consider reporting it to the upstream project as well.
+problem is in code the projects share (the document engines, for example),
+please consider reporting it to the upstream projects as well.
 
 ## Verifying a Download
 
-The Windows installer, like the Mac and Linux packages, is built by GitHub
-Actions from this repository. A Windows installer built that way carries a
-build provenance attestation, so you can check that it was made from this
-repository's source by its own workflow:
-
-```
-gh attestation verify IeumOffice-Setup-<version>.exe --repo pblsketch/openoffice
-```
-
-The installer is not code-signed, so Windows shows an "unknown publisher"
-warning the first time you run it.
+No installer has been published from this repository yet. Download builds only
+from this repository's GitHub releases. The packages are not code-signed, so the
+operating system warns the first time you open one.
 
 ## Trademark and Copyright Reports
 
-Send trademark or copyright infringement reports and licensing questions to
-pblsketch@gmail.com. The same address is in the app under Settings → About.
+Open an issue at https://github.com/ARTHONG1/ttokttak-studio/issues for
+trademark or copyright infringement reports and licensing questions. The same
+address is in the app under Settings → About.
 
 ## Process Security Posture
 

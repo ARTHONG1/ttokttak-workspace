@@ -1,6 +1,6 @@
 # การติดตั้ง GenOffice
 
-ทุกเวอร์ชันถูกเผยแพร่ไว้ที่ [หน้าเผยแพร่ (Releases)](https://github.com/pblsketch/openoffice/releases/latest) ของโปรเจกต์บน GitHub เวอร์ชันนี้ออกสำหรับ Windows
+ทุกเวอร์ชันถูกเผยแพร่ไว้ที่ [หน้าเผยแพร่ (Releases)](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) ของโปรเจกต์บน GitHub เวอร์ชันนี้ออกสำหรับ Windows
 
 ## เลือกไฟล์ให้ตรงกับเครื่องของคุณ
 

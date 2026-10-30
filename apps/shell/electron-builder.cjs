@@ -19,16 +19,16 @@ const { join } = require('node:path')
 // folder, the executable name, the userData folder and the Windows ProgIds.
 // None of them may coincide with the upstream GenOffice app, so both can be
 // installed on one machine without touching each other's registration.
-const APP_ID = 'local.hongchanu.hangul-ai-workbench'
+const APP_ID = 'io.github.arthong1.hangul-ai-workbench'
 const PRODUCT_NAME = 'HangulAIWorkbench'
 // package.json "name" of the packaged app (the workspace keeps upstream's
 // "@genoffice/shell"): electron-builder and electron-updater name the per-user
 // folder that caches the installer and downloaded updates after it
 // (<local app data>/<name>-updater), so a shared name is a shared folder.
 const PACKAGED_APP_NAME = 'hangul-ai-workbench'
-const REPO_OWNER = 'pblsketch'
-const REPO_NAME = 'openoffice'
-const MAINTAINER = 'pblsketch <pblsketch@users.noreply.github.com>'
+const REPO_OWNER = 'ARTHONG1'
+const REPO_NAME = 'ttokttak-studio'
+const MAINTAINER = 'ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>'
 
 // GENOFFICE_MAC_X64=1 — package the Intel (x64) dmg/zip alongside arm64.
 // The release build on GitHub's Mac runner sets it (.github/workflows/

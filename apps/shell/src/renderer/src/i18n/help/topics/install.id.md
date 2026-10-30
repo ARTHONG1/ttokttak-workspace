@@ -1,6 +1,6 @@
 # Memasang GenOffice
 
-Setiap versi dipublikasikan di [halaman Rilis](https://github.com/pblsketch/openoffice/releases/latest) proyek ini di GitHub. Versi ini dirilis untuk Windows.
+Setiap versi dipublikasikan di [halaman Rilis](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) proyek ini di GitHub. Versi ini dirilis untuk Windows.
 
 ## Pilih berkas untuk komputer Anda
 

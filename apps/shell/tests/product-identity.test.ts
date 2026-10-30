@@ -129,7 +129,7 @@ describe('the name in the shell UI', () => {
 
 describe('coexistence with the upstream app on one machine', () => {
   it('installs under its own product id and install name', () => {
-    expect(config.appId).toBe('local.hongchanu.hangul-ai-workbench')
+    expect(config.appId).toBe('io.github.arthong1.hangul-ai-workbench')
     expect(config.appId).not.toBe(UPSTREAM.appId)
     expect(config.productName).not.toBe(UPSTREAM.productName)
     expect(config.nsis.artifactName).toBe('${productName}-Setup-${version}.${ext}')
@@ -265,13 +265,13 @@ describe('repository coordinates', () => {
   })
 
   it('names the same repository in the package metadata', () => {
-    expect(GITHUB_REPO_URL).toBe('https://github.com/pblsketch/openoffice')
+    expect(GITHUB_REPO_URL).toBe('https://github.com/ARTHONG1/ttokttak-studio')
     expect(shellPackage.homepage).toBe(GITHUB_REPO_URL)
     expect((rootPackage.repository as { url: string }).url).toBe(`git+${GITHUB_REPO_URL}.git`)
   })
 
   it('credits the maintainer of this product in the Linux package metadata', () => {
-    const maintainer = 'pblsketch <pblsketch@users.noreply.github.com>'
+    const maintainer = 'ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>'
     expect(config.linux.maintainer).toBe(maintainer)
     expect(config.linux.vendor).toBe(maintainer)
   })

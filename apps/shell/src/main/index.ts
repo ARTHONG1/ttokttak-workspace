@@ -59,7 +59,7 @@ import menuEpubIcon2x from './assets/menu-epub@2x.png?asset'
 import menuHomeIcon1x from './assets/menu-home.png?asset'
 import menuHomeIcon2x from './assets/menu-home@2x.png?asset'
 import { createI18n, isLang, normalizeLang, setUiLang, type Lang } from '@genoffice/i18n'
-import { DEV_USER_DATA_DIR_NAME, PRODUCT_CONTACT_EMAIL, productName } from '@genoffice/i18n'
+import { DEV_USER_DATA_DIR_NAME, PRODUCT_CONTACT_URL, productName } from '@genoffice/i18n'
 import {
   DEFAULT_SAVE_DIR_KEY,
   DROP_OPEN_CHANNEL,
@@ -124,6 +124,7 @@ import { createDefaultAppService, execFileRunner } from './default-app'
 import { registerIntegrationsIpc } from './integrations-ipc'
 import { registerResultStoreIpc } from './result-store-ipc'
 import { FEEDBACK_SURVEY_URL, feedbackDetails, feedbackText, platformLabel } from './feedback'
+import { FEEDBACK_SURVEY_ENABLED } from '../shared/feedback-survey'
 import { registerDriveIpc, type DriveService } from './drive/drive-ipc'
 import { registerOutboundIpc } from './outbound-confirm'
 import { projectSkillsAllowed, projectSkillsView, setProjectSkills } from './agent/project-skills'
@@ -4364,6 +4365,7 @@ function ensureFolderWatchers(): void {
  * copied or opened; the app sends nothing itself.
  */
 async function openFeedbackSurvey(): Promise<void> {
+  if (!FEEDBACK_SURVEY_ENABLED || !FEEDBACK_SURVEY_URL) return
   const lang = currentLang()
   const detail = feedbackDetails(lang, {
     version: app.getVersion(),
@@ -4428,7 +4430,9 @@ function withHelpItems(): void {
         {
           role: 'help',
           label: tm('menuHelp'),
-          submenu: [userGuide, { type: 'separator' }, feedback],
+          submenu: FEEDBACK_SURVEY_ENABLED
+            ? [userGuide, { type: 'separator' }, feedback]
+            : [userGuide],
         },
       ]).items[0]!,
     )
@@ -4444,6 +4448,10 @@ function withHelpItems(): void {
   // trailing entry is filler, discarded; the type check is what stops this from
   // silently regressing if Electron's rule ever changes again.
   const hasUserGuide = submenu.items.some((i) => i.accelerator === 'F1')
+  if (!FEEDBACK_SURVEY_ENABLED) {
+    if (!hasUserGuide) submenu.insert(0, Menu.buildFromTemplate([userGuide]).items[0]!)
+    return
+  }
   const template: MenuItemConstructorOptions[] = hasUserGuide
     ? [feedback, { type: 'separator' }, { role: 'undo' }]
     : [userGuide, { type: 'separator' }, feedback, { type: 'separator' }, { role: 'undo' }]
@@ -6194,12 +6202,10 @@ function registerHomeIpc(): void {
   })
 
   ipcMain.handle(HOME_CHANNELS.openRightsContact, () => {
-    const url = safeExternalUrl(`mailto:${PRODUCT_CONTACT_EMAIL}`, {
-      allowedProtocols: ['mailto:'],
-    })
+    const url = safeExternalUrl(PRODUCT_CONTACT_URL)
     if (!url) return
     shell.openExternal(url).catch(() => {
-      // no mail handler registered; the address is shown in Settings to copy by hand
+      // no browser handler registered; the address is shown in Settings to copy by hand
     })
   })
 

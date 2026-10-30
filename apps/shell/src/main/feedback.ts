@@ -1,13 +1,11 @@
 import { createI18n, defineStrings, type Lang } from '@genoffice/i18n'
 
 /**
- * The published feedback survey (Google Forms, owned by the repository owner).
- * The Help menu and Settings → About open it in the user's browser; the app
- * itself sends nothing. Changing the form's questions does not change this
- * address, so the link stays valid as the survey is edited.
+ * The published feedback survey (a Google Form owned by the repository owner), or
+ * empty while there is none (FEEDBACK_SURVEY_ENABLED is then false). The Help menu
+ * and Settings → About open it in the user's browser; the app itself sends nothing.
  */
-export const FEEDBACK_SURVEY_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSfD_dlKfi_ZkcjBJFTH3S2nldTIoW0cMI9d_yDaEe6DwKY47A/viewform'
+export const FEEDBACK_SURVEY_URL: string = ''
 
 const zh = {
   menuLabel: '发送反馈',

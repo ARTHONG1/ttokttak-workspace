@@ -13,7 +13,7 @@ import {
   clampAiCustomFontSize,
 } from '@genoffice/ui'
 import type { AiFontSize, AiPanelPrefs, AiPanelSide, AiPanelStart } from '@genoffice/ui'
-import { PRODUCT_CONTACT_EMAIL, PRODUCT_REPO_SLUG } from '@genoffice/i18n'
+import { PRODUCT_CONTACT_URL, PRODUCT_REPO_SLUG } from '@genoffice/i18n'
 import type { Lang } from '@genoffice/i18n'
 import type {
   AuthorNameSetting,
@@ -22,6 +22,7 @@ import type {
   FileSearchSettings,
 } from '../../shared/home-api'
 import { AUTHOR_NAME_MAX } from '../../shared/home-api'
+import { FEEDBACK_SURVEY_ENABLED } from '../../shared/feedback-survey'
 import type { UpdateUiState } from '../../shared/update-api'
 import {
   DEFAULT_MAX_OUTPUT_TOKENS,
@@ -2040,18 +2041,20 @@ export function SettingsModal({
                     </button>
                   }
                 />
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <label className="set-field-label">{t('setFeedback')}</label>
-                    <div className="set-field-desc">{t('setFeedbackDesc')}</div>
+                {FEEDBACK_SURVEY_ENABLED && (
+                  <div className="set-field">
+                    <div className="set-field-text">
+                      <label className="set-field-label">{t('setFeedback')}</label>
+                      <div className="set-field-desc">{t('setFeedbackDesc')}</div>
+                    </div>
+                    <button
+                      className="set-btn"
+                      onClick={() => void window.aiOffice.openFeedbackSurvey?.()}
+                    >
+                      {t('feedbackOpen')}
+                    </button>
                   </div>
-                  <button
-                    className="set-btn"
-                    onClick={() => void window.aiOffice.openFeedbackSurvey?.()}
-                  >
-                    {t('feedbackOpen')}
-                  </button>
-                </div>
+                )}
                 <div className="set-field">
                   <div className="set-field-text">
                     <label className="set-field-label">{t('setLicenses')}</label>
@@ -2068,7 +2071,9 @@ export function SettingsModal({
                   <div className="set-field-text">
                     <label className="set-field-label">{t('setRightsContact')}</label>
                     <div className="set-field-desc">{t('setRightsContactDesc')}</div>
-                    <div className="set-field-value">{PRODUCT_CONTACT_EMAIL}</div>
+                    <div className="set-field-value">
+                      {PRODUCT_CONTACT_URL.replace(/^https:\/\//, '')}
+                    </div>
                   </div>
                   <button
                     className="set-btn"

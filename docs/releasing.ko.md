@@ -2,7 +2,7 @@
 
 이음오피스(IeumOffice)의 새 버전을 만들어 GitHub에 올리는 순서입니다. 위에서부터 차례대로 하면 됩니다.
 
-설치된 앱은 공개 저장소 `pblsketch/openoffice`의 **릴리스(Releases)** 를 보고 스스로 업데이트합니다. 그래서 "새 버전을 낸다"는 것은 설치 파일을 만들어 그 저장소의 릴리스에 올리는 일입니다. 따로 운영하는 서버나 비밀 키는 없습니다.
+설치된 앱은 공개 저장소 `ARTHONG1/ttokttak-studio`의 **릴리스(Releases)** 를 보고 스스로 업데이트합니다. 그래서 "새 버전을 낸다"는 것은 설치 파일을 만들어 그 저장소의 릴리스에 올리는 일입니다. 따로 운영하는 서버나 비밀 키는 없습니다.
 
 > **에이전트에게 맡길 때.** Claude Code 같은 에이전트로 릴리스를 맡기면 `.claude/skills/release-ieumoffice/SKILL.md`를 함께 읽게 합니다. 승인 없이는 게시하지 않는 규칙, 릴리스 본문 윤문, 업데이트 창 확인 절차가 그 스킬에 있습니다.
 
@@ -56,7 +56,7 @@ Windows SDK는 스캔 문서 글자 인식 도우미(`win-ocr.exe`)를 만들 �
 
 ## 4. 설치 파일 만들기
 
-**GitHub Actions로 만들기 (권장, 결정 0056).** Mac·Linux처럼 GitHub의 Windows 빌드 기계가 만들고, 설치 파일과 `latest.yml`에 "이 저장소의 이 커밋에서 만들었다"는 출처 증명을 붙입니다. 사용자는 `gh attestation verify IeumOffice-Setup-<버전>.exe --repo pblsketch/openoffice`로 확인할 수 있습니다.
+**GitHub Actions로 만들기 (권장, 결정 0056).** Mac·Linux처럼 GitHub의 Windows 빌드 기계가 만들고, 설치 파일과 `latest.yml`에 "이 저장소의 이 커밋에서 만들었다"는 출처 증명을 붙입니다. 사용자는 `gh attestation verify IeumOffice-Setup-<버전>.exe --repo ARTHONG1/ttokttak-studio`로 확인할 수 있습니다.
 
 1. 6번대로 릴리스를 **본문만으로, "Set as a pre-release"를 체크해** 먼저 공개합니다. 파일은 아직 올리지 않습니다.
 2. **Actions** 탭 → **Windows build** → **Run workflow**에서 가지는 `main`, **release_tag** 칸에 그 태그(예: `v0.12.4`)를 적고 실행합니다.
@@ -133,7 +133,7 @@ npm run dist:win -- -- --publish never
 
 ## 6. GitHub 릴리스 만들기
 
-1. <https://github.com/pblsketch/openoffice/releases/new> 를 엽니다.
+1. <https://github.com/ARTHONG1/ttokttak-studio/releases/new> 를 엽니다.
 2. **태그**: `v` + 버전 번호. 예: 버전이 `0.11.1`이면 `v0.11.1`. "Choose a tag"에 직접 적고 "Create new tag on publish"를 고릅니다. 대상(Target)은 3번에서 올린 커밋이 있는 브랜치입니다.
 3. **제목**: 알아보기 쉬운 이름(예: `v0.11.1`). **설명**: 바뀐 점.
    - 설명은 웹 페이지와 **앱의 업데이트 창** 모두에 그대로 나옵니다(앱은 본문을 번역하지 않습니다).
@@ -159,7 +159,7 @@ npm run dist:win -- -- --publish never
 올린 뒤 바로 확인합니다. 브라우저에서 아래 주소를 열었을 때 `latest.yml`이 내려받아지면 됩니다.
 
 ```
-https://github.com/pblsketch/openoffice/releases/latest/download/latest.yml
+https://github.com/ARTHONG1/ttokttak-studio/releases/latest/download/latest.yml
 ```
 
 (릴리스가 하나도 없던 2026-10-13에는 이 주소가 "404 찾을 수 없음"이었습니다.)

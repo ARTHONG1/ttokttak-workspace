@@ -63,7 +63,8 @@ export const strings = {
     openLocal: '打开本地文件',
     dropToOpenTitle: '松开以打开文件',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: '早上好',
     greetAfternoon: '下午好',
     greetEvening: '晚上好',
@@ -418,8 +419,8 @@ export const strings = {
     setLicensesDesc: '查看本应用附带的软件和字体的许可证与版权声明。',
     setLicensesOpen: '查看',
     setRightsContact: '商标与版权联系',
-    setRightsContactDesc: '侵权举报和许可相关问题请发送到此地址。',
-    setRightsContactSend: '写邮件',
+    setRightsContactDesc: '侵权举报和许可相关问题请在项目的 GitHub Issues 中提交。',
+    setRightsContactSend: '打开 Issues',
     setTrademarks:
       'GenOffice 与 Microsoft、Hancom、Adobe、XMind、Google、Anthropic、OpenAI 均无关联，也未获得其赞助或认可。Word、Excel、PowerPoint 是 Microsoft 的商标；Hangul（한글）、HWP、HWPX 是 Hancom 的商标；XMind 是 XMind Ltd. 的商标；Google 云端硬盘是 Google 的商标；Claude 是 Anthropic 的商标；ChatGPT 和 Codex 是 OpenAI 的商标。这些名称仅用于说明本应用能打开哪些文件以及与哪些服务配合使用。',
     setHwpNotice:
@@ -556,7 +557,8 @@ export const strings = {
     openLocal: 'Open Local File',
     dropToOpenTitle: 'Drop to open',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Good morning',
     greetAfternoon: 'Good afternoon',
     greetEvening: 'Good evening',
@@ -926,8 +928,9 @@ export const strings = {
       'License and copyright notices for the software and fonts that ship with this app.',
     setLicensesOpen: 'View',
     setRightsContact: 'Trademark and copyright contact',
-    setRightsContactDesc: 'Send infringement reports and licensing questions to this address.',
-    setRightsContactSend: 'Write an email',
+    setRightsContactDesc:
+      'Report infringement or ask licensing questions in the GitHub issues of this project.',
+    setRightsContactSend: 'Open issues',
     setTrademarks:
       'GenOffice is not affiliated with, sponsored by or endorsed by Microsoft, Hancom, Adobe, XMind, Google, Anthropic or OpenAI. Word, Excel and PowerPoint are trademarks of Microsoft; Hangul, HWP and HWPX of Hancom; XMind of XMind Ltd.; Google Drive of Google; Claude of Anthropic; ChatGPT and Codex of OpenAI. These names are used only to say which files the app opens and what it works with.',
     setHwpNotice:
@@ -1068,7 +1071,8 @@ export const strings = {
     openLocal: 'Mở tệp cục bộ',
     dropToOpenTitle: 'Thả để mở',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Chào buổi sáng',
     greetAfternoon: 'Chào buổi chiều',
     greetEvening: 'Chào buổi tối',
@@ -1439,8 +1443,9 @@ export const strings = {
       'Xem thông báo giấy phép và bản quyền của phần mềm và phông chữ đi kèm ứng dụng này.',
     setLicensesOpen: 'Xem',
     setRightsContact: 'Liên hệ về nhãn hiệu và bản quyền',
-    setRightsContactDesc: 'Gửi báo cáo vi phạm và câu hỏi về giấy phép đến địa chỉ này.',
-    setRightsContactSend: 'Viết email',
+    setRightsContactDesc:
+      'Gửi báo cáo vi phạm và câu hỏi về giấy phép trong mục GitHub Issues của dự án.',
+    setRightsContactSend: 'Mở Issues',
     setTrademarks:
       'GenOffice không liên kết với, không được tài trợ hay xác nhận bởi Microsoft, Hancom, Adobe, XMind, Google, Anthropic hoặc OpenAI. Word, Excel và PowerPoint là nhãn hiệu của Microsoft; Hangul, HWP và HWPX của Hancom; XMind của XMind Ltd.; Google Drive của Google; Claude của Anthropic; ChatGPT và Codex của OpenAI. Các tên này chỉ được dùng để cho biết ứng dụng mở được tệp nào và hoạt động cùng với gì.',
     setHwpNotice:
@@ -1584,7 +1589,8 @@ export const strings = {
     openLocal: 'ローカルファイルを開く',
     dropToOpenTitle: 'ドロップして開く',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'おはようございます',
     greetAfternoon: 'こんにちは',
     greetEvening: 'こんばんは',
@@ -1963,8 +1969,8 @@ export const strings = {
     setLicensesOpen: '表示',
     setRightsContact: '商標・著作権のお問い合わせ',
     setRightsContactDesc:
-      '権利侵害の報告やライセンスに関するお問い合わせは、このアドレスへお送りください。',
-    setRightsContactSend: 'メールを書く',
+      '権利侵害の報告やライセンスに関するお問い合わせは、プロジェクトの GitHub Issues へお寄せください。',
+    setRightsContactSend: 'Issues を開く',
     setTrademarks:
       'GenOffice は Microsoft、Hancom、Adobe、XMind、Google、Anthropic、OpenAI と提携しておらず、これらの企業による後援や保証も受けていません。Word、Excel、PowerPoint は Microsoft の商標、Hangul（한글）、HWP、HWPX は Hancom の商標、XMind は XMind Ltd. の商標、Google ドライブは Google の商標、Claude は Anthropic の商標、ChatGPT と Codex は OpenAI の商標です。これらの名称は、開けるファイルや連携するサービスを示すためにのみ使用しています。',
     setHwpNotice:
@@ -2113,7 +2119,8 @@ export const strings = {
     openLocal: '파일 고르기',
     dropToOpenTitle: '놓아서 파일 열기',
     uploadDocTitle: '내 문서 불러오기',
-    uploadDocSub: '한글(HWP·HWPX)·워드·엑셀·PPT·PDF 파일을 여기로 끌어다 놓거나 눌러서 고르세요. 문서가 열리면 왼쪽 AI 도우미에게 고칠 내용을 말하면 됩니다.',
+    uploadDocSub:
+      '한글(HWP·HWPX)·워드·엑셀·PPT·PDF 파일을 여기로 끌어다 놓거나 눌러서 고르세요. 문서가 열리면 왼쪽 AI 도우미에게 고칠 내용을 말하면 됩니다.',
     greetMorning: '좋은 아침이에요',
     greetAfternoon: '안녕하세요',
     greetEvening: '좋은 저녁이에요',
@@ -2480,8 +2487,8 @@ export const strings = {
     setLicensesDesc: '이 앱에 함께 들어 있는 프로그램과 글꼴의 라이선스, 저작권 고지를 봅니다.',
     setLicensesOpen: '보기',
     setRightsContact: '상표·저작권 문의',
-    setRightsContactDesc: '권리 침해 신고나 라이선스 문의는 이 주소로 보내 주세요.',
-    setRightsContactSend: '메일 쓰기',
+    setRightsContactDesc: '권리 침해 신고나 라이선스 문의는 프로젝트의 GitHub 이슈에 남겨 주세요.',
+    setRightsContactSend: '이슈 열기',
     setTrademarks:
       'GenOffice는 Microsoft, 한글과컴퓨터, Adobe, XMind, Google, Anthropic, OpenAI와 제휴하지 않았고, 이들의 후원이나 보증을 받지 않습니다. Word·Excel·PowerPoint는 Microsoft의, 한글·HWP·HWPX는 한글과컴퓨터의, XMind는 XMind Ltd.의, Google 드라이브는 Google의, Claude는 Anthropic의, ChatGPT·Codex는 OpenAI의 상표입니다. 이 이름들은 어떤 파일을 열고 무엇과 함께 쓰는지 알리는 데만 씁니다.',
     setHwpNotice:
@@ -2627,7 +2634,8 @@ export const strings = {
     openLocal: 'Ouvrir un fichier local',
     dropToOpenTitle: 'Déposer pour ouvrir',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Bonjour',
     greetAfternoon: 'Bonjour',
     greetEvening: 'Bonsoir',
@@ -3010,8 +3018,8 @@ export const strings = {
     setLicensesOpen: 'Afficher',
     setRightsContact: 'Contact marques et droits d’auteur',
     setRightsContactDesc:
-      'Envoyez à cette adresse les signalements d’atteinte aux droits et les questions de licence.',
-    setRightsContactSend: 'Écrire un e-mail',
+      'Signalez les atteintes aux droits et posez vos questions de licence dans les issues GitHub du projet.',
+    setRightsContactSend: 'Ouvrir les issues',
     setTrademarks:
       'GenOffice n’est ni affilié à Microsoft, Hancom, Adobe, XMind, Google, Anthropic ou OpenAI, ni parrainé ou approuvé par eux. Word, Excel et PowerPoint sont des marques de Microsoft ; Hangul, HWP et HWPX de Hancom ; XMind de XMind Ltd. ; Google Drive de Google ; Claude d’Anthropic ; ChatGPT et Codex d’OpenAI. Ces noms servent uniquement à indiquer quels fichiers l’application ouvre et avec quoi elle fonctionne.',
     setHwpNotice:
@@ -3160,7 +3168,8 @@ export const strings = {
     openLocal: 'Lokale Datei öffnen',
     dropToOpenTitle: 'Zum Öffnen ablegen',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Guten Morgen',
     greetAfternoon: 'Guten Tag',
     greetEvening: 'Guten Abend',
@@ -3546,8 +3555,8 @@ export const strings = {
     setLicensesOpen: 'Anzeigen',
     setRightsContact: 'Kontakt zu Marken und Urheberrecht',
     setRightsContactDesc:
-      'Meldungen über Rechtsverletzungen und Fragen zur Lizenz bitte an diese Adresse senden.',
-    setRightsContactSend: 'E-Mail schreiben',
+      'Meldungen über Rechtsverletzungen und Fragen zur Lizenz bitte in den GitHub-Issues des Projekts stellen.',
+    setRightsContactSend: 'Issues öffnen',
     setTrademarks:
       'GenOffice ist nicht mit Microsoft, Hancom, Adobe, XMind, Google, Anthropic oder OpenAI verbunden und wird von ihnen weder gesponsert noch unterstützt. Word, Excel und PowerPoint sind Marken von Microsoft; Hangul, HWP und HWPX von Hancom; XMind von XMind Ltd.; Google Drive von Google; Claude von Anthropic; ChatGPT und Codex von OpenAI. Diese Namen werden nur verwendet, um zu sagen, welche Dateien die App öffnet und womit sie zusammenarbeitet.',
     setHwpNotice:
@@ -3700,7 +3709,8 @@ export const strings = {
     openLocal: 'Abrir archivo local',
     dropToOpenTitle: 'Suelta para abrir',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Buenos días',
     greetAfternoon: 'Buenas tardes',
     greetEvening: 'Buenas noches',
@@ -4081,8 +4091,8 @@ export const strings = {
     setLicensesOpen: 'Ver',
     setRightsContact: 'Contacto sobre marcas y derechos de autor',
     setRightsContactDesc:
-      'Envía a esta dirección los avisos de infracción y las consultas sobre licencias.',
-    setRightsContactSend: 'Escribir un correo',
+      'Envía los avisos de infracción y las consultas sobre licencias en las issues de GitHub del proyecto.',
+    setRightsContactSend: 'Abrir issues',
     setTrademarks:
       'GenOffice no está afiliado a Microsoft, Hancom, Adobe, XMind, Google, Anthropic ni OpenAI, ni cuenta con su patrocinio o respaldo. Word, Excel y PowerPoint son marcas de Microsoft; Hangul, HWP y HWPX, de Hancom; XMind, de XMind Ltd.; Google Drive, de Google; Claude, de Anthropic; ChatGPT y Codex, de OpenAI. Estos nombres se usan solo para indicar qué archivos abre la aplicación y con qué funciona.',
     setHwpNotice:
@@ -4229,7 +4239,8 @@ export const strings = {
     openLocal: 'เปิดไฟล์ในเครื่อง',
     dropToOpenTitle: 'วางเพื่อเปิดไฟล์',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'สวัสดีตอนเช้า',
     greetAfternoon: 'สวัสดีตอนบ่าย',
     greetEvening: 'สวัสดีตอนเย็น',
@@ -4594,8 +4605,9 @@ export const strings = {
     setLicensesDesc: 'ดูประกาศสัญญาอนุญาตและลิขสิทธิ์ของซอฟต์แวร์และฟอนต์ที่มาพร้อมกับแอปนี้',
     setLicensesOpen: 'ดู',
     setRightsContact: 'ติดต่อเรื่องเครื่องหมายการค้าและลิขสิทธิ์',
-    setRightsContactDesc: 'ส่งการแจ้งละเมิดสิทธิ์และคำถามเกี่ยวกับสัญญาอนุญาตมาที่อีเมลนี้',
-    setRightsContactSend: 'เขียนอีเมล',
+    setRightsContactDesc:
+      'แจ้งการละเมิดสิทธิ์และถามเรื่องสัญญาอนุญาตได้ที่ GitHub Issues ของโปรเจกต์',
+    setRightsContactSend: 'เปิด Issues',
     setTrademarks:
       'GenOffice ไม่มีความเกี่ยวข้องกับ Microsoft, Hancom, Adobe, XMind, Google, Anthropic หรือ OpenAI และไม่ได้รับการสนับสนุนหรือรับรองจากบริษัทเหล่านี้ Word, Excel และ PowerPoint เป็นเครื่องหมายการค้าของ Microsoft; Hangul, HWP และ HWPX ของ Hancom; XMind ของ XMind Ltd.; Google Drive ของ Google; Claude ของ Anthropic; ChatGPT และ Codex ของ OpenAI ชื่อเหล่านี้ใช้เพียงเพื่อบอกว่าแอปเปิดไฟล์ใดได้และทำงานร่วมกับอะไร',
     setHwpNotice:
@@ -4742,7 +4754,8 @@ export const strings = {
     openLocal: 'Buka File Lokal',
     dropToOpenTitle: 'Lepaskan untuk membuka',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Selamat pagi',
     greetAfternoon: 'Selamat siang',
     greetEvening: 'Selamat malam',
@@ -5118,8 +5131,9 @@ export const strings = {
       'Lihat pemberitahuan lisensi dan hak cipta untuk perangkat lunak dan font yang disertakan dengan aplikasi ini.',
     setLicensesOpen: 'Lihat',
     setRightsContact: 'Kontak merek dagang dan hak cipta',
-    setRightsContactDesc: 'Kirim laporan pelanggaran dan pertanyaan lisensi ke alamat ini.',
-    setRightsContactSend: 'Tulis email',
+    setRightsContactDesc:
+      'Kirim laporan pelanggaran dan pertanyaan lisensi di GitHub Issues proyek ini.',
+    setRightsContactSend: 'Buka Issues',
     setTrademarks:
       'GenOffice tidak berafiliasi dengan, disponsori, atau didukung oleh Microsoft, Hancom, Adobe, XMind, Google, Anthropic, atau OpenAI. Word, Excel, dan PowerPoint adalah merek dagang Microsoft; Hangul, HWP, dan HWPX milik Hancom; XMind milik XMind Ltd.; Google Drive milik Google; Claude milik Anthropic; ChatGPT dan Codex milik OpenAI. Nama-nama ini hanya digunakan untuk menyebutkan file apa yang dapat dibuka aplikasi dan dengan apa aplikasi bekerja.',
     setHwpNotice:
@@ -5268,7 +5282,8 @@ export const strings = {
     openLocal: 'Открыть локальный файл',
     dropToOpenTitle: 'Отпустите, чтобы открыть',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Доброе утро',
     greetAfternoon: 'Добрый день',
     greetEvening: 'Добрый вечер',
@@ -5646,8 +5661,8 @@ export const strings = {
     setLicensesOpen: 'Открыть',
     setRightsContact: 'Связь по вопросам товарных знаков и авторских прав',
     setRightsContactDesc:
-      'Сообщения о нарушении прав и вопросы о лицензиях отправляйте на этот адрес.',
-    setRightsContactSend: 'Написать письмо',
+      'Сообщения о нарушении прав и вопросы о лицензиях оставляйте в GitHub Issues проекта.',
+    setRightsContactSend: 'Открыть Issues',
     setTrademarks:
       'GenOffice не связан с Microsoft, Hancom, Adobe, XMind, Google, Anthropic или OpenAI и не спонсируется и не одобряется ими. Word, Excel и PowerPoint — товарные знаки Microsoft; Hangul, HWP и HWPX — Hancom; XMind — XMind Ltd.; Google Диск — Google; Claude — Anthropic; ChatGPT и Codex — OpenAI. Эти названия используются только для того, чтобы указать, какие файлы открывает приложение и с чем оно работает.',
     setHwpNotice:
@@ -5796,7 +5811,8 @@ export const strings = {
     openLocal: 'فتح ملف محلي',
     dropToOpenTitle: 'أفلت للفتح',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'صباح الخير',
     greetAfternoon: 'مساء الخير',
     greetEvening: 'مساء الخير',
@@ -6162,8 +6178,9 @@ export const strings = {
     setLicensesDesc: 'عرض إشعارات الترخيص وحقوق النشر للبرامج والخطوط المضمّنة في هذا التطبيق.',
     setLicensesOpen: 'عرض',
     setRightsContact: 'التواصل بشأن العلامات التجارية وحقوق النشر',
-    setRightsContactDesc: 'أرسل بلاغات انتهاك الحقوق والأسئلة المتعلقة بالترخيص إلى هذا العنوان.',
-    setRightsContactSend: 'كتابة رسالة',
+    setRightsContactDesc:
+      'أرسل بلاغات انتهاك الحقوق والأسئلة المتعلقة بالترخيص في صفحة GitHub Issues للمشروع.',
+    setRightsContactSend: 'فتح Issues',
     setTrademarks:
       'GenOffice غير تابع لشركات Microsoft أو Hancom أو Adobe أو XMind أو Google أو Anthropic أو OpenAI، ولا يحظى برعايتها أو تأييدها. Word وExcel وPowerPoint علامات تجارية لشركة Microsoft؛ وHangul وHWP وHWPX لشركة Hancom؛ وXMind لشركة XMind Ltd.؛ وGoogle Drive لشركة Google؛ وClaude لشركة Anthropic؛ وChatGPT وCodex لشركة OpenAI. تُستخدم هذه الأسماء فقط لبيان الملفات التي يفتحها التطبيق وما يعمل معه.',
     setHwpNotice:
@@ -6308,7 +6325,8 @@ export const strings = {
     openLocal: 'Abrir arquivo local',
     dropToOpenTitle: 'Solte para abrir',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Bom dia',
     greetAfternoon: 'Boa tarde',
     greetEvening: 'Boa noite',
@@ -6685,8 +6703,8 @@ export const strings = {
     setLicensesOpen: 'Ver',
     setRightsContact: 'Contato sobre marcas e direitos autorais',
     setRightsContactDesc:
-      'Envie denúncias de violação e dúvidas sobre licenças para este endereço.',
-    setRightsContactSend: 'Escrever e-mail',
+      'Envie denúncias de violação e dúvidas sobre licenças nas issues do GitHub do projeto.',
+    setRightsContactSend: 'Abrir issues',
     setTrademarks:
       'GenOffice não é afiliado à Microsoft, Hancom, Adobe, XMind, Google, Anthropic ou OpenAI, nem patrocinado ou endossado por elas. Word, Excel e PowerPoint são marcas da Microsoft; Hangul, HWP e HWPX, da Hancom; XMind, da XMind Ltd.; Google Drive, do Google; Claude, da Anthropic; ChatGPT e Codex, da OpenAI. Esses nomes são usados apenas para indicar quais arquivos o aplicativo abre e com o que ele funciona.',
     setHwpNotice:
@@ -6830,7 +6848,8 @@ export const strings = {
     openLocal: 'Apri file locale',
     dropToOpenTitle: 'Rilascia per aprire',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Buongiorno',
     greetAfternoon: 'Buon pomeriggio',
     greetEvening: 'Buonasera',
@@ -7206,8 +7225,8 @@ export const strings = {
     setLicensesOpen: 'Visualizza',
     setRightsContact: 'Contatti per marchi e copyright',
     setRightsContactDesc:
-      'Invia a questo indirizzo segnalazioni di violazione e domande sulle licenze.',
-    setRightsContactSend: 'Scrivi un’email',
+      'Invia segnalazioni di violazione e domande sulle licenze nelle issue GitHub del progetto.',
+    setRightsContactSend: 'Apri le issue',
     setTrademarks:
       'GenOffice non è affiliato a Microsoft, Hancom, Adobe, XMind, Google, Anthropic od OpenAI, né sponsorizzato o approvato da loro. Word, Excel e PowerPoint sono marchi di Microsoft; Hangul, HWP e HWPX di Hancom; XMind di XMind Ltd.; Google Drive di Google; Claude di Anthropic; ChatGPT e Codex di OpenAI. Questi nomi sono usati solo per indicare quali file l’app apre e con cosa funziona.',
     setHwpNotice:
@@ -7350,7 +7369,8 @@ export const strings = {
     openLocal: 'Otwórz plik lokalny',
     dropToOpenTitle: 'Upuść, aby otworzyć',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Dzień dobry',
     greetAfternoon: 'Dzień dobry',
     greetEvening: 'Dobry wieczór',
@@ -7723,8 +7743,9 @@ export const strings = {
       'Wyświetl informacje o licencjach i prawach autorskich do oprogramowania i czcionek dołączonych do tej aplikacji.',
     setLicensesOpen: 'Wyświetl',
     setRightsContact: 'Kontakt w sprawie znaków towarowych i praw autorskich',
-    setRightsContactDesc: 'Zgłoszenia naruszeń i pytania o licencje wysyłaj na ten adres.',
-    setRightsContactSend: 'Napisz e-mail',
+    setRightsContactDesc:
+      'Zgłoszenia naruszeń i pytania o licencje zostawiaj w GitHub Issues projektu.',
+    setRightsContactSend: 'Otwórz Issues',
     setTrademarks:
       'GenOffice nie jest powiązany z firmami Microsoft, Hancom, Adobe, XMind, Google, Anthropic ani OpenAI, ani przez nie sponsorowany czy popierany. Word, Excel i PowerPoint są znakami towarowymi Microsoft; Hangul, HWP i HWPX — Hancom; XMind — XMind Ltd.; Dysk Google — Google; Claude — Anthropic; ChatGPT i Codex — OpenAI. Nazwy te służą wyłącznie do wskazania, jakie pliki otwiera aplikacja i z czym współpracuje.',
     setHwpNotice:
@@ -7868,7 +7889,8 @@ export const strings = {
     openLocal: 'Otevřít místní soubor',
     dropToOpenTitle: 'Přetažením otevřete',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Dobré ráno',
     greetAfternoon: 'Dobré odpoledne',
     greetEvening: 'Dobrý večer',
@@ -8190,8 +8212,9 @@ export const strings = {
       'Zobrazit licenční a autorskoprávní upozornění k softwaru a písmům dodávaným s touto aplikací.',
     setLicensesOpen: 'Zobrazit',
     setRightsContact: 'Kontakt ve věci ochranných známek a autorských práv',
-    setRightsContactDesc: 'Oznámení o porušení práv a dotazy k licencím posílejte na tuto adresu.',
-    setRightsContactSend: 'Napsat e-mail',
+    setRightsContactDesc:
+      'Oznámení o porušení práv a dotazy k licencím pište do GitHub Issues projektu.',
+    setRightsContactSend: 'Otevřít Issues',
     setTrademarks:
       'GenOffice není spojen se společnostmi Microsoft, Hancom, Adobe, XMind, Google, Anthropic ani OpenAI a není jimi sponzorován ani podporován. Word, Excel a PowerPoint jsou ochranné známky společnosti Microsoft; Hangul, HWP a HWPX společnosti Hancom; XMind společnosti XMind Ltd.; Disk Google společnosti Google; Claude společnosti Anthropic; ChatGPT a Codex společnosti OpenAI. Tyto názvy slouží jen k uvedení, které soubory aplikace otevírá a s čím spolupracuje.',
     setHwpNotice:
@@ -8381,7 +8404,8 @@ export const strings = {
     openLocal: 'Lokaal bestand openen',
     dropToOpenTitle: 'Loslaten om te openen',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Goedemorgen',
     greetAfternoon: 'Goedemiddag',
     greetEvening: 'Goedenavond',
@@ -8754,8 +8778,9 @@ export const strings = {
       'Bekijk de licentie- en auteursrechtvermeldingen van de software en lettertypen die bij deze app worden geleverd.',
     setLicensesOpen: 'Bekijken',
     setRightsContact: 'Contact over merken en auteursrecht',
-    setRightsContactDesc: 'Stuur meldingen van inbreuk en vragen over licenties naar dit adres.',
-    setRightsContactSend: 'E-mail schrijven',
+    setRightsContactDesc:
+      'Meld inbreuk en stel vragen over licenties in de GitHub-issues van het project.',
+    setRightsContactSend: 'Issues openen',
     setTrademarks:
       'GenOffice is niet verbonden aan Microsoft, Hancom, Adobe, XMind, Google, Anthropic of OpenAI en wordt niet door hen gesponsord of onderschreven. Word, Excel en PowerPoint zijn handelsmerken van Microsoft; Hangul, HWP en HWPX van Hancom; XMind van XMind Ltd.; Google Drive van Google; Claude van Anthropic; ChatGPT en Codex van OpenAI. Deze namen worden alleen gebruikt om aan te geven welke bestanden de app opent en waarmee hij samenwerkt.',
     setHwpNotice:
@@ -8899,7 +8924,8 @@ export const strings = {
     openLocal: 'Buka Fail Setempat',
     dropToOpenTitle: 'Lepaskan untuk membuka',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'Selamat pagi',
     greetAfternoon: 'Selamat tengah hari',
     greetEvening: 'Selamat petang',
@@ -9275,8 +9301,9 @@ export const strings = {
       'Lihat notis lesen dan hak cipta bagi perisian dan fon yang disertakan dengan aplikasi ini.',
     setLicensesOpen: 'Lihat',
     setRightsContact: 'Hubungan tanda dagangan dan hak cipta',
-    setRightsContactDesc: 'Hantar laporan pelanggaran hak dan soalan lesen ke alamat ini.',
-    setRightsContactSend: 'Tulis e-mel',
+    setRightsContactDesc:
+      'Hantar laporan pelanggaran hak dan soalan lesen di GitHub Issues projek ini.',
+    setRightsContactSend: 'Buka Issues',
     setTrademarks:
       'GenOffice tidak bergabung dengan, ditaja atau disokong oleh Microsoft, Hancom, Adobe, XMind, Google, Anthropic atau OpenAI. Word, Excel dan PowerPoint ialah tanda dagangan Microsoft; Hangul, HWP dan HWPX milik Hancom; XMind milik XMind Ltd.; Google Drive milik Google; Claude milik Anthropic; ChatGPT dan Codex milik OpenAI. Nama-nama ini hanya digunakan untuk menyatakan fail yang dibuka oleh aplikasi dan perkara yang digunakan bersamanya.',
     setHwpNotice:
@@ -9418,7 +9445,8 @@ export const strings = {
     openLocal: 'פתיחת קובץ מקומי',
     dropToOpenTitle: 'שחרר כדי לפתוח',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'בוקר טוב',
     greetAfternoon: 'צהריים טובים',
     greetEvening: 'ערב טוב',
@@ -9776,8 +9804,9 @@ export const strings = {
     setLicensesDesc: 'הצגת הודעות הרישיון וזכויות היוצרים של התוכנות והגופנים שמצורפים לאפליקציה.',
     setLicensesOpen: 'הצגה',
     setRightsContact: 'פנייה בנושא סימני מסחר וזכויות יוצרים',
-    setRightsContactDesc: 'דיווחים על הפרת זכויות ושאלות בנושא רישוי יש לשלוח לכתובת זו.',
-    setRightsContactSend: 'כתיבת דוא״ל',
+    setRightsContactDesc:
+      'דיווחים על הפרת זכויות ושאלות בנושא רישוי יש לפתוח ב-GitHub Issues של הפרויקט.',
+    setRightsContactSend: 'פתיחת Issues',
     setTrademarks:
       'GenOffice אינו קשור ל-Microsoft, Hancom, Adobe, XMind, Google, Anthropic או OpenAI, ואינו בחסותן או באישורן. Word, Excel ו-PowerPoint הם סימני מסחר של Microsoft; Hangul, HWP ו-HWPX של Hancom; XMind של XMind Ltd.; Google Drive של Google; Claude של Anthropic; ChatGPT ו-Codex של OpenAI. השמות האלה משמשים רק כדי לציין אילו קבצים האפליקציה פותחת ועם מה היא עובדת.',
     setHwpNotice:
@@ -9914,7 +9943,8 @@ export const strings = {
     openLocal: 'स्थानीय फ़ाइल खोलें',
     dropToOpenTitle: 'खोलने के लिए छोड़ें',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: 'सुप्रभात',
     greetAfternoon: 'नमस्ते',
     greetEvening: 'शुभ संध्या',
@@ -10285,8 +10315,9 @@ export const strings = {
       'इस ऐप के साथ आने वाले सॉफ़्टवेयर और फ़ॉन्ट के लाइसेंस और कॉपीराइट नोटिस देखें।',
     setLicensesOpen: 'देखें',
     setRightsContact: 'ट्रेडमार्क और कॉपीराइट संपर्क',
-    setRightsContactDesc: 'अधिकार उल्लंघन की शिकायतें और लाइसेंस से जुड़े प्रश्न इस पते पर भेजें।',
-    setRightsContactSend: 'ईमेल लिखें',
+    setRightsContactDesc:
+      'अधिकार उल्लंघन की शिकायतें और लाइसेंस से जुड़े प्रश्न प्रोजेक्ट के GitHub Issues में भेजें।',
+    setRightsContactSend: 'Issues खोलें',
     setTrademarks:
       'GenOffice का Microsoft, Hancom, Adobe, XMind, Google, Anthropic या OpenAI से कोई संबंध नहीं है, और न ही यह उनके द्वारा प्रायोजित या समर्थित है। Word, Excel और PowerPoint, Microsoft के ट्रेडमार्क हैं; Hangul, HWP और HWPX, Hancom के; XMind, XMind Ltd. का; Google Drive, Google का; Claude, Anthropic का; और ChatGPT व Codex, OpenAI के ट्रेडमार्क हैं। ये नाम केवल यह बताने के लिए उपयोग किए जाते हैं कि ऐप कौन-सी फ़ाइलें खोलता है और किसके साथ काम करता है।',
     setHwpNotice:
@@ -10424,7 +10455,8 @@ export const strings = {
     openLocal: '開啟本機檔案',
     dropToOpenTitle: '放開以開啟檔案',
     uploadDocTitle: 'Open your document',
-    uploadDocSub: 'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
+    uploadDocSub:
+      'Drag an HWP, Word, Excel, PowerPoint or PDF file here, or click to choose one. The AI panel beside it edits it right away.',
     greetMorning: '早安',
     greetAfternoon: '午安',
     greetEvening: '晚安',
@@ -10775,8 +10807,8 @@ export const strings = {
     setLicensesDesc: '檢視本應用程式隨附的軟體與字型之授權與著作權聲明。',
     setLicensesOpen: '檢視',
     setRightsContact: '商標與著作權聯絡',
-    setRightsContactDesc: '侵權檢舉與授權相關問題請寄到此地址。',
-    setRightsContactSend: '寫信',
+    setRightsContactDesc: '侵權檢舉與授權相關問題請在專案的 GitHub Issues 中提出。',
+    setRightsContactSend: '開啟 Issues',
     setTrademarks:
       'GenOffice 與 Microsoft、Hancom、Adobe、XMind、Google、Anthropic、OpenAI 皆無關聯，也未獲其贊助或認可。Word、Excel、PowerPoint 是 Microsoft 的商標；Hangul（한글）、HWP、HWPX 是 Hancom 的商標；XMind 是 XMind Ltd. 的商標；Google 雲端硬碟是 Google 的商標；Claude 是 Anthropic 的商標；ChatGPT 與 Codex 是 OpenAI 的商標。這些名稱僅用於說明本應用程式能開啟哪些檔案，以及能與哪些服務搭配使用。',
     setHwpNotice:

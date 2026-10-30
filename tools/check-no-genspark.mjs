@@ -88,6 +88,11 @@ const ALLOW = [
     reason: 'the acknowledgement and trademark paragraphs',
   },
   {
+    path: 'web/runtime/client/intro.html',
+    line: /github\.com\/genspark-ai\/genoffice/,
+    reason: "the web edition's credits list naming the original project and its copyright holder",
+  },
+  {
     path: 'packages/agent-core/src/redact-range.ts',
     span: /https:\/\/genspark\.ai\/genoffice\/redaction\/2026/g,
     reason:

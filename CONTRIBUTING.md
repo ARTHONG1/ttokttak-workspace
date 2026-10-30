@@ -1,4 +1,4 @@
-# Contributing to IeumOffice
+# Contributing to ttokttak-studio
 
 Thanks for your interest in contributing. This document covers the local
 setup, the checks a change must pass, and the conventions used in this
@@ -7,10 +7,10 @@ repository.
 ## How changes land here
 
 Development happens in this repository,
-[pblsketch/openoffice](https://github.com/pblsketch/openoffice). Pull requests,
+[ARTHONG1/ttokttak-studio](https://github.com/ARTHONG1/ttokttak-studio). Pull requests,
 issues and feature requests are all handled here.
 
-IeumOffice is a modified version of GenOffice (see
+ttokttak-studio is a modified version of IeumOffice, itself based on GenOffice (see
 [License and acknowledgement](README.en.md#license-and-acknowledgement)) and
 keeps taking engine fixes from it, which shapes two rules:
 

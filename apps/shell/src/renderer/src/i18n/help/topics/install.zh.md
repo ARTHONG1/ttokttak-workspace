@@ -1,6 +1,6 @@
 # 安装 GenOffice
 
-每个版本都发布在项目 GitHub 的 [Releases 页面](https://github.com/pblsketch/openoffice/releases/latest)上。这个版本面向 Windows 发布。
+每个版本都发布在项目 GitHub 的 [Releases 页面](https://github.com/ARTHONG1/ttokttak-studio/releases/latest)上。这个版本面向 Windows 发布。
 
 ## 选择适合你机器的文件
 

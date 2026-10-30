@@ -1,6 +1,6 @@
 # Cài đặt GenOffice
 
-Mọi phiên bản đều được công bố trên [trang phát hành (Releases)](https://github.com/pblsketch/openoffice/releases/latest) của dự án trên GitHub. Phiên bản này được phát hành cho Windows.
+Mọi phiên bản đều được công bố trên [trang phát hành (Releases)](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) của dự án trên GitHub. Phiên bản này được phát hành cho Windows.
 
 ## Chọn tệp cho máy của bạn
 

@@ -5,7 +5,7 @@ import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LANGS, PRODUCT_CONTACT_EMAIL, PRODUCT_REPO_SLUG } from '@genoffice/i18n'
+import { LANGS, PRODUCT_CONTACT_URL, PRODUCT_REPO_SLUG } from '@genoffice/i18n'
 import type { Lang } from '@genoffice/i18n'
 import type { HomeApi } from '../src/shared/home-api'
 import { LocaleProvider } from '../src/renderer/src/locale'
@@ -104,9 +104,11 @@ describe('Settings → About', () => {
     expect(text.match(/GenOffice/g)).toHaveLength(1)
   })
 
-  it('opens the bundled license notices and starts a mail to the rights contact', async () => {
+  it('opens the bundled license notices and the rights contact', async () => {
     await openAbout()
-    expect(host.textContent).toContain(PRODUCT_CONTACT_EMAIL)
+    expect(host.textContent).toContain(PRODUCT_CONTACT_URL.replace(/^https:\/\//, ''))
+    // the upstream maintainer's survey is gone; the entry stays hidden until this product has one
+    expect(host.textContent).not.toContain(strings.en.feedbackOpen)
     await act(async () => {
       buttonLabeled(strings.en.setLicensesOpen).click()
       buttonLabeled(strings.en.setRightsContactSend).click()

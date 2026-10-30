@@ -1,6 +1,6 @@
 # GenOffice のインストール
 
-すべてのバージョンは、GitHub にあるプロジェクトの [Releases ページ](https://github.com/pblsketch/openoffice/releases/latest) で公開されています。このバージョンは Windows 向けにリリースされています。
+すべてのバージョンは、GitHub にあるプロジェクトの [Releases ページ](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) で公開されています。このバージョンは Windows 向けにリリースされています。
 
 ## 自分のマシンに合わせてファイルを選ぶ
 

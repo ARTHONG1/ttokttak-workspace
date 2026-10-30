@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { LANGS } from '@genoffice/i18n'
+import { FEEDBACK_SURVEY_ENABLED } from '../src/shared/feedback-survey'
 import {
   FEEDBACK_STRINGS,
   FEEDBACK_SURVEY_URL,
@@ -71,12 +72,23 @@ describe('the diagnostics block', () => {
 })
 
 describe('the survey address', () => {
-  it('is the published Google Form, not a repository or a local path', () => {
-    expect(FEEDBACK_SURVEY_URL).toMatch(/^https:\/\/(docs\.google\.com\/forms\/d\/e\/|forms\.gle\/)/)
-    expect(FEEDBACK_SURVEY_URL).not.toMatch(/REPLACE|example\.com/)
-    expect(FEEDBACK_SURVEY_URL).not.toMatch(/github\.com/)
-    expect(FEEDBACK_SURVEY_URL).not.toMatch(/[\\/](Users|home)[\\/]/)
+  it('is off and empty while this product has no survey of its own', () => {
+    expect(FEEDBACK_SURVEY_ENABLED).toBe(false)
+    expect(FEEDBACK_SURVEY_URL).toBe('')
+    expect(index).toMatch(/if \(!FEEDBACK_SURVEY_ENABLED \|\| !FEEDBACK_SURVEY_URL\) return/)
   })
+
+  it.skipIf(!FEEDBACK_SURVEY_ENABLED)(
+    'is the published Google Form, not a repository or a local path',
+    () => {
+      expect(FEEDBACK_SURVEY_URL).toMatch(
+        /^https:\/\/(docs\.google\.com\/forms\/d\/e\/|forms\.gle\/)/,
+      )
+      expect(FEEDBACK_SURVEY_URL).not.toMatch(/REPLACE|example\.com/)
+      expect(FEEDBACK_SURVEY_URL).not.toMatch(/github\.com/)
+      expect(FEEDBACK_SURVEY_URL).not.toMatch(/[\\/](Users|home)[\\/]/)
+    },
+  )
 })
 
 describe('the shell wiring', () => {

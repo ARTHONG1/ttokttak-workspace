@@ -204,9 +204,9 @@ const RELEASES_PATH = `/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases`
  */
 const EMPTY_RELEASES_ATOM = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
-  <id>tag:github.com,2008:https://github.com/pblsketch/openoffice/releases</id>
-  <link type="text/html" rel="alternate" href="https://github.com/pblsketch/openoffice/releases"/>
-  <link type="application/atom+xml" rel="self" href="https://github.com/pblsketch/openoffice/releases.atom"/>
+  <id>tag:github.com,2008:https://github.com/ARTHONG1/ttokttak-studio/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/ARTHONG1/ttokttak-studio/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/ARTHONG1/ttokttak-studio/releases.atom"/>
   <title>Release notes from openoffice</title>
   <updated>2026-10-13T06:34:27Z</updated>
 </feed>
@@ -908,7 +908,7 @@ describe('manual download fallback', () => {
     expect(openExternal).toHaveBeenCalledTimes(1)
     expect(openExternal).toHaveBeenCalledWith(GITHUB_LATEST_RELEASE_URL)
     expect(GITHUB_LATEST_RELEASE_URL).toBe(
-      'https://github.com/pblsketch/openoffice/releases/latest',
+      'https://github.com/ARTHONG1/ttokttak-studio/releases/latest',
     )
   })
 
@@ -929,7 +929,7 @@ describe('manual download fallback', () => {
     actions.onOpenDownload()
     expect(openExternal).toHaveBeenCalledWith(githubReleaseTagUrl('0.3.0-beta.1'))
     expect(githubReleaseTagUrl('0.3.0-beta.1')).toBe(
-      'https://github.com/pblsketch/openoffice/releases/tag/v0.3.0-beta.1',
+      'https://github.com/ARTHONG1/ttokttak-studio/releases/tag/v0.3.0-beta.1',
     )
   })
 })
