@@ -188,14 +188,15 @@ the Hangul document file format (.hwp).)
 
 Trademarks
 
-IeumOffice is not affiliated with, sponsored by or endorsed by Microsoft
-Corporation, Hancom Inc., Adobe Inc., XMind Ltd., Google LLC, Anthropic or
-OpenAI. "Microsoft", "Windows", "Word", "Excel" and "PowerPoint" are
+똑딱작업실 (HangulAIWorkbench) is an independent project. It is not affiliated
+with, sponsored by or endorsed by the IeumOffice maintainers, Mainfunc, Inc.,
+Microsoft Corporation, Hancom Inc., Adobe Inc., XMind Ltd., Google LLC,
+Anthropic or OpenAI. "Microsoft", "Windows", "Word", "Excel" and "PowerPoint" are
 trademarks of Microsoft Corporation. "한글" (Hangul), "한컴" (Hancom), "HWP"
 and "HWPX" are registered trademarks of Hancom Inc. "XMind" is a trademark of
 XMind Ltd. "Google Drive" is a trademark of Google LLC. "Claude" is a
 trademark of Anthropic; "Codex" and "ChatGPT" are trademarks of OpenAI. These
-and other product names are used only to say which files IeumOffice opens and
+and other product names are used only to say which files this program opens and
 what it works with. The file-type icons and the AI provider marks in the app
 are original drawings, not those companies' logos.
 
