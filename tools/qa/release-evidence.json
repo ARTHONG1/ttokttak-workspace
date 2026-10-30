@@ -1,0 +1,107 @@
+[
+  {
+    "id": "docx-internal-edits",
+    "format": "docx",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Vitest and Electron MCP document edits/save passed"
+  },
+  {
+    "id": "docx-external-office",
+    "format": "docx",
+    "status": "NOT RUN",
+    "severity": "P1",
+    "reason": "No fresh Microsoft Word/LibreOffice edited-file reopen test"
+  },
+  {
+    "id": "hwp-integrity-guard",
+    "format": "hwp",
+    "status": "PASS",
+    "severity": "P1",
+    "reason": "New HWP master-page/memo loss blocker unit checks pass; other HWP save tests pass"
+  },
+  {
+    "id": "hwp-read-only-open",
+    "format": "hwp",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Electron opens copied HWP fixture and leaves SHA-256 unchanged"
+  },
+  {
+    "id": "hwp-master-compatibility",
+    "format": "hwp",
+    "status": "BLOCK",
+    "severity": "P0",
+    "reason": "Affected HWP master-page documents require independent round-trip; destructive save path now aborts"
+  },
+  {
+    "id": "hwpx-read-only-open",
+    "format": "hwpx",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Electron opens copied HWPX fixture and leaves SHA-256 unchanged"
+  },
+  {
+    "id": "hwpx-save-archive-guard",
+    "format": "hwpx",
+    "status": "PASS",
+    "severity": "P1",
+    "reason": "Pre-overwrite CRC, XML, required parts, exact original master-page preservation and section/asset presence tests pass; Electron rejects unsafe master-page rewrites and HWPX memo round-trip passes"
+  },
+  {
+    "id": "hwpx-hancom-six",
+    "format": "hwpx",
+    "status": "BLOCK",
+    "severity": "P0",
+    "reason": "Six historic HWPX reopens failed in Hancom 2024; no fresh repair/verification corpus"
+  },
+  {
+    "id": "xlsx-internal-save",
+    "format": "xlsx",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Workbook native save, formula and overwrite-safety tests passed"
+  },
+  {
+    "id": "xlsx-excel-reopen",
+    "format": "xlsx",
+    "status": "NOT RUN",
+    "severity": "P1",
+    "reason": "No Excel/LibreOffice edited-workbook reopen"
+  },
+  {
+    "id": "pptx-internal-save",
+    "format": "pptx",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Deck native edit queue/atomic save and internal MCP tests passed"
+  },
+  {
+    "id": "pptx-powerpoint-reopen",
+    "format": "pptx",
+    "status": "NOT RUN",
+    "severity": "P1",
+    "reason": "No PowerPoint/LibreOffice edited-deck reopen"
+  },
+  {
+    "id": "pdf-widget-persistence",
+    "format": "pdf",
+    "status": "PASS",
+    "severity": "P2",
+    "reason": "Seven widgets from six fields verified on disk; form design E2E passes with save/reload barrier"
+  },
+  {
+    "id": "pdf-independent-viewer",
+    "format": "pdf",
+    "status": "NOT RUN",
+    "severity": "P1",
+    "reason": "No external PDF editor/viewer or subscription AI full round-trip"
+  },
+  {
+    "id": "all-formats-real-subscriptions",
+    "format": "ai",
+    "status": "NOT RUN",
+    "severity": "P1",
+    "reason": "No opt-in IEUM_AGENT_REAL=codex|claude real provider calls; do not silently incur cost or transmit files"
+  }
+]
