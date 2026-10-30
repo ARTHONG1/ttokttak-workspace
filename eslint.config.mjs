@@ -82,4 +82,27 @@ export default tseslint.config(
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  {
+    // The web edition's page scripts run in the browser, as classic scripts.
+    files: ['web/runtime/client/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: { ...globals.browser },
+    },
+  },
+  {
+    // The web edition's stand-in for Electron keeps "the focused object" the way
+    // Electron does, by remembering `this`.
+    files: ['web/runtime/fake-electron.cjs'],
+    rules: {
+      '@typescript-eslint/no-this-alias': 'off',
+    },
+  },
+  {
+    // Browser checks: the callbacks passed to page.evaluate run in the page.
+    files: ['web/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
 )

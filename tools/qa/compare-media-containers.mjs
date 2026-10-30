@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { PDFDocument, PDFName } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
 import { compareArchives } from './archive-structure.mjs'
 
 function pdfStructure(doc) {

@@ -1,7 +1,11 @@
 /* The browser side of the web edition: windows, views, dialogs and menus of the desktop app. */
 ;(function () {
   'use strict'
-  var platform = /Mac|iPhone|iPad/.test(navigator.platform) ? 'darwin' : /Win/.test(navigator.platform) ? 'win32' : 'linux'
+  var platform = /Mac|iPhone|iPad/.test(navigator.platform)
+    ? 'darwin'
+    : /Win/.test(navigator.platform)
+      ? 'win32'
+      : 'linux'
   var isMac = platform === 'darwin'
   var root = document.getElementById('desktop')
   var statusEl = document.getElementById('status')
@@ -31,7 +35,9 @@
   }
   function connect() {
     status('문서 편집기를 준비하는 중…')
-    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/__ws')
+    ws = new WebSocket(
+      (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/__ws',
+    )
     ws.onopen = function () {
       rawSend({ t: 'hello', width: root.clientWidth, height: root.clientHeight })
       fetch('/__upload-root', { credentials: 'same-origin' })
@@ -57,7 +63,10 @@
       }
     }
     ws.onclose = function () {
-      ended('연결이 끊어졌습니다', '서버와의 연결이 끊겼습니다. 다시 시작하면 새 작업 공간이 열립니다. 내려받지 않은 문서는 다시 열어야 할 수 있습니다.')
+      ended(
+        '연결이 끊어졌습니다',
+        '서버와의 연결이 끊겼습니다. 다시 시작하면 새 작업 공간이 열립니다. 내려받지 않은 문서는 다시 열어야 할 수 있습니다.',
+      )
     }
   }
   function status(text) {
@@ -88,7 +97,15 @@
     el.className = msg.main ? 'win main' : 'win floating'
     var body = document.createElement('div')
     body.className = 'win-body'
-    var rec = { id: msg.win, wc: msg.wc, main: msg.main, el: el, body: body, backdrop: null, title: null }
+    var rec = {
+      id: msg.win,
+      wc: msg.wc,
+      main: msg.main,
+      el: el,
+      body: body,
+      backdrop: null,
+      title: null,
+    }
     if (!msg.main) {
       var bar = document.createElement('div')
       bar.className = 'win-bar'
@@ -198,7 +215,10 @@
         resolve(value)
       }
       build(box, done)
-      var focusable = box.querySelector('[autofocus]') || box.querySelector('button.primary') || box.querySelector('button')
+      var focusable =
+        box.querySelector('[autofocus]') ||
+        box.querySelector('button.primary') ||
+        box.querySelector('button')
       if (focusable) focusable.focus()
     })
   }
@@ -229,7 +249,12 @@
       var row = document.createElement('div')
       row.className = 'dlg-buttons'
       var buttons = options.buttons && options.buttons.length ? options.buttons : ['확인']
-      var cancelId = typeof options.cancelId === 'number' ? options.cancelId : buttons.length > 1 ? buttons.length - 1 : 0
+      var cancelId =
+        typeof options.cancelId === 'number'
+          ? options.cancelId
+          : buttons.length > 1
+            ? buttons.length - 1
+            : 0
       buttons.forEach(function (label, i) {
         var b = document.createElement('button')
         b.type = 'button'
@@ -242,7 +267,8 @@
       })
       box.appendChild(row)
       box.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') done({ response: cancelId, checkboxChecked: check ? check.checked : false })
+        if (e.key === 'Escape')
+          done({ response: cancelId, checkboxChecked: check ? check.checked : false })
       })
     })
   }
@@ -279,7 +305,10 @@
     var picker = window.showOpenFilePicker && !dir
     var chosen = picker
       ? window
-          .showOpenFilePicker({ multiple: props.indexOf('multiSelections') >= 0, types: pickerTypes(options.filters) })
+          .showOpenFilePicker({
+            multiple: props.indexOf('multiSelections') >= 0,
+            types: pickerTypes(options.filters),
+          })
           .then(function (hs) {
             return Promise.all(
               hs.map(function (h) {
@@ -330,12 +359,23 @@
       var exts = (f.extensions || []).filter(function (x) {
         return x !== '*'
       })
-      if (exts.length) types.push({ description: f.name || '', accept: { 'application/octet-stream': exts.map(function (x) { return '.' + x }) } })
+      if (exts.length)
+        types.push({
+          description: f.name || '',
+          accept: {
+            'application/octet-stream': exts.map(function (x) {
+              return '.' + x
+            }),
+          },
+        })
     })
     return types.length ? types : undefined
   }
   function saveDialog(options) {
-    var suggested = String(options.defaultPath || '').split(/[\\/]/).pop() || '새 문서'
+    var suggested =
+      String(options.defaultPath || '')
+        .split(/[\\/]/)
+        .pop() || '새 문서'
     if (window.showSaveFilePicker) {
       return window
         .showSaveFilePicker({ suggestedName: suggested, types: pickerTypes(options.filters) })
@@ -402,7 +442,10 @@
 
   // ------------------------------------------------------------ files
   function upload(file, path, handleId) {
-    var url = '/__upload?path=' + encodeURIComponent(path) + (handleId ? '&handle=' + encodeURIComponent(handleId) : '')
+    var url =
+      '/__upload?path=' +
+      encodeURIComponent(path) +
+      (handleId ? '&handle=' + encodeURIComponent(handleId) : '')
     var p = fetch(url, { method: 'POST', body: file, credentials: 'same-origin' })
       .then(function (r) {
         return r.json()
@@ -431,7 +474,15 @@
       return (n < 10 ? '0' : '') + n
     }
     var name =
-      d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds())
+      d.getFullYear() +
+      '-' +
+      pad(d.getMonth() + 1) +
+      '-' +
+      pad(d.getDate()) +
+      ' ' +
+      pad(d.getHours()) +
+      pad(d.getMinutes()) +
+      pad(d.getSeconds())
     if (name.slice(0, 17) === lastFolder.slice(0, 17)) {
       folderSeq += 1
       name += '-' + folderSeq
@@ -465,7 +516,14 @@
           toast('‘' + msg.name + '’ 저장됨')
         })
         .catch(function (err) {
-          toast('‘' + msg.name + '’을(를) 내 컴퓨터에 쓰지 못했습니다. 내려받아 보관하세요. (' + err.message + ')', msg)
+          toast(
+            '‘' +
+              msg.name +
+              '’을(를) 내 컴퓨터에 쓰지 못했습니다. 내려받아 보관하세요. (' +
+              err.message +
+              ')',
+            msg,
+          )
         })
       return
     }
@@ -474,7 +532,8 @@
   // Once per browser: web files live on the server only for a while, so say so
   // before the first document is lost to a closed tab.
   var NOTICE_KEY = 'hs-storage-notice-v1'
-  function showStorageNotice() {
+  // kept for when the first-save notice comes back; nothing calls it now
+  function _showStorageNotice() {
     try {
       if (localStorage.getItem(NOTICE_KEY)) return
     } catch (e) {}
@@ -510,7 +569,8 @@
     if (sessionOver) return
     var editing = false
     wcs.forEach(function (rec) {
-      if (rec.url && rec.url.indexOf('/__proto/genoffice-app/') !== -1 && rec.iframe.isConnected) editing = true
+      if (rec.url && rec.url.indexOf('/__proto/genoffice-app/') !== -1 && rec.iframe.isConnected)
+        editing = true
     })
     if (!editing) return
     e.preventDefault()
@@ -541,9 +601,12 @@
     }
     t.appendChild(x)
     document.getElementById('toasts').appendChild(t)
-    setTimeout(function () {
-      t.remove()
-    }, file ? 20000 : 4000)
+    setTimeout(
+      function () {
+        t.remove()
+      },
+      file ? 20000 : 4000,
+    )
   }
 
   // ------------------------------------------------------------ menus and keys
@@ -643,9 +706,30 @@
       else if (p === 'shift') want.shift = true
       else if (p === 'alt' || p === 'option') want.alt = true
     })
-    if (want.meta !== e.metaKey || want.ctrl !== e.ctrlKey || want.shift !== e.shiftKey || want.alt !== e.altKey) return false
+    if (
+      want.meta !== e.metaKey ||
+      want.ctrl !== e.ctrlKey ||
+      want.shift !== e.shiftKey ||
+      want.alt !== e.altKey
+    )
+      return false
     var k = String(e.key).toLowerCase()
-    var aliases = { plus: '+', '=': '=', space: ' ', tab: 'tab', enter: 'enter', return: 'enter', esc: 'escape', escape: 'escape', backspace: 'backspace', delete: 'delete', up: 'arrowup', down: 'arrowdown', left: 'arrowleft', right: 'arrowright' }
+    var aliases = {
+      plus: '+',
+      '=': '=',
+      space: ' ',
+      tab: 'tab',
+      enter: 'enter',
+      return: 'enter',
+      esc: 'escape',
+      escape: 'escape',
+      backspace: 'backspace',
+      delete: 'delete',
+      up: 'arrowup',
+      down: 'arrowdown',
+      left: 'arrowleft',
+      right: 'arrowright',
+    }
     var want2 = aliases[key] || key
     if (k === want2) return true
     if (e.code && /^Key[A-Z]$/.test(e.code) && e.code.slice(3).toLowerCase() === want2) return true
@@ -670,7 +754,17 @@
       t: 'wc-event',
       wc: wc,
       ev: 'input',
-      data: { type: 'keyDown', key: e.key, code: e.code, isAutoRepeat: e.repeat, shift: e.shiftKey, control: e.ctrlKey, alt: e.altKey, meta: e.metaKey, modifiers: [] },
+      data: {
+        type: 'keyDown',
+        key: e.key,
+        code: e.code,
+        isAutoRepeat: e.repeat,
+        shift: e.shiftKey,
+        control: e.ctrlKey,
+        alt: e.altKey,
+        meta: e.metaKey,
+        modifiers: [],
+      },
     })
     if (!mod) return false
     var item = appMenu.id ? findAccel(appMenu.items, e) : null
@@ -679,7 +773,9 @@
       return true
     }
     // browser shortcuts that would leave or print the page
-    return RESERVED.test(String(e.key).toLowerCase()) && /^(s|o|p)$/.test(String(e.key).toLowerCase())
+    return (
+      RESERVED.test(String(e.key).toLowerCase()) && /^(s|o|p)$/.test(String(e.key).toLowerCase())
+    )
   }
 
   // ------------------------------------------------------------ messages from the app
@@ -766,7 +862,8 @@
       case 'wc-command': {
         var rc = wcs.get(msg.wc)
         try {
-          if (msg.cmd === 'insertText') rc.iframe.contentDocument.execCommand('insertText', false, msg.text)
+          if (msg.cmd === 'insertText')
+            rc.iframe.contentDocument.execCommand('insertText', false, msg.text)
           else rc.iframe.contentDocument.execCommand(msg.cmd)
         } catch (e) {}
         return
@@ -827,7 +924,10 @@
         return onFileWritten(msg)
       case 'session-ended':
       case 'app-quit':
-        return ended('작업 공간이 닫혔습니다', '프로그램이 종료되었습니다. 다시 시작하면 새 작업 공간이 열립니다.')
+        return ended(
+          '작업 공간이 닫혔습니다',
+          '프로그램이 종료되었습니다. 다시 시작하면 새 작업 공간이 열립니다.',
+        )
       case 'ready':
         return
     }
@@ -908,4 +1008,3 @@
 
   connect()
 })()
-

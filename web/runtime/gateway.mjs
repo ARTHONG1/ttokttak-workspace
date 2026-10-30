@@ -5,10 +5,9 @@
  */
 import { createServer } from 'node:http'
 import { fork } from 'node:child_process'
-import { randomUUID, randomBytes } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
@@ -25,14 +24,19 @@ const PORT = Number(process.env.PORT || 8080)
 const HOST = process.env.WEB_HOST || undefined
 const IDLE_MS = Number(process.env.WEB_SESSION_IDLE_MS || 15 * 60 * 1000)
 const MAX_UPLOAD = 200 * 1024 * 1024
-const DOC_EXT = /\.(hwp|hwpx|docx|doc|xlsx|xls|xlsm|csv|pptx|ppt|pdf|md|markdown|html|htm|epub|xmind|txt|odt|rtf|png|jpg|jpeg)$/i
+const DOC_EXT =
+  /\.(hwp|hwpx|docx|doc|xlsx|xls|xlsm|csv|pptx|ppt|pdf|md|markdown|html|htm|epub|xmind|txt|odt|rtf|png|jpg|jpeg)$/i
 fs.mkdirSync(SESSIONS_ROOT, { recursive: true })
 
 // ---------------------------------------------------------------- codec (browser ⇄ gateway)
 function encode(value) {
   return JSON.stringify(value, function (key, v) {
     const raw = this[key]
-    if (raw instanceof Uint8Array) return { __t: 'u8', b: Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength).toString('base64') }
+    if (raw instanceof Uint8Array)
+      return {
+        __t: 'u8',
+        b: Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength).toString('base64'),
+      }
     if (raw instanceof ArrayBuffer) return { __t: 'u8', b: Buffer.from(raw).toString('base64') }
     if (raw instanceof Date) return { __t: 'date', v: raw.getTime() }
     if (raw instanceof Map) return { __t: 'map', v: [...raw.entries()] }
@@ -78,7 +82,12 @@ class Session {
           fs.copyFileSync(path.join(SAMPLES, name), target)
           // a fresh copy is not a document the user saved: no download toast for it
           const info = fs.statSync(target)
-          this.known.set(target, { handle: null, announced: false, size: info.size, mtime: info.mtimeMs })
+          this.known.set(target, {
+            handle: null,
+            announced: false,
+            size: info.size,
+            mtime: info.mtimeMs,
+          })
         }
       } catch {}
     }
@@ -165,8 +174,10 @@ class Session {
     this.toBrowser(msg)
     const answer = await new Promise((resolve) => this.pending.set('d' + msg.id, resolve))
     let reply = { t: 'reply', id: msg.id }
-    if (msg.kind === 'message') reply = { ...reply, response: answer.response, checkboxChecked: answer.checkboxChecked }
-    else if (msg.kind === 'open') reply = { ...reply, filePaths: (answer.paths || []).filter((p) => this.owns(p)) }
+    if (msg.kind === 'message')
+      reply = { ...reply, response: answer.response, checkboxChecked: answer.checkboxChecked }
+    else if (msg.kind === 'open')
+      reply = { ...reply, filePaths: (answer.paths || []).filter((p) => this.owns(p)) }
     else if (msg.kind === 'save') {
       if (!answer.name) reply = { ...reply, filePath: '' }
       else {
@@ -195,7 +206,13 @@ class Session {
   watch() {
     try {
       this.watcher = fs.watch(this.home, { recursive: true }, (_event, name) => {
-        if (!name || !DOC_EXT.test(name) || /(^|\/)\.|\.tmp$|~$/.test(name) || name.includes('/.config/')) return
+        if (
+          !name ||
+          !DOC_EXT.test(name) ||
+          /(^|\/)\.|\.tmp$|~$/.test(name) ||
+          name.includes('/.config/')
+        )
+          return
         const full = path.join(this.home, name)
         clearTimeout(this.writeTimers.get(full))
         this.writeTimers.set(
@@ -218,11 +235,22 @@ class Session {
     if (!info.isFile()) return
     const known = this.known.get(full)
     if (known && known.size === info.size && known.mtime === info.mtimeMs) return
-    const entry = { handle: known?.handle ?? null, announced: true, size: info.size, mtime: info.mtimeMs }
+    const entry = {
+      handle: known?.handle ?? null,
+      announced: true,
+      size: info.size,
+      mtime: info.mtimeMs,
+    }
     this.known.set(full, entry)
     // an upload is registered by /__upload with its size and time, so it returned above;
     // a new file here was written by the app (an opened .hwp saved as .hwpx beside it)
-    this.toBrowser({ t: 'file-written', path: full, name: path.basename(full), size: info.size, handle: entry.handle })
+    this.toBrowser({
+      t: 'file-written',
+      path: full,
+      name: path.basename(full),
+      size: info.size,
+      handle: entry.handle,
+    })
   }
 }
 
@@ -233,10 +261,24 @@ function sessionFromCookie(req) {
 
 // ---------------------------------------------------------------- HTTP
 const MIME = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.wasm': 'application/wasm', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
-  '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.otf': 'font/otf', '.pdf': 'application/pdf',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.wasm': 'application/wasm',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.pdf': 'application/pdf',
 }
 const FRAME_SCRIPT = '<script src="/__web/frame.js"></script>'
 
@@ -248,8 +290,11 @@ function relaxCsp(csp) {
     .map((d) => {
       const tokens = d.trim().split(/\s+/)
       if (tokens.length < 2) return d
-      const hasScheme = tokens.slice(1).some((t) => /^[a-z][a-z0-9+.-]*:$/i.test(t) && !WEB_SCHEMES.test(t))
-      if (hasScheme && !tokens.includes("'self'") && !tokens.includes("'none'")) tokens.push("'self'")
+      const hasScheme = tokens
+        .slice(1)
+        .some((t) => /^[a-z][a-z0-9+.-]*:$/i.test(t) && !WEB_SCHEMES.test(t))
+      if (hasScheme && !tokens.includes("'self'") && !tokens.includes("'none'"))
+        tokens.push("'self'")
       return ' ' + tokens.join(' ')
     })
     .join(';')
@@ -258,10 +303,18 @@ function relaxCsp(csp) {
 
 function injectFrame(html) {
   let text = Buffer.from(html).toString('utf8')
-  text = text.replace(/(<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*content=")([^"]*)(")/gi, (_m, a, csp, b) => a + relaxCsp(csp) + b)
+  text = text.replace(
+    /(<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*content=")([^"]*)(")/gi,
+    (_m, a, csp, b) => a + relaxCsp(csp) + b,
+  )
   if (text.includes('/__web/frame.js')) return text
   const head = /<head[^>]*>/i.exec(text)
-  if (head) return text.slice(0, head.index + head[0].length) + FRAME_SCRIPT + text.slice(head.index + head[0].length)
+  if (head)
+    return (
+      text.slice(0, head.index + head[0].length) +
+      FRAME_SCRIPT +
+      text.slice(head.index + head[0].length)
+    )
   return FRAME_SCRIPT + text
 }
 
@@ -295,19 +348,38 @@ function packOnce(key, body, enc) {
   const k = enc + ':' + key
   let hit = packed.get(k)
   if (!hit) {
-    hit = enc === 'br'
-      ? zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: body.length } })
-      : zlib.gzipSync(body, { level: 6 })
+    hit =
+      enc === 'br'
+        ? zlib.brotliCompressSync(body, {
+            params: {
+              [zlib.constants.BROTLI_PARAM_QUALITY]: 9,
+              [zlib.constants.BROTLI_PARAM_SIZE_HINT]: body.length,
+            },
+          })
+        : zlib.gzipSync(body, { level: 6 })
     packed.set(k, hit)
   }
   return hit
 }
 function sendBody(req, res, status, body, headers, { cacheKey = null, immutable = false } = {}) {
   const type = String(headers['Content-Type'] || '')
-  const h = { ...headers, 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-store', Vary: 'Accept-Encoding' }
-  const enc = body.length > 1024 && (COMPRESSIBLE.test(cacheKey || '') || /^(text\/|application\/(javascript|json|wasm))/.test(type)) ? pickEncoding(req) : null
+  const h = {
+    ...headers,
+    'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-store',
+    Vary: 'Accept-Encoding',
+  }
+  const enc =
+    body.length > 1024 &&
+    (COMPRESSIBLE.test(cacheKey || '') ||
+      /^(text\/|application\/(javascript|json|wasm))/.test(type))
+      ? pickEncoding(req)
+      : null
   if (enc) {
-    body = cacheKey ? packOnce(cacheKey, body, enc) : enc === 'br' ? zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } }) : zlib.gzipSync(body, { level: 6 })
+    body = cacheKey
+      ? packOnce(cacheKey, body, enc)
+      : enc === 'br'
+        ? zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } })
+        : zlib.gzipSync(body, { level: 6 })
     h['Content-Encoding'] = enc
   }
   h['Content-Length'] = body.length
@@ -327,7 +399,14 @@ async function serveFile(res, file, { inject = false, req = null } = {}) {
   const immutable = HASHED.test(file) && !type.startsWith('text/html')
   // app files are the same for every session: compress them once
   const appFile = file.startsWith(APP_ROOT + path.sep) || file.startsWith(CLIENT + path.sep)
-  sendBody(req, res, 200, body, { 'Content-Type': type }, { cacheKey: appFile ? file + (inject ? '#i' : '') : null, immutable })
+  sendBody(
+    req,
+    res,
+    200,
+    body,
+    { 'Content-Type': type },
+    { cacheKey: appFile ? file + (inject ? '#i' : '') : null, immutable },
+  )
 }
 
 async function serveVideo(req, res, file) {
@@ -338,7 +417,11 @@ async function serveVideo(req, res, file) {
     return send(res, 404, 'not found')
   }
   const size = info.size
-  const base = { 'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes', 'Cache-Control': 'public, max-age=86400' }
+  const base = {
+    'Content-Type': 'video/mp4',
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'public, max-age=86400',
+  }
   const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''))
   if (!m) {
     res.writeHead(200, { ...base, 'Content-Length': size })
@@ -350,20 +433,27 @@ async function serveVideo(req, res, file) {
     res.writeHead(416, { ...base, 'Content-Range': 'bytes */' + size })
     return res.end()
   }
-  res.writeHead(206, { ...base, 'Content-Range': 'bytes ' + start + '-' + end + '/' + size, 'Content-Length': end - start + 1 })
+  res.writeHead(206, {
+    ...base,
+    'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
+    'Content-Length': end - start + 1,
+  })
   return req.method === 'HEAD' ? res.end() : fs.createReadStream(file, { start, end }).pipe(res)
 }
 
 function allowedAppFile(file) {
   const rel = path.relative(APP_ROOT, file)
   if (rel.startsWith('..') || path.isAbsolute(rel)) return false
-  return /^(apps\/[^/]+\/out\/renderer\/|apps\/[^/]+\/(public|resources)\/|node_modules\/)/.test(rel.split(path.sep).join('/'))
+  return /^(apps\/[^/]+\/out\/renderer\/|apps\/[^/]+\/(public|resources)\/|node_modules\/)/.test(
+    rel.split(path.sep).join('/'),
+  )
 }
 
 async function handleHttp(req, res) {
   const url = new URL(req.url, 'http://localhost')
   const p = url.pathname
-  if (p === '/api/health') return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
+  if (p === '/api/health')
+    return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
   // the intro page; the trial app itself lives at /app
   if (p === '/' || p === '/index.html') {
     const body = await fsp.readFile(path.join(CLIENT, 'intro.html'))
@@ -371,15 +461,24 @@ async function handleHttp(req, res) {
   }
   if (p === '/app' || p === '/app/') {
     const headers = {}
-    if (!sessionFromCookie(req)) headers['Set-Cookie'] = 'hs=' + randomBytes(18).toString('base64url') + '; Path=/; HttpOnly; SameSite=Lax' + (req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '')
+    if (!sessionFromCookie(req))
+      headers['Set-Cookie'] =
+        'hs=' +
+        randomBytes(18).toString('base64url') +
+        '; Path=/; HttpOnly; SameSite=Lax' +
+        (req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '')
     const body = await fsp.readFile(path.join(CLIENT, 'index.html'))
     return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', ...headers })
   }
   if (p.startsWith('/__web/') && p !== '/__web/preload.js') {
     // the license notices the desktop installer ships (apps/shell/build, copied by web/build.mjs)
     if (p === '/__web/licenses') {
-      const body = await fsp.readFile(path.join(APP_ROOT, 'apps', 'shell', 'build', 'THIRD-PARTY-NOTICES.txt')).catch(() => null)
-      return body ? send(res, 200, body, { 'Content-Type': 'text/plain; charset=utf-8' }) : send(res, 404, 'not found')
+      const body = await fsp
+        .readFile(path.join(APP_ROOT, 'apps', 'shell', 'build', 'THIRD-PARTY-NOTICES.txt'))
+        .catch(() => null)
+      return body
+        ? send(res, 200, body, { 'Content-Type': 'text/plain; charset=utf-8' })
+        : send(res, 404, 'not found')
     }
     const file = path.normalize(path.join(CLIENT, p.slice('/__web/'.length)))
     if (!file.startsWith(CLIENT)) return send(res, 403, 'forbidden')
@@ -397,13 +496,24 @@ async function handleHttp(req, res) {
   if (!session || !session.child) return send(res, 409, 'no session')
 
   if (p === '/__web/preload.js') {
-    const reply = await session.requestChild({ t: 'preload-of', wc: Number(url.searchParams.get('wc')) })
+    const reply = await session.requestChild({
+      t: 'preload-of',
+      wc: Number(url.searchParams.get('wc')),
+    })
     const file = reply.value
-    if (!file || !allowedAppFile(path.resolve(file)) && !/\/apps\/[^/]+\/out\/preload\//.test(file)) {
-      return send(res, 200, '/* no preload */', { 'Content-Type': 'text/javascript; charset=utf-8' })
+    if (
+      !file ||
+      (!allowedAppFile(path.resolve(file)) && !/\/apps\/[^/]+\/out\/preload\//.test(file))
+    ) {
+      return send(res, 200, '/* no preload */', {
+        'Content-Type': 'text/javascript; charset=utf-8',
+      })
     }
     const code = await fsp.readFile(file, 'utf8')
-    const wrapped = '(function(){var require=window.__electronRequire,process=window.__electronProcess,module={exports:{}},exports=module.exports,global=window;\n' + code + '\n})();'
+    const wrapped =
+      '(function(){var require=window.__electronRequire,process=window.__electronProcess,module={exports:{}},exports=module.exports,global=window;\n' +
+      code +
+      '\n})();'
     return send(res, 200, wrapped, { 'Content-Type': 'text/javascript; charset=utf-8' })
   }
   if (p.startsWith('/__proto/')) {
@@ -411,25 +521,40 @@ async function handleHttp(req, res) {
     const slash = rest.indexOf('/')
     const scheme = rest.slice(0, slash)
     const original = scheme + '://' + rest.slice(slash + 1) + url.search
-    const body = req.method === 'GET' || req.method === 'HEAD' ? null : await readBody(req, MAX_UPLOAD)
+    const body =
+      req.method === 'GET' || req.method === 'HEAD' ? null : await readBody(req, MAX_UPLOAD)
     const headers = {}
-    for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string' && !/^(cookie|host|connection)$/i.test(k)) headers[k] = v
-    const reply = await session.requestChild({ t: 'proto', scheme, url: original, method: req.method, headers, body: body ? new Uint8Array(body) : null })
+    for (const [k, v] of Object.entries(req.headers))
+      if (typeof v === 'string' && !/^(cookie|host|connection)$/i.test(k)) headers[k] = v
+    const reply = await session.requestChild({
+      t: 'proto',
+      scheme,
+      url: original,
+      method: req.method,
+      headers,
+      body: body ? new Uint8Array(body) : null,
+    })
     const out = reply.value || { status: 502, headers: {}, body: null }
     const h = { ...out.headers }
     delete h['content-length']
     delete h['content-encoding']
     delete h['x-frame-options']
-    if (h['content-security-policy']) h['content-security-policy'] = relaxCsp(h['content-security-policy'])
+    if (h['content-security-policy'])
+      h['content-security-policy'] = relaxCsp(h['content-security-policy'])
     let data = out.body ? Buffer.from(out.body) : Buffer.alloc(0)
     const isHtml = String(h['content-type'] || '').startsWith('text/html')
     if (isHtml) data = Buffer.from(injectFrame(data))
     const status = out.status || 200
     // genoffice-app://<app>/assets/<name>-<hash>.<ext> is a built file: shared across sessions
-    const appAsset = status === 200 && scheme === 'genoffice-app' && !isHtml && HASHED.test(url.pathname)
+    const appAsset =
+      status === 200 && scheme === 'genoffice-app' && !isHtml && HASHED.test(url.pathname)
     const headersOut = {}
-    for (const [k, v] of Object.entries(h)) if (!/^cache-control$/i.test(k)) headersOut[k === 'content-type' ? 'Content-Type' : k] = v
-    return sendBody(req, res, status, data, headersOut, { cacheKey: appAsset ? 'proto:' + url.pathname : null, immutable: appAsset })
+    for (const [k, v] of Object.entries(h))
+      if (!/^cache-control$/i.test(k)) headersOut[k === 'content-type' ? 'Content-Type' : k] = v
+    return sendBody(req, res, status, data, headersOut, {
+      cacheKey: appAsset ? 'proto:' + url.pathname : null,
+      immutable: appAsset,
+    })
   }
   if (p.startsWith('/__file/')) {
     const file = path.resolve(decodeURIComponent(p.slice('/__file'.length)))
@@ -444,11 +569,23 @@ async function handleHttp(req, res) {
     await fsp.mkdir(path.dirname(target), { recursive: true })
     await fsp.writeFile(target, body)
     const info = await fsp.stat(target)
-    session.known.set(target, { handle: url.searchParams.get('handle') || null, announced: false, size: info.size, mtime: info.mtimeMs })
-    return send(res, 200, JSON.stringify({ ok: true, path: target }), { 'Content-Type': 'application/json' })
+    session.known.set(target, {
+      handle: url.searchParams.get('handle') || null,
+      announced: false,
+      size: info.size,
+      mtime: info.mtimeMs,
+    })
+    return send(res, 200, JSON.stringify({ ok: true, path: target }), {
+      'Content-Type': 'application/json',
+    })
   }
   if (p === '/__upload-root') {
-    return send(res, 200, JSON.stringify({ root: session.uploads, samples: session.samples, sep: path.sep }), { 'Content-Type': 'application/json' })
+    return send(
+      res,
+      200,
+      JSON.stringify({ root: session.uploads, samples: session.samples, sep: path.sep }),
+      { 'Content-Type': 'application/json' },
+    )
   }
   if (p === '/__download') {
     const file = path.resolve(String(url.searchParams.get('path') || ''))
@@ -456,14 +593,22 @@ async function handleHttp(req, res) {
     try {
       const body = await fsp.readFile(file)
       const name = encodeURIComponent(path.basename(file))
-      return send(res, 200, body, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': "attachment; filename*=UTF-8''" + name })
+      return send(res, 200, body, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': "attachment; filename*=UTF-8''" + name,
+      })
     } catch {
       return send(res, 404, 'not found')
     }
   }
   if (p === '/__ipc-sync' && req.method === 'POST') {
     const msg = revive(JSON.parse((await readBody(req, MAX_UPLOAD)).toString('utf8')))
-    const reply = await session.requestChild({ t: 'sendSync', wc: msg.wc, ch: msg.ch, args: msg.args })
+    const reply = await session.requestChild({
+      t: 'sendSync',
+      wc: msg.wc,
+      ch: msg.ch,
+      args: msg.args,
+    })
     return send(res, 200, encode({ value: reply.value }), { 'Content-Type': 'application/json' })
   }
   return send(res, 404, 'not found')
@@ -523,5 +668,8 @@ function attach(sid, ws) {
   })
 }
 
-server.listen(PORT, HOST, () => console.log('[gateway] Hangul AI Workbench web on ' + (HOST || '') + ':' + PORT + ' (app ' + APP_ROOT + ')'))
-
+server.listen(PORT, HOST, () =>
+  console.log(
+    '[gateway] Hangul AI Workbench web on ' + (HOST || '') + ':' + PORT + ' (app ' + APP_ROOT + ')',
+  ),
+)

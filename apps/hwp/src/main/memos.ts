@@ -80,6 +80,8 @@ export async function lostMemoCountOf(input: MemoLossInput): Promise<number> {
     const unmodelledAfter = Math.max(0, savedRaw - savedModel.length)
     return modelLost + Math.max(0, unmodelledBefore - unmodelledAfter)
   } catch (error) {
-    throw new Error(`hwp: HWPX save blocked: cannot verify HWPX memos (${String(error)})`)
+    throw new Error(`hwp: HWPX save blocked: cannot verify HWPX memos (${String(error)})`, {
+      cause: error,
+    })
   }
 }

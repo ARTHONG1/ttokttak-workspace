@@ -45,7 +45,13 @@ import type { HwpRecoveryHost } from './recovery'
 import { applySaveFixes } from './save-fixes'
 import { hwpxNamespacesOf } from './hwpx-prefixes'
 import { hwpxMasterPagesOf } from './hwpx-master-pages'
-import { backupPathFor, bytesMatchFormat, hwpxSiblingOf, needsBackup, withFormatExtension } from './save-plan'
+import {
+  backupPathFor,
+  bytesMatchFormat,
+  hwpxSiblingOf,
+  needsBackup,
+  withFormatExtension,
+} from './save-plan'
 import { sectionTailsOf } from './section-tails'
 import type { SectionTails } from './section-tails'
 import { newTabsOf } from './tab-widths'
@@ -734,7 +740,9 @@ function registerHwpIpc(): void {
             try {
               openedHwpx = await readFile(opened)
             } catch (error) {
-              throw new Error(`hwp: cannot verify opened HWPX before save (${String(error)})`)
+              throw new Error(`hwp: cannot verify opened HWPX before save (${String(error)})`, {
+                cause: error,
+              })
             }
           }
           memosLost = await lostMemoCountOf({

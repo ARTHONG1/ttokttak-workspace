@@ -44,7 +44,8 @@
   // ------------------------------------------------------------ codec (built in this realm)
   function toB64(u8) {
     var s = ''
-    for (var i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000))
+    for (var i = 0; i < u8.length; i += 0x8000)
+      s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000))
     return btoa(s)
   }
   function fromB64(b) {
@@ -68,7 +69,8 @@
     if (v instanceof Map) return { __t: 'map', v: enc(Array.from(v.entries()), seen) }
     if (v instanceof Set) return { __t: 'set', v: enc(Array.from(v.values()), seen) }
     if (v instanceof Error) return { __t: 'err', message: v.message }
-    if (typeof File !== 'undefined' && v instanceof File) return { name: v.name, size: v.size, type: v.type }
+    if (typeof File !== 'undefined' && v instanceof File)
+      return { name: v.name, size: v.size, type: v.type }
     seen = seen || new Set()
     if (seen.has(v)) return undefined
     seen.add(v)
@@ -113,11 +115,17 @@
     invoke: function (ch) {
       var args = Array.prototype.slice.call(arguments, 1)
       return new Promise(function (resolve, reject) {
-        host.invoke(wc, String(ch), enc(args), function (value) {
-          resolve(dec(value))
-        }, function (message) {
-          reject(new Error("Error invoking remote method '" + ch + "': Error: " + message))
-        })
+        host.invoke(
+          wc,
+          String(ch),
+          enc(args),
+          function (value) {
+            resolve(dec(value))
+          },
+          function (message) {
+            reject(new Error("Error invoking remote method '" + ch + "': Error: " + message))
+          },
+        )
       })
     },
     send: function (ch) {
@@ -231,7 +239,25 @@
     },
     clearCache: function () {},
   }
-  var electron = { ipcRenderer: ipcRenderer, contextBridge: contextBridge, webUtils: webUtils, webFrame: webFrame, clipboard: { writeText: function (t) { navigator.clipboard && navigator.clipboard.writeText(t) }, readText: function () { return '' } }, shell: { openExternal: function (u) { window.open(u, '_blank', 'noopener') } } }
+  var electron = {
+    ipcRenderer: ipcRenderer,
+    contextBridge: contextBridge,
+    webUtils: webUtils,
+    webFrame: webFrame,
+    clipboard: {
+      writeText: function (t) {
+        if (navigator.clipboard) navigator.clipboard.writeText(t)
+      },
+      readText: function () {
+        return ''
+      },
+    },
+    shell: {
+      openExternal: function (u) {
+        window.open(u, '_blank', 'noopener')
+      },
+    },
+  }
   window.__electronRequire = function (name) {
     if (name === 'electron' || name === 'electron/renderer') return electron
     throw new Error('Cannot find module ' + "'" + name + "'")
@@ -295,13 +321,20 @@
   var setAttr = Element.prototype.setAttribute
   Element.prototype.setAttribute = function (name, value) {
     var n = String(name).toLowerCase()
-    if (n === 'src' || n === 'href' || n === 'data' || n === 'poster' || n === 'xlink:href') value = toWeb(String(value))
+    if (n === 'src' || n === 'href' || n === 'data' || n === 'poster' || n === 'xlink:href')
+      value = toWeb(String(value))
     return setAttr.call(this, name, value)
   }
   var origFetch = window.fetch
   window.fetch = function (input, init) {
     if (typeof input === 'string') input = toWeb(input)
-    else if (input && input.url && /^[a-z][a-z0-9+.-]*:\/\//i.test(input.url) && toWeb(input.url) !== input.url) input = new Request(toWeb(input.url), input)
+    else if (
+      input &&
+      input.url &&
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(input.url) &&
+      toWeb(input.url) !== input.url
+    )
+      input = new Request(toWeb(input.url), input)
     else if (input instanceof URL) input = toWeb(input.href)
     return origFetch.call(this, input, init)
   }
@@ -314,7 +347,10 @@
   var OrigWorker = window.Worker
   if (OrigWorker) {
     window.Worker = function (url, opts) {
-      return new OrigWorker(typeof url === 'string' ? toWeb(url) : url instanceof URL ? toWeb(url.href) : url, opts)
+      return new OrigWorker(
+        typeof url === 'string' ? toWeb(url) : url instanceof URL ? toWeb(url.href) : url,
+        opts,
+      )
     }
     window.Worker.prototype = OrigWorker.prototype
   }
@@ -365,9 +401,13 @@
     },
     true,
   )
-  window.addEventListener('mousedown', function (e) {
-    host.pointer(wc, e.clientX, e.clientY)
-  }, true)
+  window.addEventListener(
+    'mousedown',
+    function (e) {
+      host.pointer(wc, e.clientX, e.clientY)
+    },
+    true,
+  )
   window.addEventListener('contextmenu', function (e) {
     host.pointer(wc, e.clientX, e.clientY)
     setTimeout(function () {
@@ -379,7 +419,15 @@
         y: e.clientY,
         selectionText: String(window.getSelection ? window.getSelection() : ''),
         isEditable: editable,
-        editFlags: { canCut: editable, canCopy: true, canPaste: editable, canSelectAll: true, canUndo: editable, canRedo: editable, canDelete: editable },
+        editFlags: {
+          canCut: editable,
+          canCopy: true,
+          canPaste: editable,
+          canSelectAll: true,
+          canUndo: editable,
+          canRedo: editable,
+          canDelete: editable,
+        },
         mediaType: t && t.tagName === 'IMG' ? 'image' : 'none',
         srcURL: t && t.tagName === 'IMG' ? t.src : '',
         linkURL: t && t.closest && t.closest('a') ? t.closest('a').href : '',
@@ -398,6 +446,5 @@
     host.frameEvent(wc, 'did-finish-load', { title: document.title })
   })
 
-  document.write('<script src="/__web/preload.js?wc=' + wc + '"><\/script>')
+  document.write('<script src="/__web/preload.js?wc=' + wc + '"></' + 'script>')
 })()
-

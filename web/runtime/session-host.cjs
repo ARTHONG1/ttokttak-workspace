@@ -30,7 +30,21 @@ if (process.env.WEB_TRACE_FS) {
       }
     } catch {}
   }
-  for (const name of ['openSync', 'readFileSync', 'existsSync', 'statSync', 'readdirSync', 'accessSync', 'createReadStream', 'readFile', 'stat', 'readdir', 'open', 'access', 'realpathSync']) {
+  for (const name of [
+    'openSync',
+    'readFileSync',
+    'existsSync',
+    'statSync',
+    'readdirSync',
+    'accessSync',
+    'createReadStream',
+    'readFile',
+    'stat',
+    'readdir',
+    'open',
+    'access',
+    'realpathSync',
+  ]) {
     const orig = fs[name]
     if (typeof orig !== 'function') continue
     fs[name] = function (p, ...rest) {
@@ -75,9 +89,17 @@ const updater = Object.assign(new EventEmitter(), {
 })
 
 const originalLoad = Module._load
-Module._load = function (request, parent, isMain) {
-  if (request === 'electron' || request === 'electron/main' || request === 'electron/common') return electron
-  if (request === 'electron-updater') return { autoUpdater: updater, CancellationToken, AppUpdater: class {}, NsisUpdater: class {}, MacUpdater: class {} }
+Module._load = function (request, _parent, _isMain) {
+  if (request === 'electron' || request === 'electron/main' || request === 'electron/common')
+    return electron
+  if (request === 'electron-updater')
+    return {
+      autoUpdater: updater,
+      CancellationToken,
+      AppUpdater: class {},
+      NsisUpdater: class {},
+      MacUpdater: class {},
+    }
   return originalLoad.apply(this, arguments)
 }
 
@@ -122,7 +144,11 @@ function pathOf(v) {
   if (typeof v !== 'string' || v.length < 1) return null
   let s = v
   if (/^file:\/\//i.test(s)) {
-    try { s = decodeURIComponent(new URL(s).pathname) } catch { return null }
+    try {
+      s = decodeURIComponent(new URL(s).pathname)
+    } catch {
+      return null
+    }
   }
   if (!path.isAbsolute(s) && !/^~(\/|$)/.test(s)) return null
   return path.resolve(s.replace(/^~(?=\/|$)/, web.paths.home))
@@ -134,11 +160,17 @@ function foreignPath(v, depth = 0) {
     return p && !inside(p, SESSION_DIR) && !inside(p, APP_DIR) ? v : null
   }
   if (Array.isArray(v)) {
-    for (const x of v) { const f = foreignPath(x, depth + 1); if (f) return f }
+    for (const x of v) {
+      const f = foreignPath(x, depth + 1)
+      if (f) return f
+    }
     return null
   }
   if (typeof v === 'object' && !(v instanceof Uint8Array) && !(v instanceof ArrayBuffer)) {
-    for (const k of Object.keys(v)) { const f = foreignPath(v[k], depth + 1); if (f) return f }
+    for (const k of Object.keys(v)) {
+      const f = foreignPath(v[k], depth + 1)
+      if (f) return f
+    }
   }
   return null
 }
@@ -159,13 +191,23 @@ async function onMessage(msg) {
       const wc = web.allContents.get(msg.wc)
       const handler = (wc && wc.ipc.handlers.get(msg.ch)) || web.ipcMain.handlers.get(msg.ch)
       if (!wc || !handler) {
-        web.link.send({ t: 'reply', id: msg.id, ok: false, error: "No handler registered for '" + msg.ch + "'" })
+        web.link.send({
+          t: 'reply',
+          id: msg.id,
+          ok: false,
+          error: "No handler registered for '" + msg.ch + "'",
+        })
         return
       }
       const foreign = foreignPath(msg.args)
       if (foreign) {
         console.warn('[session] refused path outside the session on', msg.ch)
-        web.link.send({ t: 'reply', id: msg.id, ok: false, error: 'This path is not available in the web edition.' })
+        web.link.send({
+          t: 'reply',
+          id: msg.id,
+          ok: false,
+          error: 'This path is not available in the web edition.',
+        })
         return
       }
       try {
@@ -180,12 +222,14 @@ async function onMessage(msg) {
     case 'sendSync': {
       const wc = web.allContents.get(msg.wc)
       if (!wc) {
-        if (msg.t === 'sendSync') web.link.send({ t: 'reply', id: msg.id, ok: true, value: undefined })
+        if (msg.t === 'sendSync')
+          web.link.send({ t: 'reply', id: msg.id, ok: true, value: undefined })
         return
       }
       if (foreignPath(msg.args)) {
         console.warn('[session] refused path outside the session on', msg.ch)
-        if (msg.t === 'sendSync') web.link.send({ t: 'reply', id: msg.id, ok: true, value: undefined })
+        if (msg.t === 'sendSync')
+          web.link.send({ t: 'reply', id: msg.id, ok: true, value: undefined })
         return
       }
       const event = ipcEvent(wc)
@@ -195,7 +239,8 @@ async function onMessage(msg) {
       } catch (err) {
         console.error('[session] ipc', msg.ch, err)
       }
-      if (msg.t === 'sendSync') web.link.send({ t: 'reply', id: msg.id, ok: true, value: event.returnValue })
+      if (msg.t === 'sendSync')
+        web.link.send({ t: 'reply', id: msg.id, ok: true, value: event.returnValue })
       return
     }
     case 'wc-event': {
@@ -225,7 +270,12 @@ async function onMessage(msg) {
         const res = await web.handleProtocolRequest(msg)
         web.link.send({ t: 'reply', id: msg.id, ok: true, value: res })
       } catch (err) {
-        web.link.send({ t: 'reply', id: msg.id, ok: true, value: { status: 500, headers: {}, body: null, error: errorText(err) } })
+        web.link.send({
+          t: 'reply',
+          id: msg.id,
+          ok: true,
+          value: { status: 500, headers: {}, body: null, error: errorText(err) },
+        })
       }
       return
     }
@@ -262,7 +312,13 @@ function seedAiSettings(dir) {
     file,
     JSON.stringify({
       provider: 'gemini',
-      providers: { gemini: { apiKey: 'vertex-adc', model: process.env.VERTEX_DEFAULT_MODEL || 'gemini-4-argon', baseUrl: vertexBaseUrl() } },
+      providers: {
+        gemini: {
+          apiKey: 'vertex-adc',
+          model: process.env.VERTEX_DEFAULT_MODEL || 'gemini-4-argon',
+          baseUrl: vertexBaseUrl(),
+        },
+      },
       internetTools: true,
       subscriptionNoticeSeen: true,
     }),
@@ -298,4 +354,3 @@ setImmediate(() => {
   web.app.emit('ready', {}, {})
   web.link.send({ t: 'ready' })
 })
-
