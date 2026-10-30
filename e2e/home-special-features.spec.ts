@@ -43,6 +43,23 @@ test('special features open from the home sidebar', async () => {
     await expect(page.getByTestId('quiz-youtube')).toBeVisible()
     await page.screenshot({ path: screenshotPath('home-special-features-quiz') })
 
+    // 단어 찾기: words typed by hand make a sheet without the AI, every word in the grid
+    await page.getByTestId('quiz-mode-words').click()
+    for (const word of ['뿌리', '줄기', '열매', '광합성', '꽃가루']) {
+      await page.getByTestId('ws-new-word').fill(word)
+      await page.getByTestId('ws-new-word').press('Enter')
+    }
+    await expect(page.getByTestId('ws-list').locator('li')).toHaveCount(5)
+    await page.getByTestId('ws-generate').click()
+    await expect(page.getByTestId('ws-result')).toBeVisible()
+    await expect(page.getByTestId('ws-grid').locator('tr')).toHaveCount(15)
+    await page.getByRole('tab', { name: '해답' }).click()
+    // 14 letters; at 보통 two words may share a letter, so a few cells fewer
+    const hits = await page.locator('.ws-grid td.is-hit').count()
+    expect(hits).toBeGreaterThan(9)
+    expect(hits).toBeLessThanOrEqual(14)
+    await page.screenshot({ path: screenshotPath('home-special-features-wordsearch') })
+
     // the recents come back from the sidebar
     await page.locator('.nav-item').first().click()
     await expect(page.getByTestId('special-features')).toHaveCount(0)

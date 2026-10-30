@@ -25,6 +25,7 @@ import {
   type QuizData,
 } from './quiz-model'
 import { buildQuiznWorkbook, buildWorksheetPdf, recordQuizVideo } from './quiz-export'
+import { QuizWordSearch } from './QuizWordSearch'
 
 /**
  * 특화 기능 > 퀴즈 생성기, after the author's ACE QUIZ LAB: 학습 자료 (typed, a PDF or Hangul
@@ -582,6 +583,7 @@ function QuizPlay({
 /* ------------------------------------------------------------------ page */
 
 export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement {
+  const [mode, setMode] = useState<'quiz' | 'words'>('quiz')
   const [inputType, setInputType] = useState<InputType>('text')
   const [content, setContent] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
@@ -879,324 +881,356 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
         <div>
           <h1>똑딱퀴즈</h1>
           <p>
-            학습 자료를 넣으면 AI가 다섯 가지 유형의 퀴즈를 만들어요. 바로 풀거나 학습지로 뽑을 수
-            있어요.
+            {mode === 'quiz'
+              ? '학습 자료를 넣으면 AI가 다섯 가지 유형의 퀴즈를 만들어요. 바로 풀거나 학습지로 뽑을 수 있어요.'
+              : '단어와 뜻으로 단어 찾기 학습지와 활동지를 만들어요. AI가 주제에 맞는 단어를 제안해 줘요.'}
           </p>
         </div>
-        <div className="qz-head-tools">
-          <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
-            임시 저장
-          </button>
-          <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
-            불러오기
-          </button>
-          <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
-            삭제하기
-          </button>
-        </div>
+        {mode === 'quiz' && (
+          <div className="qz-head-tools">
+            <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
+              임시 저장
+            </button>
+            <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
+              불러오기
+            </button>
+            <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
+              삭제하기
+            </button>
+          </div>
+        )}
       </header>
 
-      <div className="sf-stack">
-        <section className="sf-box" aria-labelledby="qz-in">
-          <h2 id="qz-in" className="qz-step">
-            <i>1</i>입력 방식 선택
-          </h2>
-          <div className="qz-segs" role="radiogroup" aria-label="입력 방식">
-            {INPUTS.map((it) => (
-              <button
-                key={it.id}
-                type="button"
-                role="radio"
-                aria-checked={inputType === it.id}
-                className={'qz-seg' + (inputType === it.id ? ' is-on' : '')}
-                data-testid={'quiz-input-' + it.id}
-                onClick={() => chooseInput(it.id)}
-              >
-                {it.label}
-              </button>
-            ))}
-          </div>
-
-          {(inputType === 'pdf' || inputType === 'hwp') && (
-            <button
-              type="button"
-              className="qz-drop"
-              data-testid="quiz-file"
-              disabled={busy !== null}
-              onClick={() => void readFile(inputType)}
-            >
-              <b>{inputType === 'hwp' ? '한글 파일(.hwp, .hwpx)' : 'PDF 파일'}을 골라 주세요</b>
-              <span>
-                {busy === 'read'
-                  ? '텍스트를 읽어오는 중입니다...'
-                  : source
-                    ? '선택된 파일: ' + source
-                    : '눌러서 파일을 고르면 글을 꺼내 아래에 넣어요'}
-              </span>
-            </button>
-          )}
-          {inputType === 'youtube' && (
-            <div className="qz-yt">
-              <input
-                data-testid="quiz-youtube"
-                value={youtubeUrl}
-                placeholder="유튜브 주소를 붙여넣으세요..."
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void readYoutube()
-                }}
-              />
-              <button
-                type="button"
-                className="sf-secondary"
-                disabled={busy !== null || !youtubeUrl.trim()}
-                onClick={() => void readYoutube()}
-              >
-                {busy === 'read' ? '읽는 중…' : '자막 가져오기'}
-              </button>
-              {source && <p className="sf-box-sub">영상: {source}</p>}
-            </div>
-          )}
-          <textarea
-            className="qz-content"
-            data-testid="quiz-content"
-            rows={inputType === 'text' ? 9 : 6}
-            value={content}
-            placeholder={
-              inputType === 'text'
-                ? '여기에 텍스트를 붙여넣으세요...'
-                : '추출된 텍스트가 여기에 표시됩니다.'
-            }
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </section>
-
-        <section className="sf-box" aria-labelledby="qz-types">
-          <h2 id="qz-types" className="qz-step">
-            <i>2</i>생성할 문제 유형 및 개수
-          </h2>
-          <div className="qz-counts">
-            {COUNT_FIELDS.map((f) => (
-              <label key={f.key} className="qz-count-row">
-                <span>{f.label}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={MAX_QUESTIONS}
-                  data-testid={'quiz-count-' + f.key}
-                  value={counts[f.key]}
-                  onChange={(e) =>
-                    setCounts({
-                      ...counts,
-                      [f.key]: Math.max(
-                        0,
-                        Math.min(MAX_QUESTIONS, parseInt(e.target.value, 10) || 0),
-                      ),
-                    })
-                  }
-                />
-              </label>
-            ))}
-          </div>
-          <p className={'qz-total' + (total > MAX_QUESTIONS || total < 1 ? ' is-bad' : '')}>
-            모두 {total}문제 · 한 번에 최대 {MAX_QUESTIONS}문제까지 만들 수 있어요
-          </p>
-        </section>
-
-        <section className="sf-box" aria-labelledby="qz-level">
-          <h2 id="qz-level" className="qz-step">
-            <i>3</i>퀴즈 난이도
-          </h2>
-          <div className="qz-segs is-three" role="radiogroup" aria-label="난이도">
-            {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
-              <button
-                key={d}
-                type="button"
-                role="radio"
-                aria-checked={difficulty === d}
-                className={'qz-seg' + (difficulty === d ? ' is-on' : '')}
-                onClick={() => setDifficulty(d)}
-              >
-                {DIFFICULTY_LABEL[d]}
-              </button>
-            ))}
-          </div>
-        </section>
-
+      <div className="qz-modes" role="tablist" aria-label="똑딱퀴즈 도구">
         <button
           type="button"
-          className="sf-primary sf-wide-btn qz-go"
-          data-testid="quiz-generate"
-          disabled={busy !== null}
-          onClick={() => void generate()}
+          role="tab"
+          aria-selected={mode === 'quiz'}
+          data-testid="quiz-mode-quiz"
+          className={'qz-mode' + (mode === 'quiz' ? ' is-on' : '')}
+          onClick={() => setMode('quiz')}
         >
-          {busy === 'generate' ? (
-            <>
-              <span className="sf-spinner" aria-hidden="true" />
-              퀴즈를 만드는 중…
-            </>
-          ) : (
-            '퀴즈 생성하기'
-          )}
+          <b>퀴즈 만들기</b>
+          <span>선택형·OX·단답·순서·초성</span>
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'words'}
+          data-testid="quiz-mode-words"
+          className={'qz-mode' + (mode === 'words' ? ' is-on' : '')}
+          onClick={() => setMode('words')}
+        >
+          <b>단어 찾기</b>
+          <span>워드서치 학습지·활동지</span>
+        </button>
+      </div>
 
-        {quiz && (
-          <section
-            className="sf-box qz-result-box"
-            aria-labelledby="qz-list"
-            ref={resultRef}
-            data-testid="quiz-result"
-          >
-            <div className="sf-box-head">
-              <div>
-                <h2 id="qz-list">생성된 퀴즈 목록</h2>
-                <p className="sf-box-sub">문제를 고치고 순서를 바꾼 뒤 풀거나 내보내세요.</p>
-              </div>
-              <label className="qz-lang">
-                <span>언어</span>
-                <select
-                  value={language}
-                  disabled={busy !== null}
-                  onChange={(e) => void translate(e.target.value)}
+      {mode === 'words' ? (
+        <QuizWordSearch say={say} />
+      ) : (
+        <div className="sf-stack">
+          <section className="sf-box" aria-labelledby="qz-in">
+            <h2 id="qz-in" className="qz-step">
+              <i>1</i>입력 방식 선택
+            </h2>
+            <div className="qz-segs" role="radiogroup" aria-label="입력 방식">
+              {INPUTS.map((it) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={inputType === it.id}
+                  className={'qz-seg' + (inputType === it.id ? ' is-on' : '')}
+                  data-testid={'quiz-input-' + it.id}
+                  onClick={() => chooseInput(it.id)}
                 >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {it.label}
+                </button>
+              ))}
             </div>
 
-            {shown && shown.questions.length > 0 ? (
-              <>
-                <div className="qz-tabs" role="tablist">
-                  {QUESTION_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeTab === t}
-                      disabled={byType[t].length === 0}
-                      className={'qz-tab' + (activeTab === t ? ' is-on' : '')}
-                      onClick={() => setTab(t)}
-                    >
-                      {TYPE_TAB[t]}
-                      <small>{byType[t].length}</small>
-                    </button>
-                  ))}
-                </div>
-                <div className="qz-list">
-                  {byType[activeTab].map((q, i) => (
-                    <QuestionCard
-                      key={q.id + language}
-                      q={q}
-                      index={i}
-                      onChange={editQuestion}
-                      onDelete={() => deleteQuestion(q.id)}
-                      onMove={(dir) => moveQuestion(q.id, dir)}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="qz-empty">생성된 퀴즈가 없습니다.</p>
+            {(inputType === 'pdf' || inputType === 'hwp') && (
+              <button
+                type="button"
+                className="qz-drop"
+                data-testid="quiz-file"
+                disabled={busy !== null}
+                onClick={() => void readFile(inputType)}
+              >
+                <b>{inputType === 'hwp' ? '한글 파일(.hwp, .hwpx)' : 'PDF 파일'}을 골라 주세요</b>
+                <span>
+                  {busy === 'read'
+                    ? '텍스트를 읽어오는 중입니다...'
+                    : source
+                      ? '선택된 파일: ' + source
+                      : '눌러서 파일을 고르면 글을 꺼내 아래에 넣어요'}
+                </span>
+              </button>
             )}
-
-            <button type="button" className="sf-ghost" onClick={addQuestion}>
-              + 문제 추가
-            </button>
-
-            <div className="qz-actions">
-              <button
-                type="button"
-                className="qz-action is-play"
-                data-testid="quiz-play-start"
-                disabled={!shown?.questions.length}
-                onClick={() => setPlaying(true)}
-              >
-                <b>퀴즈 시작</b>
-                <span>한 문제씩 풀기</span>
-              </button>
-              <button
-                type="button"
-                className="qz-action"
-                disabled={!shown?.questions.length || busy !== null}
-                onClick={() => setDialog('worksheet')}
-              >
-                <b>학습지</b>
-                <span>문제지·정답지 PDF</span>
-              </button>
-              <button
-                type="button"
-                className="qz-action"
-                disabled={!shown?.questions.length}
-                onClick={() => setDialog('export')}
-              >
-                <b>내보내기</b>
-                <span>블루킷·퀴즈앤</span>
-              </button>
-              <button
-                type="button"
-                className="qz-action"
-                disabled={!shown?.questions.length || busy !== null}
-                onClick={() => setDialog('video')}
-              >
-                <b>{busy === 'video' ? '만드는 중…' : '동영상 생성'}</b>
-                <span>문제·정답 영상</span>
-              </button>
-            </div>
-
-            {video && (
-              <div className="qz-video">
-                <h3>만든 동영상</h3>
-                <video src={video.url} controls />
+            {inputType === 'youtube' && (
+              <div className="qz-yt">
+                <input
+                  data-testid="quiz-youtube"
+                  value={youtubeUrl}
+                  placeholder="유튜브 주소를 붙여넣으세요..."
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void readYoutube()
+                  }}
+                />
                 <button
                   type="button"
                   className="sf-secondary"
-                  onClick={async () =>
-                    save(
-                      new Uint8Array(await video.blob.arrayBuffer()),
-                      'quiz-video-' + Date.now() + '.' + video.ext,
-                      '동영상',
-                      video.ext,
-                    )
-                  }
+                  disabled={busy !== null || !youtubeUrl.trim()}
+                  onClick={() => void readYoutube()}
                 >
-                  동영상 저장
+                  {busy === 'read' ? '읽는 중…' : '자막 가져오기'}
                 </button>
+                {source && <p className="sf-box-sub">영상: {source}</p>}
               </div>
             )}
-
-            <button
-              type="button"
-              className="sf-text-btn qz-copy"
-              disabled={!shown?.questions.length}
-              onClick={() =>
-                shown &&
-                void copyText(
-                  shown.questions
-                    .map(
-                      (q, i) =>
-                        i +
-                        1 +
-                        '. ' +
-                        q.question +
-                        (q.options && q.type !== 'short-answer' && q.type !== 'initial-consonant'
-                          ? '\n' + q.options.map((o, k) => '   ' + (k + 1) + ') ' + o).join('\n')
-                          : '') +
-                        '\n   정답: ' +
-                        answerText(q),
-                    )
-                    .join('\n\n'),
-                ).then(() => say('문제를 복사했어요.'))
+            <textarea
+              className="qz-content"
+              data-testid="quiz-content"
+              rows={inputType === 'text' ? 9 : 6}
+              value={content}
+              placeholder={
+                inputType === 'text'
+                  ? '여기에 텍스트를 붙여넣으세요...'
+                  : '추출된 텍스트가 여기에 표시됩니다.'
               }
-            >
-              문제 전체 복사
-            </button>
+              onChange={(e) => setContent(e.target.value)}
+            />
           </section>
-        )}
-      </div>
+
+          <section className="sf-box" aria-labelledby="qz-types">
+            <h2 id="qz-types" className="qz-step">
+              <i>2</i>생성할 문제 유형 및 개수
+            </h2>
+            <div className="qz-counts">
+              {COUNT_FIELDS.map((f) => (
+                <label key={f.key} className="qz-count-row">
+                  <span>{f.label}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={MAX_QUESTIONS}
+                    data-testid={'quiz-count-' + f.key}
+                    value={counts[f.key]}
+                    onChange={(e) =>
+                      setCounts({
+                        ...counts,
+                        [f.key]: Math.max(
+                          0,
+                          Math.min(MAX_QUESTIONS, parseInt(e.target.value, 10) || 0),
+                        ),
+                      })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+            <p className={'qz-total' + (total > MAX_QUESTIONS || total < 1 ? ' is-bad' : '')}>
+              모두 {total}문제 · 한 번에 최대 {MAX_QUESTIONS}문제까지 만들 수 있어요
+            </p>
+          </section>
+
+          <section className="sf-box" aria-labelledby="qz-level">
+            <h2 id="qz-level" className="qz-step">
+              <i>3</i>퀴즈 난이도
+            </h2>
+            <div className="qz-segs is-three" role="radiogroup" aria-label="난이도">
+              {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={difficulty === d}
+                  className={'qz-seg' + (difficulty === d ? ' is-on' : '')}
+                  onClick={() => setDifficulty(d)}
+                >
+                  {DIFFICULTY_LABEL[d]}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <button
+            type="button"
+            className="sf-primary sf-wide-btn qz-go"
+            data-testid="quiz-generate"
+            disabled={busy !== null}
+            onClick={() => void generate()}
+          >
+            {busy === 'generate' ? (
+              <>
+                <span className="sf-spinner" aria-hidden="true" />
+                퀴즈를 만드는 중…
+              </>
+            ) : (
+              '퀴즈 생성하기'
+            )}
+          </button>
+
+          {quiz && (
+            <section
+              className="sf-box qz-result-box"
+              aria-labelledby="qz-list"
+              ref={resultRef}
+              data-testid="quiz-result"
+            >
+              <div className="sf-box-head">
+                <div>
+                  <h2 id="qz-list">생성된 퀴즈 목록</h2>
+                  <p className="sf-box-sub">문제를 고치고 순서를 바꾼 뒤 풀거나 내보내세요.</p>
+                </div>
+                <label className="qz-lang">
+                  <span>언어</span>
+                  <select
+                    value={language}
+                    disabled={busy !== null}
+                    onChange={(e) => void translate(e.target.value)}
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {shown && shown.questions.length > 0 ? (
+                <>
+                  <div className="qz-tabs" role="tablist">
+                    {QUESTION_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === t}
+                        disabled={byType[t].length === 0}
+                        className={'qz-tab' + (activeTab === t ? ' is-on' : '')}
+                        onClick={() => setTab(t)}
+                      >
+                        {TYPE_TAB[t]}
+                        <small>{byType[t].length}</small>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="qz-list">
+                    {byType[activeTab].map((q, i) => (
+                      <QuestionCard
+                        key={q.id + language}
+                        q={q}
+                        index={i}
+                        onChange={editQuestion}
+                        onDelete={() => deleteQuestion(q.id)}
+                        onMove={(dir) => moveQuestion(q.id, dir)}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="qz-empty">생성된 퀴즈가 없습니다.</p>
+              )}
+
+              <button type="button" className="sf-ghost" onClick={addQuestion}>
+                + 문제 추가
+              </button>
+
+              <div className="qz-actions">
+                <button
+                  type="button"
+                  className="qz-action is-play"
+                  data-testid="quiz-play-start"
+                  disabled={!shown?.questions.length}
+                  onClick={() => setPlaying(true)}
+                >
+                  <b>퀴즈 시작</b>
+                  <span>한 문제씩 풀기</span>
+                </button>
+                <button
+                  type="button"
+                  className="qz-action"
+                  disabled={!shown?.questions.length || busy !== null}
+                  onClick={() => setDialog('worksheet')}
+                >
+                  <b>학습지</b>
+                  <span>문제지·정답지 PDF</span>
+                </button>
+                <button
+                  type="button"
+                  className="qz-action"
+                  disabled={!shown?.questions.length}
+                  onClick={() => setDialog('export')}
+                >
+                  <b>내보내기</b>
+                  <span>블루킷·퀴즈앤</span>
+                </button>
+                <button
+                  type="button"
+                  className="qz-action"
+                  disabled={!shown?.questions.length || busy !== null}
+                  onClick={() => setDialog('video')}
+                >
+                  <b>{busy === 'video' ? '만드는 중…' : '동영상 생성'}</b>
+                  <span>문제·정답 영상</span>
+                </button>
+              </div>
+
+              {video && (
+                <div className="qz-video">
+                  <h3>만든 동영상</h3>
+                  <video src={video.url} controls />
+                  <button
+                    type="button"
+                    className="sf-secondary"
+                    onClick={async () =>
+                      save(
+                        new Uint8Array(await video.blob.arrayBuffer()),
+                        'quiz-video-' + Date.now() + '.' + video.ext,
+                        '동영상',
+                        video.ext,
+                      )
+                    }
+                  >
+                    동영상 저장
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="sf-text-btn qz-copy"
+                disabled={!shown?.questions.length}
+                onClick={() =>
+                  shown &&
+                  void copyText(
+                    shown.questions
+                      .map(
+                        (q, i) =>
+                          i +
+                          1 +
+                          '. ' +
+                          q.question +
+                          (q.options && q.type !== 'short-answer' && q.type !== 'initial-consonant'
+                            ? '\n' + q.options.map((o, k) => '   ' + (k + 1) + ') ' + o).join('\n')
+                            : '') +
+                          '\n   정답: ' +
+                          answerText(q),
+                      )
+                      .join('\n\n'),
+                  ).then(() => say('문제를 복사했어요.'))
+                }
+              >
+                문제 전체 복사
+              </button>
+            </section>
+          )}
+        </div>
+      )}
 
       {dialog === 'worksheet' && (
         <Modal title="학습지 종류 선택" onClose={() => setDialog(null)}>
