@@ -61,13 +61,34 @@ export async function validateHwpxBeforeOverwrite(
   for (const [name, entry] of Object.entries(zip.files)) {
     if (entry.dir || !/\.(?:xml|hpf|rdf|rels)$/i.test(name)) continue
     try {
-      const verdict = XMLValidator.validate(await entry.async('string'))
+      const xml = await entry.async('string')
+      const verdict = XMLValidator.validate(xml)
       if (verdict !== true) {
         return `hwp: HWPX save blocked: malformed XML in ${name} (${verdict.err?.msg ?? 'invalid XML'})`
       }
+      const unbound = unboundPrefixOf(xml)
+      if (unbound) return `hwp: HWPX save blocked: undeclared XML prefix ${unbound}: in ${name}`
     } catch (error) {
       return `hwp: HWPX save blocked: unreadable XML in ${name} (${String(error)})`
     }
+  }
+  return null
+}
+
+/**
+ * A namespace prefix the XML uses without declaring it. The validator above does not check
+ * namespaces, and Hancom refuses such a file as damaged: rhwp 0.8.7 copies numbering heads
+ * from a source HWPX with their original prefix (`ns0:paraHead`) into a header that never
+ * declares `ns0` (2026-10-30, header-picture-and-text.hwpx).
+ */
+function unboundPrefixOf(xml: string): string | null {
+  const declared = new Set(['xml', 'xmlns'])
+  for (const m of xml.matchAll(/\sxmlns:([A-Za-z_][\w.-]*)\s*=/g)) declared.add(m[1]!)
+  for (const m of xml.matchAll(/<\/?([A-Za-z_][\w.-]*):[A-Za-z_]/g)) {
+    if (!declared.has(m[1]!)) return m[1]!
+  }
+  for (const m of xml.matchAll(/\s([A-Za-z_][\w.-]*):[A-Za-z_][\w.-]*\s*=/g)) {
+    if (!declared.has(m[1]!)) return m[1]!
   }
   return null
 }

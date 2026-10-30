@@ -491,6 +491,39 @@ function hwpxSections(zip: Buffer): {
 
 const xmlSpot = (tab: XmlTab): TabSpot => ({ ...tab.spot, tabs: tab.counter.tabs })
 
+/** The section parts of a HWPX zip, for a change that rewrites some of them. Null when unreadable. */
+export function hwpxSectionsOf(file: Uint8Array): {
+  zip: Buffer
+  parts: { entries: ZipEntry[] }
+  sections: { name: string; xml: string }[]
+} | null {
+  const zip = Buffer.from(file.buffer, file.byteOffset, file.byteLength)
+  const read = hwpxSections(zip)
+  return read ? { zip, parts: read.parts, sections: read.sections } : null
+}
+
+/**
+ * The HWPX with some section parts replaced; every other entry's bytes are copied as they
+ * were. Null when the result does not read back as meant.
+ */
+export function rewriteHwpxSections(
+  read: { zip: Buffer; parts: { entries: ZipEntry[] } },
+  sections: Map<string, string>,
+): Uint8Array | null {
+  const changed = new Map([...sections].map(([name, xml]) => [name, Buffer.from(xml, 'utf8')]))
+  const written = rewriteZip(read.zip, read.parts, changed)
+  const check = zipEntries(written)
+  if (!check || check.entries.length !== read.parts.entries.length) return null
+  for (const [index, entry] of check.entries.entries()) {
+    const was = read.parts.entries[index]!
+    if (entry.name !== was.name) return null
+    const now = entryData(written, entry)
+    const before = changed.get(entry.name) ?? entryData(read.zip, was)
+    if (!now || !before || !now.equals(before)) return null
+  }
+  return new Uint8Array(written.buffer, written.byteOffset, written.byteLength)
+}
+
 function writeHwpxTabs(file: Uint8Array, measured: Map<string, TabMeasure>): Uint8Array | null {
   const zip = Buffer.from(file.buffer, file.byteOffset, file.byteLength)
   const read = hwpxSections(zip)

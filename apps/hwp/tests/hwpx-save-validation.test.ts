@@ -69,4 +69,12 @@ describe('HWPX pre-write validation', () => {
     const bad = await zip.generateAsync({ type: 'nodebuffer' })
     expect(await validateHwpxBeforeOverwrite(bad, original)).toMatch(/section1\.xml/)
   })
+
+  it('rejects an XML part that uses a namespace prefix it never declares', async () => {
+    const zip = await JSZip.loadAsync(await fixture())
+    const header = await zip.file('Contents/header.xml')!.async('string')
+    zip.file('Contents/header.xml', header.replace('</hh:head>', '<ns0:paraHead level="1"/></hh:head>'))
+    const bad = await zip.generateAsync({ type: 'nodebuffer' })
+    expect(await validateHwpxBeforeOverwrite(bad)).toMatch(/prefix ns0/)
+  })
 })
