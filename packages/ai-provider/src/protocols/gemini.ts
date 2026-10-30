@@ -3,7 +3,8 @@ import { aiFetch } from '../fetch'
 import { httpBodyDetail } from '../http-error'
 import { opencodeSessionHeaders } from '../providers'
 import type { AiChatResponse, AiProviderConfig, AiTokenUsage } from '../types'
-import { createStreamWatchdog, type StreamWatchdog } from '../watchdog'
+import { AiTimeoutError, createStreamWatchdog, type StreamWatchdog } from '../watchdog'
+import { isAiNetworkError } from '../network-error'
 import { toGeminiSchema } from './gemini-schema'
 import {
   endpointUrl,
@@ -39,6 +40,8 @@ const SKIP_SIGNATURE = 'skip_thought_signature_validator'
 
 interface GeminiPart {
   text?: string
+  /** a thought summary (thinkingConfig.includeThoughts), not part of the answer */
+  thought?: boolean
   functionCall?: { name?: string; args?: Record<string, unknown> }
   thoughtSignature?: string
   /** snake_case spelling some gateways forward verbatim */
@@ -164,6 +167,56 @@ export interface GeminiRequestOptions {
   omitTemperature?: boolean | undefined
 }
 
+/**
+ * Gemini 2.5 and 3.x think before answering and send no response headers until the
+ * first chunk is ready. Thought summaries let a long turn stream early (measured on
+ * Vertex: first byte 2.3s for a 57s turn, 70s without them).
+ *
+ * Gemini 3 Flash thinks at 'high' by default, which for one document-editing tool step
+ * took 56-96s before the first byte; at 'low' the same request answered in 3s. An edit
+ * is ten or more such steps, so Flash runs at 'low'. Pro keeps its default, and 2.5
+ * models take a thinking budget instead (they reject thinkingLevel).
+ */
+const isFastThinkingModel = (model: string) => /(^|\/)gemini-[3-9][\w.]*-flash/i.test(model)
+
+/**
+ * Gemini 4 Argon sends its first byte quickly at its default thinking: over 24 editing
+ * steps from three sessions at once (Vertex global, 2026-10-29) the median was 4.8s and
+ * the slowest 23.8s. A request still silent at 25s is one Vertex is holding (one held
+ * 45s, and the same request sent again answered in 6s), so it is sent again sooner.
+ */
+const isArgon = (model: string) => /(^|\/)gemini-4-argon/i.test(model)
+const isQuickFirstByteModel = (model: string) => isFastThinkingModel(model) || isArgon(model)
+export const GEMINI_ARGON_CONNECT_TIMEOUT_MS = 25_000
+const connectTimeoutFor = (model: string) =>
+  isArgon(model) ? GEMINI_ARGON_CONNECT_TIMEOUT_MS : isQuickFirstByteModel(model) ? GEMINI_FAST_CONNECT_TIMEOUT_MS : GEMINI_CONNECT_TIMEOUT_MS
+
+function geminiThinkingConfig(model: string): Record<string, unknown> | undefined {
+  if (isFastThinkingModel(model)) return { includeThoughts: true, thinkingLevel: 'low' }
+  if (/(^|\/)gemini-(2\.5|[3-9])/i.test(model)) return { includeThoughts: true }
+  return undefined
+}
+
+/**
+ * How long a Gemini request may wait for its first byte. Vertex AI sometimes holds a
+ * request with no answer at all (90-180s seen; the identical request answered in 4s
+ * when sent again), while a step at the default thinking level can legitimately stay
+ * silent for over a minute. One replay after 90s keeps both waits (180s) inside the
+ * renderer's 240s silence watchdog. At 'low' thinking the slowest first byte measured
+ * over ~40 editing steps was 21s, so Flash gives up on a held request after 45s.
+ */
+export const GEMINI_CONNECT_TIMEOUT_MS = 90_000
+export const GEMINI_FAST_CONNECT_TIMEOUT_MS = 45_000
+const STALLED_REQUEST_RETRIES = 1
+/**
+ * Argon waits only 25s, so it can afford one more replay: two held requests in a row were
+ * seen (2026-10-30, a sheet edit failed after 2 x 25s; the same request then answered in
+ * 7s). Three waits (75s) stay well inside the renderer's 240s silence watchdog.
+ */
+export const GEMINI_ARGON_STALLED_RETRIES = 2
+const stalledRetriesFor = (model: string) =>
+  isArgon(model) ? GEMINI_ARGON_STALLED_RETRIES : STALLED_REQUEST_RETRIES
+
 export async function streamGemini(
   config: AiProviderConfig,
   system: string,
@@ -174,10 +227,43 @@ export async function streamGemini(
   baseUrl = GEMINI_BASE_URL,
   options: GeminiRequestOptions = {},
 ): Promise<void> {
-  const wd = createStreamWatchdog(cb.signal)
-  return wd.guard(() =>
-    geminiTurn(config, system, messages, tools, maxTokens, cb, baseUrl, wd, options),
-  )
+  for (let attempt = 0; ; attempt++) {
+    const wd = createStreamWatchdog(cb.signal, connectTimeoutFor(config.model))
+    let received = false
+    // answer text or a tool call reached the editor: from then on a replay would repeat it
+    let answered = false
+    const tracked: StreamWatchdog = {
+      signal: wd.signal,
+      guard: wd.guard,
+      touch: () => {
+        received = true
+        wd.touch()
+      },
+    }
+    const turnCb: StreamCallbacks = {
+      ...cb,
+      onDelta: (text) => {
+        answered = true
+        cb.onDelta(text)
+      },
+      onToolCall: (call) => {
+        answered = true
+        cb.onToolCall(call)
+      },
+    }
+    try {
+      return await wd.guard(() =>
+        geminiTurn(config, system, messages, tools, maxTokens, turnCb, baseUrl, tracked, options),
+      )
+    } catch (err) {
+      // Nothing of the answer reached the caller, so sending the same request again is
+      // safe: a request that never got a byte, or a connection that failed before any
+      // answer text or tool call (Cloud Run → Vertex resets were seen mid-run)
+      const stalled = err instanceof AiTimeoutError && !received
+      const dropped = !answered && !(err instanceof AiTimeoutError) && isAiNetworkError(err)
+      if (cb.signal.aborted || !(stalled || dropped) || attempt >= stalledRetriesFor(config.model)) throw err
+    }
+  }
 }
 
 async function geminiTurn(
@@ -228,6 +314,9 @@ async function geminiTurn(
       generationConfig: {
         ...(options.omitTemperature ? {} : { temperature: 0.3 }),
         maxOutputTokens: maxTokens,
+        ...(geminiThinkingConfig(config.model)
+          ? { thinkingConfig: geminiThinkingConfig(config.model) }
+          : {}),
       },
     }),
   })
@@ -273,6 +362,10 @@ async function geminiTurn(
     if (finishReason === 'MAX_TOKENS') stopReason = 'max_tokens'
     else if (finishReason && finishReason !== 'STOP') abnormalFinish = finishReason
     for (const part of event.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought) {
+        if (part.text) cb.onReasoningDelta?.(part.text)
+        continue
+      }
       if (part.text) {
         emitted = true
         cb.onDelta(part.text)

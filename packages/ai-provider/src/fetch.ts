@@ -61,8 +61,10 @@ function isBlockPage(response: Response): boolean {
  * 529) or a per-minute limit (429). Free tiers answer this way often (Gemini's
  * free tier refused most requests with 503 "high demand" on 2026-10-14), and a
  * request is resent only before any of its answer was read.
+ * Vertex AI's shared capacity (dynamic shared quota) answers 429 RESOURCE_EXHAUSTED
+ * for longer than 7s under load, so a third, longer wait is part of the schedule.
  */
-const DEFAULT_TRANSIENT_RETRY_DELAYS_MS: readonly number[] = [2000, 5000]
+const DEFAULT_TRANSIENT_RETRY_DELAYS_MS: readonly number[] = [2000, 5000, 15000]
 let transientRetryDelays: readonly number[] = DEFAULT_TRANSIENT_RETRY_DELAYS_MS
 
 /** Tests shorten or turn off the waits; null restores the default */

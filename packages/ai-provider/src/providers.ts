@@ -69,9 +69,12 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'gemini',
     label: 'Gemini',
-    // 3.x lineup per ai.google.dev/gemini-api/docs/models (2026-09-23). 3.8 Flash
-    // is the current stable Flash Google recommends; 3.1 Pro is still preview-only.
+    // lineup per ai.google.dev/gemini-api/docs/models. Gemini 4 Argon (GA 2026-10-13)
+    // is the default: on the web trial's three sample edits it finished every one
+    // (19-39s) where 3.8 Flash at 'low' thinking ran into held requests and 429s
+    // (one sheet edit took 389s and timed out). 3.8 Flash stays for lighter use.
     models: [
+      'gemini-4-argon',
       'gemini-3.8-flash',
       'gemini-3.7-flash',
       'gemini-3.1-pro-preview',
@@ -79,7 +82,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
     ],
-    defaultModel: 'gemini-3.8-flash',
+    defaultModel: 'gemini-4-argon',
     keyPlaceholder: 'AIza...',
   },
   {

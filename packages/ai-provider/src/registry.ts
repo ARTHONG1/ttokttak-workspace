@@ -44,13 +44,13 @@ function metaOf(id: AiProviderId): AiProviderMeta {
  * or a mirror behind a custom base URL. Kimi K3 answers "only 1 is allowed";
  * OpenAI's GPT-5 and GPT-6 reasoning families reject any temperature other
  * than the default outright, and the o-series reasoning models (o1/o3/o4) likewise
- * only accept the default. Google's Gemini 3 docs strongly recommend keeping
- * the default temperature of 1.0 for the whole Gemini 3 family, since lower
+ * only accept the default. Google's Gemini 3 and 4 docs strongly recommend keeping
+ * the default temperature of 1.0 for those families, since lower
  * values may cause looping or degraded reasoning, so our hard-coded 0.3
  * must not be sent there either.
  */
 export function modelHasFixedSampling(model: string): boolean {
-  return /(^|\/)(kimi-k3([^\w]|$)|gpt-[5-9]([^\w]|$)|gemini-3([^\w]|$)|o1(-mini|-preview)?([^\w]|$)|o3(-mini)?([^\w]|$)|o4-mini([^\w]|$))/i.test(
+  return /(^|\/)(kimi-k3([^\w]|$)|gpt-[5-9]([^\w]|$)|gemini-[3-9]([^\w]|$)|o1(-mini|-preview)?([^\w]|$)|o3(-mini)?([^\w]|$)|o4-mini([^\w]|$))/i.test(
     model,
   )
 }
