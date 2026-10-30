@@ -78,3 +78,40 @@ describe('HWPX pre-write validation', () => {
     expect(await validateHwpxBeforeOverwrite(bad)).toMatch(/prefix ns0/)
   })
 })
+
+describe('HWPX pre-write validation of embedded files', () => {
+  const pictureFile = () =>
+    readFile(resolve(import.meta.dirname, 'fixtures/header-picture-and-text.hwpx'))
+
+  /** The fixture with its picture under another name, as the engine writes it. */
+  async function renamed(to: string): Promise<Buffer> {
+    const zip = await JSZip.loadAsync(await pictureFile())
+    const bytes = await zip.file('BinData/image1.png')!.async('nodebuffer')
+    zip.remove('BinData/image1.png')
+    zip.file(to, bytes)
+    const hpf = await zip.file('Contents/content.hpf')!.async('string')
+    zip.file('Contents/content.hpf', hpf.replace('BinData/image1.png', to))
+    return zip.generateAsync({ type: 'nodebuffer' })
+  }
+
+  it('accepts a picture the engine wrote under another name, judged by its bytes', async () => {
+    const original = await pictureFile()
+    expect(await validateHwpxBeforeOverwrite(await renamed('BinData/image7.png'), original)).toBeNull()
+  })
+
+  it('rejects a save whose picture bytes are gone', async () => {
+    const original = await pictureFile()
+    const zip = await JSZip.loadAsync(await renamed('BinData/image7.png'))
+    zip.file('BinData/image7.png', Buffer.from('not the picture'))
+    const bad = await zip.generateAsync({ type: 'nodebuffer' })
+    expect(await validateHwpxBeforeOverwrite(bad, original)).toMatch(/missing BinData\/image1\.png/)
+  })
+
+  it('rejects a picture that refers to a file the package does not hold', async () => {
+    const zip = await JSZip.loadAsync(await pictureFile())
+    zip.remove('BinData/image1.png')
+    const bad = await zip.generateAsync({ type: 'nodebuffer' })
+    expect(await validateHwpxBeforeOverwrite(bad)).toMatch(/refers to missing image1/)
+  })
+})
+

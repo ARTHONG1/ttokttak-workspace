@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import JSZip from 'jszip'
 import { XMLValidator } from 'fast-xml-parser'
 
@@ -34,9 +35,10 @@ export async function validateHwpxBeforeOverwrite(
       return `hwp: HWPX save blocked: cannot verify opened ZIP (${String(error)})`
     }
     // The editor cannot reliably re-create these document structures yet.
-    // A lost master page, body section or embedded asset must stop the save.
+    // A lost master page or body section must stop the save. Embedded files are
+    // compared by content below: the engine renames them (image1.png, ...).
     for (const name of Object.keys(original.files)) {
-      if (!/^(?:Contents\/(?:masterpage|section)\d+\.xml|BinData\/[^/]+)$/i.test(name)) {
+      if (!/^Contents\/(?:masterpage|section)\d+\.xml$/i.test(name)) {
         continue
       }
       if (!zip.file(name)) return `hwp: HWPX save blocked: preserved part missing ${name}`
@@ -51,7 +53,12 @@ export async function validateHwpxBeforeOverwrite(
         }
       }
     }
+    const lostAsset = await lostEmbeddedFile(original, zip)
+    if (lostAsset) return `hwp: HWPX save blocked: preserved part missing ${lostAsset}`
   }
+
+  const dangling = await danglingBinaryRef(zip)
+  if (dangling) return `hwp: HWPX save blocked: picture refers to missing ${dangling}`
 
   const mimetype = await zip.file('mimetype')!.async('string')
   if (mimetype.trim() !== 'application/hwp+zip') {
@@ -92,3 +99,52 @@ function unboundPrefixOf(xml: string): string | null {
   }
   return null
 }
+
+
+const BIN_DATA = /^BinData\/[^/]+$/i
+
+/**
+ * An embedded file of the opened HWPX whose bytes are nowhere in the saved one, by name.
+ * rhwp 0.8.7 writes every embedded file again under its own name (`image1.png`), so a
+ * name check refused documents whose pictures were all there (2026-10-30: 9 local
+ * documents could not be saved at all).
+ */
+async function lostEmbeddedFile(original: JSZip, saved: JSZip): Promise<string | null> {
+  const savedHashes = new Map<string, number>()
+  for (const [name, entry] of Object.entries(saved.files)) {
+    if (entry.dir || !BIN_DATA.test(name)) continue
+    const key = createHash('sha256').update(await entry.async('nodebuffer')).digest('hex')
+    savedHashes.set(key, (savedHashes.get(key) ?? 0) + 1)
+  }
+  for (const [name, entry] of Object.entries(original.files)) {
+    if (entry.dir || !BIN_DATA.test(name)) continue
+    const key = createHash('sha256').update(await entry.async('nodebuffer')).digest('hex')
+    if (!savedHashes.has(key)) return name
+  }
+  return null
+}
+
+/**
+ * A `binaryItemIDRef` in the saved sections whose manifest item or file is missing: Hancom
+ * refuses such a file. The id is looked up in `Contents/content.hpf`.
+ */
+async function danglingBinaryRef(zip: JSZip): Promise<string | null> {
+  const manifest = await zip.file('Contents/content.hpf')?.async('string')
+  if (manifest === undefined) return null
+  const hrefOf = new Map<string, string>()
+  for (const m of manifest.matchAll(/<(?:[\w.-]+:)?item\b[^>]*>/g)) {
+    const id = /\sid\s*=\s*"([^"]*)"/.exec(m[0])?.[1]
+    const href = /\shref\s*=\s*"([^"]*)"/.exec(m[0])?.[1]
+    if (id && href) hrefOf.set(id, href)
+  }
+  for (const [name, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !/^Contents\/(?:section|masterpage|header)\d*\.xml$/i.test(name)) continue
+    const xml = await entry.async('string')
+    for (const m of xml.matchAll(/binaryItemIDRef\s*=\s*"([^"]+)"/g)) {
+      const href = hrefOf.get(m[1]!)
+      if (!href || !zip.file(href)) return m[1]!
+    }
+  }
+  return null
+}
+

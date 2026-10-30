@@ -491,15 +491,29 @@ function hwpxSections(zip: Buffer): {
 
 const xmlSpot = (tab: XmlTab): TabSpot => ({ ...tab.spot, tabs: tab.counter.tabs })
 
-/** The section parts of a HWPX zip, for a change that rewrites some of them. Null when unreadable. */
-export function hwpxSectionsOf(file: Uint8Array): {
+/**
+ * The XML parts of a HWPX zip (sections only, unless `pattern` says otherwise), for a
+ * change that rewrites some of them. Null when unreadable.
+ */
+export function hwpxSectionsOf(
+  file: Uint8Array,
+  pattern: RegExp = SECTION_PART,
+): {
   zip: Buffer
   parts: { entries: ZipEntry[] }
   sections: { name: string; xml: string }[]
 } | null {
   const zip = Buffer.from(file.buffer, file.byteOffset, file.byteLength)
-  const read = hwpxSections(zip)
-  return read ? { zip, parts: read.parts, sections: read.sections } : null
+  const parts = zipEntries(zip)
+  if (!parts) return null
+  const sections: { name: string; xml: string }[] = []
+  for (const entry of parts.entries) {
+    if (!pattern.test(entry.name)) continue
+    const data = entryData(zip, entry)
+    if (!data) return null
+    sections.push({ name: entry.name, xml: data.toString('utf8') })
+  }
+  return { zip, parts, sections }
 }
 
 /**

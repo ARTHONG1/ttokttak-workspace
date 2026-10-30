@@ -43,6 +43,8 @@ import {
 } from './recovery'
 import type { HwpRecoveryHost } from './recovery'
 import { applySaveFixes } from './save-fixes'
+import { hwpxNamespacesOf } from './hwpx-prefixes'
+import { hwpxMasterPagesOf } from './hwpx-master-pages'
 import { backupPathFor, bytesMatchFormat, hwpxSiblingOf, needsBackup, withFormatExtension } from './save-plan'
 import { sectionTailsOf } from './section-tails'
 import type { SectionTails } from './section-tails'
@@ -122,6 +124,10 @@ const writtenByWc = new Map<number, Set<string>>()
 const tailsByWc = new Map<number, SectionTails>()
 /** The kinds of the HWP file's fields that the engine writes as "unknown"; see field-kinds.ts */
 const fieldKindsByWc = new Map<number, FieldKinds>()
+/** The namespace prefixes of the HWPX file a view opened; see hwpx-prefixes.ts */
+const namespacesByWc = new Map<number, Map<string, string>>()
+/** The master pages of the HWPX file a view opened; see hwpx-master-pages.ts */
+const masterPagesByWc = new Map<number, Map<string, string>>()
 /** Views whose file has tracked changes that could not be left out: not saved, see tracked-changes.ts */
 const trackedByWc = new Set<number>()
 /** Views whose file had tracked changes, opened without them; see tracked-changes.ts */
@@ -139,7 +145,12 @@ const recoveryHost: HwpRecoveryHost = {
   savePathOf: (wcId) => savePathByWc.get(wcId),
   untitledCopyOf: (wcId) => untitledCopyByWc.get(wcId),
   openPathOf: (wcId) => openPathByWc.get(wcId),
-  saveBaseOf: (wcId) => ({ tails: tailsByWc.get(wcId), kinds: fieldKindsByWc.get(wcId) }),
+  saveBaseOf: (wcId) => ({
+    tails: tailsByWc.get(wcId),
+    kinds: fieldKindsByWc.get(wcId),
+    namespaces: namespacesByWc.get(wcId),
+    masterPages: masterPagesByWc.get(wcId),
+  }),
   isDirty: (wcId) => dirtyByWc.has(wcId),
   markDirty: (wcId) => {
     dirtyByWc.add(wcId)
@@ -523,6 +534,12 @@ function registerHwpIpc(): void {
     const kinds = bytesMatchFormat(bytes, 'hwp') ? fieldKindsOf(bytes) : null
     if (kinds) fieldKindsByWc.set(e.sender.id, kinds)
     else fieldKindsByWc.delete(e.sender.id)
+    const namespaces = bytesMatchFormat(bytes, 'hwpx') ? hwpxNamespacesOf(bytes) : null
+    if (namespaces) namespacesByWc.set(e.sender.id, namespaces)
+    else namespacesByWc.delete(e.sender.id)
+    const masterPages = bytesMatchFormat(bytes, 'hwpx') ? hwpxMasterPagesOf(bytes) : null
+    if (masterPages) masterPagesByWc.set(e.sender.id, masterPages)
+    else masterPagesByWc.delete(e.sender.id)
     return restored ?? bytes
   })
 
@@ -973,6 +990,8 @@ function grantAndTrack(
     writtenByWc.delete(wcId)
     tailsByWc.delete(wcId)
     fieldKindsByWc.delete(wcId)
+    namespacesByWc.delete(wcId)
+    masterPagesByWc.delete(wcId)
     trackedByWc.delete(wcId)
     trackingDroppedByWc.delete(wcId)
     diskStatesByWc.delete(wcId)

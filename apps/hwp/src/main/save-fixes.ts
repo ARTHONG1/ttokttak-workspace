@@ -1,6 +1,8 @@
 import { restoreFieldKinds } from './field-kinds'
 import type { FieldKinds } from './field-kinds'
 import { dropUntrustedLineCaches } from './hwpx-line-cache'
+import { bindCopiedPrefixes } from './hwpx-prefixes'
+import { restoreUnchangedMasterPages } from './hwpx-master-pages'
 import { restoreSectionTails } from './section-tails'
 import type { RestoreSkip, SectionTails } from './section-tails'
 import { writeTabWidths } from './tab-widths'
@@ -14,6 +16,10 @@ import type { HwpFormat, MeasuredTab } from '../shared/ipc'
 export interface SaveBase {
   tails?: SectionTails | undefined
   kinds?: FieldKinds | undefined
+  /** the namespace each prefix names in the opened HWPX (see hwpx-prefixes.ts) */
+  namespaces?: ReadonlyMap<string, string> | undefined
+  /** the opened HWPX's master pages (see hwpx-master-pages.ts) */
+  masterPages?: ReadonlyMap<string, string> | undefined
 }
 
 export interface SaveFixResult {
@@ -41,7 +47,11 @@ export function applySaveFixes(
     bytes = writeTabWidths(bytes, format, tabs as MeasuredTab[]).bytes
   }
   // after the tabs: they are found by their place in the section XML
-  if (format === 'hwpx') bytes = dropUntrustedLineCaches(bytes).bytes
+  if (format === 'hwpx') {
+    bytes = bindCopiedPrefixes(bytes, base.namespaces).bytes
+    bytes = restoreUnchangedMasterPages(bytes, base.masterPages).bytes
+    bytes = dropUntrustedLineCaches(bytes).bytes
+  }
   const kinds = format === 'hwp' ? base.kinds : undefined
   if (kinds) bytes = restoreFieldKinds(bytes, kinds).bytes
   const tails = format === 'hwp' ? base.tails : undefined
