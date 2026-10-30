@@ -281,8 +281,9 @@ describe('mcp server', () => {
     const bytes = JSON.stringify(list).length
     // 90 KiB before the four PDF document tools (pdf_images, pdf_ai_read, pdf_translate, pdf_status)
     // and hwp_read (about 1 KiB) joined the catalog; 97 KiB before epub_translate and epub_status
-    // (about 2 KiB)
-    expect(bytes).toBeLessThanOrEqual(99 * 1024)
+    // (about 2 KiB); 99 KiB before the product name in the descriptions grew from IeumOffice to
+    // HangulAIWorkbench (about 0.1 KiB)
+    expect(bytes).toBeLessThanOrEqual(100 * 1024)
     expect(bytes).toBeGreaterThan(60 * 1024)
   })
 
