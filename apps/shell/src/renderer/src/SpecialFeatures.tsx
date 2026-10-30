@@ -35,7 +35,7 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'quiz',
-    title: '퀴즈 생성기',
+    title: '똑딱퀴즈',
     summary:
       '학습 자료나 유튜브 영상으로 다섯 가지 유형의 퀴즈를 만들고, 바로 풀거나 학습지로 뽑아요.',
     tags: ['AI', '5가지 유형', '학습지 PDF', '블루킷·퀴즈앤'],

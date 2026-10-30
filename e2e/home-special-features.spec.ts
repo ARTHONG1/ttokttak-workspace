@@ -29,7 +29,7 @@ test('special features open from the home sidebar', async () => {
 
     await page.locator('.sf-back').click()
     await page.getByTestId('special-feature-quiz').click()
-    await expect(page.getByRole('heading', { name: '퀴즈 생성기' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '똑딱퀴즈' })).toBeVisible()
     await page
       .getByTestId('quiz-content')
       .fill('광합성은 식물이 빛 에너지로 포도당을 만드는 과정이다.')

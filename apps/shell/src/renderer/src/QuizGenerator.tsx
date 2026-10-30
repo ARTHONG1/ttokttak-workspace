@@ -877,7 +877,7 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
           <QuizIcon />
         </span>
         <div>
-          <h1>퀴즈 생성기</h1>
+          <h1>똑딱퀴즈</h1>
           <p>
             학습 자료를 넣으면 AI가 다섯 가지 유형의 퀴즈를 만들어요. 바로 풀거나 학습지로 뽑을 수
             있어요.

@@ -66,7 +66,8 @@ class IpcMain extends EventEmitter {
     this.handlers = new Map()
   }
   handle(channel, fn) {
-    if (this.handlers.has(channel)) throw new Error('Attempted to register a second handler for ' + "'" + channel + "'")
+    if (this.handlers.has(channel))
+      throw new Error('Attempted to register a second handler for ' + "'" + channel + "'")
     this.handlers.set(channel, fn)
   }
   handleOnce(channel, fn) {
@@ -91,14 +92,18 @@ function toWebUrl(url) {
   if (typeof url !== 'string') return url
   if (url.startsWith('file://')) return '/__file' + fileURLToPath(url)
   const m = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/i.exec(url)
-  if (m && registeredSchemes.has(m[1].toLowerCase())) return '/__proto/' + m[1].toLowerCase() + '/' + m[2]
+  if (m && registeredSchemes.has(m[1].toLowerCase()))
+    return '/__proto/' + m[1].toLowerCase() + '/' + m[2]
   return url
 }
 
 class FakeSession extends EventEmitter {
   constructor() {
     super()
-    this.webRequest = lenient({ onBeforeRequest() {}, onHeadersReceived() {}, onBeforeSendHeaders() {} }, 'webRequest')
+    this.webRequest = lenient(
+      { onBeforeRequest() {}, onHeadersReceived() {}, onBeforeSendHeaders() {} },
+      'webRequest',
+    )
     this.availableSpellCheckerLanguages = ['en-US', 'ko']
   }
   get protocol() {
@@ -161,11 +166,23 @@ class FakeWebContents extends EventEmitter {
     this.owner = null
     this.ipc = new IpcMain()
     this.navigationHistory = lenient(
-      { canGoBack: () => false, canGoForward: () => false, goBack() {}, goForward() {}, clear() {} },
+      {
+        canGoBack: () => false,
+        canGoForward: () => false,
+        goBack() {},
+        goForward() {},
+        clear() {},
+      },
       'navigationHistory',
     )
-    this.debugger = lenient({ attach() {}, detach() {}, isAttached: () => false, sendCommand: async () => ({}) }, 'debugger')
-    this.mainFrame = lenient({ url: '', send: (...a) => this.send(...a), frames: [], framesInSubtree: [] }, 'frame')
+    this.debugger = lenient(
+      { attach() {}, detach() {}, isAttached: () => false, sendCommand: async () => ({}) },
+      'debugger',
+    )
+    this.mainFrame = lenient(
+      { url: '', send: (...a) => this.send(...a), frames: [], framesInSubtree: [] },
+      'frame',
+    )
     this.windowOpenHandler = null
     allContents.set(this.id, this)
     link.send({ t: 'wc-create', wc: this.id, preload: this.preload })
@@ -302,7 +319,8 @@ class FakeWebContents extends EventEmitter {
   }
   async printToPDF() {
     const reply = await link.request({ t: 'wc-pdf', wc: this.id })
-    if (reply.error || !reply.value) throw new Error(reply.error || 'printToPDF is not available in the web edition')
+    if (reply.error || !reply.value)
+      throw new Error(reply.error || 'printToPDF is not available in the web edition')
     return Buffer.from(reply.value)
   }
   async capturePage() {
@@ -358,17 +376,30 @@ class FakeWebContents extends EventEmitter {
     } else if (ev === 'blur') {
       this.emit('blur')
     } else if (ev === 'input') {
-      const event = { preventDefault() { this.defaultPrevented = true }, defaultPrevented: false }
+      const event = {
+        preventDefault() {
+          this.defaultPrevented = true
+        },
+        defaultPrevented: false,
+      }
       this.emit('before-input-event', event, data)
       return { prevented: event.defaultPrevented }
     } else if (ev === 'context-menu') {
       this.emit('context-menu', { preventDefault() {} }, data)
     } else if (ev === 'open-window') {
       const handler = this.windowOpenHandler
-      const result = handler ? handler({ url: data.url, frameName: '', features: '', disposition: 'new-window' }) : { action: 'allow' }
+      const result = handler
+        ? handler({ url: data.url, frameName: '', features: '', disposition: 'new-window' })
+        : { action: 'allow' }
       if (result && result.action === 'allow') link.send({ t: 'open-external', url: data.url })
     } else if (ev === 'will-navigate') {
-      const event = { preventDefault() { this.defaultPrevented = true }, defaultPrevented: false, url: data.url }
+      const event = {
+        preventDefault() {
+          this.defaultPrevented = true
+        },
+        defaultPrevented: false,
+        url: data.url,
+      }
       this.emit('will-navigate', event, data.url)
       return { prevented: event.defaultPrevented }
     } else if (ev === 'zoom') {
@@ -401,7 +432,8 @@ class FakeView extends EventEmitter {
   addChildView(view, index) {
     const at = this.children.indexOf(view)
     if (at >= 0) this.children.splice(at, 1)
-    if (typeof index === 'number' && index >= 0 && index <= this.children.length) this.children.splice(index, 0, view)
+    if (typeof index === 'number' && index >= 0 && index <= this.children.length)
+      this.children.splice(index, 0, view)
     else this.children.push(view)
     view.parent = this
     view.attach(this.window)
@@ -423,8 +455,14 @@ class FakeView extends EventEmitter {
     if (this.window) this.window.syncViews()
   }
   setBounds(bounds) {
-    this.bounds = { x: Math.round(bounds.x), y: Math.round(bounds.y), width: Math.round(bounds.width), height: Math.round(bounds.height) }
-    if (this.webContents) link.send({ t: 'view-bounds', wc: this.webContents.id, bounds: this.bounds })
+    this.bounds = {
+      x: Math.round(bounds.x),
+      y: Math.round(bounds.y),
+      width: Math.round(bounds.width),
+      height: Math.round(bounds.height),
+    }
+    if (this.webContents)
+      link.send({ t: 'view-bounds', wc: this.webContents.id, bounds: this.bounds })
     this.emit('bounds-changed')
   }
   getBounds() {
@@ -432,7 +470,8 @@ class FakeView extends EventEmitter {
   }
   setVisible(visible) {
     this.visible = !!visible
-    if (this.webContents) link.send({ t: 'view-visible', wc: this.webContents.id, visible: this.visible })
+    if (this.webContents)
+      link.send({ t: 'view-visible', wc: this.webContents.id, visible: this.visible })
   }
   getVisible() {
     return this.visible
@@ -511,7 +550,8 @@ class FakeBrowserWindow extends EventEmitter {
     const order = []
     const walk = (view) => {
       for (const child of view.children) {
-        if (child.webContents) order.push({ wc: child.webContents.id, bounds: child.bounds, visible: child.visible })
+        if (child.webContents)
+          order.push({ wc: child.webContents.id, bounds: child.bounds, visible: child.visible })
         walk(child)
       }
     }
@@ -728,7 +768,9 @@ class FakeBrowserWindow extends EventEmitter {
     return [...allWindows.values()]
   }
   static getFocusedWindow() {
-    return focusedWindow && !focusedWindow.destroyed ? focusedWindow : [...allWindows.values()][0] || null
+    return focusedWindow && !focusedWindow.destroyed
+      ? focusedWindow
+      : [...allWindows.values()][0] || null
   }
   static fromWebContents(wc) {
     if (!wc) return null
@@ -796,13 +838,34 @@ const protocolApi = {
 }
 
 const MIME = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.wasm': 'application/wasm', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
-  '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.otf': 'font/otf',
-  '.pdf': 'application/pdf', '.txt': 'text/plain; charset=utf-8', '.md': 'text/markdown; charset=utf-8',
-  '.xml': 'application/xml', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
-  '.ftl': 'text/plain; charset=utf-8', '.bcmap': 'application/octet-stream', '.pfb': 'application/octet-stream',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.wasm': 'application/wasm',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
+  '.xml': 'application/xml',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ftl': 'text/plain; charset=utf-8',
+  '.bcmap': 'application/octet-stream',
+  '.pfb': 'application/octet-stream',
 }
 function mimeOf(file) {
   return MIME[path.extname(file).toLowerCase()] || 'application/octet-stream'
@@ -811,7 +874,10 @@ function mimeOf(file) {
 async function fileResponse(file) {
   try {
     const body = await fsp.readFile(file)
-    return new Response(body, { status: 200, headers: { 'Content-Type': mimeOf(file), 'Content-Length': String(body.length) } })
+    return new Response(body, {
+      status: 200,
+      headers: { 'Content-Type': mimeOf(file), 'Content-Length': String(body.length) },
+    })
   } catch {
     return new Response(null, { status: 404 })
   }
@@ -845,7 +911,13 @@ async function handleProtocolRequest({ scheme, url, method, headers, body }) {
   try {
     request = new Request(url, init)
   } catch {
-    request = { url, method: init.method, headers: new Headers(init.headers), arrayBuffer: async () => body || new ArrayBuffer(0), text: async () => '' }
+    request = {
+      url,
+      method: init.method,
+      headers: new Headers(init.headers),
+      arrayBuffer: async () => body || new ArrayBuffer(0),
+      text: async () => '',
+    }
   }
   let response = await handler(request)
   if (!response) return { status: 404, headers: {}, body: null }
@@ -857,14 +929,23 @@ async function handleProtocolRequest({ scheme, url, method, headers, body }) {
 
 // ---------------------------------------------------------------- dialogs
 function splitWindowArg(a, b) {
-  if (a && typeof a === 'object' && (a instanceof FakeBrowserWindow || a.webContents)) return [a, b || {}]
+  if (a && typeof a === 'object' && (a instanceof FakeBrowserWindow || a.webContents))
+    return [a, b || {}]
   return [null, a || {}]
 }
 const dialog = {
   async showMessageBox(a, b) {
     const [win, options] = splitWindowArg(a, b)
-    const reply = await link.request({ t: 'dialog', kind: 'message', win: win ? win.id : null, options: plainOptions(options) })
-    return { response: typeof reply.response === 'number' ? reply.response : options.cancelId ?? 0, checkboxChecked: !!reply.checkboxChecked }
+    const reply = await link.request({
+      t: 'dialog',
+      kind: 'message',
+      win: win ? win.id : null,
+      options: plainOptions(options),
+    })
+    return {
+      response: typeof reply.response === 'number' ? reply.response : (options.cancelId ?? 0),
+      checkboxChecked: !!reply.checkboxChecked,
+    }
   },
   showMessageBoxSync(a, b) {
     const [, options] = splitWindowArg(a, b)
@@ -873,7 +954,12 @@ const dialog = {
   },
   async showOpenDialog(a, b) {
     const [win, options] = splitWindowArg(a, b)
-    const reply = await link.request({ t: 'dialog', kind: 'open', win: win ? win.id : null, options: plainOptions(options) })
+    const reply = await link.request({
+      t: 'dialog',
+      kind: 'open',
+      win: win ? win.id : null,
+      options: plainOptions(options),
+    })
     const filePaths = Array.isArray(reply.filePaths) ? reply.filePaths : []
     return { canceled: filePaths.length === 0, filePaths }
   },
@@ -882,7 +968,12 @@ const dialog = {
   },
   async showSaveDialog(a, b) {
     const [win, options] = splitWindowArg(a, b)
-    const reply = await link.request({ t: 'dialog', kind: 'save', win: win ? win.id : null, options: plainOptions(options) })
+    const reply = await link.request({
+      t: 'dialog',
+      kind: 'save',
+      win: win ? win.id : null,
+      options: plainOptions(options),
+    })
     return { canceled: !reply.filePath, filePath: reply.filePath || '' }
   },
   showSaveDialogSync() {
@@ -914,12 +1005,23 @@ class FakeMenuItem {
     this.visible = options.visible !== false
     this.checked = !!options.checked
     this.type = options.type || (options.submenu ? 'submenu' : 'normal')
-    if (options.submenu && !(options.submenu instanceof FakeMenu)) this.submenu = FakeMenu.buildFromTemplate(options.submenu)
+    if (options.submenu && !(options.submenu instanceof FakeMenu))
+      this.submenu = FakeMenu.buildFromTemplate(options.submenu)
     if (!this.label && options.role) this.label = roleLabel(options.role)
   }
 }
 function roleLabel(role) {
-  const labels = { undo: '실행 취소', redo: '다시 실행', cut: '잘라내기', copy: '복사', paste: '붙여넣기', selectAll: '모두 선택', selectall: '모두 선택', delete: '삭제', pasteAndMatchStyle: '서식 없이 붙여넣기' }
+  const labels = {
+    undo: '실행 취소',
+    redo: '다시 실행',
+    cut: '잘라내기',
+    copy: '복사',
+    paste: '붙여넣기',
+    selectAll: '모두 선택',
+    selectall: '모두 선택',
+    delete: '삭제',
+    pasteAndMatchStyle: '서식 없이 붙여넣기',
+  }
   return labels[role] || ''
 }
 class FakeMenu extends EventEmitter {
@@ -972,7 +1074,14 @@ class FakeMenu extends EventEmitter {
   popup(options = {}) {
     const win = options.window || BrowserWindow.getFocusedWindow()
     const wc = focusedContents && !focusedContents.destroyed ? focusedContents : win?.webContents
-    link.send({ t: 'menu-popup', menu: this.menuId, items: this.describe(), x: options.x ?? null, y: options.y ?? null, wc: wc ? wc.id : null })
+    link.send({
+      t: 'menu-popup',
+      menu: this.menuId,
+      items: this.describe(),
+      x: options.x ?? null,
+      y: options.y ?? null,
+      wc: wc ? wc.id : null,
+    })
     this.popupCallback = options.callback
     this.emit('menu-will-show')
   }
@@ -999,7 +1108,11 @@ class FakeMenu extends EventEmitter {
   }
   static setApplicationMenu(menu) {
     applicationMenu = menu
-    link.send({ t: 'app-menu', menu: menu ? menu.menuId : null, items: menu ? menu.describe() : [] })
+    link.send({
+      t: 'app-menu',
+      menu: menu ? menu.menuId : null,
+      items: menu ? menu.describe() : [],
+    })
   }
   static getApplicationMenu() {
     return applicationMenu
@@ -1078,7 +1191,14 @@ const clipboard = {
 }
 
 const nativeTheme = lenient(
-  Object.assign(new EventEmitter(), { shouldUseDarkColors: false, shouldUseHighContrastColors: false, shouldUseInvertedColorScheme: false, themeSource: 'system', inForcedColorsMode: false, prefersReducedTransparency: false }),
+  Object.assign(new EventEmitter(), {
+    shouldUseDarkColors: false,
+    shouldUseHighContrastColors: false,
+    shouldUseInvertedColorScheme: false,
+    themeSource: 'system',
+    inForcedColorsMode: false,
+    prefersReducedTransparency: false,
+  }),
   'nativeTheme',
 )
 
@@ -1110,7 +1230,8 @@ const screen = lenient(
 function makeImage(buffer, size) {
   const data = buffer ? Buffer.from(buffer) : Buffer.alloc(0)
   let dims = size || { width: 0, height: 0 }
-  if (!size && data.length > 24 && data.readUInt32BE(0) === 0x89504e47) dims = { width: data.readUInt32BE(16), height: data.readUInt32BE(20) }
+  if (!size && data.length > 24 && data.readUInt32BE(0) === 0x89504e47)
+    dims = { width: data.readUInt32BE(16), height: data.readUInt32BE(20) }
   return lenient(
     {
       isEmpty: () => data.length === 0,
@@ -1158,7 +1279,10 @@ const utilityProcess = {
       env: { ...process.env, ...(options.env || {}) },
       execArgv: ['-r', UTILITY_PRELOAD, ...(options.execArgv || [])],
       serialization: 'advanced',
-      stdio: options.stdio === 'pipe' ? ['pipe', 'pipe', 'pipe', 'ipc'] : ['inherit', 'inherit', 'inherit', 'ipc'],
+      stdio:
+        options.stdio === 'pipe'
+          ? ['pipe', 'pipe', 'pipe', 'ipc']
+          : ['inherit', 'inherit', 'inherit', 'ipc'],
     })
     const proc = new EventEmitter()
     proc.pid = child.pid
@@ -1185,8 +1309,28 @@ class FakeApp extends EventEmitter {
     this.name = 'HangulAIWorkbench'
     this.readyPromise = new Promise((resolve) => (this.markReady = resolve))
     this.ready = false
-    this.commandLine = lenient({ appendSwitch() {}, appendArgument() {}, hasSwitch: () => false, getSwitchValue: () => '', removeSwitch() {} }, 'commandLine')
-    this.dock = lenient({ setIcon() {}, setMenu() {}, bounce: () => 0, show: async () => {}, hide() {}, setBadge() {}, getBadge: () => '' }, 'dock')
+    this.commandLine = lenient(
+      {
+        appendSwitch() {},
+        appendArgument() {},
+        hasSwitch: () => false,
+        getSwitchValue: () => '',
+        removeSwitch() {},
+      },
+      'commandLine',
+    )
+    this.dock = lenient(
+      {
+        setIcon() {},
+        setMenu() {},
+        bounce: () => 0,
+        show: async () => {},
+        hide() {},
+        setBadge() {},
+        getBadge: () => '',
+      },
+      'dock',
+    )
     this.accessibilitySupportEnabled = false
     this.userAgentFallback = 'HangulAIWorkbench-Web'
   }
@@ -1209,7 +1353,7 @@ class FakeApp extends EventEmitter {
     return process.env.WEB_APP_PATH
   }
   getVersion() {
-    return process.env.WEB_APP_VERSION || '0.13.0'
+    return process.env.WEB_APP_VERSION || '0.13.1'
   }
   getName() {
     return this.name
@@ -1327,22 +1471,39 @@ const safeStorage = {
   encryptString: (s) => Buffer.concat([Buffer.from('WEB1'), Buffer.from(String(s), 'utf8')]),
   decryptString: (b) => {
     const buf = Buffer.from(b)
-    return buf.subarray(0, 4).toString() === 'WEB1' ? buf.subarray(4).toString('utf8') : buf.toString('utf8')
+    return buf.subarray(0, 4).toString() === 'WEB1'
+      ? buf.subarray(4).toString('utf8')
+      : buf.toString('utf8')
   },
   getSelectedStorageBackend: () => 'basic_text',
   setUsePlainTextEncryption() {},
 }
 const emitterModule = (name, extra = {}) => lenient(Object.assign(new EventEmitter(), extra), name)
-const powerMonitor = emitterModule('powerMonitor', { getSystemIdleTime: () => 0, getSystemIdleState: () => 'active', isOnBatteryPower: () => false, onBatteryPower: false })
+const powerMonitor = emitterModule('powerMonitor', {
+  getSystemIdleTime: () => 0,
+  getSystemIdleState: () => 'active',
+  isOnBatteryPower: () => false,
+  onBatteryPower: false,
+})
 const powerSaveBlocker = { start: () => 1, stop() {}, isStarted: () => false }
-const globalShortcut = { register: () => false, registerAll() {}, isRegistered: () => false, unregister() {}, unregisterAll() {} }
+const globalShortcut = {
+  register: () => false,
+  registerAll() {},
+  isRegistered: () => false,
+  unregister() {},
+  unregisterAll() {},
+}
 const systemPreferences = emitterModule('systemPreferences', {
   getAccentColor: () => '2f5beaff',
   getColor: () => '#000000',
   getSystemColor: () => '#000000',
   isDarkMode: () => false,
   getUserDefault: () => undefined,
-  getAnimationSettings: () => ({ shouldRenderRichAnimation: true, scrollAnimationsEnabledBySystem: true, prefersReducedMotion: false }),
+  getAnimationSettings: () => ({
+    shouldRenderRichAnimation: true,
+    scrollAnimationsEnabledBySystem: true,
+    prefersReducedMotion: false,
+  }),
   canPromptTouchID: () => false,
   askForMediaAccess: async () => false,
   getMediaAccessStatus: () => 'denied',
@@ -1355,20 +1516,44 @@ class Notification extends EventEmitter {
     this.options = options
   }
   show() {
-    link.send({ t: 'notify', title: String(this.options.title || ''), body: String(this.options.body || '') })
+    link.send({
+      t: 'notify',
+      title: String(this.options.title || ''),
+      body: String(this.options.body || ''),
+    })
   }
   close() {}
   static isSupported() {
     return true
   }
 }
-const autoUpdater = emitterModule('autoUpdater', { setFeedURL() {}, getFeedURL: () => '', checkForUpdates() {}, quitAndInstall() {} })
-const crashReporter = { start() {}, getLastCrashReport: () => null, getUploadedReports: () => [], addExtraParameter() {}, removeExtraParameter() {}, getParameters: () => ({}) }
-const contentTracing = { startRecording: async () => {}, stopRecording: async () => '', getCategories: async () => [] }
+const autoUpdater = emitterModule('autoUpdater', {
+  setFeedURL() {},
+  getFeedURL: () => '',
+  checkForUpdates() {},
+  quitAndInstall() {},
+})
+const crashReporter = {
+  start() {},
+  getLastCrashReport: () => null,
+  getUploadedReports: () => [],
+  addExtraParameter() {},
+  removeExtraParameter() {},
+  getParameters: () => ({}),
+}
+const contentTracing = {
+  startRecording: async () => {},
+  stopRecording: async () => '',
+  getCategories: async () => [],
+}
 const desktopCapturer = { getSources: async () => [] }
 const inAppPurchase = emitterModule('inAppPurchase')
 const pushNotifications = emitterModule('pushNotifications')
-const TouchBar = class { static TouchBarButton = class {} ; static TouchBarSpacer = class {} ; static TouchBarLabel = class {} }
+const TouchBar = class {
+  static TouchBarButton = class {}
+  static TouchBarSpacer = class {}
+  static TouchBarLabel = class {}
+}
 class MessageChannelMain {
   constructor() {
     const a = new EventEmitter()
@@ -1393,7 +1578,10 @@ const electron = {
   View: FakeView,
   webContents: webContentsApi,
   webFrameMain: { fromId: () => undefined },
-  session: lenient({ defaultSession, fromPartition: () => defaultSession, fromPath: () => defaultSession }, 'sessionModule'),
+  session: lenient(
+    { defaultSession, fromPartition: () => defaultSession, fromPath: () => defaultSession },
+    'sessionModule',
+  ),
   protocol: protocolApi,
   net,
   dialog,
@@ -1421,7 +1609,12 @@ const electron = {
   TouchBar,
   MessageChannelMain,
   ShareMenu: class {},
-  Tray: class extends EventEmitter { setToolTip() {} setContextMenu() {} destroy() {} setImage() {} },
+  Tray: class extends EventEmitter {
+    setToolTip() {}
+    setContextMenu() {}
+    destroy() {}
+    setImage() {}
+  },
 }
 
 module.exports = lenient(electron, 'electron')
@@ -1443,4 +1636,3 @@ module.exports.__web = {
     if (wc) wc.fromBrowser('focus')
   },
 }
-
