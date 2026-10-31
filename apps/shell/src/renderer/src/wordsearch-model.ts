@@ -1,6 +1,6 @@
 /**
  * 특화 기능 > 똑딱퀴즈 단어 찾기: the word-search worksheet of the author's WordClass
- * (studio--ai-canvas-ddjku), read from its shipped page bundle. The grid maker is the
+ * ported by the author from that app into this one. The grid maker is the
  * original's: the longest words go first, each gets 100 random tries at a place and
  * direction, a whole grid is tried 20 times until every word appears exactly once, and
  * the blanks are filled from the letters of the words plus a common-syllable set.

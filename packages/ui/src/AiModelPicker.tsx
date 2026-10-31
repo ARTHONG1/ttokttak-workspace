@@ -220,7 +220,13 @@ export function AiModelPicker({
             <AiMark size={14} />
           </span>
           <span className="ai-model-chip-text">{activeText}</span>
-          <svg className="ai-model-chip-caret" width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <svg
+            className="ai-model-chip-caret"
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            aria-hidden
+          >
             <path
               d="M2 6.5 5 3.5l3 3"
               fill="none"
@@ -257,7 +263,9 @@ export function AiModelPicker({
                     }}
                   >
                     <span className="ai-model-item-text">{webAiTierText(lang, tier.id)}</span>
-                    {tier.locked && <span className="ai-model-tag">{webAiTierText(lang, 'locked')}</span>}
+                    {tier.locked && (
+                      <span className="ai-model-tag">{webAiTierText(lang, 'locked')}</span>
+                    )}
                     {selected && (
                       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
                         <path

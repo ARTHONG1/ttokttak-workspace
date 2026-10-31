@@ -12,7 +12,13 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
-import { aiUsageOf, authRequired, firebaseWebConfig, takeAiRequest, verifyIdToken } from './web-auth.mjs'
+import {
+  aiUsageOf,
+  authRequired,
+  firebaseWebConfig,
+  takeAiRequest,
+  verifyIdToken,
+} from './web-auth.mjs'
 import zlib from 'node:zlib'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -562,7 +568,7 @@ async function handleHttp(req, res) {
     if (!sameOrigin(req)) return send(res, 403, 'forbidden')
     const sid = sessionFromCookie(req)
     if (!sid) return send(res, 400, JSON.stringify({ ok: false, reason: 'no session cookie' }))
-    let token = ''
+    let token
     try {
       token = String(JSON.parse((await readBody(req, 16 * 1024)).toString('utf8')).idToken || '')
     } catch {
@@ -606,7 +612,12 @@ async function handleHttp(req, res) {
     return send(
       res,
       200,
-      JSON.stringify({ ok: true, email: account.email, name: account.name, usage: aiUsageOf(account.uid) }),
+      JSON.stringify({
+        ok: true,
+        email: account.email,
+        name: account.name,
+        usage: aiUsageOf(account.uid),
+      }),
       { 'Content-Type': 'application/json' },
     )
   }

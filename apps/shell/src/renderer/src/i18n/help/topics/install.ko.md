@@ -1,6 +1,6 @@
 # GenOffice 설치
 
-모든 버전은 GitHub에 있는 프로젝트의 [Releases 페이지](https://github.com/ARTHONG1/ttokttak-studio/releases/latest)에 올라옵니다. 이 버전은 Windows용으로 배포됩니다.
+모든 버전은 GitHub에 있는 프로젝트의 [Releases 페이지](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)에 올라옵니다. 이 버전은 Windows용으로 배포됩니다.
 
 ## 내 컴퓨터에 맞는 파일 고르기
 

@@ -1,6 +1,6 @@
 /**
  * 특화 기능 > 퀴즈 생성기: the data and rules of the author's ACE QUIZ LAB
- * (studio--studio-6664041192-57f5d), read from its shipped page bundle.
+ * ported by the author from that app into this one.
  *
  * A quiz is { questions: Question[] }. Five types: 선택형 (four options, the answer is
  * one of them), OX형 (options O and X), 단답형 (no options), 순서 완성형 (the options are

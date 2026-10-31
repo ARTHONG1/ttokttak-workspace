@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ARTHONG1/ttokttak-studio.git"
+    "url": "git+https://github.com/ARTHONG1/ttokttak-workspace.git"
   },
   "workspaces": [
     "apps/*",

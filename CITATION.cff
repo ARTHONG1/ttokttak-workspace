@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use or build on this software, please cite it as below."
+title: "똑딱작업실 (ttokttak-workspace)"
+abstract: "Open-source AI document workspace for Hangul (HWP/HWPX), Word, Excel, PowerPoint and PDF, a modified version of IeumOffice 0.12.5 (based on GenOffice)."
+type: software
+authors:
+  - name: "홍찬우 (Chanwoo Hong)"
+    affiliation: "Incheon Bongsu Elementary School · 클래스똑딱"
+repository-code: "https://github.com/ARTHONG1/ttokttak-workspace"
+url: "https://hangul-ai-workbench-545101783843.asia-northeast3.run.app"
+license: Apache-2.0
+keywords:
+  - hwp
+  - hwpx
+  - hangul
+  - ai
+  - office
+  - mcp
+  - education
+references:
+  - type: software
+    title: "IeumOffice (이음오피스)"
+    repository-code: "https://github.com/pblsketch/openoffice"
+    license: Apache-2.0
+    version: "0.12.5"
+    authors:
+      - name: "IeumOffice contributors"
+  - type: software
+    title: "GenOffice"
+    repository-code: "https://github.com/genspark-ai/genoffice"
+    license: Apache-2.0
+    authors:
+      - name: "Mainfunc, Inc."

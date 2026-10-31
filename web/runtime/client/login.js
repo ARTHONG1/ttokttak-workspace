@@ -88,13 +88,17 @@ async function start() {
       await enter(result.user)
     } catch (err) {
       const code = (err && err.code) || ''
-      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+      if (
+        code === 'auth/popup-blocked' ||
+        code === 'auth/operation-not-supported-in-this-environment'
+      ) {
         await signInWithRedirect(auth, provider)
         return
       }
       button.disabled = false
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') say('')
-      else if (code === 'auth/network-request-failed') say('인터넷 연결을 확인한 뒤 다시 해 주세요.', true)
+      else if (code === 'auth/network-request-failed')
+        say('인터넷 연결을 확인한 뒤 다시 해 주세요.', true)
       else say('로그인하지 못했어요. 다시 해 주세요.', true)
     }
   })

@@ -3,12 +3,12 @@
 ## Reporting a Vulnerability
 
 Please report suspected vulnerabilities privately via GitHub's
-[private vulnerability reporting](https://github.com/ARTHONG1/ttokttak-studio/security/advisories/new)
+[private vulnerability reporting](https://github.com/ARTHONG1/ttokttak-workspace/security/advisories/new)
 on this repository. Do not open public issues for security reports.
-ttokttak-studio is maintained by one person, so reports are handled on a
+ttokttak-workspace is maintained by one person, so reports are handled on a
 best-effort basis.
 
-ttokttak-studio is a modified version of IeumOffice, which is based on
+ttokttak-workspace is a modified version of IeumOffice, which is based on
 GenOffice (see
 [License and acknowledgement](README.en.md#license-and-acknowledgement)). If a
 problem is in code the projects share (the document engines, for example),
@@ -22,7 +22,7 @@ operating system warns the first time you open one.
 
 ## Trademark and Copyright Reports
 
-Open an issue at https://github.com/ARTHONG1/ttokttak-studio/issues for
+Open an issue at https://github.com/ARTHONG1/ttokttak-workspace/issues for
 trademark or copyright infringement reports and licensing questions. The same
 address is in the app under Settings → About.
 

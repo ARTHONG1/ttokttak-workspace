@@ -1,6 +1,6 @@
 # Pemasangan GenOffice
 
-Setiap versi diterbitkan pada [halaman Keluaran](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) projek ini di GitHub. Versi ini dikeluarkan untuk Windows.
+Setiap versi diterbitkan pada [halaman Keluaran](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) projek ini di GitHub. Versi ini dikeluarkan untuk Windows.
 
 ## Memilih fail untuk mesin anda
 

@@ -61,7 +61,8 @@ h1 em { font-style: normal; background: linear-gradient(180deg, #fff3a6 0%, #ffd
 .btn.primary { background: var(--fg); color: var(--bg); box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), 0 10px 40px -8px rgba(255, 255, 255, .35); }
 .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255, 255, 255, .3), 0 14px 50px -6px rgba(255, 255, 255, .45); }
 .btn.primary:hover svg { transform: translateX(3px); }
-.btn.ghost { border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--fg-2); cursor: default; }
+.btn.ghost { border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--fg); }
+.btn.ghost:hover { transform: translateY(-1px); border-color: rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .06); }
 .btn.ghost small { padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 11.5px; font-weight: 600; }
 .btn:focus-visible, .nav-cta:focus-visible, .pill:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
 
@@ -252,4 +253,28 @@ html.op .rv { animation-play-state: paused; }
 
 @media (max-width: 900px) {
   .made-list, .engines { grid-template-columns: 1fr; }
+}
+
+/* ---- the three ways to use it: try on the web, install with your agent, let the agent install ---- */
+.ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: clamp(28px, 3.4vw, 40px) 0 0; padding: 0; list-style: none; }
+.ways li { padding: 22px 22px 24px; border-radius: 18px; background: rgba(255, 255, 255, .035); box-shadow: 0 0 0 1px var(--line) inset; }
+.ways b { display: block; font-size: 17px; font-weight: 750; letter-spacing: -.02em; }
+.ways p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.65; color: var(--fg-2); }
+.credits-foot p a { color: var(--fg); text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .3); text-underline-offset: 4px; }
+@media (max-width: 900px) {
+  .ways { grid-template-columns: 1fr; }
+}
+
+/* ---- install with an AI agent: the prompt to paste ---- */
+.agent-install { margin: clamp(40px, 6vw, 60px) 0 0; padding: clamp(24px, 3vw, 34px); border-radius: 24px; background: rgba(77, 124, 255, .07); box-shadow: 0 0 0 1px rgba(77, 124, 255, .28) inset; }
+.agent-install-head b { display: block; margin-top: 14px; font-size: clamp(20px, 2vw, 24px); font-weight: 780; letter-spacing: -.03em; }
+.agent-install-head p { margin: 8px 0 0; max-width: 720px; font-size: 15px; line-height: 1.7; color: var(--fg-2); }
+.prompt-box { position: relative; margin: 20px 0 16px; border-radius: 16px; background: #05060a; box-shadow: 0 0 0 1px var(--line) inset; }
+.prompt-box pre { margin: 0; padding: 18px 20px; padding-right: 128px; font: 500 14.5px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg); white-space: pre-wrap; word-break: break-all; }
+.prompt-box .copy { position: absolute; top: 12px; right: 12px; height: 34px; padding: 0 14px; border: 0; border-radius: 9px; background: var(--fg); color: var(--bg); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.prompt-box .copy:hover { box-shadow: 0 0 0 4px rgba(255, 255, 255, .12); }
+.prompt-box .copy:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+@media (max-width: 560px) {
+  .prompt-box pre { padding-right: 20px; padding-bottom: 60px; }
+  .prompt-box .copy { top: auto; bottom: 12px; }
 }

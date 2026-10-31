@@ -27,7 +27,7 @@ const PRODUCT_NAME = 'HangulAIWorkbench'
 // (<local app data>/<name>-updater), so a shared name is a shared folder.
 const PACKAGED_APP_NAME = 'hangul-ai-workbench'
 const REPO_OWNER = 'ARTHONG1'
-const REPO_NAME = 'ttokttak-studio'
+const REPO_NAME = 'ttokttak-workspace'
 const MAINTAINER = 'ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>'
 
 // GENOFFICE_MAC_X64=1 — package the Intel (x64) dmg/zip alongside arm64.

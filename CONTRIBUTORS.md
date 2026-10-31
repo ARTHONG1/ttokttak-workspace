@@ -2,7 +2,7 @@
 
 똑딱작업실은 이음오피스를 고쳐 만들었습니다. 아래는 원본 이음오피스에 코드, 문서,
 번역, 재현 사례로 도움을 주신 분들입니다.
-ttokttak-studio is a modified version of IeumOffice. These people helped the
+ttokttak-workspace is a modified version of IeumOffice. These people helped the
 upstream IeumOffice with code, docs, translations, or reproductions.
 
 ## 코드 / Code

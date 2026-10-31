@@ -47,7 +47,7 @@ export const DEV_USER_DATA_DIR_NAME = `${PRODUCT_NAME}-Dev`
 
 /** The product's public GitHub repository: issues, releases and update checks all point here. */
 export const PRODUCT_REPO_OWNER = 'ARTHONG1'
-export const PRODUCT_REPO_NAME = 'ttokttak-studio'
+export const PRODUCT_REPO_NAME = 'ttokttak-workspace'
 /** `owner/repo`; the URLs built from it live in @genoffice/electron-utils (github-menu.ts) */
 export const PRODUCT_REPO_SLUG = `${PRODUCT_REPO_OWNER}/${PRODUCT_REPO_NAME}`
 

@@ -18,7 +18,7 @@ import './quiz-generator.css'
  * 특화 기능: tools made for Korean school and public-office work, opened from the
  * home sidebar (desktop) or the trial home (web).
  *
- * 품의서 생성 follows the author's ACE AI 품의서 생성기 (studio--studio-8741441457-2b5fc):
+ * 품의서 생성 follows the author's ACE AI 품의서 생성기:
  * the same inputs (품의 제목 of 5+ characters, 장바구니 내용 of 10+), the same 기안문
  * template, the same 품의 목록 columns, CSV columns and temporary-storage record. The AI
  * only reads the cart into rows; the 기안문 is built from the rows, so its amount is

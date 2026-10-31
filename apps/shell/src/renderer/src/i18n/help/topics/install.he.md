@@ -1,6 +1,6 @@
 # התקנת GenOffice
 
-כל גרסה מתפרסמת ב[עמוד ההפצות](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) של הפרויקט ב-GitHub. הגרסה הזו מופצת ל-Windows.
+כל גרסה מתפרסמת ב[עמוד ההפצות](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) של הפרויקט ב-GitHub. הגרסה הזו מופצת ל-Windows.
 
 ## בחירת הקובץ למחשב שלך
 

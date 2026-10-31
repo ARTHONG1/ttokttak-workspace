@@ -318,7 +318,9 @@ function seedAiSettings(dir) {
     try {
       const stored = JSON.parse(fs.readFileSync(file, 'utf8'))
       const gemini = stored && stored.providers && stored.providers.gemini
-      const locked = gemini && gemini.model !== vertex.BASIC_MODEL &&
+      const locked =
+        gemini &&
+        gemini.model !== vertex.BASIC_MODEL &&
         !(vertex.ADVANCED_ENABLED && gemini.model === vertex.ADVANCED_MODEL)
       if (locked) {
         gemini.model = vertex.BASIC_MODEL

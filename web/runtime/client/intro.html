@@ -4,10 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07080b" />
-    <title>똑딱작업실 — 말 한마디에 문서가 고쳐집니다</title>
+    <title>똑딱작업실 — AI로 문서 일에서 해방되는 오픈소스 작업실</title>
     <meta
       name="description"
-      content="한글·워드·엑셀·PPT·PDF 문서를 열고 고칠 곳을 말하세요. AI가 문서 안에서 바로 고치고, 바뀐 곳을 보여 줍니다."
+      content="한글·워드·엑셀·PPT·PDF 문서를 말로 고치는 오픈소스 AI 작업실. 웹에서 바로 체험하고, PC에 설치하면 내 AI 에이전트와 연결해 더 똑똑하게 일합니다."
     />
     <link rel="icon" href="/__web/icon.png" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -70,7 +70,20 @@
               stroke-linejoin="round"
             /></svg
         ></a>
-        <span class="soon">Mac · Windows 앱 <b>곧 공개</b></span>
+        <a
+          href="https://github.com/ARTHONG1/ttokttak-workspace#ai-에이전트로-설치하기"
+          target="_blank"
+          rel="noopener"
+          >Mac · Windows 앱<svg class="ext" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M5 11L11 5M6 5h5v5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+        ></a>
       </nav>
       <a class="nav-cta enter" href="/app">체험하기</a>
     </header>
@@ -100,7 +113,13 @@
                 stroke-linejoin="round"
               /></svg
           ></a>
-          <span class="btn ghost" aria-disabled="true">Mac · Windows 앱<small>곧 공개</small></span>
+          <a
+            class="btn ghost"
+            href="https://github.com/ARTHONG1/ttokttak-workspace#ai-에이전트로-설치하기"
+            target="_blank"
+            rel="noopener"
+            >Mac · Windows 앱 받기<small>GitHub</small></a
+          >
         </div>
       </section>
 
@@ -201,12 +220,35 @@
 
       <section class="credits" id="credits" aria-labelledby="credits-title">
         <p class="kicker-sm">만든 이유</p>
-        <h2 id="credits-title">문서 일에 드는 시간을,<br />모두가 조금씩 덜 쓰도록.</h2>
+        <h2 id="credits-title">문서 일에서 해방되어,<br />더 중요한 일에 시간을 쓰도록.</h2>
         <p class="credits-lede">
-          제목 하나, 숫자 몇 개를 고치려고 문서를 열고, 찾고, 옮겨 적는 데 생각보다 많은 시간이
-          듭니다. 똑딱작업실은 그 시간을 줄이려고 만들었습니다. 고칠 곳을 말하면 AI가 문서 안에서
-          바로 고치고, 사람은 확인만 하면 됩니다.
+          똑딱작업실은 문서 작업만 돕는 도구가 아닙니다. 학교와 사무실의 반복되는 업무를 AI로 덜어
+          내고, 사람은 확인과 결정에 집중하게 하려고 만들었습니다. 오픈소스 위에서 만들었고, 고친
+          것은 모두 다시 오픈소스로 공개해 더 많은 사람이 함께 쓰고 고칠 수 있게 합니다.
         </p>
+        <ul class="ways">
+          <li>
+            <b>웹에서는 체험</b>
+            <p>
+              설치 없이 바로 써 봅니다. 체험하며 연 문서는 작업이 끝나면 서버에서 지워지고, 따로
+              보관하지 않습니다.
+            </p>
+          </li>
+          <li>
+            <b>설치하면 내 AI 에이전트와 함께</b>
+            <p>
+              PC 프로그램에 내 Claude Code나 Codex를 연결하면, 내 PC의 파일과 함께 더 똑똑하게
+              일합니다. 문서는 내 PC에 남습니다.
+            </p>
+          </li>
+          <li>
+            <b>설치도 AI 에이전트에게</b>
+            <p>
+              GitHub 페이지의 요청문을 내 AI 에이전트에 붙여 넣으면, 내려받기부터 바탕화면 바로
+              가기와 연결 확인까지 알아서 끝냅니다.
+            </p>
+          </li>
+        </ul>
 
         <div class="maker">
           <span class="maker-mark" aria-hidden="true">홍</span>
@@ -231,37 +273,71 @@
           ></a>
         </div>
 
+        <div class="agent-install" id="install">
+          <div class="agent-install-head">
+            <span class="step ours">PC 프로그램 설치</span>
+            <b>설치는 내 AI 에이전트에게 맡기세요</b>
+            <p>
+              Claude Code, Codex, Gemini CLI 같은 AI 에이전트에 아래 요청문을 붙여 넣으면,
+              내려받기와 파일 확인, 설치, 바탕화면 바로 가기, 에이전트 연결까지 알아서 끝냅니다.
+            </p>
+          </div>
+          <div class="prompt-box">
+            <pre id="agentPrompt">
+똑딱작업실을 내 컴퓨터에 설치하고 세팅까지 끝내 줘.
+https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md 를 읽고 그대로 따라 해.</pre>
+            <button type="button" class="copy" id="copyPrompt" aria-live="polite">
+              요청문 복사
+            </button>
+          </div>
+          <a
+            class="link"
+            href="https://github.com/ARTHONG1/ttokttak-workspace"
+            target="_blank"
+            rel="noopener"
+            >GitHub에서 설치 안내와 소스 보기<svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M5 11L11 5M6 5h5v5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+
         <div class="made">
           <div class="made-head">
             <span class="step ours">똑딱작업실이 만든 것</span>
           </div>
           <ul class="made-list">
             <li>
-              <b>설치 없이 쓰는 웹 작업실</b>
+              <b>문서 일을 덜어 주는 AI 작업실</b>
               <p>
-                PC 프로그램을 그대로 브라우저에서 돌리는 실행 환경을 새로 만들었습니다. 한글·워드·엑셀·PPT·PDF·HTML
-                문서를 올리면 PC 앱과 같은 편집기에서 바로 열리고, 휴대폰에서도 문서를 고를 수 있습니다.
+                한글·워드·엑셀·PPT·PDF·HTML 문서를 한 창에서 열고, 고칠 곳을 말하면 AI가 문서 안에서
+                바로 고칩니다. 바뀐 곳이 보이고 되돌릴 수 있습니다.
+              </p>
+            </li>
+            <li>
+              <b>학교 업무 도구, 똑딱업무</b>
+              <p>
+                장바구니로 품의서를 만드는 품의서 생성, 학습 자료로 퀴즈와 학습지를 만드는
+                똑딱퀴즈와 단어 찾기를 넣었습니다.
               </p>
             </li>
             <li>
               <b>한글 문서 저장 안전장치</b>
               <p>
-                한컴오피스가 손상 파일로 거부하던 원인을 찾아 고쳤습니다. 저장하기 직전에 파일 구조와
-                메모가 빠짐없이 남는지 확인하고, 하나라도 사라지면 원본을 덮어쓰지 않습니다.
+                한컴오피스가 손상 파일로 거부하던 원인을 찾아 고쳤습니다. 저장 직전에 구조와 메모를
+                확인하고, 하나라도 빠지면 원본을 덮어쓰지 않습니다.
               </p>
             </li>
             <li>
-              <b>안심하고 쓰는 AI 편집</b>
+              <b>내 AI 에이전트와 연결</b>
               <p>
-                Google 계정으로 로그인한 사람만 AI를 쓰고, 계정마다 하루 사용량을 셉니다. 멈춘 요청은
-                다시 보내고 혼잡하면 잠시 기다렸다가 끝까지 고칩니다.
-              </p>
-            </li>
-            <li>
-              <b>학교 일을 덜어 주는 똑딱업무</b>
-              <p>
-                장바구니로 품의서를 만드는 품의서 생성, 학습 자료로 퀴즈를 만드는 똑딱퀴즈와 단어
-                찾기를 넣었습니다. 시작 화면과 메뉴, PDF 문구도 한국어로 다듬었습니다.
+                PC 프로그램은 터미널 명령어와 MCP 서버를 함께 설치해, Claude Code·Codex 같은
+                에이전트가 같은 문서를 읽고 만들고 고칠 수 있습니다.
               </p>
             </li>
           </ul>
@@ -309,8 +385,12 @@
 
         <div class="credits-foot">
           <p>
-            똑딱작업실은 Apache License 2.0으로 공개합니다. 함께 쓰는 오픈소스 575개의 저작권 고지와
-            라이선스는 고치지 않고 모두 함께 배포합니다.
+            똑딱작업실은 이음오피스(Apache-2.0)를 고쳐 만든 프로그램이고, 고친 코드 전체를 Apache
+            License 2.0으로
+            <a href="https://github.com/ARTHONG1/ttokttak-workspace" target="_blank" rel="noopener"
+              >GitHub에 공개</a
+            >합니다. 함께 쓰는 오픈소스 575개의 저작권 고지와 라이선스는 고치지 않고 모두 함께
+            배포합니다.
           </p>
           <a class="link" href="/__web/licenses" target="_blank" rel="noopener"
             >전체 라이선스 보기<svg viewBox="0 0 16 16" aria-hidden="true">
@@ -338,8 +418,11 @@
         <a href="https://classddok.com" target="_blank" rel="noopener">classddok.com</a></span
       >
       <span
-        >웹 체험판의 AI는 Google Gemini로 동작합니다. 데스크톱 앱은 내 Codex·Claude와
-        연결됩니다.</span
+        >웹 체험판의 AI는 Google Gemini로 동작하며, 체험 문서는 작업이 끝나면 지워집니다. 데스크톱
+        앱은 내 Codex·Claude와 연결됩니다. ·
+        <a href="https://github.com/ARTHONG1/ttokttak-workspace" target="_blank" rel="noopener"
+          >GitHub</a
+        ></span
       >
     </footer>
 

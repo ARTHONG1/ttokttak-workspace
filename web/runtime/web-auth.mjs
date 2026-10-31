@@ -17,7 +17,9 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
 
 const PROJECT = process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || ''
 const JWKS = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'),
+  new URL(
+    'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com',
+  ),
 )
 const ALLOWED = new Set(
   String(process.env.WEB_ALLOWED_EMAILS || '')
@@ -47,21 +49,24 @@ export function firebaseWebConfig() {
  */
 export async function verifyIdToken(token) {
   if (!PROJECT) return { account: null, reason: 'no project' }
-  if (typeof token !== 'string' || token.length > 4096) return { account: null, reason: 'bad token' }
+  if (typeof token !== 'string' || token.length > 4096)
+    return { account: null, reason: 'bad token' }
   try {
     const { payload } = await jwtVerify(token, JWKS, {
       algorithms: ['RS256'],
       audience: PROJECT,
       issuer: 'https://securetoken.google.com/' + PROJECT,
     })
-    if (typeof payload.sub !== 'string' || !payload.sub) return { account: null, reason: 'no subject' }
+    if (typeof payload.sub !== 'string' || !payload.sub)
+      return { account: null, reason: 'no subject' }
     const now = Math.floor(Date.now() / 1000)
     if (typeof payload.auth_time === 'number' && payload.auth_time > now + 60)
       return { account: null, reason: 'auth time in the future' }
     const provider = payload.firebase && payload.firebase.sign_in_provider
     if (provider !== 'google.com') return { account: null, reason: 'not a Google sign-in' }
     const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : ''
-    if (!email || payload.email_verified !== true) return { account: null, reason: 'unverified email' }
+    if (!email || payload.email_verified !== true)
+      return { account: null, reason: 'unverified email' }
     if (ALLOWED.size && !ALLOWED.has(email)) return { account: null, reason: 'not allowed' }
     return {
       account: {
@@ -109,7 +114,8 @@ function rollDay(now) {
 export function takeAiRequest(uid, now = Date.now()) {
   rollDay(now)
   const used = counts.get(uid) || 0
-  if (LIMIT > 0 && used >= LIMIT) return { ok: false, used, limit: LIMIT, resetsAt: nextSeoulMidnight(now) }
+  if (LIMIT > 0 && used >= LIMIT)
+    return { ok: false, used, limit: LIMIT, resetsAt: nextSeoulMidnight(now) }
   counts.set(uid, used + 1)
   return { ok: true, used: used + 1, limit: LIMIT, resetsAt: nextSeoulMidnight(now) }
 }

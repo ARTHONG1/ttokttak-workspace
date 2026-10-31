@@ -16,9 +16,9 @@ import {
 describe('repository coordinates', () => {
   it("points at the product's own public repository", () => {
     expect(GITHUB_REPO_OWNER).toBe('ARTHONG1')
-    expect(GITHUB_REPO_NAME).toBe('ttokttak-studio')
-    expect(GITHUB_REPO_SLUG).toBe('ARTHONG1/ttokttak-studio')
-    expect(GITHUB_REPO_URL).toBe('https://github.com/ARTHONG1/ttokttak-studio')
+    expect(GITHUB_REPO_NAME).toBe('ttokttak-workspace')
+    expect(GITHUB_REPO_SLUG).toBe('ARTHONG1/ttokttak-workspace')
+    expect(GITHUB_REPO_URL).toBe('https://github.com/ARTHONG1/ttokttak-workspace')
   })
 
   it('takes owner and repo from the one product definition', () => {
@@ -27,12 +27,12 @@ describe('repository coordinates', () => {
   })
 
   it('derives every link from the repository URL', () => {
-    expect(GITHUB_REPO_DISPLAY).toBe('github.com/ARTHONG1/ttokttak-studio')
-    expect(GITHUB_ISSUES_URL).toBe('https://github.com/ARTHONG1/ttokttak-studio/issues')
-    expect(GITHUB_NEW_ISSUE_URL).toBe('https://github.com/ARTHONG1/ttokttak-studio/issues/new')
-    expect(GITHUB_RELEASES_URL).toBe('https://github.com/ARTHONG1/ttokttak-studio/releases')
+    expect(GITHUB_REPO_DISPLAY).toBe('github.com/ARTHONG1/ttokttak-workspace')
+    expect(GITHUB_ISSUES_URL).toBe('https://github.com/ARTHONG1/ttokttak-workspace/issues')
+    expect(GITHUB_NEW_ISSUE_URL).toBe('https://github.com/ARTHONG1/ttokttak-workspace/issues/new')
+    expect(GITHUB_RELEASES_URL).toBe('https://github.com/ARTHONG1/ttokttak-workspace/releases')
     expect(GITHUB_LATEST_RELEASE_URL).toBe(
-      'https://github.com/ARTHONG1/ttokttak-studio/releases/latest',
+      'https://github.com/ARTHONG1/ttokttak-workspace/releases/latest',
     )
     for (const url of [
       GITHUB_ISSUES_URL,
@@ -46,10 +46,10 @@ describe('repository coordinates', () => {
 
   it('builds the page of one released version', () => {
     expect(githubReleaseTagUrl('1.2.3')).toBe(
-      'https://github.com/ARTHONG1/ttokttak-studio/releases/tag/v1.2.3',
+      'https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v1.2.3',
     )
     expect(githubReleaseTagUrl('v1.2.3')).toBe(
-      'https://github.com/ARTHONG1/ttokttak-studio/releases/tag/v1.2.3',
+      'https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v1.2.3',
     )
   })
 })

@@ -1,256 +1,205 @@
-# 똑딱작업실 (ttokttak-studio)
+<div align="center">
 
-**한국어** · [English](README.en.md)
+<img src="apps/shell/build/brand/app-icon.svg" width="88" alt="똑딱작업실 아이콘" />
 
-똑딱작업실은 한글(HWP·HWPX), 워드, 엑셀, 파워포인트, PDF, 마크다운, HTML 문서와
-마인드맵을 한 창에서 열고 고치는 데스크톱 오피스 프로그램입니다. 편집기마다 AI
-창이 있어서, 말로 부탁하면 AI가 앱의 편집 도구로 문서를 직접 고칩니다. 무엇이
-바뀌었는지 보이고, 되돌릴 수 있습니다.
+# 똑딱작업실 (ttokttak-workspace)
 
-AI는 **내 PC에 설치하고 로그인해 둔 Claude Code 또는 Codex**로 돌아갑니다. 앱은
-로그인 정보를 읽거나 저장하지 않고, 그 프로그램을 실행해 요청을 넘기기만 합니다.
+**AI로 문서 일에서 해방되는 오픈소스 작업실**
 
-똑딱작업실은 오픈소스 [이음오피스](https://github.com/pblsketch/openoffice)
-0.12.5를 고쳐 만든 프로그램이고, 이음오피스는
-[GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다. 두
-프로젝트와 제휴하거나 후원을 받은 관계는 아닙니다([라이선스와 출처](#라이선스와-출처)).
-무엇을 바탕으로 했고 무엇을 더 만들었는지는
-[오픈소스 위에 더한 것](#오픈소스-위에-더한-것)에 정리했습니다.
+한글·워드·엑셀·PPT·PDF 문서를 열고 고칠 곳을 말하면, AI가 문서 안에서 바로 고칩니다.<br />
+웹에서 바로 체험하고, PC에 설치하면 내 AI 에이전트와 연결해 더 똑똑하게 일합니다.
 
-만든 사람: 인천봉수초 홍찬우 · 교사 에듀테크 연구회
-[클래스똑딱](https://classddok.com)
+[![웹에서 체험하기](https://img.shields.io/badge/웹에서_체험하기-바로_열기-111827?style=for-the-badge)](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app)
+[![최신 릴리스](https://img.shields.io/github/v/release/ARTHONG1/ttokttak-workspace?style=for-the-badge&label=Mac%20%C2%B7%20Windows)](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2f5bea?style=for-the-badge)](LICENSE)
 
-## 차례
+[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [오픈소스와 기여](#오픈소스-위에서-만들고-다시-오픈소스로) · [English](README.en.md)
 
-- [오픈소스 위에 더한 것](#오픈소스-위에-더한-것)
-- [내려받기](#내려받기)
-- [지금 되는 것](#지금-되는-것)
-- [구독 연결하기](#구독-연결하기)
-- [구독 없이 무료로 쓰기](#구독-없이-무료로-쓰기)
-- [앱이 로그인 정보로 하지 않는 일](#앱이-로그인-정보로-하지-않는-일)
-- [직접 빌드하기](#직접-빌드하기)
-- [알려진 한계](#알려진-한계)
-- [개인정보](#개인정보)
-- [기여와 문제 신고](#기여와-문제-신고)
-- [라이선스와 출처](#라이선스와-출처)
+</div>
 
-## 오픈소스 위에 더한 것
+<p align="center">
+  <a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="똑딱작업실 소개 영상 미리보기" /></a><br />
+  <sub>그림을 누르면 31초 소개 영상(MP4)을 봅니다.</sub>
+</p>
 
-똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 잘 만들어진 공개 프로젝트를
-이어 붙이고, 학교와 사무실에서 실제로 막히던 부분을 고치고 채워 넣었습니다.
-바탕이 된 프로젝트를 만든 분들께 감사드립니다.
+## 왜 만들었나
 
-### 바탕이 된 프로젝트
+제목 하나, 숫자 몇 개를 고치려고 문서를 열고, 찾고, 옮겨 적는 데 생각보다 많은 시간이 듭니다. 학교와 사무실의 일은 대부분 이런 문서 일입니다.
 
-| 프로젝트                                                                                                      | 맡은 일                                                         | 라이선스        |
-| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------- |
-| [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5                                                  | 앱의 뼈대: 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결 | Apache-2.0      |
-| [GenOffice](https://github.com/genspark-ai/genoffice)                                                         | 이음오피스가 바탕으로 삼은 오피스 프로그램과 문서 엔진          | Apache-2.0      |
-| [rhwp](https://github.com/edwardkim/rhwp)                                                                     | 한글(HWP·HWPX) 읽기·쓰기                                        | MIT             |
-| [Univer](https://github.com/dream-num/univer)                                                                 | 엑셀 표 계산                                                    | Apache-2.0      |
-| [Tiptap](https://github.com/ueberdosis/tiptap)                                                                | 워드·마크다운 편집                                              | MIT             |
-| [PDF.js](https://github.com/mozilla/pdf.js), [EmbedPDF](https://github.com/embedpdf/embed-pdf-viewer)(PDFium) | PDF 보기와 고치기                                               | Apache-2.0, MIT |
+똑딱작업실은 **문서 작업만 돕는 도구가 아니라, 반복되는 업무를 AI로 덜어 내는 작업실**입니다. 고칠 곳을 말하면 AI가 문서 안에서 직접 고치고 바뀐 곳을 보여 줍니다. 사람은 확인하고 결정만 하면 됩니다. 품의서, 퀴즈, 학습지처럼 학교에서 매번 손으로 만들던 문서도 바로 만듭니다.
 
-함께 배포하는 전체 구성 요소와 라이선스는 설치 폴더의 `THIRD-PARTY-NOTICES.txt`와
-웹 체험판의 [전체 라이선스](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/__web/licenses)에 있습니다.
+그리고 이 모든 것을 **오픈소스 위에서 만들고, 고친 것을 다시 오픈소스로 공개**합니다. 더 많은 사람이 함께 쓰고 함께 고칠 수 있도록.
+
+## 쓰는 방법 세 가지
+
+|      | 웹 체험판                                                                    | 데스크톱 앱                                                              | 설치는 AI 에이전트에게                      |
+| ---- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
+| 무엇 | 설치 없이 브라우저에서 바로                                                  | Mac · Windows 프로그램                                                   | 요청문 한 줄로 설치부터 연결까지            |
+| AI   | Google Gemini (Google 로그인 후)                                             | **내 Claude Code · Codex** 구독                                          | 같은 에이전트가 앱과 연결                   |
+| 문서 | 작업하는 동안만 서버에 있고, 끝나면 지워집니다                               | 내 PC에만 남습니다                                                       | —                                           |
+| 시작 | [체험하기](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) | [릴리스](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) | [아래 요청문 복사](#ai-에이전트로-설치하기) |
+
+## AI 에이전트로 설치하기
+
+설치 파일을 직접 받고, 보안 경고를 넘기고, 경로를 맞추는 일은 사람이 할 일이 아닙니다. **Claude Code, Codex, Gemini CLI, Cursor 같은 AI 에이전트에 아래 요청문을 그대로 붙여 넣으세요.**
+
+```text
+똑딱작업실을 내 컴퓨터에 설치하고 세팅까지 끝내 줘.
+https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md 를 읽고 그대로 따라 해.
+```
+
+에이전트는 [INSTALL.md](INSTALL.md)의 순서대로 이렇게 합니다.
+
+1. 내 컴퓨터(macOS·Windows, Apple Silicon·Intel)를 알아내고 맞는 설치 파일을 고릅니다.
+2. 공식 릴리스에서만 내려받고, 릴리스에 함께 올라온 SHA-512 값으로 파일이 맞는지 확인합니다.
+3. 앱을 설치하고, 바탕화면에 `똑딱작업실` 바로 가기를 만듭니다.
+4. 터미널 명령어 `ieumoffice`를 연결하고, 이 PC의 AI 에이전트에 MCP 서버와 문서 작업 스킬을 등록합니다.
+5. 무엇이 끝났고 사용자가 할 일(계정 로그인 정도)이 남았는지 짧게 알려 줍니다.
+
+직접 하고 싶다면 설치 스크립트를 실행해도 됩니다.
+
+```bash
+# macOS
+curl -fsSL https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/install/install-mac.sh | bash
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/install/install-windows.ps1 | iex
+```
+
+## 할 수 있는 일
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/screen-before.webp" alt="AI에게 고칠 곳을 말하기 전의 한글 문서" /></td>
+<td width="50%"><img src="docs/assets/screen-after.webp" alt="AI가 고친 뒤 바뀐 곳이 표시된 한글 문서" /></td>
+</tr>
+<tr>
+<td align="center"><sub>말로 부탁하면</sub></td>
+<td align="center"><sub>문서 안에서 바로 고치고 바뀐 곳을 보여 줍니다</sub></td>
+</tr>
+</table>
+
+### 문서 편집
+
+- **한 창에 모든 문서**: 한글(`.hwp`, `.hwpx`), 워드(`.docx`), 엑셀(`.xlsx`), 파워포인트(`.pptx`), PDF, 마크다운, HTML, 마인드맵(`.xmind`)을 탭으로 열고 원래 형식으로 저장합니다.
+- **편집기마다 AI 창**: 문서를 읽고, 고치고, 바뀐 곳을 표시하고, 한 번에 되돌립니다. 새 문서의 초안도 써 줍니다.
+- **한글 문서 저장 안전장치**: 한컴오피스가 "손상된 파일"로 거부하던 원인을 고쳤고, 저장 직전에 파일 구조·메모·바탕쪽을 검사해 하나라도 빠지면 원본을 덮어쓰지 않습니다.
+- **긴 표**: 페이지를 넘는 표는 줄 단위로 나뉘고 제목 줄이 반복됩니다.
+
+### 학교 업무 도구, 똑딱업무
+
+- **품의서 생성**: 쇼핑몰 장바구니나 이미지·한글·PDF·엑셀 파일을 넣으면 품의 목록과 기안문을 만듭니다. 목록을 고치면 기안문의 금액도 따라 바뀝니다.
+- **똑딱퀴즈**: 학습 자료(직접 입력, PDF·한글, 유튜브 자막)로 선택형·OX·단답형·순서·초성 퀴즈를 만들고 문제지 PDF, 블루킷 CSV, 퀴즈앤 XLSX, 퀴즈 동영상으로 내보냅니다.
+- **단어 찾기**: 단어와 뜻으로 단어 찾기 학습지, 문장 만들기, 단어 잇기, 단어 카드를 PDF로 만듭니다.
+
+### AI 에이전트와 함께
+
+- **터미널 명령어와 MCP 서버**(`ieumoffice`, `ieumoffice mcp`): Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf가 같은 문서를 읽고 만들고 고칩니다.
+- **구독 그대로**: 앱은 내 PC에 로그인된 Claude Code·Codex를 실행할 뿐, 로그인 정보를 읽거나 저장하지 않습니다.
+- **화면 언어 21개**(한국어·영어 외에는 기계 번역).
+
+## 문서와 개인정보
+
+- **데스크톱 앱**에는 자체 서버가 없고 사용 통계를 보내지 않습니다. 문서는 내 PC에 남습니다. AI를 쓰면 문서 내용과 대화가 **사용자 본인 계정**으로 Anthropic 또는 OpenAI에 전송됩니다.
+- **웹 체험판**은 Google 계정으로 로그인한 사람만 쓰고, 계정마다 하루 AI 사용량을 셉니다. 올린 문서는 작업하는 동안만 서버의 임시 폴더에 있다가, 창을 닫고 15분이 지나면 지워집니다. 따로 보관하거나 AI 학습에 쓰지 않습니다. AI 요청은 Google Vertex AI(Gemini)로 갑니다.
+- 전체 목록은 [PRIVACY.md](PRIVACY.md)에 있습니다.
+
+## 오픈소스 위에서 만들고, 다시 오픈소스로
+
+똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 잘 만들어진 공개 프로젝트를 이어 붙이고, 학교와 사무실에서 실제로 막히던 부분을 고치고 채워 넣었습니다. 바탕이 된 프로젝트를 만든 분들께 감사드립니다.
+
+**똑딱작업실은 [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5(커밋 `4e4e9cc`)를 고쳐 만든 프로그램이고, 이음오피스는 [GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다.** 두 프로젝트 모두 Apache License 2.0입니다.
+
+| 프로젝트                                                                                                       | 맡은 일                                                | 라이선스         |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------- |
+| [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5                                                   | 앱의 뼈대: 탭 편집기, 편집기마다 있는 AI 창, 구독 연결 | Apache-2.0       |
+| [GenOffice](https://github.com/genspark-ai/genoffice)                                                          | 이음오피스가 바탕으로 삼은 오피스 프로그램과 문서 엔진 | Apache-2.0       |
+| [rhwp](https://github.com/edwardkim/rhwp)                                                                      | 한글(HWP·HWPX) 읽기·쓰기                               | MIT              |
+| [Univer](https://github.com/dream-num/univer)                                                                  | 엑셀 표 계산                                           | Apache-2.0       |
+| [Tiptap](https://github.com/ueberdosis/tiptap)                                                                 | 워드·마크다운 편집                                     | MIT              |
+| [PDF.js](https://github.com/mozilla/pdf.js) · [EmbedPDF](https://github.com/embedpdf/embed-pdf-viewer)(PDFium) | PDF 보기와 고치기                                      | Apache-2.0 · MIT |
+| [frontend-slides](https://github.com/zarazhangrui/frontend-slides)                                             | 슬라이드 디자인 템플릿의 바탕                          | MIT              |
+
+함께 배포하는 구성 요소 575개의 저작권 고지와 라이선스는 고치지 않고 모두 함께 배포합니다(설치 폴더의 `THIRD-PARTY-NOTICES.txt`, 웹의 [전체 라이선스](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/__web/licenses)).
 
 ### 똑딱작업실에서 고치고 더한 것
 
-- **한컴 한글에서 열리는 HWPX 저장.** 고친 문서를 저장하면 한컴 한글이 "손상된
-  파일"로 거부하던 원인을 찾아 고쳤습니다. 표나 그림 옆 문단의 줄 정보, 선언하지
-  않은 이름 접두사, 바탕쪽 비교, 이름이 바뀐 그림 확인이 그 원인입니다. 한글
-  문서 114개를 고쳐 저장한 뒤 하나하나 한컴오피스 HWP 뷰어로 열어 확인했습니다.
-- **원본을 지키는 저장.** HWP 문서는 기본으로 옆에 HWPX로 저장하고, 쓰기 전에
-  저장본의 압축 구조, 필수 파일, XML, 메모와 바탕쪽을 검사합니다. 하나라도
-  확인되지 않으면 저장하지 않고 원본을 그대로 둡니다.
-- **페이지를 넘는 표.** AI가 붙여 넣은 긴 표가 통째로 다음 쪽으로 밀리고 아래가
-  잘리던 문제를 고쳐, 줄 단위로 나뉘고 제목 줄이 반복되게 했습니다.
-- **설치 없이 쓰는 웹 체험판.** 데스크톱 앱을 고치지 않고 그대로 브라우저에서
-  돌리는 실행 환경(`web/`)을 새로 만들었습니다. 웹에서도 같은 편집기 10개가
-  열리고, 세션마다 다른 사람의 파일에 손댈 수 없도록 경로를 막습니다.
-- **학교 업무 도구, 똑딱업무.** 클래스똑딱에서 교사들이 쓰던 웹 도구를 앱 안으로
-  옮겼습니다. 장바구니 내용으로 품의 기안문과 품의 목록을 만드는 **품의서 생성**,
-  학습 자료나 유튜브 자막으로 다섯 가지 퀴즈를 만들고 바로 푸는 **똑딱퀴즈**,
-  단어 찾기 학습지를 만드는 **단어 찾기**입니다.
-- **한국 사용자를 위한 화면.** 문서 업로드·똑딱업무·똑딱수업 세 갈래로 시작하는
-  처음 화면, 한국어로 다듬은 메뉴와 설정, 한국어로 옮긴 PDF 메뉴 문구를
-  만들었습니다.
-- **끝까지 해내는 AI 편집.** 웹 체험판의 Gemini 연결에서 응답이 멈춘 요청은 다시
-  보내고, 사람이 몰려 잠시 거절될 때는 기다렸다가 다시 시도하게 했습니다.
+- **한컴 한글에서 열리는 HWPX 저장.** 표·그림 옆 문단의 줄 정보, 선언하지 않은 이름 접두사, 바탕쪽 비교, 이름이 바뀐 그림 확인을 고쳤습니다. 한글 문서 114개를 고쳐 저장한 뒤 한컴오피스 HWP 뷰어로 하나하나 열어 확인했습니다.
+- **원본을 지키는 저장.** HWP 문서는 옆에 HWPX로 저장하고, 쓰기 전에 압축 구조·필수 파일·XML·메모·바탕쪽을 검사합니다.
+- **페이지를 넘는 표.** AI가 붙여 넣은 긴 표가 줄 단위로 나뉘고 제목 줄이 반복됩니다.
+- **설치 없이 쓰는 웹 체험판.** 데스크톱 앱을 고치지 않고 그대로 브라우저에서 돌리는 실행 환경(`web/`)을 새로 만들었습니다. 세션마다 다른 사람의 파일에 손댈 수 없도록 경로를 막고, Google 로그인과 계정별 하루 사용량으로 지킵니다.
+- **학교 업무 도구, 똑딱업무.** 만든 사람이 클래스똑딱에서 교사들과 쓰던 웹 도구(품의서 생성, 똑딱퀴즈, 단어 찾기)를 앱 안으로 옮겼습니다.
+- **AI 에이전트가 하는 설치.** 요청문 한 줄로 내려받기·검증·설치·바로 가기·에이전트 연결을 끝내는 [INSTALL.md](INSTALL.md)와 설치 스크립트(`scripts/install/`).
+- **한국 사용자를 위한 화면.** 문서 업로드·똑딱업무·똑딱수업으로 시작하는 홈, 한국어로 다듬은 메뉴·설정·PDF 문구.
 
-고친 내용은 모두 이 저장소에 Apache License 2.0으로 공개합니다. 바꾼 파일은
-커밋 기록에, 바꾼 내용의 요약은 [NOTICE](NOTICE)에 있습니다.
-
-## 내려받기
-
-[Releases](https://github.com/ARTHONG1/ttokttak-studio/releases/latest)에서 내 PC에 맞는
-파일을 받습니다. 아직 자동 업데이트가 없으니, 새 버전은 같은 곳에서 다시 받아 설치합니다.
-
-| 운영체제                     | 파일                                 |
-| ---------------------------- | ------------------------------------ |
-| Windows (64비트)             | `HangulAIWorkbench-Setup-<버전>.exe` |
-| Mac (Apple Silicon: M1 이후) | `HangulAIWorkbench-<버전>-arm64.dmg` |
-| Mac (Intel)                  | `HangulAIWorkbench-<버전>-x64.dmg`   |
-
-설치 파일에는 아직 서명이 없습니다. Windows에서 "Windows의 PC 보호" 창이 뜨면
-"추가 정보" → "실행"을 누릅니다. Mac에서 처음 열 때 경고가 뜨면 Finder에서 앱을
-Control 키를 누른 채 클릭하고 "열기"를 고릅니다.
-
-설치 없이 써 보려면 [웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app)을
-엽니다. 체험판은 문서를 잠시만 보관하므로 저장한 뒤 내려받아 두세요.
-
-## 지금 되는 것
-
-- **탭으로 묶인 편집기**: 한글(`.hwp`, `.hwpx`), 워드(`.docx`), 엑셀(`.xlsx`),
-  파워포인트(`.pptx`), PDF, 마크다운, HTML, 마인드맵(`.xmind`). 파일은 내 PC에서
-  원래 형식으로 열고 저장합니다.
-- **한글 문서 저장**: HWP 문서는 기본으로 HWPX로 저장하고, 원본을 덮어쓰기 전에
-  저장본을 다시 읽어 검사합니다. 한컴 한글이 손상 파일로 거부하던 줄 정보·접두사
-  문제를 저장할 때 바로잡습니다. 모든 문서가 한컴 한글에서 똑같이 보인다고
-  보장하지는 않습니다.
-- **편집기마다 있는 AI 창.** 문서를 읽고, 고치고, 바뀐 곳을 표시합니다.
-- **홈 화면**: 큰 버튼 세 개(문서 업로드, 똑딱업무, 똑딱수업)로 시작합니다. 내 문서를
-  끌어다 놓거나 골라서 열고, 8가지 새 문서를 만듭니다. 똑딱수업은 준비 중입니다.
-- **똑딱업무 → 품의서 생성**: 쇼핑몰 장바구니 내용이나 이미지·한글·PDF·엑셀
-  파일을 넣으면 AI가 품의 목록과 품의 기안문을 만듭니다. 목록을 고치면 기안문의
-  품목과 금액도 따라 바뀌고, 본문 복사와 CSV 저장을 할 수 있습니다.
-- **똑딱업무 → 똑딱퀴즈**: 학습 자료(직접 입력, PDF·한글 파일, 유튜브 자막)로 선택형·OX형·단답형·순서
-  완성·초성퀴즈를 만들고, 바로 풀거나 문제지·정답지 PDF, 블루킷 CSV, 퀴즈앤 XLSX, 퀴즈 동영상으로
-  내보냅니다. **단어 찾기** 탭에서는 단어와 뜻(직접 입력 또는 AI 제안)으로 단어 찾기 학습지·정답과 문장
-  만들기, 단어와 뜻 잇기, 단어 카드 활동지를 PDF로 만듭니다.
-- **터미널 명령어와 MCP 서버**(`ieumoffice`, `ieumoffice mcp`): 코딩 에이전트가
-  같은 파일을 읽고 만들고 고칠 수 있습니다.
-- **화면 언어 21개.** 한국어와 영어 말고는 기계 번역입니다.
-
-## 구독 연결하기
-
-필요한 것은 두 가지입니다.
-
-1. 본인의 Claude 구독 또는 ChatGPT 구독
-2. PC에 설치되어 있고 로그인된 **Claude Code** 또는 **Codex**
-
-첫 실행 안내 화면과 **설정 → AI → 구독 연결**에 프로그램별 상태가 보입니다.
-로그인은 그 프로그램의 명령(`claude auth login`, `codex login`)과 그 회사의
-화면에서 끝납니다. **사용할 AI**를 "자동"으로 두면 Claude가 연결되어 있을 때
-Claude를, 아니면 Codex를 씁니다.
-
-구독을 다른 앱에서 써도 되는지, 어디까지 되는지는 사용자와 Anthropic 또는
-OpenAI 사이의 약관이 정하고, 그 약관은 바뀔 수 있습니다. 이 앱은 사용자 PC의 공식
-프로그램을 실행할 뿐이고, 한 사람의 구독을 다른 사람에게 나눠 주지 않습니다.
-
-## 구독 없이 무료로 쓰기
-
-**설정 → AI → 무료로 쓰기**에서 OpenRouter 또는 Google Gemini를 연결할 수
-있습니다. 무료 AI는 구독 모델보다 약하고 하루 사용량에 한도가 있습니다. 무료로
-쓰는 동안 보낸 내용은 그 회사의 AI 개선에 쓰일 수 있으니, 개인정보가 담긴 문서는
-주의하세요.
-
-## 앱이 로그인 정보로 하지 않는 일
-
-- Claude나 Codex의 로그인 정보를 읽지도, 복사하지도, 저장하지도 않습니다.
-- 앱 안에 Claude나 ChatGPT 로그인 화면을 만들지 않습니다.
-- 두 회사의 프로그램을 고치지 않고, 배포된 그대로 실행합니다.
-- 다른 사람의 AI 사용료를 대신 내거나, 되팔거나, 중간에서 전달하지 않습니다.
-- 사용자가 시키지 않은 AI 요청을 뒤에서 시작하지 않습니다.
+고친 내용은 모두 이 저장소에 Apache License 2.0으로 공개합니다. 출처와 바꾼 내용의 요약은 [NOTICE](NOTICE)에 있습니다. 바탕 프로젝트에 돌려줄 수 있는 고침은 그 프로젝트에도 제안하겠습니다.
 
 ## 직접 빌드하기
 
-Node 22.12 이상(npm 10 이상)과 Rust가 필요합니다. `cargo`가 PATH에 있어야
-합니다(엑셀 처리 프로그램을 만드는 데 씁니다).
+Node 22.12 이상(npm 10 이상)과 Rust(`cargo`가 PATH에 있어야 함)가 필요합니다.
 
 ```bash
-git clone https://github.com/ARTHONG1/ttokttak-studio.git
-cd ttokttak-studio
+git clone https://github.com/ARTHONG1/ttokttak-workspace.git
+cd ttokttak-workspace
 npm install
 npm run dev      # 모든 편집기와 앱 창을 개발 모드로 실행
 npm run shell    # 또는: 전체를 빌드한 뒤 앱 실행
 ```
 
-Mac 설치 파일은 `npm run build:all` 뒤
-`npm run dist:mac -w @genoffice/shell -- --publish never`로 만듭니다. 결과는
-`apps/shell/release`에 생깁니다.
+- Mac 설치 파일: `npm run build:all` → `npm run dist:mac -w @genoffice/shell -- --publish never` (결과는 `apps/shell/release`)
+- Mac·Windows 설치 파일은 GitHub Actions의 **macOS build**, **Windows build**에서도 만듭니다.
+- 웹 체험판: `GOOGLE_CLOUD_PROJECT=<프로젝트> WEB_AUTH=off node web/scripts/local-preview.mjs`
 
-웹 체험판(`web/`)은 같은 데스크톱 화면을 브라우저에서 띄우고, AI는 Vertex AI의
-Gemini를 씁니다. 로컬에서 띄우려면 `GOOGLE_CLOUD_PROJECT=<프로젝트>
-node web/scripts/local-preview.mjs`를 실행합니다.
+코드 안의 패키지 이름과 환경 변수에는 `genoffice` / `GENOFFICE_`, 터미널 명령어에는 `ieumoffice`가 남아 있습니다. 바탕 프로젝트의 개선을 계속 받아오기 쉽게 하려고 둔 것입니다. 변경할 때 통과해야 하는 검사는 [CONTRIBUTING.md](CONTRIBUTING.md)에 있습니다.
 
-코드 안의 패키지 이름과 환경 변수에는 `genoffice` / `GENOFFICE_`가, 터미널
-명령어에는 `ieumoffice`가 남아 있습니다. 원본 프로젝트의 개선을 계속 받아오기
-쉽게 하려고 둔 것입니다. 변경할 때 통과해야 하는 검사는
-[CONTRIBUTING.md](CONTRIBUTING.md)(영어)에 있습니다.
+## 저장소 구조 (AI 에이전트와 기여자용)
+
+| 경로                                                           | 내용                                                                         |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `apps/shell`                                                   | 데스크톱 앱의 껍데기: 탭, 홈, 설정, 똑딱업무, 패키징(`electron-builder.cjs`) |
+| `apps/{docs,sheets,slides,pdf,hwp,markdown,html,mindmap,epub}` | 형식별 편집기                                                                |
+| `packages/ai-provider`                                         | AI 연결(구독, 키, 무료 AI, Vertex)                                           |
+| `packages/cli`                                                 | 터미널 명령어 `ieumoffice`와 MCP 서버                                        |
+| `skills/ieumoffice`                                            | 에이전트에 설치하는 문서 작업 스킬                                           |
+| `web/`                                                         | 웹 체험판: 가짜 `electron` 모듈, 게이트웨이, 로그인, Cloud Run 이미지        |
+| `scripts/install`                                              | AI 에이전트가 실행하는 설치 스크립트                                         |
+| `docs/`                                                        | 설계·계약·운영 문서                                                          |
+
+AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 요약을 두었습니다.
 
 ## 알려진 한계
 
-- **개발과 확인은 macOS(Apple Silicon)에서 했습니다.** Windows와 Linux 빌드는
-  원본 프로젝트의 설정을 그대로 두었고, 이 저장소에서는 확인하지 않았습니다.
-- **설치 파일에 서명이 없습니다.** 처음 열 때 운영체제가 경고합니다. 자동
-  업데이트도 아직 동작하지 않습니다.
-- **한컴 한글과의 호환은 시험한 문서에서만 확인했습니다.** 중요한 문서는 다른
-  이름으로 저장해 원본을 남겨 두세요.
-- **구독은 API 키보다 답이 조금 늦게 시작됩니다.** 요청마다 그 회사의 프로그램을
-  먼저 띄우기 때문입니다.
-- **번역.** 화면 언어 21개 가운데 19개는 기계 번역입니다.
-
-## 개인정보
-
-똑딱작업실 데스크톱 앱에는 자체 서버가 없고, 사용 통계도 보내지 않습니다. 문서는
-내 PC에 남습니다. AI를 쓰면 문서 내용과 대화가 사용자 본인 계정으로 Anthropic
-또는 OpenAI에 전송됩니다(API 키나 무료 AI를 연결했다면 그 회사로). 검색어는
-기본적으로 Parallel과 DuckDuckGo로 갑니다. 웹 체험판은 문서와 대화를 Google
-Vertex AI로 보냅니다. 전체 목록은 [PRIVACY.md](PRIVACY.md)(영어)에 있습니다.
+- 개발과 확인은 macOS(Apple Silicon)에서 했습니다. Windows 설치 파일은 GitHub Actions에서 만들고 시험합니다.
+- 설치 파일에 아직 코드 서명·공증이 없습니다. 설치 스크립트가 처음 실행 경고를 처리합니다. 자동 업데이트는 아직 동작하지 않습니다.
+- 한컴 한글과의 호환은 시험한 문서에서만 확인했습니다. 중요한 문서는 다른 이름으로 저장해 원본을 남기세요.
+- AI가 만든 내용은 틀릴 수 있으니 확인한 뒤 쓰세요.
 
 ## 기여와 문제 신고
 
-- 버그, 제안, 상표·저작권 문의와 권리 침해 신고:
-  [GitHub Issues](https://github.com/ARTHONG1/ttokttak-studio/issues)
-- 보안 문제: 공개 이슈로 올리지 말고 [SECURITY.md](SECURITY.md)에 적힌 대로
-  비공개로 알려 주세요.
-- 코드 기여: [CONTRIBUTING.md](CONTRIBUTING.md)와
-  [행동 강령](CODE_OF_CONDUCT.md)을 읽어 주세요.
+- 버그·제안·상표/저작권 문의: [Issues](https://github.com/ARTHONG1/ttokttak-workspace/issues)
+- 보안 문제: 공개 이슈 대신 [SECURITY.md](SECURITY.md)의 방법으로 비공개로 알려 주세요.
+- 코드 기여: [CONTRIBUTING.md](CONTRIBUTING.md)와 [행동 강령](CODE_OF_CONDUCT.md)을 읽어 주세요.
+
+## 만든 사람
+
+**인천봉수초 홍찬우** · 교실과 학교의 일을 덜어 주는 도구를 만들고 나누는 교사 에듀테크 연구회 [클래스똑딱](https://classddok.com)을 운영합니다.
 
 ## 라이선스와 출처
 
-똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다.
+똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다. 바탕이 된 이음오피스와 GenOffice의 저작권 고지는 그대로 두었고, 출처와 바꾼 내용은 [NOTICE](NOTICE)에 있습니다. 이음오피스에 기여한 분들은 [CONTRIBUTORS.md](CONTRIBUTORS.md)에 있습니다.
 
-**똑딱작업실은 [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5(커밋
-`4e4e9cc`)를 고쳐 만들었고, 이음오피스는
-[GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다.**
-GenOffice는 Genspark(Mainfunc, Inc.)가 만든 오픈소스 오피스 프로그램이고, 두
-프로젝트 모두 Apache-2.0 라이선스입니다. 원래의 저작권 고지는 그대로 두었고,
-출처와 바꾼 내용은 [NOTICE](NOTICE)에 적어 두었습니다. 이음오피스에 기여한 분들은
-[CONTRIBUTORS.md](CONTRIBUTORS.md)에 있습니다.
+한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인 조건에 따라 밝힙니다.
 
-슬라이드 디자인 템플릿은
-[frontend-slides](https://github.com/zarazhangrui/frontend-slides)(MIT
-라이선스)의 디자인을 바탕으로 다시 만들었고, 템플릿 글꼴은 모두 SIL Open Font
-License 1.1입니다. 고지와 글꼴 목록은 [NOTICE](NOTICE)에 있습니다.
+> 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
 
-한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT
-라이선스)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인
-조건에 따라 다음 문구를 밝힙니다.
-
-> 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여
-> 개발하였습니다.
-
-똑딱작업실은 독립된 프로젝트입니다. 이음오피스 개발자, Genspark / Mainfunc, Inc.,
-Anthropic, OpenAI, Microsoft, 한글과컴퓨터, Adobe, XMind, Google과 제휴하거나
-후원·보증을 받은 관계가 아닙니다. "이음오피스"·"IeumOffice", "GenOffice"와
-"Genspark"라는 이름과 로고는 각 소유자의 것이고, "Claude", "Codex", "ChatGPT"도
-그렇습니다. "Microsoft", "Windows", "Word", "Excel", "PowerPoint"는 Microsoft
-Corporation의 상표이고, "한글", "한컴", "HWP", "HWPX"는 주식회사
-한글과컴퓨터의 등록 상표이며, "XMind"는 XMind Ltd.의, "Google 드라이브"는
-Google LLC의 상표입니다. 여기서는 이 프로그램이 무엇을 바탕으로 만들어졌고,
-무엇과 함께 동작하며, 어떤 파일을 여는지 알리기 위해서만 그 이름을 적었습니다.
+똑딱작업실은 독립된 프로젝트입니다. 이음오피스 개발자, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, 한글과컴퓨터, Adobe, XMind, Google과 제휴하거나 후원·보증을 받은 관계가 아닙니다. "이음오피스"·"IeumOffice", "GenOffice", "Genspark"의 이름과 로고는 각 소유자의 것이고, Apache License 2.0은 상표를 쓸 권리를 주지 않습니다(6조). "Claude"는 Anthropic, "Codex"·"ChatGPT"는 OpenAI, "Microsoft"·"Windows"·"Word"·"Excel"·"PowerPoint"는 Microsoft Corporation의 상표이고, "한글"·"한컴"·"HWP"·"HWPX"는 주식회사 한글과컴퓨터의 등록 상표, "XMind"는 XMind Ltd., "Gemini"·"Google 드라이브"는 Google LLC의 상표입니다. 이 이름들은 무엇을 바탕으로 만들었고, 무엇과 함께 동작하며, 어떤 파일을 여는지 알리기 위해서만 적었습니다.
 
 ### 다시 배포할 때
 
-Apache License 2.0은 누구나 고쳐서 다시 배포하는 것을 허락합니다. 다시 배포할
-때는 [LICENSE](LICENSE)와 [NOTICE](NOTICE)를 함께 넣고, 고친 파일에는 고쳤다는
-사실을 밝혀야 합니다. 이 라이선스는 상표를 쓸 권리를 주지 않습니다(4조, 6조).
-바탕이 된 프로젝트들도 각자의 라이선스 조건을 지켜야 합니다. 목록은
-[NOTICE](NOTICE)와 설치 폴더의 `THIRD-PARTY-NOTICES.txt`에 있습니다.
+Apache License 2.0은 누구나 고쳐서 다시 배포하는 것을 허락합니다. 다시 배포할 때는 [LICENSE](LICENSE)와 [NOTICE](NOTICE)를 함께 넣고, 고친 파일에는 고쳤다는 사실을 밝혀야 합니다. 바탕 프로젝트들도 각자의 라이선스 조건을 지켜야 합니다.
 
 ### 보증하지 않음
 
-똑딱작업실은 Apache License 2.0의 7조, 8조에 따라 있는 그대로 제공하며, 어떤
-보증도 하지 않습니다. AI가 만든 내용은 틀릴 수 있으니 확인한 뒤 쓰세요.
+똑딱작업실은 Apache License 2.0의 7조, 8조에 따라 있는 그대로 제공하며, 어떤 보증도 하지 않습니다.

@@ -4,7 +4,6 @@
   var nav = document.getElementById('nav')
   var frame = document.getElementById('frame')
 
-
   // the window straightens as the page scrolls toward it
   function onScroll() {
     var y = window.scrollY
@@ -17,7 +16,9 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true })
   onScroll()
-  frame.addEventListener('animationend', function () { frame.classList.add('settled') })
+  frame.addEventListener('animationend', function () {
+    frame.classList.add('settled')
+  })
 
   // the promo film: muted autoplay while it is on screen, sound on request
   var video = document.getElementById('promo')
@@ -25,13 +26,22 @@
   var timers = []
   function startDemo() {
     if (!video) return
-    if (reduce) { video.removeAttribute('loop'); return }
+    if (reduce) {
+      video.removeAttribute('loop')
+      return
+    }
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) {
-          if (e.isIntersecting) { var p = video.play(); if (p && p.catch) p.catch(function () {}) } else video.pause()
-        })
-      }, { threshold: 0.35 }).observe(video)
+      new IntersectionObserver(
+        function (es) {
+          es.forEach(function (e) {
+            if (e.isIntersecting) {
+              var p = video.play()
+              if (p && p.catch) p.catch(function () {})
+            } else video.pause()
+          })
+        },
+        { threshold: 0.35 },
+      ).observe(video)
     } else video.play()
   }
   if (sound && video) {
@@ -56,13 +66,23 @@
     leaving = true
     timers.forEach(clearTimeout)
     var shot = frame.querySelector('.shot').getBoundingClientRect()
-    var vw = window.innerWidth, vh = window.innerHeight
+    var vw = window.innerWidth,
+      vh = window.innerHeight
     var visible = shot.bottom > 0 && shot.top < vh && shot.width > 0
     var r = visible ? shot : { left: vw * 0.2, top: vh * 0.3, width: vw * 0.6, height: vh * 0.6 }
     portal.querySelector('img').src = '/__web/intro/promo-poster.webp'
     portal.style.transition = 'none'
     portal.style.borderRadius = '14px'
-    portal.style.transform = 'translate(' + r.left + 'px,' + r.top + 'px) scale(' + r.width / vw + ',' + r.height / vh + ')'
+    portal.style.transform =
+      'translate(' +
+      r.left +
+      'px,' +
+      r.top +
+      'px) scale(' +
+      r.width / vw +
+      ',' +
+      r.height / vh +
+      ')'
     portal.style.visibility = 'visible'
     void portal.offsetWidth
     portal.style.transition = ''
@@ -72,11 +92,15 @@
       portal.style.transform = 'none'
       portal.style.borderRadius = '0'
     })
-    setTimeout(function () { location.href = href }, 1050)
+    setTimeout(function () {
+      location.href = href
+    }, 1050)
   }
   var links = document.querySelectorAll('a.enter, a.pill')
   for (var k = 0; k < links.length; k++) links[k].addEventListener('click', enter)
-  frame.addEventListener('click', function () { links[0].click() })
+  frame.addEventListener('click', function () {
+    links[0].click()
+  })
   frame.style.cursor = 'pointer'
 
   window.addEventListener('pageshow', function (e) {
@@ -93,7 +117,9 @@
   var flood = document.getElementById('flood')
   var steps = []
   var finished = false
-  function at(ms, fn) { steps.push(setTimeout(fn, ms)) }
+  function at(ms, fn) {
+    steps.push(setTimeout(fn, ms))
+  }
   function finish() {
     if (finished) return
     finished = true
@@ -103,25 +129,51 @@
     removeSkip()
     startDemo()
   }
-  function skip(e) { if (e.type !== 'keydown' || !/^(Meta|Control|Alt|Shift)$/.test(e.key)) finish() }
+  function skip(e) {
+    if (e.type !== 'keydown' || !/^(Meta|Control|Alt|Shift)$/.test(e.key)) finish()
+  }
   var SKIP = ['pointerdown', 'keydown', 'wheel', 'touchstart']
-  function removeSkip() { SKIP.forEach(function (t) { window.removeEventListener(t, skip) }) }
+  function removeSkip() {
+    SKIP.forEach(function (t) {
+      window.removeEventListener(t, skip)
+    })
+  }
 
   function play() {
     var word = document.getElementById('opWord')
     var mark = document.getElementById('opMark')
     var gap = parseFloat(getComputedStyle(word.parentNode).columnGap) || 0
     mark.style.setProperty('--shift', ((word.offsetWidth + gap) / 2).toFixed(1) + 'px')
-    SKIP.forEach(function (t) { window.addEventListener(t, skip, { passive: true }) })
+    SKIP.forEach(function (t) {
+      window.addEventListener(t, skip, { passive: true })
+    })
     opening.classList.add('s0')
-    at(220, function () { opening.classList.add('s1') })
-    at(600, function () { opening.classList.add('s2') })
-    at(1050, function () { opening.classList.add('s3') })
+    at(220, function () {
+      opening.classList.add('s1')
+    })
+    at(600, function () {
+      opening.classList.add('s2')
+    })
+    at(1050, function () {
+      opening.classList.add('s3')
+    })
     at(2150, function () {
       var r = document.getElementById('opBar').getBoundingClientRect()
-      var vw = window.innerWidth, vh = window.innerHeight
+      var vw = window.innerWidth,
+        vh = window.innerHeight
       flood.style.transition = 'none'
-      flood.style.clipPath = 'inset(' + r.top + 'px ' + (vw - r.right) + 'px ' + (vh - r.bottom) + 'px ' + r.left + 'px round ' + r.width / 2 + 'px)'
+      flood.style.clipPath =
+        'inset(' +
+        r.top +
+        'px ' +
+        (vw - r.right) +
+        'px ' +
+        (vh - r.bottom) +
+        'px ' +
+        r.left +
+        'px round ' +
+        r.width / 2 +
+        'px)'
       flood.style.visibility = 'visible'
       void flood.offsetWidth
       flood.style.transition = 'clip-path .62s cubic-bezier(.76, 0, .24, 1)'
@@ -134,15 +186,54 @@
       flood.style.transition = 'clip-path .78s cubic-bezier(.76, 0, .24, 1)'
       flood.style.clipPath = 'inset(0px 0px ' + window.innerHeight + 'px 0px round 0px)'
     })
-    at(3700, function () { finished = true; flood.style.visibility = 'hidden'; startDemo() })
+    at(3700, function () {
+      finished = true
+      flood.style.visibility = 'hidden'
+      startDemo()
+    })
   }
 
-  if (!root.classList.contains('op')) { finished = true; startDemo() }
-  else {
+  if (!root.classList.contains('op')) {
+    finished = true
+    startDemo()
+  } else {
     // wait for the display font (at most 700 ms) so the wordmark lands in Pretendard
     var started = false
-    var go = function () { if (!started) { started = true; window.scrollTo(0, 0); play() } }
+    var go = function () {
+      if (!started) {
+        started = true
+        window.scrollTo(0, 0)
+        play()
+      }
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(go)
     setTimeout(go, 700)
+  }
+
+  // the install prompt for an AI agent: one click copies it
+  var copyBtn = document.getElementById('copyPrompt')
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var text = document.getElementById('agentPrompt').textContent
+      var done = function () {
+        copyBtn.textContent = '복사했어요'
+        setTimeout(function () {
+          copyBtn.textContent = '요청문 복사'
+        }, 1800)
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(text).then(done, function () {})
+      else {
+        var t = document.createElement('textarea')
+        t.value = text
+        document.body.appendChild(t)
+        t.select()
+        try {
+          document.execCommand('copy')
+          done()
+        } catch (e) {}
+        t.remove()
+      }
+    })
   }
 })()

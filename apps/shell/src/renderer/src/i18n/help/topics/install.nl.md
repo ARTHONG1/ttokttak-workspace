@@ -1,6 +1,6 @@
 # GenOffice installeren
 
-Elke versie wordt gepubliceerd op de [Releases-pagina](https://github.com/ARTHONG1/ttokttak-studio/releases/latest) van het project op GitHub. Deze versie wordt uitgebracht voor Windows.
+Elke versie wordt gepubliceerd op de [Releases-pagina](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) van het project op GitHub. Deze versie wordt uitgebracht voor Windows.
 
 ## Kies het bestand voor je computer
 

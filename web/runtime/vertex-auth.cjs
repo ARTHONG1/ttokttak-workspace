@@ -10,7 +10,10 @@ const METADATA = 'http://metadata.google.internal/computeMetadata/v1'
 
 async function metadata(p, original) {
   try {
-    const res = await original(METADATA + '/' + p, { headers: { 'Metadata-Flavor': 'Google' }, signal: AbortSignal.timeout(1500) })
+    const res = await original(METADATA + '/' + p, {
+      headers: { 'Metadata-Flavor': 'Google' },
+      signal: AbortSignal.timeout(1500),
+    })
     return res.ok ? res : null
   } catch {
     return null
@@ -23,7 +26,12 @@ async function token(original) {
   // local preview: the signed-in gcloud account (its tokens last an hour; refresh before that)
   if (process.env.VERTEX_GCLOUD) {
     const value = await new Promise((resolve, reject) =>
-      execFile(process.env.VERTEX_GCLOUD, ['auth', 'print-access-token'], { timeout: 30000 }, (err, out) => (err ? reject(err) : resolve(String(out).trim()))),
+      execFile(
+        process.env.VERTEX_GCLOUD,
+        ['auth', 'print-access-token'],
+        { timeout: 30000 },
+        (err, out) => (err ? reject(err) : resolve(String(out).trim())),
+      ),
     )
     cached = { token: value, expiresAt: Date.now() + 50 * 60 * 1000 }
     return cached.token
@@ -34,12 +42,19 @@ async function token(original) {
     cached = { token: body.access_token, expiresAt: Date.now() + body.expires_in * 1000 }
     return cached.token
   }
-  const file = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json')
+  const file =
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+    path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json')
   const creds = JSON.parse(fs.readFileSync(file, 'utf8'))
   const res = await original('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: creds.client_id, client_secret: creds.client_secret, refresh_token: creds.refresh_token }),
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: creds.client_id,
+      client_secret: creds.client_secret,
+      refresh_token: creds.refresh_token,
+    }),
   })
   const body = await res.json()
   cached = { token: body.access_token, expiresAt: Date.now() + body.expires_in * 1000 }
@@ -64,10 +79,10 @@ function allowedModel(model) {
 
 /** a refusal the desktop's Gemini code reads as an ordinary HTTP error */
 function refusal(status, reason, message) {
-  return new Response(
-    JSON.stringify({ error: { code: status, status: reason, message } }),
-    { status, headers: { 'Content-Type': 'application/json' } },
-  )
+  return new Response(JSON.stringify({ error: { code: status, status: reason, message } }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 /** asks the gateway to count one request for the signed-in account (set by session-host) */
@@ -93,8 +108,11 @@ function resetText(at) {
 function vertexBaseUrl() {
   const project = process.env.GOOGLE_CLOUD_PROJECT
   const location = process.env.VERTEX_LOCATION || 'global'
-  const host = location === 'global' ? 'aiplatform.googleapis.com' : location + '-aiplatform.googleapis.com'
-  return 'https://' + host + '/v1/projects/' + project + '/locations/' + location + '/publishers/google'
+  const host =
+    location === 'global' ? 'aiplatform.googleapis.com' : location + '-aiplatform.googleapis.com'
+  return (
+    'https://' + host + '/v1/projects/' + project + '/locations/' + location + '/publishers/google'
+  )
 }
 
 function install() {
@@ -134,19 +152,47 @@ function install() {
     if (process.env.WEB_AI_TRACE_DIR && init && typeof init.body === 'string') {
       try {
         fs.mkdirSync(process.env.WEB_AI_TRACE_DIR, { recursive: true })
-        fs.writeFileSync(path.join(process.env.WEB_AI_TRACE_DIR, started + '-' + model + '.json'), init.body)
+        fs.writeFileSync(
+          path.join(process.env.WEB_AI_TRACE_DIR, started + '-' + model + '.json'),
+          init.body,
+        )
       } catch {}
     }
     try {
       const res = await original(input, { ...(init || {}), headers })
-      console.warn('[vertex] ' + at() + ' ' + model + ' HTTP ' + res.status + ' headers after ' + (Date.now() - started) + 'ms')
+      console.warn(
+        '[vertex] ' +
+          at() +
+          ' ' +
+          model +
+          ' HTTP ' +
+          res.status +
+          ' headers after ' +
+          (Date.now() - started) +
+          'ms',
+      )
       return res
     } catch (err) {
-      console.warn('[vertex] ' + at() + ' ' + model + ' failed after ' + (Date.now() - started) + 'ms: ' + String((err && err.name) || err))
+      console.warn(
+        '[vertex] ' +
+          at() +
+          ' ' +
+          model +
+          ' failed after ' +
+          (Date.now() - started) +
+          'ms: ' +
+          String((err && err.name) || err),
+      )
       throw err
     }
   }
 }
 
-module.exports = { install, vertexBaseUrl, setRequestGate, BASIC_MODEL, ADVANCED_MODEL, ADVANCED_ENABLED }
-
+module.exports = {
+  install,
+  vertexBaseUrl,
+  setRequestGate,
+  BASIC_MODEL,
+  ADVANCED_MODEL,
+  ADVANCED_ENABLED,
+}

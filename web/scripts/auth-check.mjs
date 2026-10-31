@@ -14,7 +14,10 @@ const env = {
   VERTEX_ACCESS_TOKEN: 'unused',
   WEB_DAILY_AI_LIMIT: '2',
 }
-const gw = spawn(process.execPath, ['web/runtime/gateway.mjs'], { env, stdio: ['ignore', 'pipe', 'inherit'] })
+const gw = spawn(process.execPath, ['web/runtime/gateway.mjs'], {
+  env,
+  stdio: ['ignore', 'pipe', 'inherit'],
+})
 let failed = 0
 const check = (name, ok) => {
   console.log((ok ? 'ok   ' : 'FAIL ') + name)

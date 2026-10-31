@@ -1,73 +1,77 @@
-# ttokttak-studio (똑딱작업실)
+<div align="center">
 
-[한국어](README.md) · **English**
+<img src="apps/shell/build/brand/app-icon.svg" width="88" alt="ttokttak-workspace icon" />
 
-ttokttak-studio is a desktop office app that opens and edits Hangul (HWP/HWPX),
-Word, Excel, PowerPoint, PDF, Markdown and HTML documents and mind maps in one
-window. Each editor has an AI panel that edits the document itself through the
-app's own editing tools, shows what changed and can undo it. The AI runs on the
-**Claude Code or Codex program you installed and signed in to on your own PC**;
-the app never reads or stores those logins.
+# ttokttak-workspace (똑딱작업실)
 
-The full documentation is in Korean: see [README.md](README.md).
+**An open-source AI workspace that takes the busywork out of documents**
 
-## What ttokttak-studio adds
+Open a Hangul (HWP/HWPX), Word, Excel, PowerPoint or PDF file, say what to change, and the AI edits the document itself.<br />
+Try it in the browser, or install it and connect your own AI agent.
 
-ttokttak-studio is built on open-source projects rather than written from
-scratch: IeumOffice 0.12.5 and GenOffice (Apache-2.0) for the app itself, rhwp
-(MIT) for Hangul documents, Univer (Apache-2.0) for spreadsheets, Tiptap (MIT)
-for Word and Markdown, and PDF.js and EmbedPDF (Apache-2.0, MIT) for PDF. On
-top of them it adds:
+[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
 
-- HWPX saves that Hancom Hangul opens: the causes of its "damaged file"
-  refusals fixed, checked by editing and saving 114 Hangul documents and
-  opening each in the Hancom Office HWP Viewer
-- saves that protect the original: HWP is saved as HWPX beside it, and the
-  package, XML, memos and master pages are checked before anything is written
-- tables longer than a page split between rows, with the title row repeated
-- a browser trial edition (web/) that runs the unmodified desktop app per
-  session, with each session confined to its own files
-- school work tools ported from the maker's 클래스똑딱 web tools: a purchase
-  request generator, a quiz maker and a word-search sheet maker
-- a Korean home screen and Korean menus, settings and PDF labels
+</div>
 
-Made by 홍찬우 (Incheon Bongsu Elementary School), who runs the teachers'
-edtech group [클래스똑딱](https://classddok.com).
+<p align="center"><a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="ttokttak-workspace intro film preview" /></a></p>
+
+## Why
+
+Most school and office work is document work: opening a file to change one title or a few numbers. ttokttak-workspace is built to take that repetitive work off people with AI, not only to edit documents. You say what to change, the AI changes it inside the document and shows what changed, and you check and decide. It is built on open source, and everything it adds is published back as open source.
+
+## Three ways to use it
+
+|           | Web trial                              | Desktop app                                    | Installed by your AI agent             |
+| --------- | -------------------------------------- | ---------------------------------------------- | -------------------------------------- |
+| What      | In the browser, nothing to install     | macOS and Windows                              | One prompt does the whole setup        |
+| AI        | Google Gemini (after Google sign-in)   | **Your own Claude Code or Codex** subscription | The same agent is connected to the app |
+| Documents | Kept only while you work, then deleted | Stay on your PC                                | —                                      |
+
+## Install with an AI agent
+
+Paste this into Claude Code, Codex, Gemini CLI, Cursor or another coding agent:
+
+```text
+Install ttokttak-workspace on my computer and finish the setup.
+Read https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md and follow it exactly.
+```
+
+The agent picks the right file for your OS and CPU, downloads it from the official release only, checks it against the release's SHA-512, installs the app, puts a 똑딱작업실 shortcut on the Desktop, links the `ieumoffice` command, and registers the MCP server and the document skill with the coding agents on the PC. See [INSTALL.md](INSTALL.md) and `scripts/install/`.
+
+## What it does
+
+- One window for Hangul, Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind files, saved in their own formats.
+- An AI panel in every editor that reads, edits, marks the changes and undoes them in one step.
+- HWPX saves that Hancom Hangul opens, checked before anything overwrites the original.
+- School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video) and a word-search worksheet maker.
+- A command line and MCP server (`ieumoffice`, `ieumoffice mcp`) for Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode and Windsurf.
+- The app runs the Claude Code or Codex program you signed in to; it never reads or stores those logins.
+
+## Privacy
+
+The desktop app has no server of its own and sends no usage statistics; documents stay on your PC, and AI requests go to Anthropic or OpenAI under your own account. The web trial requires a Google sign-in, counts AI requests per account per day, keeps uploaded documents only in a temporary folder while you work (deleted 15 minutes after you leave) and sends AI requests to Google Vertex AI. See [PRIVACY.md](PRIVACY.md).
+
+## Built on open source, published as open source
+
+ttokttak-workspace is a modified version of [IeumOffice](https://github.com/pblsketch/openoffice) 0.12.5 (commit `4e4e9cc`), which is based on [GenOffice](https://github.com/genspark-ai/genoffice); both are Apache-2.0. It also builds on [rhwp](https://github.com/edwardkim/rhwp) (MIT) for Hangul documents, [Univer](https://github.com/dream-num/univer) (Apache-2.0) for spreadsheets, [Tiptap](https://github.com/ueberdosis/tiptap) (MIT) for Word and Markdown, and [PDF.js](https://github.com/mozilla/pdf.js) and [EmbedPDF](https://github.com/embedpdf/embed-pdf-viewer) (Apache-2.0, MIT) for PDF. The copyright notices and licences of all 575 bundled components ship unchanged.
+
+What this project adds: HWPX saves that Hancom Hangul opens and that are validated before they overwrite a file, tables that split between pages, the browser trial edition (`web/`) with Google sign-in and per-account limits, the school work tools ported from the maker's 클래스똑딱 web tools, the agent-driven installer, and a Korean home screen and labels. The summary of changes is in [NOTICE](NOTICE); every change is in the history.
+
+## Build from source
+
+```bash
+git clone https://github.com/ARTHONG1/ttokttak-workspace.git
+cd ttokttak-workspace
+npm install
+npm run dev
+```
+
+Node 22.12+ (npm 10+) and Rust (`cargo` on the PATH) are required. See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks a change must pass, and [llms.txt](llms.txt) for a map of the repository written for AI tools.
 
 ## License and acknowledgement
 
-ttokttak-studio is licensed under the [Apache License 2.0](LICENSE).
+Licensed under the [Apache License 2.0](LICENSE); attribution and the summary of changes are in [NOTICE](NOTICE). ttokttak-workspace is an independent project and is not affiliated with, sponsored or endorsed by the IeumOffice maintainers, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, Hancom, Adobe, XMind or Google. "IeumOffice", "이음오피스", "GenOffice" and "Genspark" belong to their owners, and the licence grants no trademark rights (section 6). "한글", "한컴", "HWP" and "HWPX" are registered trademarks of Hancom Inc.; other product names belong to their owners and are used only to say what this program opens and works with.
 
-**It is a modified version of [IeumOffice](https://github.com/pblsketch/openoffice)
-0.12.5 (commit `4e4e9cc`), which is based on
-[GenOffice](https://github.com/genspark-ai/genoffice)**, the open-source office
-suite by Genspark (Mainfunc, Inc.). Both are licensed under Apache-2.0. The
-original copyright notices are kept, and [NOTICE](NOTICE) records the
-attribution and what was changed.
+> 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
 
-The Hangul (HWP/HWPX) editor is built on
-[rhwp](https://github.com/edwardkim/rhwp) (MIT License). As Hancom requires of
-software made with its published HWP format document, we state:
-
-> 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여
-> 개발하였습니다.
->
-> (This product was developed with reference to Hancom's published document
-> on the Hangul document file format (.hwp).)
-
-ttokttak-studio is an independent project. It is not affiliated with, sponsored
-by or endorsed by the IeumOffice maintainers, Genspark / Mainfunc, Inc.,
-Anthropic, OpenAI, Microsoft, Hancom, Adobe, XMind Ltd. or Google. "IeumOffice",
-"GenOffice" and "Genspark", and their logos, belong to their owners; so do
-"Claude", "Codex" and "ChatGPT". "Microsoft", "Windows", "Word", "Excel" and
-"PowerPoint" are trademarks of Microsoft Corporation; "한글" (Hangul), "한컴"
-(Hancom), "HWP" and "HWPX" are registered trademarks of Hancom Inc.; "XMind" is
-a trademark of XMind Ltd.; and "Google Drive" is a trademark of Google LLC. They
-are named here only to say what this software is based on, what it works with
-and which files it opens.
-
-The software is provided as is, without warranties of any kind, under sections 7
-and 8 of the Apache License 2.0.
-
-Questions, bug reports and trademark or copyright reports go to the
-[GitHub issues](https://github.com/ARTHONG1/ttokttak-studio/issues).
+Made by 홍찬우 (Incheon Bongsu Elementary School), who runs the teachers' edtech group [클래스똑딱](https://classddok.com). Issues: [https://github.com/ARTHONG1/ttokttak-workspace/issues](https://github.com/ARTHONG1/ttokttak-workspace/issues).

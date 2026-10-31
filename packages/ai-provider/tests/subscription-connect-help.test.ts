@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { subscriptionConnectHelpUrl } from '../src/browser'
 
 describe('subscriptionConnectHelpUrl', () => {
-  const base = 'https://github.com/ARTHONG1/ttokttak-studio'
+  const base = 'https://github.com/ARTHONG1/ttokttak-workspace'
   const connect = `${base}#${encodeURIComponent('구독-연결하기')}`
 
   it('opens the section of each path the connect guide offers', () => {
