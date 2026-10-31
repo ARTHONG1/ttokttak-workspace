@@ -78,16 +78,11 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 - **긴 표**: 페이지를 넘는 표는 줄 단위로 나뉘고 제목 줄이 반복됩니다.
 
 <p align="center">
-  <img src="docs/assets/word-editing.png" width="840" alt="워드 편집기에 독서 주간 안내문을 연 실제 화면" /><br />
-  <sub>워드 · 독서 주간 안내문 예시</sub>
+  <img src="docs/assets/screen-after.webp" width="840" alt="AI가 한글 문서를 수정하고 변경된 내용을 표시한 화면" /><br />
+  <sub>한글 문서 · AI가 수정한 내용과 변경 내역 확인</sub>
 </p>
 
-<p align="center">
-  <img src="docs/assets/slides-editing.png" width="840" alt="PPT 편집기에 독서 주간 발표 자료를 연 실제 화면" /><br />
-  <sub>PPT · 독서 주간 발표 자료 예시</sub>
-</p>
-
-한글뿐 아니라 워드 안내문, 엑셀 예산표, PPT 발표 자료도 각 문서에 맞는 편집기에서 작업할 수 있습니다. PDF와 HTML 등도 열어 보세요. 위 화면은 가상의 행사 자료를 실제 편집기에서 연 모습입니다.
+한글뿐 아니라 워드 안내문, 엑셀 예산표, PPT 발표 자료도 각 문서에 맞는 편집기에서 작업할 수 있습니다. PDF와 HTML 등도 열어 보세요.
 
 ### 학교 업무 도구, 똑딱업무
 
@@ -214,6 +209,6 @@ Apache License 2.0은 누구나 고쳐서 다시 배포하는 것을 허락합�
 **인천봉수초 홍찬우**는 **ACE 연구회 회장**이며, 교실과 학교의 수업·업무를 돕는 도구와 자료를 나누는 **클래스똑딱** 홈페이지를 운영합니다.
 
 <p align="center">
-  <a href="https://classddok.com"><img src="docs/assets/classddok-home.png" width="840" alt="ACE 연구회의 클래스똑딱 홈페이지 첫 화면" /></a><br />
+  <a href="https://classddok.com"><img src="docs/assets/classddok-intro.png" width="840" alt="AI와 함께 스마트해지는 우리 교실 클래스똑딱 소개 화면" /></a><br />
   <a href="https://classddok.com">클래스똑딱 홈페이지 둘러보기 · classddok.com ↗</a>
 </p>
