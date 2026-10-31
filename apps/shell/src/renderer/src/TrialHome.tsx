@@ -17,7 +17,7 @@ import './trial-home.css'
 
 /**
  * The web trial's home (program/web): one job, made obvious. Open a document
- * (yours, or a sample) or start a blank one, then tell the AI beside it what to
+ * of yours or start a blank one, then tell the AI beside it what to
  * change. Everything the desktop home offers for managing files on a PC stays in
  * the desktop app.
  */
@@ -38,34 +38,6 @@ const ICONS: Record<string, string> = {
   xmind: iconMindmap,
   epub: iconEpub,
 }
-
-interface Sample {
-  file: string
-  title: string
-  ext: string
-  ask: string
-}
-
-const SAMPLES: Sample[] = [
-  {
-    file: '현장체험학습 운영계획(안).hwpx',
-    title: '현장체험학습 계획',
-    ext: 'hwpx',
-    ask: '제목을 최종안으로 바꾸고, 2차 예산을 650만 원으로 고치고 합계도 맞춰 줘',
-  },
-  {
-    file: '독서 행사 안내문.docx',
-    title: '독서 행사 안내문',
-    ext: 'docx',
-    ask: '공문서 말투로 다듬고 일시·장소를 목록으로 정리해 줘',
-  },
-  {
-    file: '2027 예산표.xlsx',
-    title: '2027 예산표',
-    ext: 'xlsx',
-    ask: '합계 행과 합계 열을 넣고 숫자에 쉼표를 붙여 줘',
-  },
-]
 
 interface NewItem {
   ext: string
@@ -130,24 +102,6 @@ function Icon({ ext, size }: { ext: string; size: number }): ReactElement {
   return <img src={src} width={size} height={size} alt="" aria-hidden="true" draggable={false} />
 }
 
-/** where the gateway copied this session's samples (web edition only) */
-function useSampleDir(): string | null {
-  const [dir, setDir] = useState<string | null>(null)
-  useEffect(() => {
-    let alive = true
-    fetch('/__upload-root', { credentials: 'same-origin' })
-      .then((r) => r.json())
-      .then((info: { samples?: string; sep?: string }) => {
-        if (alive && info.samples) setDir(info.samples + (info.sep ?? '/'))
-      })
-      .catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [])
-  return dir
-}
-
 function useRecents(): RecentEntry[] {
   const [entries, setEntries] = useState<RecentEntry[]>([])
   const load = useCallback(() => {
@@ -175,29 +129,7 @@ function ago(ms: number): string {
   return Math.floor(s / 3600) + '시간 전'
 }
 
-function Arrow(): ReactElement {
-  return (
-    <svg
-      className="trial-arrow"
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M3 8h9.5M8.5 4l4 4-4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 export function TrialHome(): ReactElement {
-  const sampleDir = useSampleDir()
   const recents = useRecents()
   const [dragging, setDragging] = useState(false)
   const [page, setPage] = useState<HubPage | null>(null)
@@ -230,10 +162,6 @@ export function TrialHome(): ReactElement {
       window.removeEventListener('blur', reset)
     }
   }, [])
-
-  const openSample = (s: Sample) => {
-    if (sampleDir) void window.aiOffice.openPath(sampleDir + s.file)
-  }
 
   if (page) {
     return (
@@ -294,36 +222,6 @@ export function TrialHome(): ReactElement {
                 <span className="trial-tile-text">
                   <span className="trial-tile-name">{n.label}</span>
                   <span className="trial-tile-hint">“{n.hint}”</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="trial-section" aria-labelledby="trial-samples">
-          <div className="trial-section-head">
-            <h2 id="trial-samples">예시 문서로 바로 해 보기</h2>
-            <p>문서를 열면 아래 요청을 AI에게 그대로 보내 보세요</p>
-          </div>
-          <div className="trial-samples">
-            {SAMPLES.map((s) => (
-              <button
-                key={s.file}
-                type="button"
-                className="trial-sample"
-                data-ext={s.ext}
-                disabled={!sampleDir}
-                onClick={() => openSample(s)}
-              >
-                <span className="trial-sample-head">
-                  <Icon ext={s.ext} size={30} />
-                  <span className="trial-sample-title">{s.title}</span>
-                  <span className="trial-sample-ext">.{s.ext}</span>
-                </span>
-                <span className="trial-bubble">{s.ask}</span>
-                <span className="trial-sample-go">
-                  열어서 해 보기
-                  <Arrow />
                 </span>
               </button>
             ))}

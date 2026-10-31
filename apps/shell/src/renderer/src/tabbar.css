@@ -330,6 +330,36 @@ body.overlay-title-bar .tab-bar-drag-spacer {
   background: rgba(0, 0, 0, 0.08);
 }
 
+/* web edition: "불러오기" beside "+" (there is no menu bar to hold File > Open) */
+.tab-open-btn {
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  margin-left: 4px;
+  padding: 0 10px 0 8px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--tabstrip-text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab-open-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.tab-open-btn:focus-visible {
+  outline: 2px solid var(--accent, #2f5bea);
+  outline-offset: 1px;
+}
+
 .app-frame-content {
   padding-top: 40px;
 }
@@ -357,7 +387,8 @@ body.overlay-title-bar .tab-bar-drag-spacer {
 
 [data-theme='dark'] .tab-new-btn:hover,
 [data-theme='dark'] .tab-overflow-btn:hover,
-[data-theme='dark'] .tab-app-menu-btn:hover {
+[data-theme='dark'] .tab-app-menu-btn:hover,
+[data-theme='dark'] .tab-open-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -380,7 +411,8 @@ body.overlay-title-bar .tab-bar-drag-spacer {
   }
   :root:not([data-theme='light']):not([data-theme='dark']) .tab-new-btn:hover,
   :root:not([data-theme='light']):not([data-theme='dark']) .tab-overflow-btn:hover,
-  :root:not([data-theme='light']):not([data-theme='dark']) .tab-app-menu-btn:hover {
+  :root:not([data-theme='light']):not([data-theme='dark']) .tab-app-menu-btn:hover,
+  :root:not([data-theme='light']):not([data-theme='dark']) .tab-open-btn:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 }

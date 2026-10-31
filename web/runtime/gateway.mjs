@@ -66,6 +66,28 @@ function revive(value) {
 
 // ---------------------------------------------------------------- sessions
 const sessions = new Map()
+/**
+ * Ends a session's program for good. The desktop main catches SIGTERM (sheets-main.ts turns it
+ * into app.quit(), which the web edition does not act on), so a plain kill() left one process
+ * behind per reload. Closing the IPC channel lets session-host exit on 'disconnect'; whatever
+ * is still running after that is killed.
+ */
+function endChild(c) {
+  if (c.exitCode !== null || c.signalCode !== null) return
+  try {
+    if (c.connected) c.disconnect()
+  } catch {}
+  c.kill()
+  setTimeout(() => {
+    if (c.exitCode === null && c.signalCode === null) c.kill('SIGKILL')
+  }, 3000).unref()
+}
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.once(signal, () => {
+    for (const s of sessions.values()) if (s.child) s.child.kill('SIGKILL')
+    process.exit(0)
+  })
+}
 /** the signed-in Google account of each browser session id (web-auth.mjs) */
 const accounts = new Map()
 /** the account a request comes from, or null; a session whose sign-in expired is signed out */
@@ -146,7 +168,7 @@ class Session {
     if (this.child) {
       const c = this.child
       this.child = null
-      c.kill()
+      endChild(c)
     }
     if (this.watcher) {
       this.watcher.close()

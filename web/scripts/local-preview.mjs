@@ -14,6 +14,8 @@ process.env.PORT ||= '5188'
 process.env.WEB_HOST ||= '127.0.0.1'
 process.env.VERTEX_LOCATION ||= 'global'
 process.env.WEB_SESSIONS_ROOT ||= '/tmp/hs-preview'
+// the preview on this Mac opens without the Google sign-in the public service asks for
+process.env.WEB_AUTH ||= 'off'
 if (!process.env.VERTEX_ACCESS_TOKEN) process.env.VERTEX_GCLOUD ||= 'gcloud'
 // each session runs with its own HOME, so point gcloud at the real account's config
 process.env.CLOUDSDK_CONFIG ||= join(homedir(), '.config', 'gcloud')

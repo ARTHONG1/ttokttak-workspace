@@ -931,6 +931,13 @@ async function handleProtocolRequest({ scheme, url, method, headers, body }) {
     }
   }
   let response = await handler(request)
+  // The HTML editor pushes its page over the WebSocket (ipcRenderer.send) and then points its
+  // preview frame at html-preview://; in Electron the push always lands first, on the web the
+  // frame's HTTP request can overtake it and the preview stays blank. Wait for the push.
+  for (let i = 0; i < 40 && scheme === 'html-preview' && (!response || response.status === 404); i++) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    response = await handler(request)
+  }
   if (!response) return { status: 404, headers: {}, body: null }
   const out = {}
   response.headers.forEach((v, k) => (out[k] = v))
