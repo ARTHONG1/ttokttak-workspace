@@ -1,0 +1,50 @@
+[
+  {
+    "id": "docx-page-layout",
+    "format": "docx",
+    "source": "e2e/assets/justify-pagegap-fr.docx",
+    "hash": "1a5ed11335ba94c727d07400f47533a8451e74c5ac5f35b3678b6f1c19736038",
+    "features": ["page layout", "paragraph structure"],
+    "expectedEdits": ["text", "format"]
+  },
+  {
+    "id": "hwp-memos",
+    "format": "hwp",
+    "source": "apps/hwp/tests/fixtures/memo.hwp",
+    "hash": "c5790e0d99d8b290825e232835e88b881c27827e1e2a3301dc8d55e8afefbe2e",
+    "features": ["memos", "legacy binary"],
+    "expectedEdits": ["text"]
+  },
+  {
+    "id": "hwpx-master-page",
+    "format": "hwpx",
+    "source": "apps/hwp/tests/fixtures/master-page-next-section.hwpx",
+    "hash": "1fab0477ae7891bbbc4a540fa0771fcf647ec90aaf54c498f5fe7876a40108b1",
+    "features": ["master page", "section layout"],
+    "expectedEdits": ["text"]
+  },
+  {
+    "id": "xlsx-compatibility-edit",
+    "format": "xlsx",
+    "source": "apps/sheets/fixtures/generated/compatibility-edit.xlsx",
+    "hash": "9d2111ebbb860fbfaaab32b3b79275bfd267fed825e32e61d2a6c7762c48aa29",
+    "features": ["formula", "styles"],
+    "expectedEdits": ["cell value"]
+  },
+  {
+    "id": "pptx-business",
+    "format": "pptx",
+    "source": "packages/pptx-engine/tests/fixtures/01_standard_business.pptx",
+    "hash": "faddc03270215218e78720f1c8f6e3aa862891a432f71e7ec9f3d13ea7902048",
+    "features": ["slide", "layout"],
+    "expectedEdits": ["slide text"]
+  },
+  {
+    "id": "pdf-generated-form",
+    "format": "pdf",
+    "source": "generated:pdf-blank-two-pages",
+    "hash": "runtime",
+    "features": ["two pages", "radio group"],
+    "expectedEdits": ["page insert", "form field"]
+  }
+]

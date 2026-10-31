@@ -1,0 +1,193 @@
+name: macOS build
+
+# Builds the macOS installers, Apple Silicon and Intel, on a GitHub-hosted Mac
+# (docs/releasing.ko.md, "Mac 설치 파일"). The apps are signed ad hoc and not
+# notarized (docs/tracking/decisions/0031-unsigned-mac-beta.md, 0065 for
+# Intel): no Apple account, no certificate and no repository secret is
+# involved.
+#
+# Run from the Actions tab on main. With a release tag (v0.12.0), the build
+# is also attached to that existing GitHub release, but only from main and
+# only when the built version is the tag's; without one it stays an artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release to attach the Mac files to (e.g. v0.12.0); empty = artifact only'
+        required: false
+        default: ''
+  # a change to the Mac packaging is proved on a real Mac before it merges
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/mac-build.yml
+      - apps/shell/electron-builder.cjs
+      - apps/shell/build/**
+
+concurrency:
+  group: mac-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Apple Silicon runner. Both packages are built here: the xlsx sidecar and
+    # the OCR helper are lipo fat binaries (arm64 + x86_64) shared by the two,
+    # and the Intel app is smoke-tested under Rosetta
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      # package the Intel dmg/zip beside the arm64 ones (decision 0065)
+      GENOFFICE_MAC_X64: '1'
+      # never pick up a keychain identity: the config signs ad hoc
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # electron-builder skips all signing on pull-request builds unless told
+      # otherwise, which leaves the app's signature broken. The warning that
+      # comes with this switch is about exposing signing secrets to forks;
+      # ad hoc signing uses no key and this job holds no secret.
+      CSC_FOR_PULL_REQUEST: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache cargo (xlsx-sidecar)
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: apps/sheets/native/xlsx-engine
+
+      - name: Cache electron binaries
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-mac-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-mac-${{ runner.arch }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      # build:all builds the sheets module, which builds the xlsx sidecar for
+      # this host (target/release/xlsx-sidecar, where the mac config reads it)
+      - name: Build apps
+        run: npm run build:all
+
+      # both packages ship one sidecar path, so it must hold both CPUs; the
+      # packaging hook refuses a host-only one (assertUniversalSidecar)
+      - name: Build the xlsx sidecar for both CPUs
+        run: npm run native:build:universal -w @genoffice/sheets
+
+      - name: Package
+        run: npm run dist:mac -w @genoffice/shell -- --publish never
+
+      - name: Check the signatures and the bundled programs
+        run: |
+          set -euo pipefail
+          # electron-builder puts the arm64 app in mac-arm64/ and the x64 one in mac/
+          for pair in mac-arm64:arm64 mac:x86_64; do
+            dir="${pair%%:*}"
+            cpu="${pair##*:}"
+            app="apps/shell/release/$dir/HangulAIWorkbench.app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            # read the whole report first: grep -q quitting early would break the pipe
+            signature="$(codesign -dv "$app" 2>&1)"
+            echo "$signature"
+            grep -q 'Signature=adhoc' <<<"$signature"
+            for bin in \
+              "$app/Contents/MacOS/HangulAIWorkbench" \
+              "$app/Contents/Resources/native/xlsx-sidecar" \
+              "$app/Contents/Resources/ocr/vision-ocr"; do
+              test -f "$bin" || { echo "missing: $bin"; exit 1; }
+              lipo -archs "$bin" | grep -qw "$cpu" || { echo "not $cpu: $bin"; exit 1; }
+            done
+          done
+          # each dmg names its CPU (config.dmg.artifactName)
+          ls apps/shell/release/HangulAIWorkbench-*-arm64.dmg apps/shell/release/HangulAIWorkbench-*-x64.dmg
+
+      # the Intel app runs on this runner only through Rosetta, which an image
+      # may not carry yet
+      - name: Install Rosetta
+        run: |
+          set -euo pipefail
+          arch -x86_64 /usr/bin/true 2>/dev/null ||
+            sudo softwareupdate --install-rosetta --agree-to-license
+          arch -x86_64 /usr/bin/true
+
+      # The packaged apps themselves, run without a window: a Markdown and a
+      # CSV file (the latter through the xlsx sidecar) are exported to PDF
+      - name: Smoke test the packaged apps
+        run: |
+          set -euo pipefail
+          for pair in mac-arm64:arm64 mac:x86_64; do
+            dir="${pair%%:*}"
+            cpu="${pair##*:}"
+            exe="apps/shell/release/$dir/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench"
+            work="$RUNNER_TEMP/smoke-$cpu"
+            mkdir -p "$work"
+            printf '# Smoke test\n\nHello from the macOS build.\n' > "$work/note.md"
+            printf 'name,count\napple,3\npear,5\n' > "$work/table.csv"
+            for input in note.md table.csv; do
+              # arch picks the CPU: the x86_64 run goes through Rosetta, and its
+              # CSV export through the x86_64 half of the fat sidecar
+              arch "-$cpu" "$exe" --headless-export "$work/$input" --to pdf --out "$work/$input.pdf" --json
+              test -s "$work/$input.pdf"
+            done
+          done
+
+      - name: List the release files
+        run: ls -la apps/shell/release
+
+      - name: Upload the release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hangulaiworkbench-mac
+          path: |
+            apps/shell/release/*.dmg
+            apps/shell/release/*.zip
+            apps/shell/release/*.blockmap
+            apps/shell/release/*-mac.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  attach:
+    # the one job that writes: it adds the build to a release the maintainer
+    # already published, and only for a run started by hand on main
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    env:
+      TAG: ${{ inputs.release_tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Attach to the release
+        run: |
+          set -euo pipefail
+          gh run download "$GITHUB_RUN_ID" --name hangulaiworkbench-mac --dir mac
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "not a version tag: $TAG"; exit 1; }
+          gh release view "$TAG" >/dev/null || { echo "no release $TAG: publish it first"; exit 1; }
+          feed=$(ls mac/*-mac.yml)
+          built=$(sed -n 's/^version: *//p' $feed | tr -d "'\"")
+          [ "v$built" = "$TAG" ] || { echo "built $built, but the release is $TAG"; exit 1; }
+          gh release upload "$TAG" mac/*.dmg mac/*.zip $feed --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].name'

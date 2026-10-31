@@ -1,0 +1,9 @@
+# HWP · HWPX · DOCX save integrity
+
+**2026-10-28 evidence.** Six-format pinned corpus listed in `../../tools/qa/fixtures-manifest.json` was read without mutation, and `node --test tools/qa/*.test.mjs` passed. Additional Electron HWP and HWPX copied-file opening E2Es both passed and confirmed SHA-256 unchanged. The DOCX comparator flagged a removed header part, table and tracked revision in a synthetic failure fixture. The HWPX comparator flagged missing table/footnote objects and malformed XML. A valid binary HWP passes a signature check only: **HWP fidelity is LIMITED** until its full structure and a reopened saved copy are inspected independently.
+
+**Actual code change:** `apps/hwp/src/main/hwp-main.ts` now calls `saveIntegrityBlocker` before backup and disk replacement. An HWP export whose master-page/memo section tail cannot be restored, or an HWPX export whose memo-loss check finds missing memos, returns a failed commit without touching the target. The new Vitest test verifies both refusals and the safe path. Existing password/tracked-change blockers remain in place.
+
+**Missing cross-application evidence:** The historic six HWPX samples whose **saved versions** would not open in Hancom Hangul 2024 were not provided as a versioned corpus for this run; none is newly cleared. Hancom Hangul 2024 full editor and Microsoft Word/LibreOffice were not used for edited-copy reopen. That case remains `BLOCK`. DOCX editor-side tests pass, while independent Word reopen is `NOT RUN`. No 100% compatibility or pagination fidelity claim is made.
+
+**Reproduce:** `node --test tools/qa/compare-text-containers.test.mjs`; `cd apps/hwp && npx vitest run tests/save-integrity.test.ts tests/save-flow.test.ts`. External reopen needs the exact original + generated copy and an observed visual/object comparison; a read-only HWP Viewer cannot certify editable round trips.

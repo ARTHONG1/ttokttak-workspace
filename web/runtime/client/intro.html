@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07080b" />
+    <title>똑딱작업실 — AI로 문서 일에서 해방되는 오픈소스 작업실</title>
+    <meta
+      name="description"
+      content="한글·워드·엑셀·PPT·PDF 문서를 말로 고치는 오픈소스 AI 작업실. 웹에서 바로 체험하고, PC에 설치하면 내 AI 에이전트와 연결해 더 똑똑하게 일합니다."
+    />
+    <link rel="icon" href="/__web/icon.png" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <link rel="preload" as="image" href="/__web/intro/promo-poster.webp" />
+    <link rel="stylesheet" href="/__web/intro.css" />
+    <script>
+      // the opening plays before the page; without script (or with reduced motion) the page shows at once
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('op')
+        setTimeout(function () {
+          document.documentElement.classList.remove('op')
+        }, 7000)
+      }
+    </script>
+  </head>
+  <body>
+    <div class="opening" id="opening" aria-hidden="true">
+      <div class="op-lockup">
+        <div class="op-mark" id="opMark">
+          <span class="bar b1"><i></i></span>
+          <span class="bar b2"><i id="opBar"></i></span>
+        </div>
+        <div class="op-word" id="opWord">
+          <span style="--i: 0">똑</span><span style="--i: 1">딱</span><span style="--i: 2">작</span
+          ><span style="--i: 3">업</span><span style="--i: 4">실</span>
+        </div>
+      </div>
+    </div>
+    <div class="flood" id="flood" aria-hidden="true"></div>
+
+    <div class="bg" aria-hidden="true">
+      <i class="aura a1"></i><i class="aura a2"></i><i class="grid"></i>
+    </div>
+
+    <header class="nav" id="nav">
+      <a class="brand" href="/" aria-label="똑딱작업실">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#f5f5f2" />
+          <rect x="9" y="15" width="5" height="9" rx="2.5" fill="#07080b" />
+          <rect x="18" y="8" width="5" height="16" rx="2.5" fill="#ffd60a" />
+        </svg>
+        <span>똑딱작업실</span>
+      </a>
+      <nav class="links" aria-label="메뉴">
+        <a href="#show">둘러보기</a>
+        <a href="#universe">오픈소스</a>
+        <a href="#credits">만든 이유</a>
+        <a href="https://classddok.com" target="_blank" rel="noopener"
+          >클래스똑딱<svg class="ext" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M5 11L11 5M6 5h5v5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+        ></a>
+        <a
+          href="https://github.com/ARTHONG1/ttokttak-workspace#ai-에이전트로-설치하기"
+          target="_blank"
+          rel="noopener"
+          >Mac · Windows 앱<svg class="ext" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M5 11L11 5M6 5h5v5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+        ></a>
+      </nav>
+      <a class="nav-cta enter" href="/app">체험하기</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <a class="pill rv" style="--d: 0ms" href="/app"
+          ><i></i>웹 체험판 공개<span>지금 바로 써 보기 →</span></a
+        >
+        <h1>
+          <span class="rv" style="--d: 90ms">말 한마디에</span>
+          <span class="rv" style="--d: 180ms">문서가 <em>똑딱</em>.</span>
+        </h1>
+        <p class="sub rv" style="--d: 300ms">
+          한글 · 워드 · 엑셀 · PPT · PDF. 고칠 곳을 말하면<br class="br" />
+          AI가 문서 안에서 바로 고치고, 바뀐 곳을 보여 줍니다.
+        </p>
+        <div class="cta rv" style="--d: 400ms">
+          <a class="btn primary enter" href="/app"
+            >지금 체험하기<svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M3 8h9M8.5 4l4 4-4 4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+          <a
+            class="btn ghost"
+            href="https://github.com/ARTHONG1/ttokttak-workspace#ai-에이전트로-설치하기"
+            target="_blank"
+            rel="noopener"
+            >Mac · Windows 앱 받기<small>GitHub</small></a
+          >
+        </div>
+      </section>
+
+      <section class="show" id="show">
+        <div class="stage" id="stage">
+          <i class="beam" aria-hidden="true"></i>
+          <div class="frame rv" style="--d: 520ms" id="frame">
+            <div class="chrome" aria-hidden="true">
+              <span class="dots"><i></i><i></i><i></i></span
+              ><span class="title">똑딱작업실 — 31초 소개</span>
+            </div>
+            <div class="shot film">
+              <video
+                id="promo"
+                muted
+                playsinline
+                loop
+                preload="metadata"
+                poster="/__web/intro/promo-poster.webp"
+                aria-label="똑딱작업실 소개 영상: 체험판의 세 갈래 처음 화면, 한글·워드·엑셀·PPT 문서를 말로 고치는 실제 화면, 똑딱업무의 품의서 생성·똑딱퀴즈·단어 찾기, 똑딱수업, 그리고 클래스똑딱"
+              >
+                <source
+                  src="/__web/intro/promo-v2-av1.mp4"
+                  type='video/mp4; codecs="av01.0.08M.08"'
+                />
+                <source src="/__web/intro/promo-v2-h264.mp4" type="video/mp4" />
+              </video>
+              <button
+                type="button"
+                class="sound"
+                id="promoSound"
+                aria-pressed="false"
+                aria-label="소리 켜기"
+              >
+                <svg class="off" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path
+                    d="M17 9l4 6M21 9l-4 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <svg class="on" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path
+                    d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>소리</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="formats">
+          <span>HWP</span><span>HWPX</span><span>DOCX</span><span>XLSX</span><span>PPTX</span
+          ><span>PDF</span>
+        </p>
+      </section>
+      <section class="universe" id="universe" aria-labelledby="universe-title">
+        <div class="uni-copy">
+          <p class="kicker-sm">함께 만든 우주</p>
+          <h2 id="universe-title">575개의 오픈소스가<br />하나로 이어져 움직입니다.</h2>
+          <p class="uni-lede">
+            점 하나가 프로그램 하나, 선 하나가 서로 기대는 관계입니다. 가운데 똑딱작업실에서 편집기
+            10개로, 다시 수백 개의 공개 프로젝트로 뻗어 나갑니다.
+          </p>
+          <dl class="uni-stats">
+            <div>
+              <dt>오픈소스</dt>
+              <dd data-count="575">575</dd>
+            </div>
+            <div>
+              <dt>이어진 관계</dt>
+              <dd data-count="1559">1,559</dd>
+            </div>
+            <div>
+              <dt>편집기</dt>
+              <dd data-count="10">10</dd>
+            </div>
+          </dl>
+          <ul class="uni-legend" id="uniLegend" aria-label="편집기별 색"></ul>
+        </div>
+        <div class="uni-stage" id="uniStage">
+          <canvas
+            id="uniCanvas"
+            role="img"
+            aria-label="똑딱작업실과 편집기 10개, 오픈소스 575개가 서로 이어진 관계도"
+          ></canvas>
+          <div class="uni-tip" id="uniTip" hidden></div>
+          <p class="uni-hint" aria-hidden="true">점에 올려 보세요</p>
+        </div>
+      </section>
+
+      <section class="credits" id="credits" aria-labelledby="credits-title">
+        <p class="kicker-sm">만든 이유</p>
+        <h2 id="credits-title">문서 일에서 해방되어,<br />더 중요한 일에 시간을 쓰도록.</h2>
+        <p class="credits-lede">
+          똑딱작업실은 문서 작업만 돕는 도구가 아닙니다. 학교와 사무실의 반복되는 업무를 AI로 덜어
+          내고, 사람은 확인과 결정에 집중하게 하려고 만들었습니다. 오픈소스 위에서 만들었고, 고친
+          것은 모두 다시 오픈소스로 공개해 더 많은 사람이 함께 쓰고 고칠 수 있게 합니다.
+        </p>
+        <ul class="ways">
+          <li>
+            <b>웹에서는 체험</b>
+            <p>
+              설치 없이 바로 써 봅니다. 체험하며 연 문서는 작업이 끝나면 서버에서 지워지고, 따로
+              보관하지 않습니다.
+            </p>
+          </li>
+          <li>
+            <b>설치하면 내 AI 에이전트와 함께</b>
+            <p>
+              PC 프로그램에 내 Claude Code나 Codex를 연결하면, 내 PC의 파일과 함께 더 똑똑하게
+              일합니다. 문서는 내 PC에 남습니다.
+            </p>
+          </li>
+          <li>
+            <b>설치도 AI 에이전트에게</b>
+            <p>
+              GitHub 페이지의 요청문을 내 AI 에이전트에 붙여 넣으면, 내려받기부터 바탕화면 바로
+              가기와 연결 확인까지 알아서 끝냅니다.
+            </p>
+          </li>
+        </ul>
+
+        <div class="maker">
+          <span class="maker-mark" aria-hidden="true">홍</span>
+          <div class="maker-text">
+            <p class="maker-k">만든 사람</p>
+            <b>인천봉수초 홍찬우</b>
+            <p>
+              교실과 학교의 일을 덜어 주는 도구를 만들고 나누는 에듀테크 연구회 ‘클래스똑딱’을
+              운영합니다. 수업과 업무에 쓰는 다른 도구도 그곳에서 만나 보세요.
+            </p>
+          </div>
+          <a class="link maker-go" href="https://classddok.com" target="_blank" rel="noopener"
+            >클래스똑딱 둘러보기<svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M5 11L11 5M6 5h5v5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+
+        <div class="agent-install" id="install">
+          <div class="agent-install-head">
+            <span class="step ours">PC 프로그램 설치</span>
+            <b>설치는 내 AI 에이전트에게 맡기세요</b>
+            <p>
+              Claude Code, Codex, Gemini CLI 같은 AI 에이전트에 아래 요청문을 붙여 넣으면,
+              내려받기와 파일 확인, 설치, 바탕화면 바로 가기, 에이전트 연결까지 알아서 끝냅니다.
+            </p>
+          </div>
+          <div class="prompt-box">
+            <pre id="agentPrompt">
+똑딱작업실을 내 컴퓨터에 설치하고 세팅까지 끝내 줘.
+https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md 를 읽고 그대로 따라 해.</pre>
+            <button type="button" class="copy" id="copyPrompt" aria-live="polite">
+              요청문 복사
+            </button>
+          </div>
+          <a
+            class="link"
+            href="https://github.com/ARTHONG1/ttokttak-workspace"
+            target="_blank"
+            rel="noopener"
+            >GitHub에서 설치 안내와 소스 보기<svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M5 11L11 5M6 5h5v5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+
+        <div class="made">
+          <div class="made-head">
+            <span class="step ours">똑딱작업실이 만든 것</span>
+          </div>
+          <ul class="made-list">
+            <li>
+              <b>문서 일을 덜어 주는 AI 작업실</b>
+              <p>
+                한글·워드·엑셀·PPT·PDF·HTML 문서를 한 창에서 열고, 고칠 곳을 말하면 AI가 문서 안에서
+                바로 고칩니다. 바뀐 곳이 보이고 되돌릴 수 있습니다.
+              </p>
+            </li>
+            <li>
+              <b>학교 업무 도구, 똑딱업무</b>
+              <p>
+                장바구니로 품의서를 만드는 품의서 생성, 학습 자료로 퀴즈와 학습지를 만드는
+                똑딱퀴즈와 단어 찾기를 넣었습니다.
+              </p>
+            </li>
+            <li>
+              <b>한글 문서 저장 안전장치</b>
+              <p>
+                한컴오피스가 손상 파일로 거부하던 원인을 찾아 고쳤습니다. 저장 직전에 구조와 메모를
+                확인하고, 하나라도 빠지면 원본을 덮어쓰지 않습니다.
+              </p>
+            </li>
+            <li>
+              <b>내 AI 에이전트와 연결</b>
+              <p>
+                PC 프로그램은 터미널 명령어와 MCP 서버를 함께 설치해, Claude Code·Codex 같은
+                에이전트가 같은 문서를 읽고 만들고 고칠 수 있습니다.
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        <h3 class="engines-title">함께 쓰는 오픈소스</h3>
+        <p class="engines-note">
+          좋은 공개 프로젝트 덕분에 처음부터 다시 만들지 않고, 쓰는 사람의 시간을 줄이는 일에 집중할
+          수 있었습니다.
+        </p>
+        <ul class="engines">
+          <li>
+            <a href="https://github.com/edwardkim/rhwp" target="_blank" rel="noopener"
+              ><b>rhwp</b><span>한글(HWP·HWPX) 읽기·쓰기</span><small>Edward Kim · MIT</small></a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/dream-num/univer" target="_blank" rel="noopener"
+              ><b>Univer</b><span>엑셀 표 계산</span><small>DreamNum · Apache-2.0</small></a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/ueberdosis/tiptap" target="_blank" rel="noopener"
+              ><b>Tiptap</b><span>워드·마크다운 편집</span><small>überdosis · MIT</small></a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/mozilla/pdf.js" target="_blank" rel="noopener"
+              ><b>PDF.js · PDFium</b><span>PDF 보기·고치기</span
+              ><small>Mozilla · EmbedPDF</small></a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/genspark-ai/genoffice" target="_blank" rel="noopener"
+              ><b>GenOffice</b><span>문서 엔진</span><small>Mainfunc · Apache-2.0</small></a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/pblsketch/openoffice" target="_blank" rel="noopener"
+              ><b>이음오피스</b><span>AI 오피스 편집기</span
+              ><small>pblsketch · Apache-2.0</small></a
+            >
+          </li>
+        </ul>
+
+        <div class="credits-foot">
+          <p>
+            똑딱작업실은 이음오피스(Apache-2.0)를 고쳐 만든 프로그램이고, 고친 코드 전체를 Apache
+            License 2.0으로
+            <a href="https://github.com/ARTHONG1/ttokttak-workspace" target="_blank" rel="noopener"
+              >GitHub에 공개</a
+            >합니다. 함께 쓰는 오픈소스 575개의 저작권 고지와 라이선스는 고치지 않고 모두 함께
+            배포합니다.
+          </p>
+          <a class="link" href="/__web/licenses" target="_blank" rel="noopener"
+            >전체 라이선스 보기<svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M5 11L11 5M6 5h5v5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+        <p class="tm">
+          본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
+          한글·HWP는 한글과컴퓨터, Word·Excel·PowerPoint는 Microsoft, Gemini는 Google의 상표이며,
+          똑딱작업실은 이 회사들과 제휴 관계가 없습니다.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span
+        >© 2026 똑딱작업실 · 만든 사람 인천봉수초 홍찬우 ·
+        <a href="https://classddok.com" target="_blank" rel="noopener">classddok.com</a></span
+      >
+      <span
+        >웹 체험판의 AI는 Google Gemini로 동작하며, 체험 문서는 작업이 끝나면 지워집니다. 데스크톱
+        앱은 내 Codex·Claude와 연결됩니다. ·
+        <a href="https://github.com/ARTHONG1/ttokttak-workspace" target="_blank" rel="noopener"
+          >GitHub</a
+        ></span
+      >
+    </footer>
+
+    <div class="portal" id="portal" aria-hidden="true">
+      <img src="/__web/intro/promo-poster.webp" alt="" />
+    </div>
+    <script src="/__web/intro.js"></script>
+    <script src="/__web/intro-universe.js" defer></script>
+  </body>
+</html>

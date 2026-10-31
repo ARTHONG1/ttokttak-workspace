@@ -1,0 +1,11 @@
+# XLSX · PPTX · PDF structural round trips
+
+**2026-10-28 automated evidence:** Native unit tests: XLSX 42/42, PPTX 96/96, PDF 272/272. Eight selected Electron cases passed together (six cross-format workflows and two HWP/HWPX read-only opening checks), including PDF blank-page insertion/undo/save and PDF Form Design. `node --test tools/qa/*.test.mjs` passed all new structural regression tests. Pinned XLSX/PPTX fixtures pass unchanged parser self-checks; their edited vendor-application round trips remain untested.
+
+The new XLSX comparator detects a removed formula and styles part. The PPTX comparator detects missing slide-master parts and shape counts. Both reject missing ZIP members by default and allow intentional changes via explicit tokens. These inspections are conservative structural comparisons; they do not prove calculated Excel cache values, rendered SmartArt, embedded media fidelity, chart appearance, or independent Office compatibility.
+
+For PDF the comparator counts logical AcroForm fields **separately from their widget annotations**. A six-field PDF may correctly contain seven widgets when two belong to one radio group. Its regression tests also detect a missing field, missing widget, lost page and reduced annotations. In the Form Design E2E, the final `Done` triggers an async write and annotation reload; tests now wait for the seven widgets in the actual saved PDF and for all seven corresponding **existing** UI objects. The earlier six-on-screen observation was a transient pending object; both UI and disk reached seven during a successful run. The thumbnail test deliberately closes and reopens the View > Thumbnails sidebar before checking page count, eliminating dependence on a persisted panel setting.
+
+**Missing:** Excel/PowerPoint vendor reopen, independent PDF viewer visual review, encrypted/macro/complex chart cases, and real Codex/Claude requests. All such results remain `NOT RUN`, and the global release decision is still gated. Existing data-safety tests cover temporary verification before overwriting XLSX but are not a universal compatibility guarantee.
+
+**Reproduce:** `node --test tools/qa/compare-media-containers.test.mjs`; `npx playwright test -c e2e/playwright.config.ts e2e/pdf-blank-page.spec.ts e2e/pdf-form-design.spec.ts --reporter=line`.
