@@ -269,4 +269,19 @@ describe('searchInIndex — wholeWord', () => {
     expect(searchInIndex(index, 'def', { wholeWord: true })).toHaveLength(1)
     expect(searchInIndex(index, 'c d', { wholeWord: true })).toHaveLength(0)
   })
+
+  it('matches CJK text across tracking spaces synthesized by pdf.js within a line', () => {
+    const raw = '2026학 년 도 2학 기 현 장 체 험 학 습 운 영 계 획 (안 )\n다음 줄 텍스트'
+    const index = [
+      {
+        text: raw,
+        lower: foldCase(raw),
+        items: [{ start: 0, end: raw.length, x: 50, y: 700, w: 400, h: 18 }],
+      },
+    ]
+    expect(searchInIndex(index, '2026학년도 2학기 현장체험학습 운영 계획(안)')).toHaveLength(1)
+    expect(searchInIndex(index, '2026학년도')).toHaveLength(1)
+    expect(searchInIndex(index, '운영 계획')).toHaveLength(1)
+    expect(searchInIndex(index, '(안)')).toHaveLength(1)
+  })
 })

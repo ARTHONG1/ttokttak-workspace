@@ -65,7 +65,7 @@ function geminiToolCall(part: GeminiPart): AgentToolCall {
 }
 
 function geminiContents(messages: AgentMessage[]): unknown[] {
-  return messages.map((m) => {
+  const out = messages.map((m) => {
     if (m.role === 'user') {
       if (!m.images?.length) return { role: 'user', parts: [{ text: m.text }] }
       return {
@@ -100,6 +100,10 @@ function geminiContents(messages: AgentMessage[]): unknown[] {
       })),
     }
   })
+  if (out.length > 0 && (out[out.length - 1] as { role?: string }).role === 'model') {
+    out.push({ role: 'user', parts: [{ text: 'Continue.' }] })
+  }
+  return out
 }
 
 /**

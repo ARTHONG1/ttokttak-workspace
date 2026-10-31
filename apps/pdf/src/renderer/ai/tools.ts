@@ -2,7 +2,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { AgentToolCall, AgentToolDef, ToolExecution } from '@genoffice/agent-core'
 import type { OutlineNode } from '../OutlinePanel'
 import type { PageEntry, SearchIndex } from '../search'
-import { searchInIndex } from '../search'
+import { findPageTextSpans, searchInIndex } from '../search'
 import { foldCase } from '@genoffice/ui'
 import { geomDispSize, pdfRectToCss, pdfToView, quadToRect, viewToPdf } from '../annotations'
 import type { PageGeom } from '../annotations'
@@ -1530,16 +1530,21 @@ async function searchText(deps: PdfAiDeps, input: Record<string, unknown>): Prom
   if (!indexPromise) return err('Document not ready', t('aiToolSearch', { query, count: 0 }))
   const index = await indexPromise
   const matches = searchInIndex(index, query)
-  // Fold the query the same way the index was built (search.ts uses
-  // foldCase, which is length-preserving for dotted capitals where
-  // toLowerCase is not): otherwise snippet offsets drift or miss.
-  const q = foldCase(query)
+  const pageSpans = new Map<number, [number, number][]>()
+  const pageCursor = new Map<number, number>()
   const lines: string[] = []
   for (const m of matches.slice(0, 40)) {
     const entry = index[m.pageIndex]!
-    const pos = entry.lower.indexOf(q)
+    let spans = pageSpans.get(m.pageIndex)
+    if (!spans) {
+      spans = findPageTextSpans(entry, query)
+      pageSpans.set(m.pageIndex, spans)
+    }
+    const idx = pageCursor.get(m.pageIndex) ?? 0
+    pageCursor.set(m.pageIndex, idx + 1)
+    const [pos, end] = spans[idx] ?? spans[0] ?? [0, query.length]
     const from = Math.max(0, pos - 40)
-    const snippet = entry.text.slice(from, pos + q.length + 40).replace(/\s+/g, ' ')
+    const snippet = entry.text.slice(from, end + 40).replace(/\s+/g, ' ')
     lines.push(`Page ${m.pageIndex + 1}: …${snippet}…`)
   }
   if (matches.length > 40) lines.push(`(${matches.length} matches total; only the first 40 listed)`)
@@ -1824,15 +1829,10 @@ function locateOccurrence(
   query: string,
   occurrence: number,
 ): { oldText: string; rect: [number, number, number, number]; fontSize: number } | null {
-  const q = foldCase(query)
-  let pos = -1
-  let from = 0
-  for (let i = 0; i < occurrence; i++) {
-    pos = entry.lower.indexOf(q, from)
-    if (pos < 0) return null
-    from = pos + q.length
-  }
-  const end = pos + q.length
+  const spans = findPageTextSpans(entry, query)
+  const span = spans[occurrence - 1]
+  if (!span) return null
+  const [pos, end] = span
   let x1 = Infinity
   let y1 = Infinity
   let x2 = -Infinity
@@ -1845,7 +1845,7 @@ function locateOccurrence(
     const hi = (Math.min(end, it.end) - it.start) / len
     x1 = Math.min(x1, it.x + it.w * lo)
     x2 = Math.max(x2, it.x + it.w * hi)
-    y1 = Math.min(y1, it.y)
+    y1 = Math.min(y1, it.y - it.h * 0.25)
     y2 = Math.max(y2, it.y + it.h)
     fontSize = Math.max(fontSize, it.h)
   }
@@ -1854,13 +1854,7 @@ function locateOccurrence(
 }
 
 const countOccurrences = (entry: PageEntry, query: string): number => {
-  const q = foldCase(query)
-  let n = 0
-  for (let from = 0; ; n++) {
-    const pos = entry.lower.indexOf(q, from)
-    if (pos < 0) return n
-    from = pos + q.length
-  }
+  return findPageTextSpans(entry, query).length
 }
 
 const HEX_COLOR = /^#?([0-9a-f]{6})$/i

@@ -16,6 +16,8 @@ import { foldRadicals } from '../shared/radicals'
 import { chainLayers } from '../shared/x-layers'
 
 export const FPDF_PAGEOBJ_TEXT = 1
+const FPDF_PAGEOBJ_FORM = 5
+const FORM_MAX_DEPTH = 8
 const FPDF_FONT_TYPE1 = 1
 const FPDF_FONT_TRUETYPE = 2
 const FPDF_TEXTRENDERMODE_FILL_STROKE = 2
@@ -63,6 +65,7 @@ export interface Pdfium {
   _FPDFPageObj_GetType(obj: number): number
   _FPDFFormObj_CountObjects(form: number): number
   _FPDFFormObj_GetObject(form: number, index: number): number
+  _FPDFFormObj_RemoveObject?(form: number, pageObj: number): number
   _FPDFPageObj_Destroy(obj: number): void
   _FPDFPageObj_GetBounds(obj: number, l: number, b: number, r: number, t: number): number
   _FPDFImageObj_GetImageDataRaw(obj: number, buffer: number, buflen: number): number
@@ -607,6 +610,43 @@ export function mergeEngineCodepoints(engineRaw: string, oldText: string, newTex
   return out
 }
 
+type Matrix6 = readonly [number, number, number, number, number, number]
+const IDENTITY_MATRIX: Matrix6 = [1, 0, 0, 1, 0, 0]
+
+function composeMatrix(p: Matrix6, c: Matrix6): Matrix6 {
+  return [
+    p[0] * c[0] + p[2] * c[1],
+    p[1] * c[0] + p[3] * c[1],
+    p[0] * c[2] + p[2] * c[3],
+    p[1] * c[2] + p[3] * c[3],
+    p[0] * c[4] + p[2] * c[5] + p[4],
+    p[1] * c[4] + p[3] * c[5] + p[5],
+  ]
+}
+
+function transformBounds(
+  mat: Matrix6,
+  [l, b, r, t]: [number, number, number, number],
+): [number, number, number, number] {
+  if (mat === IDENTITY_MATRIX) return [l, b, r, t]
+  const x1 = mat[0] * l + mat[2] * b + mat[4]
+  const y1 = mat[1] * l + mat[3] * b + mat[5]
+  const x2 = mat[0] * r + mat[2] * b + mat[4]
+  const y2 = mat[1] * r + mat[3] * b + mat[5]
+  const x3 = mat[0] * l + mat[2] * t + mat[4]
+  const y3 = mat[1] * l + mat[3] * t + mat[5]
+  const x4 = mat[0] * r + mat[2] * t + mat[4]
+  const y4 = mat[1] * r + mat[3] * t + mat[5]
+  return [Math.min(x1, x2, x3, x4), Math.min(y1, y2, y3, y4), Math.max(x1, x2, x3, x4), Math.max(y1, y2, y3, y4)]
+}
+
+function invertDelta(mat: Matrix6, dx: number, dy: number): [number, number] {
+  if (mat === IDENTITY_MATRIX) return [dx, dy]
+  const det = mat[0] * mat[3] - mat[1] * mat[2]
+  if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return [dx, dy]
+  return [(mat[3] * dx - mat[2] * dy) / det, (-mat[1] * dx + mat[0] * dy) / det]
+}
+
 interface PageTextObj {
   obj: number
   index: number
@@ -614,6 +654,19 @@ interface PageTextObj {
   font: number
   /** [x1, y1, x2, y2] */
   bounds: [number, number, number, number]
+  /** Enclosing form XObject handle (0 when top-level on the page) */
+  form?: number
+  /** Composed transform of enclosing form XObjects */
+  formMatrix?: Matrix6
+}
+
+function removeTextObject(m: Pdfium, page: number, t: PageTextObj): void {
+  if (t.form && m._FPDFFormObj_RemoveObject) {
+    m._FPDFFormObj_RemoveObject(t.form, t.obj)
+  } else {
+    m._FPDFPage_RemoveObject(page, t.obj)
+  }
+  m._FPDFPageObj_Destroy(t.obj)
 }
 
 function collectTextObjects(m: Pdfium, page: number, textPage: number): PageTextObj[] {
@@ -622,31 +675,69 @@ function collectTextObjects(m: Pdfium, page: number, textPage: number): PageText
   const bb = m._malloc(4)
   const br = m._malloc(4)
   const bt = m._malloc(4)
-  const count = m._FPDFPage_CountObjects(page)
-  for (let i = 0; i < count; i++) {
-    const obj = m._FPDFPage_GetObject(page, i)
-    if (m._FPDFPageObj_GetType(obj) !== FPDF_PAGEOBJ_TEXT) continue
-    // Two-pass read: FPDFTextObj_GetText's length argument and return value are BYTES
-    // including the 2-byte NUL terminator, and a too-small buffer is left untouched
-    // (not truncated) — a fixed buffer would silently yield garbage for long runs
-    const len = m._FPDFTextObj_GetText(obj, textPage, 0, 0)
-    let text = ''
-    if (len > 2) {
-      const buf = m._malloc(len)
-      m._FPDFTextObj_GetText(obj, textPage, buf, len)
-      text = Buffer.from(m.HEAPU8.buffer, buf, len - 2).toString('utf16le')
-      m._free(buf)
+  const mat = m._malloc(24)
+  const visit = (container: number, isPage: boolean, formMatrix: Matrix6, depth: number) => {
+    const count = isPage
+      ? m._FPDFPage_CountObjects(container)
+      : typeof m._FPDFFormObj_CountObjects === 'function'
+        ? m._FPDFFormObj_CountObjects(container)
+        : 0
+    for (let i = 0; i < count; i++) {
+      const obj = isPage
+        ? m._FPDFPage_GetObject(container, i)
+        : m._FPDFFormObj_GetObject(container, i)
+      if (!obj) continue
+      const type = m._FPDFPageObj_GetType(obj)
+      if (
+        type === FPDF_PAGEOBJ_FORM &&
+        depth < FORM_MAX_DEPTH &&
+        typeof m._FPDFFormObj_CountObjects === 'function' &&
+        typeof m._FPDFFormObj_GetObject === 'function'
+      ) {
+        const ownMat: Matrix6 = m._FPDFPageObj_GetMatrix(obj, mat)
+          ? [
+              m.HEAPF32[mat >> 2]!,
+              m.HEAPF32[(mat >> 2) + 1]!,
+              m.HEAPF32[(mat >> 2) + 2]!,
+              m.HEAPF32[(mat >> 2) + 3]!,
+              m.HEAPF32[(mat >> 2) + 4]!,
+              m.HEAPF32[(mat >> 2) + 5]!,
+            ]
+          : IDENTITY_MATRIX
+        visit(obj, false, composeMatrix(formMatrix, ownMat), depth + 1)
+        continue
+      }
+      if (type !== FPDF_PAGEOBJ_TEXT) continue
+      // Two-pass read: FPDFTextObj_GetText's length argument and return value are BYTES
+      // including the 2-byte NUL terminator, and a too-small buffer is left untouched
+      // (not truncated) — a fixed buffer would silently yield garbage for long runs
+      const len = m._FPDFTextObj_GetText(obj, textPage, 0, 0)
+      let text = ''
+      if (len > 2) {
+        const buf = m._malloc(len)
+        m._FPDFTextObj_GetText(obj, textPage, buf, len)
+        text = Buffer.from(m.HEAPU8.buffer, buf, len - 2).toString('utf16le')
+        m._free(buf)
+      }
+      if (!m._FPDFPageObj_GetBounds(obj, bl, bb, br, bt)) continue
+      const rawBounds: [number, number, number, number] = [
+        m.HEAPF32[bl >> 2]!,
+        m.HEAPF32[bb >> 2]!,
+        m.HEAPF32[br >> 2]!,
+        m.HEAPF32[bt >> 2]!,
+      ]
+      out.push({
+        obj,
+        index: isPage ? i : out.length,
+        text,
+        font: m._FPDFTextObj_GetFont(obj),
+        bounds: transformBounds(formMatrix, rawBounds),
+        ...(isPage ? {} : { form: container, formMatrix }),
+      })
     }
-    if (!m._FPDFPageObj_GetBounds(obj, bl, bb, br, bt)) continue
-    out.push({
-      obj,
-      index: i,
-      text,
-      font: m._FPDFTextObj_GetFont(obj),
-      bounds: [m.HEAPF32[bl >> 2]!, m.HEAPF32[bb >> 2]!, m.HEAPF32[br >> 2]!, m.HEAPF32[bt >> 2]!],
-    })
   }
-  for (const p of [bl, bb, br, bt]) m._free(p)
+  visit(page, true, IDENTITY_MATRIX, 0)
+  for (const p of [bl, bb, br, bt, mat]) m._free(p)
   return out
 }
 
@@ -699,7 +790,7 @@ function canReuseFont(
   // Italic swaps the face: the object's existing font cannot draw it. Bold on the
   // original face is a stroke on the object itself — but only when the object IS the
   // edited text, else the untouched rest of the container would embolden too
-  if (edit.newItalic || (edit.newBold && (edit.newFont || !whole))) return false
+  if (edit.newItalic || (edit.newBold && (edit.newFont || !whole || !!matches[0]!.form))) return false
   if (!/^[\x20-\x7e]*$/.test(newText)) return false
   const font = matches[0]!.font
   const charset = new Set<string>()
@@ -761,17 +852,21 @@ function readingOrder(objs: PageTextObj[]): PageTextObj[] {
   const sorted = [...objs].sort((a, b) => b.bounds[3] - a.bounds[3])
   const rows: PageTextObj[][] = []
   for (const o of sorted) {
-    const row = rows[rows.length - 1]
-    const first = row?.[0]
-    const overlap = first
-      ? Math.min(first.bounds[3], o.bounds[3]) - Math.max(first.bounds[1], o.bounds[1])
-      : 0
-    if (
-      first &&
-      overlap >= 0.5 * Math.min(first.bounds[3] - first.bounds[1], o.bounds[3] - o.bounds[1])
-    ) {
-      row.push(o)
-    } else rows.push([o])
+    const oH = o.bounds[3] - o.bounds[1]
+    const oMid = (o.bounds[1] + o.bounds[3]) / 2
+    const target = rows.find((row) => {
+      const first = row[0]!
+      const firstH = first.bounds[3] - first.bounds[1]
+      const overlap = Math.min(first.bounds[3], o.bounds[3]) - Math.max(first.bounds[1], o.bounds[1])
+      if (overlap >= 0.5 * Math.min(firstH, oH)) return true
+      return (
+        oH < firstH * 0.65 &&
+        oMid >= first.bounds[1] - firstH * 0.25 &&
+        oMid <= first.bounds[3] + firstH * 0.1
+      )
+    })
+    if (target) target.push(o)
+    else rows.push([o])
   }
   return rows.flatMap((row) => [...row].sort((a, b) => a.bounds[0] - b.bounds[0]))
 }
@@ -880,7 +975,15 @@ function matchEdit(objects: PageTextObj[], edit: TextEditInput): PlannedMatch | 
   // never see them and the apply path removes the objects without drawing anything back
   if (edit.newText.trim() === '' && edit.newText !== '') edit = { ...edit, newText: '' }
   const oldKey = norm(edit.oldText)
-  const matches = objects.filter((o) => overlapRatio(o.bounds, edit.rect) >= 0.5)
+  const descPad: Rect = [
+    edit.rect[0],
+    edit.rect[1] - edit.fontSize * 0.25,
+    edit.rect[2],
+    edit.rect[3],
+  ]
+  const matches = objects.filter(
+    (o) => overlapRatio(o.bounds, edit.rect) >= 0.5 || overlapRatio(o.bounds, descPad) >= 0.5,
+  )
   const candidates: PageTextObj[][] = [matches]
   if (matches.length > 1) candidates.push(...xLayers(matches))
   for (const set of candidates) {
@@ -1603,7 +1706,10 @@ async function rebuildRun(
   const widthPtr = m._malloc(4)
   try {
     m._FPDFPageObj_GetMatrix(anchor.obj, matPtr)
-    let matrix = Array.from(m.HEAPF32.subarray(matPtr >> 2, (matPtr >> 2) + 6))
+    const rawMat = Array.from(
+      m.HEAPF32.subarray(matPtr >> 2, (matPtr >> 2) + 6),
+    ) as unknown as Matrix6
+    let matrix = [...(anchor.formMatrix ? composeMatrix(anchor.formMatrix, rawMat) : rawMat)]
     let fontSize = edit.fontSize
     if (m._FPDFTextObj_GetFontSize(anchor.obj, sizePtr)) fontSize = m.HEAPF32[sizePtr >> 2]!
     if (edit.newFontSize !== undefined && edit.newFontSize > 0) fontSize = edit.newFontSize
@@ -1647,8 +1753,9 @@ async function rebuildRun(
       edit.newFontSize !== undefined || edit.newFont !== undefined || edit.newBold || edit.newItalic
     const axisAligned =
       Math.abs(matrix[1]!) < 1e-4 && Math.abs(matrix[2]!) < 1e-4 && matrix[0]! > 0 && matrix[3]! > 0
+    const inForm = matches.some((t) => !!t.form)
     const keeps =
-      !styleOverride && axisAligned
+      !styleOverride && axisAligned && !inForm
         ? buildKeepPlan(m, textPage, matches, newText, charStyles, edit.newColor, edit)
         : null
     // Subset the rebuild font to the non-kept text only: requiring coverage for
@@ -1920,8 +2027,7 @@ async function rebuildRun(
     }
     const removed = matches.filter((t) => !kept.has(t.obj))
     for (const t of removed) {
-      m._FPDFPage_RemoveObject(page, t.obj)
-      m._FPDFPageObj_Destroy(t.obj)
+      removeTextObject(m, page, t)
     }
     if (kept.size > 0 && newObjs.length > 0 && m._FPDFPage_InsertObjectAtIndex) {
       // Keep the content stream in reading order: each redrawn fragment goes right
@@ -1950,7 +2056,8 @@ async function rebuildRun(
     } else {
       // Full redraw: insert where the removed run began — the run's minimum index
       // is the only position still valid after the removals shift everything else
-      const insertAt = removed.length > 0 ? Math.min(...removed.map((t) => t.index)) : -1
+      const insertAt =
+        !inForm && removed.length > 0 ? Math.min(...removed.map((t) => t.index)) : -1
       for (const [i, newObj] of newObjs.entries()) {
         if (insertAt >= 0 && m._FPDFPage_InsertObjectAtIndex) {
           m._FPDFPage_InsertObjectAtIndex(page, newObj, insertAt + i)
@@ -2281,7 +2388,10 @@ async function applyPageEdits(
         continue
       }
       const [dx, dy] = edit.translate
-      for (const t of matches) m._FPDFPageObj_Transform(t.obj, 1, 0, 0, 1, dx, dy)
+      for (const t of matches) {
+        const [ldx, ldy] = t.formMatrix ? invertDelta(t.formMatrix, dx, dy) : [dx, dy]
+        m._FPDFPageObj_Transform(t.obj, 1, 0, 0, 1, ldx, ldy)
+      }
       applied++
       continue
     }
@@ -2289,8 +2399,7 @@ async function applyPageEdits(
     // matched objects outright — no font resolution, nothing to rebuild
     if (newText.trim() === '') {
       for (const t of matches) {
-        m._FPDFPage_RemoveObject(page, t.obj)
-        m._FPDFPageObj_Destroy(t.obj)
+        removeTextObject(m, page, t)
       }
       applied++
       continue
