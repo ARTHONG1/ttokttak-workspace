@@ -9,6 +9,7 @@
 #   TTOKTTAK_VERSION=v0.14.0   install that release instead of the latest
 #   TTOKTTAK_NO_AGENTS=1        skip registering the MCP server and skill with coding agents
 #   TTOKTTAK_NO_DESKTOP=1       skip the Desktop shortcut
+#   TTOKTTAK_APP_DIR=<folder>   install there instead of /Applications (~/Applications when not writable)
 #
 # The last line printed is one JSON object after "TTOKTTAK_INSTALL_RESULT ", for the agent.
 set -euo pipefail
@@ -98,7 +99,8 @@ if pgrep -x "$APP_NAME" >/dev/null 2>&1; then
   osascript -e "quit app \"$APP_NAME\"" >/dev/null 2>&1 || true
   sleep 3
 fi
-DEST_DIR="/Applications"
+DEST_DIR="${TTOKTTAK_APP_DIR:-/Applications}"
+mkdir -p "$DEST_DIR" 2>/dev/null || true
 if [ ! -w "$DEST_DIR" ]; then DEST_DIR="$HOME/Applications"; mkdir -p "$DEST_DIR"; fi
 APP_PATH="$DEST_DIR/$APP_NAME.app"
 if [ -d "$APP_PATH" ]; then rm -rf "$APP_PATH"; fi
