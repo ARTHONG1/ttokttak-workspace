@@ -1,6 +1,6 @@
 # ttokttak-workspace (똑딱작업실)
 
-> Open-source desktop office app (Electron, TypeScript) that opens and edits Hangul (HWP/HWPX), Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind documents, with an AI panel in each editor that edits the document through the app's own tools. The AI runs on the user's own Claude Code or Codex program. A browser trial edition runs the same desktop app per session on Cloud Run with Gemini. Apache-2.0; a modified version of IeumOffice 0.12.5, itself based on GenOffice.
+> Open-source desktop office app (Electron, TypeScript) that opens and edits Hangul (HWP/HWPX), Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind documents, with an AI panel in each editor that edits the document through the app's own tools. The AI runs on the user's own Claude Code or Codex program. A browser trial edition runs the same desktop app per session on Cloud Run with Gemini. Apache-2.0. Built from several open-source projects (IeumOffice and GenOffice as the app base, rhwp, Univer, Tiptap, PDF.js, EmbedPDF and others); exact attribution is in NOTICE.
 
 Key facts:
 - Repository: https://github.com/ARTHONG1/ttokttak-workspace

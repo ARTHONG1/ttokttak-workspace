@@ -108,21 +108,20 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ## 오픈소스 위에서 만들고, 다시 오픈소스로
 
-똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 잘 만들어진 공개 프로젝트를 이어 붙이고, 학교와 사무실에서 실제로 막히던 부분을 고치고 채워 넣었습니다. 바탕이 된 프로젝트를 만든 분들께 감사드립니다.
+똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 여러 오픈소스 프로젝트를 이어 붙이고, 학교와 사무실에서 실제로 막히던 부분을 고치고 채워 넣었습니다. 아래 프로젝트를 만든 분들께 감사드립니다.
 
-**똑딱작업실은 [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5(커밋 `4e4e9cc`)를 고쳐 만든 프로그램이고, 이음오피스는 [GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다.** 두 프로젝트 모두 Apache License 2.0입니다.
+| 분야           | 오픈소스                                                                                                                                                                                                 | 맡은 일                                                         | 라이선스         |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------- |
+| 앱의 바탕      | [이음오피스](https://github.com/pblsketch/openoffice) · [GenOffice](https://github.com/genspark-ai/genoffice)                                                                                            | 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결, 문서 엔진 | Apache-2.0       |
+| 한글 문서      | [rhwp](https://github.com/edwardkim/rhwp)                                                                                                                                                                | 한글(HWP·HWPX) 읽기·쓰기와 화면 그리기                          | MIT              |
+| 엑셀           | [Univer](https://github.com/dream-num/univer) · [calamine](https://github.com/tafia/calamine)                                                                                                            | 표 계산과 화면, 엑셀 파일 읽기                                  | Apache-2.0 · MIT |
+| 워드·마크다운  | [Tiptap](https://github.com/ueberdosis/tiptap) · [ProseMirror](https://prosemirror.net)                                                                                                                  | 문서 편집                                                       | MIT              |
+| PDF            | [PDF.js](https://github.com/mozilla/pdf.js) · [EmbedPDF](https://github.com/embedpdf/embed-pdf-viewer)(PDFium) · [qpdf](https://github.com/qpdf/qpdf) · [HarfBuzz](https://github.com/harfbuzz/harfbuzz) | PDF 보기·고치기·저장, 글꼴 처리                                 | Apache-2.0 · MIT |
+| 슬라이드       | [frontend-slides](https://github.com/zarazhangrui/frontend-slides)                                                                                                                                       | 슬라이드 디자인 템플릿의 바탕                                   | MIT              |
+| 수식·도표·코드 | [KaTeX](https://github.com/KaTeX/KaTeX) · [Mermaid](https://github.com/mermaid-js/mermaid) · [CodeMirror](https://github.com/codemirror/dev)                                                             | 수식, 도표, HTML 소스 편집                                      | MIT              |
+| 앱 실행        | [Electron](https://github.com/electron/electron) · [React](https://github.com/facebook/react)                                                                                                            | 데스크톱 앱과 화면                                              | MIT              |
 
-| 프로젝트                                                                                                       | 맡은 일                                                | 라이선스         |
-| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------- |
-| [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5                                                   | 앱의 뼈대: 탭 편집기, 편집기마다 있는 AI 창, 구독 연결 | Apache-2.0       |
-| [GenOffice](https://github.com/genspark-ai/genoffice)                                                          | 이음오피스가 바탕으로 삼은 오피스 프로그램과 문서 엔진 | Apache-2.0       |
-| [rhwp](https://github.com/edwardkim/rhwp)                                                                      | 한글(HWP·HWPX) 읽기·쓰기                               | MIT              |
-| [Univer](https://github.com/dream-num/univer)                                                                  | 엑셀 표 계산                                           | Apache-2.0       |
-| [Tiptap](https://github.com/ueberdosis/tiptap)                                                                 | 워드·마크다운 편집                                     | MIT              |
-| [PDF.js](https://github.com/mozilla/pdf.js) · [EmbedPDF](https://github.com/embedpdf/embed-pdf-viewer)(PDFium) | PDF 보기와 고치기                                      | Apache-2.0 · MIT |
-| [frontend-slides](https://github.com/zarazhangrui/frontend-slides)                                             | 슬라이드 디자인 템플릿의 바탕                          | MIT              |
-
-함께 배포하는 구성 요소 575개의 저작권 고지와 라이선스는 고치지 않고 모두 함께 배포합니다(설치 폴더의 `THIRD-PARTY-NOTICES.txt`, 웹의 [전체 라이선스](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/__web/licenses)).
+이 밖에도 오픈소스 구성 요소 575개를 함께 씁니다. 모두의 저작권 고지와 라이선스는 고치지 않고 함께 배포합니다(설치 폴더의 `THIRD-PARTY-NOTICES.txt`, 웹의 [전체 라이선스](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/__web/licenses)). 어느 코드가 어디서 왔고 무엇을 바꿨는지는 [라이선스와 출처](#라이선스와-출처)와 [NOTICE](NOTICE)에 정확히 적었습니다.
 
 ### 똑딱작업실에서 고치고 더한 것
 
@@ -188,7 +187,9 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 
 ## 라이선스와 출처
 
-똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다. 바탕이 된 이음오피스와 GenOffice의 저작권 고지는 그대로 두었고, 출처와 바꾼 내용은 [NOTICE](NOTICE)에 있습니다. 이음오피스에 기여한 분들은 [CONTRIBUTORS.md](CONTRIBUTORS.md)에 있습니다.
+똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다.
+
+이 저장소의 코드는 [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5(커밋 `4e4e9cc`)를 바탕으로 고치고 더한 것이며, 이음오피스는 [GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다. 두 프로젝트 모두 Apache License 2.0이고, 원래의 저작권 고지는 그대로 두었습니다. 출처와 바꾼 내용은 [NOTICE](NOTICE)에, 이음오피스에 기여한 분들은 [CONTRIBUTORS.md](CONTRIBUTORS.md)에 있습니다. 바꾼 파일과 내용은 커밋 기록으로 확인할 수 있습니다.
 
 한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인 조건에 따라 밝힙니다.
 

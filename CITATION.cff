@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use or build on this software, please cite it as below."
 title: "똑딱작업실 (ttokttak-workspace)"
-abstract: "Open-source AI document workspace for Hangul (HWP/HWPX), Word, Excel, PowerPoint and PDF, a modified version of IeumOffice 0.12.5 (based on GenOffice)."
+abstract: "Open-source AI document workspace for Hangul (HWP/HWPX), Word, Excel, PowerPoint and PDF, built from several open-source projects; attribution is in NOTICE."
 type: software
 authors:
   - name: "홍찬우 (Chanwoo Hong)"
@@ -31,3 +31,27 @@ references:
     license: Apache-2.0
     authors:
       - name: "Mainfunc, Inc."
+  - type: software
+    title: "rhwp"
+    repository-code: "https://github.com/edwardkim/rhwp"
+    license: MIT
+    authors:
+      - name: "Edward Kim"
+  - type: software
+    title: "Univer"
+    repository-code: "https://github.com/dream-num/univer"
+    license: Apache-2.0
+    authors:
+      - name: "DreamNum"
+  - type: software
+    title: "Tiptap"
+    repository-code: "https://github.com/ueberdosis/tiptap"
+    license: MIT
+    authors:
+      - name: "überdosis"
+  - type: software
+    title: "PDF.js"
+    repository-code: "https://github.com/mozilla/pdf.js"
+    license: Apache-2.0
+    authors:
+      - name: "Mozilla"
