@@ -70,17 +70,6 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ## 할 수 있는 일
 
-<table>
-<tr>
-<td width="50%"><img src="docs/assets/screen-before.webp" alt="AI에게 고칠 곳을 말하기 전의 한글 문서" /></td>
-<td width="50%"><img src="docs/assets/screen-after.webp" alt="AI가 고친 뒤 바뀐 곳이 표시된 한글 문서" /></td>
-</tr>
-<tr>
-<td align="center"><sub>말로 부탁하면</sub></td>
-<td align="center"><sub>문서 안에서 바로 고치고 바뀐 곳을 보여 줍니다</sub></td>
-</tr>
-</table>
-
 ### 문서 편집
 
 - **한 창에 모든 문서**: 한글(`.hwp`, `.hwpx`), 워드(`.docx`), 엑셀(`.xlsx`), 파워포인트(`.pptx`), PDF, 마크다운, HTML, 마인드맵(`.xmind`)을 탭으로 열고 원래 형식으로 저장합니다.
@@ -88,18 +77,17 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 - **한글 문서 저장 안전장치**: 한컴오피스가 "손상된 파일"로 거부하던 원인을 고쳤고, 저장 직전에 파일 구조·메모·바탕쪽을 검사해 하나라도 빠지면 원본을 덮어쓰지 않습니다.
 - **긴 표**: 페이지를 넘는 표는 줄 단위로 나뉘고 제목 줄이 반복됩니다.
 
-<table>
-<tr>
-<td width="50%"><img src="docs/assets/word-editing.png" alt="워드 편집기에서 독서 행사 안내문을 연 화면" /></td>
-<td width="50%"><img src="docs/assets/spreadsheet-editing.png" alt="엑셀 편집기에서 분기별 예산표를 연 화면" /></td>
-</tr>
-<tr>
-<td align="center"><sub>워드 · 안내문 작성과 편집</sub></td>
-<td align="center"><sub>엑셀 · 예산표 확인과 편집</sub></td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/assets/word-editing.png" width="840" alt="워드 편집기에 독서 주간 안내문을 연 실제 화면" /><br />
+  <sub>워드 · 독서 주간 안내문 예시</sub>
+</p>
 
-한글뿐 아니라 워드 안내문과 엑셀 예산표도 각 문서에 맞는 편집기에서 작업할 수 있습니다. PPT 발표 자료, PDF, HTML 등도 열어 보세요.
+<p align="center">
+  <img src="docs/assets/slides-editing.png" width="840" alt="PPT 편집기에 독서 주간 발표 자료를 연 실제 화면" /><br />
+  <sub>PPT · 독서 주간 발표 자료 예시</sub>
+</p>
+
+한글뿐 아니라 워드 안내문, 엑셀 예산표, PPT 발표 자료도 각 문서에 맞는 편집기에서 작업할 수 있습니다. PDF와 HTML 등도 열어 보세요. 위 화면은 가상의 행사 자료를 실제 편집기에서 연 모습입니다.
 
 ### 학교 업무 도구, 똑딱업무
 
@@ -108,11 +96,11 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 - **단어 찾기**: 단어와 뜻으로 단어 찾기 학습지, 문장 만들기, 단어 잇기, 단어 카드를 PDF로 만듭니다.
 
 <p align="center">
-  <img src="docs/assets/work-proposal.png" width="720" alt="학급 독서 활동 물품을 예시로 입력한 품의서 생성 화면" /><br />
-  <sub>품의서 생성 · 학급 물품 구입을 위한 예시 입력 화면</sub>
+  <img src="docs/assets/work-proposal.png" width="840" alt="독서 주간 물품 구입 품의 기안문과 물품 목록을 확인하는 실제 화면" /><br />
+  <sub>품의서 생성 · 독서 주간 물품 구입 기안문과 품의 목록</sub>
 </p>
 
-위 화면은 가상의 학급 물품을 입력한 실제 작업 화면입니다. 장바구니를 붙여 넣거나 자료를 불러와 품의 기안문과 목록을 만드는 데 활용할 수 있습니다.
+위 화면은 가상의 물품 목록으로 품의서를 생성하고 기안문을 다듬은 실제 작업 화면입니다. 장바구니를 붙여 넣거나 자료를 불러와 품의 기안문과 목록을 만드는 데 활용할 수 있습니다.
 
 ### AI 에이전트와 함께
 
@@ -201,10 +189,6 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 - 보안 문제: 공개 이슈 대신 [SECURITY.md](SECURITY.md)의 방법으로 비공개로 알려 주세요.
 - 코드 기여: [CONTRIBUTING.md](CONTRIBUTING.md)와 [행동 강령](CODE_OF_CONDUCT.md)을 읽어 주세요.
 
-## 만든 사람
-
-**인천봉수초 홍찬우** · 교실과 학교의 일을 덜어 주는 도구를 만들고 나누는 교사 에듀테크 연구회 [클래스똑딱](https://classddok.com)을 운영합니다.
-
 ## 라이선스와 출처
 
 똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다.
@@ -224,3 +208,12 @@ Apache License 2.0은 누구나 고쳐서 다시 배포하는 것을 허락합�
 ### 보증하지 않음
 
 똑딱작업실은 Apache License 2.0의 7조, 8조에 따라 있는 그대로 제공하며, 어떤 보증도 하지 않습니다.
+
+## 만든 사람
+
+**인천봉수초 홍찬우**는 **ACE 연구회 회장**이며, 교실과 학교의 수업·업무를 돕는 도구와 자료를 나누는 **클래스똑딱** 홈페이지를 운영합니다.
+
+<p align="center">
+  <a href="https://classddok.com"><img src="docs/assets/classddok-home.png" width="840" alt="ACE 연구회의 클래스똑딱 홈페이지와 교육 도구 소개 화면" /></a><br />
+  <a href="https://classddok.com">클래스똑딱 홈페이지 둘러보기 · classddok.com ↗</a>
+</p>
