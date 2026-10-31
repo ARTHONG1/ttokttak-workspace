@@ -63,7 +63,8 @@
       }
     }
     ws.onclose = function () {
-      ended(
+      if (sessionOver) return
+      recover(
         '연결이 끊어졌습니다',
         '서버와의 연결이 끊겼습니다. 다시 시작하면 새 작업 공간이 열립니다. 내려받지 않은 문서는 다시 열어야 할 수 있습니다.',
       )
@@ -281,6 +282,23 @@
     })
     return exts.join(',')
   }
+  // Phones and tablets do not know .hwp, .hwpx and the like, so a picker limited to those
+  // names greys the documents out. There the picker shows every file and the name is checked
+  // after the pick.
+  var touchDevice =
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  function allowedByFilters(name, filters) {
+    var exts = []
+    ;(filters || []).forEach(function (f) {
+      ;(f.extensions || []).forEach(function (x) {
+        exts.push(String(x).toLowerCase())
+      })
+    })
+    if (!exts.length || exts.indexOf('*') >= 0) return true
+    var m = /\.([^.]+)$/.exec(String(name || ''))
+    return !!m && exts.indexOf(m[1].toLowerCase()) >= 0
+  }
   function pickFiles(options) {
     var props = options.properties || []
     return new Promise(function (resolve) {
@@ -289,9 +307,29 @@
       input.multiple = props.indexOf('multiSelections') >= 0
       if (props.indexOf('openDirectory') >= 0) input.webkitdirectory = true
       var accept = acceptOf(options.filters)
-      if (accept) input.accept = accept
+      if (accept && !touchDevice) input.accept = accept
       input.onchange = function () {
-        resolve(Array.from(input.files || []))
+        var files = Array.from(input.files || [])
+        if (!touchDevice || input.webkitdirectory) return resolve(files)
+        var ok = files.filter(function (f) {
+          return allowedByFilters(f.name, options.filters)
+        })
+        if (ok.length < files.length)
+          messageBox({
+            message: '이 파일은 열 수 없어요',
+            detail:
+              files
+                .filter(function (f) {
+                  return ok.indexOf(f) < 0
+                })
+                .map(function (f) {
+                  return f.name
+                })
+                .join(', ') +
+              '\n한글(HWP·HWPX), 워드, 엑셀, PPT, PDF 같은 문서 파일을 골라 주세요.',
+            buttons: ['확인'],
+          })
+        resolve(ok)
       }
       input.addEventListener('cancel', function () {
         resolve([])
@@ -924,7 +962,7 @@
         return onFileWritten(msg)
       case 'session-ended':
       case 'app-quit':
-        return ended(
+        return recover(
           '작업 공간이 닫혔습니다',
           '프로그램이 종료되었습니다. 다시 시작하면 새 작업 공간이 열립니다.',
         )
@@ -946,6 +984,29 @@
     document.getElementById('ended-detail').textContent = detail || ''
     el.hidden = false
     document.getElementById('restart').focus()
+  }
+  // The session's program ended or the link dropped: open the workspace again by itself (its
+  // uploaded files stay on the server). Only when that keeps failing does the card ask.
+  var RECOVER_KEY = 'hs-recover-v1'
+  function recover(title, detail) {
+    if (sessionOver) return
+    var now = Date.now()
+    var tries = []
+    try {
+      tries = JSON.parse(sessionStorage.getItem(RECOVER_KEY) || '[]').filter(function (t) {
+        return now - t < 2 * 60 * 1000
+      })
+    } catch (e) {}
+    if (tries.length >= 3) return ended(title, detail)
+    tries.push(now)
+    try {
+      sessionStorage.setItem(RECOVER_KEY, JSON.stringify(tries))
+    } catch (e) {}
+    sessionOver = true
+    status('작업 공간을 다시 여는 중…')
+    setTimeout(function () {
+      location.reload()
+    }, 600)
   }
   document.getElementById('restart').onclick = function () {
     location.reload()

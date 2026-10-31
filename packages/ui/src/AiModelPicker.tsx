@@ -16,6 +16,7 @@ import { ProviderLogo } from './provider-logos'
 import { useDismissablePopover } from './popover-dismiss'
 import { AI_MODEL_PICKER_STRINGS } from './strings-ai-model-picker'
 import { aiSubscriptionText } from './strings-ai-subscription'
+import { webAiTierOf, webAiTierText, webAiTiers } from './web-ai-tiers'
 
 /** Each app's preload exposes these under its own namespace; the panel adapts them. */
 export interface AiModelPickerBridge {
@@ -183,6 +184,101 @@ export function AiModelPicker({
   }
 
   if (!settings) return null
+  // the web edition lists its two tiers (기본형, 고급형) in place of the provider catalog
+  const tiers = webAiTiers()
+  if (tiers) {
+    const stored = settings.providers?.gemini?.model ?? ''
+    const active = webAiTierOf(tiers, stored) ?? tiers[0]!
+    const activeText = webAiTierText(lang, active.id)
+    return (
+      <div
+        className="ai-model-picker"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            e.stopPropagation()
+            setOpen(false)
+            chipRef.current?.focus()
+          }
+        }}
+      >
+        {showLabel && (
+          <span className="ai-model-picker-label" aria-hidden="true">
+            {strings.title}
+          </span>
+        )}
+        <button
+          ref={chipRef}
+          type="button"
+          className={`ai-model-chip${open ? ' open' : ''}`}
+          onClick={toggle}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          data-tip={`${strings.title}: ${activeText}`}
+          aria-label={`${strings.title}: ${activeText}`}
+        >
+          <span className="gs-provider-logo" aria-hidden="true">
+            <AiMark size={14} />
+          </span>
+          <span className="ai-model-chip-text">{activeText}</span>
+          <svg className="ai-model-chip-caret" width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+            <path
+              d="M2 6.5 5 3.5l3 3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        {open && (
+          <div
+            ref={popRef}
+            className="ai-model-pop"
+            role="listbox"
+            aria-label={strings.title}
+            style={popStyle}
+          >
+            <div className="ai-model-pop-list">
+              {tiers.map((tier) => {
+                const selected = tier.id === active.id
+                return (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    aria-disabled={tier.locked || undefined}
+                    disabled={tier.locked}
+                    data-tier={tier.id}
+                    className={`ai-model-item ai-model-auto${selected ? ' selected' : ''}${tier.locked ? ' locked' : ''}`}
+                    onClick={() => {
+                      if (!tier.locked) pick({ provider: 'gemini', model: tier.model })
+                    }}
+                  >
+                    <span className="ai-model-item-text">{webAiTierText(lang, tier.id)}</span>
+                    {tier.locked && <span className="ai-model-tag">{webAiTierText(lang, 'locked')}</span>}
+                    {selected && (
+                      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+                        <path
+                          d="M2.5 6.5 5 9l4.5-6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
   const currentGroup = groups.find(sameGroup)
   const paid = aiSubscriptionText(lang, 'pickerPaid')
   const paidTitle = aiSubscriptionText(lang, 'pickerPaidTitle')

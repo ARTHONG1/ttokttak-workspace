@@ -133,6 +133,16 @@
   background: var(--accent-soft);
 }
 
+/* web edition: a tier the server has not opened yet */
+.ai-model-item.locked {
+  color: var(--text-dim);
+  cursor: default;
+}
+
+.ai-model-item.locked:hover {
+  background: none;
+}
+
 .ai-model-item-text {
   flex: 1;
   min-width: 0;

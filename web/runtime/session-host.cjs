@@ -103,7 +103,8 @@ Module._load = function (request, _parent, _isMain) {
   return originalLoad.apply(this, arguments)
 }
 
-require('./vertex-auth.cjs').install()
+const vertex = require('./vertex-auth.cjs')
+vertex.install()
 
 // ---------------------------------------------------------------- link to the gateway
 let nextRequest = 1
@@ -117,6 +118,13 @@ web.link.request = (msg) =>
     pending.set(id, resolve)
     web.link.send({ ...msg, id })
   })
+// every AI request asks the gateway first: it counts the request against the signed-in account
+vertex.setRequestGate(() =>
+  Promise.race([
+    web.link.request({ t: 'ai-take' }),
+    new Promise((resolve) => setTimeout(() => resolve({ ok: false, signedOut: true }), 10_000)),
+  ]),
+)
 
 function ipcEvent(wc, extra = {}) {
   return {
@@ -305,8 +313,21 @@ process.chdir(web.paths.home)
 // The desktop main may move userData (a -Dev folder when unpackaged), so seed wherever it lands.
 function seedAiSettings(dir) {
   const file = path.join(dir, 'ai-settings.json')
-  if (fs.existsSync(file)) return
-  const { vertexBaseUrl } = require('./vertex-auth.cjs')
+  if (fs.existsSync(file)) {
+    // a session kept from before: its Gemini model follows the web edition's tiers
+    try {
+      const stored = JSON.parse(fs.readFileSync(file, 'utf8'))
+      const gemini = stored && stored.providers && stored.providers.gemini
+      const locked = gemini && gemini.model !== vertex.BASIC_MODEL &&
+        !(vertex.ADVANCED_ENABLED && gemini.model === vertex.ADVANCED_MODEL)
+      if (locked) {
+        gemini.model = vertex.BASIC_MODEL
+        fs.writeFileSync(file, JSON.stringify(stored))
+      }
+    } catch {}
+    return
+  }
+  const { vertexBaseUrl } = vertex
   fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(
     file,
@@ -315,7 +336,7 @@ function seedAiSettings(dir) {
       providers: {
         gemini: {
           apiKey: 'vertex-adc',
-          model: process.env.VERTEX_DEFAULT_MODEL || 'gemini-4-argon',
+          model: vertex.BASIC_MODEL,
           baseUrl: vertexBaseUrl(),
         },
       },

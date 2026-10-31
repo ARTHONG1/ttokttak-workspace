@@ -335,6 +335,15 @@ export {
 export { AiModelPicker, aiModelPopoverStyle, type AiModelPickerBridge } from './AiModelPicker'
 export { withAiModelSelection, type AiModelPickerSelection } from './ai-model-picker-options'
 export {
+  WEB_ADVANCED_MODEL,
+  WEB_BASIC_MODEL,
+  webAiTierOf,
+  webAiTierText,
+  webAiTiers,
+  type WebAiTier,
+  type WebAiTierId,
+} from './web-ai-tiers'
+export {
   aiProviderPickerGroups,
   aiProviderPickerSelection,
   aiSubscriptionModelName,

@@ -9,11 +9,14 @@ import { randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
+import { aiUsageOf, authRequired, firebaseWebConfig, takeAiRequest, verifyIdToken } from './web-auth.mjs'
 import zlib from 'node:zlib'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
+const vertexTiers = createRequire(import.meta.url)('./vertex-auth.cjs')
 const APP_ROOT = path.resolve(process.env.WEB_APP_ROOT || path.join(HERE, '..', '..'))
 const CLIENT = path.join(HERE, 'client')
 const SAMPLES = path.join(HERE, 'samples')
@@ -63,6 +66,19 @@ function revive(value) {
 
 // ---------------------------------------------------------------- sessions
 const sessions = new Map()
+/** the signed-in Google account of each browser session id (web-auth.mjs) */
+const accounts = new Map()
+/** the account a request comes from, or null; a session whose sign-in expired is signed out */
+function accountOf(sid) {
+  if (!authRequired) return { uid: 'local', email: '', name: '', expiresAt: Infinity }
+  const a = sid ? accounts.get(sid) : null
+  if (!a) return null
+  if (a.expiresAt < Date.now()) {
+    accounts.delete(sid)
+    return null
+  }
+  return a
+}
 
 class Session {
   constructor(id) {
@@ -117,9 +133,10 @@ class Session {
     fs.mkdirSync(path.join(this.dir, 'tmp'), { recursive: true })
     this.child = child
     child.on('message', (msg) => this.fromChild(msg))
-    child.on('exit', (code) => {
+    child.on('exit', (code, signal) => {
       if (this.child === child) {
         this.child = null
+        console.warn('[gateway] session program ended', { code, signal })
         this.toBrowser({ t: 'session-ended', code })
       }
     })
@@ -160,6 +177,15 @@ class Session {
     if (this.ws && this.ws.readyState === 1) this.ws.send(encode(msg))
   }
   fromChild(msg) {
+    if (msg.t === 'ai-take') {
+      // one AI request is about to leave this session: count it against the account
+      const account = accountOf(this.id)
+      const verdict = account
+        ? takeAiRequest(account.uid)
+        : { ok: false, used: 0, limit: 0, resetsAt: 0, signedOut: true }
+      this.toChild({ t: 'reply', id: msg.id, ...verdict })
+      return
+    }
     if (msg.t === 'reply' && typeof msg.id === 'string' && msg.id.startsWith('g')) {
       const resolve = this.pending.get(msg.id)
       this.pending.delete(msg.id)
@@ -258,6 +284,25 @@ function sessionFromCookie(req) {
   const m = /(?:^|;\s*)hs=([A-Za-z0-9_-]{16,64})/.exec(req.headers.cookie || '')
   return m ? m[1] : null
 }
+function sessionCookie(req, sid) {
+  return (
+    'hs=' +
+    sid +
+    '; Path=/; HttpOnly; SameSite=Lax' +
+    (req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '')
+  )
+}
+/** a state-changing request must come from this site's own pages (Origin set by the browser) */
+function sameOrigin(req) {
+  const origin = req.headers.origin
+  if (!origin) return false
+  try {
+    const host = req.headers['x-forwarded-host'] || req.headers.host
+    return new URL(origin).host === host
+  } catch {
+    return false
+  }
+}
 
 // ---------------------------------------------------------------- HTTP
 const MIME = {
@@ -280,7 +325,8 @@ const MIME = {
   '.otf': 'font/otf',
   '.pdf': 'application/pdf',
 }
-const FRAME_SCRIPT = '<script src="/__web/frame.js"></script>'
+const FRAME_SCRIPT =
+  '<script src="/__web/frame.js' + (vertexTiers.ADVANCED_ENABLED ? '?adv=1' : '') + '"></script>'
 
 /** App schemes become same-origin paths on the web, so CSP that names a scheme also allows 'self'. */
 const WEB_SCHEMES = /^(https?|data|blob|wss?|mediastream|filesystem):$/i
@@ -463,14 +509,84 @@ async function handleHttp(req, res) {
   }
   if (p === '/app' || p === '/app/') {
     const headers = {}
-    if (!sessionFromCookie(req))
-      headers['Set-Cookie'] =
-        'hs=' +
-        randomBytes(18).toString('base64url') +
-        '; Path=/; HttpOnly; SameSite=Lax' +
-        (req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '')
-    const body = await fsp.readFile(path.join(CLIENT, 'index.html'))
+    let sid = sessionFromCookie(req)
+    if (!sid) {
+      sid = randomBytes(18).toString('base64url')
+      headers['Set-Cookie'] = sessionCookie(req, sid)
+    }
+    // the trial opens only for a signed-in Google account: the gate page signs in first
+    const page = accountOf(sid) ? 'index.html' : 'login.html'
+    const body = await fsp.readFile(path.join(CLIENT, page))
     return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', ...headers })
+  }
+  if (p === '/__auth/config') {
+    return send(
+      res,
+      200,
+      JSON.stringify({
+        required: authRequired,
+        firebase: firebaseWebConfig(),
+        // the web edition's two model tiers (vertex-auth.cjs refuses any other model)
+        ai: {
+          basicModel: vertexTiers.BASIC_MODEL,
+          advancedModel: vertexTiers.ADVANCED_MODEL,
+          advancedEnabled: vertexTiers.ADVANCED_ENABLED,
+        },
+      }),
+      { 'Content-Type': 'application/json' },
+    )
+  }
+  if (p === '/__auth/session' && req.method === 'POST') {
+    if (!sameOrigin(req)) return send(res, 403, 'forbidden')
+    const sid = sessionFromCookie(req)
+    if (!sid) return send(res, 400, JSON.stringify({ ok: false, reason: 'no session cookie' }))
+    let token = ''
+    try {
+      token = String(JSON.parse((await readBody(req, 16 * 1024)).toString('utf8')).idToken || '')
+    } catch {
+      return send(res, 400, JSON.stringify({ ok: false, reason: 'bad request' }))
+    }
+    const { account, reason } = await verifyIdToken(token)
+    if (!account) {
+      console.warn('[gateway] sign-in refused:', reason)
+      return send(res, 401, JSON.stringify({ ok: false, reason }), {
+        'Content-Type': 'application/json',
+      })
+    }
+    const before = accounts.get(sid)
+    // one browser session belongs to one account: a different account starts a fresh session
+    if (before && before.uid !== account.uid) {
+      sessions.get(sid)?.dispose()
+      const fresh = randomBytes(18).toString('base64url')
+      accounts.set(fresh, account)
+      return send(res, 200, JSON.stringify({ ok: true, email: account.email }), {
+        'Content-Type': 'application/json',
+        'Set-Cookie': sessionCookie(req, fresh),
+      })
+    }
+    accounts.set(sid, account)
+    return send(res, 200, JSON.stringify({ ok: true, email: account.email }), {
+      'Content-Type': 'application/json',
+    })
+  }
+  if (p === '/__auth/signout' && req.method === 'POST') {
+    if (!sameOrigin(req)) return send(res, 403, 'forbidden')
+    const sid = sessionFromCookie(req)
+    if (sid) {
+      accounts.delete(sid)
+      sessions.get(sid)?.dispose()
+    }
+    return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
+  }
+  if (p === '/__auth/me') {
+    const account = accountOf(sessionFromCookie(req))
+    if (!account) return send(res, 401, '{"ok":false}', { 'Content-Type': 'application/json' })
+    return send(
+      res,
+      200,
+      JSON.stringify({ ok: true, email: account.email, name: account.name, usage: aiUsageOf(account.uid) }),
+      { 'Content-Type': 'application/json' },
+    )
   }
   if (p.startsWith('/__web/') && p !== '/__web/preload.js') {
     // the license notices the desktop installer ships (apps/shell/build, copied by web/build.mjs)
@@ -494,6 +610,7 @@ async function handleHttp(req, res) {
     if (allowedAppFile(file)) return serveFile(res, file, { inject: true, req })
   }
   const sid = sessionFromCookie(req)
+  if (!accountOf(sid)) return send(res, 401, 'sign in first')
   const session = sid ? sessions.get(sid) : null
   if (!session || !session.child) return send(res, 409, 'no session')
 
@@ -629,7 +746,8 @@ const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_UPLOAD })
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url, 'http://localhost')
   const sid = sessionFromCookie(req)
-  if (url.pathname !== '/__ws' || !sid) return socket.destroy()
+  if (url.pathname !== '/__ws' || !sid || !accountOf(sid) || (authRequired && !sameOrigin(req)))
+    return socket.destroy()
   wss.handleUpgrade(req, socket, head, (ws) => attach(sid, ws))
 })
 

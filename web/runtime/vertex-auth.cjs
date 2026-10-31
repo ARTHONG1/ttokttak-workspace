@@ -48,6 +48,48 @@ async function token(original) {
 
 const VERTEX = /^https:\/\/([a-z0-9-]+-)?aiplatform\.googleapis\.com\//
 
+/**
+ * The web edition's two tiers: 기본형 answers every request; 고급형 (Argon) is listed but
+ * locked until WEB_ADVANCED_MODEL_ENABLED=1. The server holds the line itself, so a page
+ * that asks for another model is refused here whatever its settings say.
+ */
+const BASIC_MODEL = process.env.WEB_BASIC_MODEL || 'gemini-3.5-flash-lite'
+const ADVANCED_MODEL = process.env.WEB_ADVANCED_MODEL || 'gemini-4-argon'
+const ADVANCED_ENABLED = process.env.WEB_ADVANCED_MODEL_ENABLED === '1'
+
+function allowedModel(model) {
+  if (model === BASIC_MODEL) return true
+  return ADVANCED_ENABLED && model === ADVANCED_MODEL
+}
+
+/** a refusal the desktop's Gemini code reads as an ordinary HTTP error */
+function refusal(status, reason, message) {
+  return new Response(
+    JSON.stringify({ error: { code: status, status: reason, message } }),
+    { status, headers: { 'Content-Type': 'application/json' } },
+  )
+}
+
+/** asks the gateway to count one request for the signed-in account (set by session-host) */
+let takeRequest = async () => ({ ok: true })
+function setRequestGate(fn) {
+  takeRequest = fn
+}
+
+function resetText(at) {
+  try {
+    return new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(at))
+  } catch {
+    return ''
+  }
+}
+
 function vertexBaseUrl() {
   const project = process.env.GOOGLE_CLOUD_PROJECT
   const location = process.env.VERTEX_LOCATION || 'global'
@@ -60,13 +102,32 @@ function install() {
   globalThis.fetch = async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     if (!VERTEX.test(url)) return original(input, init)
+    const model = (/models\/([^:/?]+)/.exec(url) || [])[1] || ''
+    if (!allowedModel(model))
+      return refusal(
+        403,
+        'PERMISSION_DENIED',
+        '고급형 모델은 아직 열리지 않았어요. 기본형으로 바꿔서 다시 해 주세요.',
+      )
+    const verdict = await takeRequest()
+    if (!verdict.ok)
+      return refusal(
+        429,
+        'RESOURCE_EXHAUSTED',
+        verdict.signedOut
+          ? '로그인이 끝났어요. 페이지를 새로 고쳐 다시 로그인해 주세요.'
+          : '오늘 쓸 수 있는 AI 사용량(' +
+              verdict.limit +
+              '회)을 다 썼어요. ' +
+              resetText(verdict.resetsAt) +
+              '부터 다시 쓸 수 있어요. (GenerateRequestsPerDayPerProjectPerModel-FreeTier)',
+      )
     const headers = new Headers(init && init.headers)
     headers.delete('x-goog-api-key')
     headers.set('Authorization', 'Bearer ' + (await token(original)))
     if (!process.env.WEB_AI_TRACE) return original(input, { ...(init || {}), headers })
     // diagnostics only: model, status and timing, never request or response content
     const started = Date.now()
-    const model = (/models\/([^:/?]+)/.exec(url) || [])[1] || '?'
     const at = () => new Date().toISOString().slice(11, 19)
     console.warn('[vertex] ' + at() + ' ' + model + ' sent')
     // local debugging only (never set in the Cloud Run service): keep the request body to replay it
@@ -87,5 +148,5 @@ function install() {
   }
 }
 
-module.exports = { install, vertexBaseUrl }
+module.exports = { install, vertexBaseUrl, setRequestGate, BASIC_MODEL, ADVANCED_MODEL, ADVANCED_ENABLED }
 

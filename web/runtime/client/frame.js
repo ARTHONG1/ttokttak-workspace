@@ -3,6 +3,9 @@
   // the shell's screens hide what needs this PC (subscription programs, the agent window)
   try {
     document.documentElement.dataset.edition = 'web'
+    // the server has opened the advanced model tier (gateway: WEB_ADVANCED_MODEL_ENABLED=1)
+    var me = document.currentScript
+    if (me && /[?&]adv=1\b/.test(me.src)) document.documentElement.dataset.webAdvanced = '1'
   } catch (e) {}
   var frameEl = null
   try {

@@ -17,6 +17,17 @@ const { fileURLToPath } = require('node:url')
 const link = { send: () => {}, request: async () => ({}) }
 const missing = new Set()
 
+/** the first app frames of the current stack, for logs that say who asked */
+function callers() {
+  return String(new Error().stack || '')
+    .split('\n')
+    .slice(2)
+    .filter((l) => !l.includes('fake-electron.cjs') && !l.includes('node:'))
+    .slice(0, 4)
+    .map((l) => l.trim())
+    .join(' | ')
+}
+
 function lenient(target, name) {
   return new Proxy(target, {
     get(t, prop, recv) {
@@ -1381,13 +1392,16 @@ class FakeApp extends EventEmitter {
   }
   releaseSingleInstanceLock() {}
   quit() {
+    // the web edition has no quit: say who asked, so a closed session can be traced
+    console.warn('[session] app.quit', callers())
     let prevented = false
     this.emit('before-quit', { preventDefault: () => (prevented = true) })
     if (prevented) return
     this.emit('will-quit', { preventDefault() {} })
     link.send({ t: 'app-quit' })
   }
-  exit() {
+  exit(code) {
+    console.warn('[session] app.exit', code, callers())
     link.send({ t: 'app-quit' })
   }
   relaunch() {}

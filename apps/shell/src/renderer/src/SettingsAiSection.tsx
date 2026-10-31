@@ -10,6 +10,9 @@ import {
   aiSubscriptionCardView,
   aiSubscriptionProviderName,
   aiSubscriptionText,
+  webAiTierOf,
+  webAiTierText,
+  webAiTiers,
 } from '@genoffice/ui'
 import type { Lang } from '@genoffice/i18n'
 import { AI_SUBSCRIPTION_PROVIDERS, selectAiProvider } from '@genoffice/ai-provider/browser'
@@ -254,6 +257,48 @@ export function AiSection({
   // the web edition's AI is preset on the server: no subscription programs to
   // log into, and disconnecting its Gemini card would leave the session without AI
   const web = isWebEdition()
+  // and its models are two tiers, 기본형 and 고급형 (the server refuses any other model)
+  const tiers = webAiTiers()
+  if (tiers) {
+    const active =
+      (settings && webAiTierOf(tiers, settings.providers?.gemini?.model ?? '')) ?? tiers[0]!
+    return (
+      <>
+        <h3 className="set-pane-title">{t('setSecAi')}</h3>
+        {settings && (
+          <div className="set-field">
+            <div className="set-field-text">
+              <label className="set-field-label">{t('setAiModelId')}</label>
+            </div>
+            <Dropdown
+              className="set-dd"
+              value={active.id}
+              ariaLabel={t('setAiModelId')}
+              options={tiers.map((tier) => ({
+                value: tier.id,
+                label: tier.locked
+                  ? `${webAiTierText(lang, tier.id)} · ${webAiTierText(lang, 'locked')}`
+                  : webAiTierText(lang, tier.id),
+                disabled: tier.locked,
+              }))}
+              onPick={(id) => {
+                const tier = tiers.find((x) => x.id === id)
+                if (!tier || tier.locked) return
+                change((current) => ({
+                  ...current,
+                  provider: 'gemini',
+                  providers: {
+                    ...current.providers,
+                    gemini: { ...current.providers.gemini, model: tier.model },
+                  },
+                }))
+              }}
+            />
+          </div>
+        )}
+      </>
+    )
+  }
 
   return (
     <>

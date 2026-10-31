@@ -67,7 +67,14 @@ await writeFile(
     {
       name: 'hangul-ai-workbench-web',
       private: true,
-      dependencies: { ws: version('ws'), ajv: version('ajv'), 'ajv-formats': version('ajv-formats'), '@rhwp/core': 'file:./vendor/rhwp-core' },
+      dependencies: {
+        ws: version('ws'),
+        ajv: version('ajv'),
+        'ajv-formats': version('ajv-formats'),
+        // web-auth.mjs: checks Firebase sign-in tokens
+        jose: version('jose'),
+        '@rhwp/core': 'file:./vendor/rhwp-core',
+      },
     },
     null,
     2,
