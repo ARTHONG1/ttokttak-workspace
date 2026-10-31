@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Back, Modal, ToastView, askAi, copyText, useToast } from './special-common'
+import { Back, Modal, SaveTools, ToastView, askAi, copyText, useToast } from './special-common'
 import {
   DIFFICULTY_LABEL,
   LANGUAGES,
@@ -25,7 +25,7 @@ import {
   type QuizData,
 } from './quiz-model'
 import { buildQuiznWorkbook, buildWorksheetPdf, recordQuizVideo } from './quiz-export'
-import { QuizWordSearch } from './QuizWordSearch'
+import { QuizWordSearch, type SaveActions } from './QuizWordSearch'
 
 /**
  * 특화 기능 > 퀴즈 생성기, after the author's ACE QUIZ LAB: 학습 자료 (typed, a PDF or Hangul
@@ -584,6 +584,7 @@ function QuizPlay({
 
 export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [mode, setMode] = useState<'quiz' | 'words'>('quiz')
+  const wordsSave = useRef<SaveActions | null>(null)
   const [inputType, setInputType] = useState<InputType>('text')
   const [content, setContent] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
@@ -878,7 +879,7 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
         <span className="sf-card-icon">
           <QuizIcon />
         </span>
-        <div>
+        <div className="sf-page-title">
           <h1>똑딱퀴즈</h1>
           <p>
             {mode === 'quiz'
@@ -886,19 +887,12 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
               : '단어와 뜻으로 단어 찾기 학습지와 활동지를 만들어요. AI가 주제에 맞는 단어를 제안해 줘요.'}
           </p>
         </div>
-        {mode === 'quiz' && (
-          <div className="qz-head-tools">
-            <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
-              임시 저장
-            </button>
-            <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
-              불러오기
-            </button>
-            <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
-              삭제하기
-            </button>
-          </div>
-        )}
+        {/* one save group for both tools; 단어 찾기 lends its own actions through wordsSave */}
+        <SaveTools
+          onSave={() => (mode === 'quiz' ? saveTemp() : wordsSave.current?.save())}
+          onLoad={() => (mode === 'quiz' ? loadTemp() : wordsSave.current?.load())}
+          onDelete={() => (mode === 'quiz' ? deleteTemp() : wordsSave.current?.remove())}
+        />
       </header>
 
       <div className="qz-modes" role="tablist" aria-label="똑딱퀴즈 도구">
@@ -927,7 +921,7 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
       </div>
 
       {mode === 'words' ? (
-        <QuizWordSearch say={say} />
+        <QuizWordSearch say={say} saveRef={wordsSave} />
       ) : (
         <div className="sf-stack">
           <section className="sf-box" aria-labelledby="qz-in">

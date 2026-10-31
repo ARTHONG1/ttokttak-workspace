@@ -113,6 +113,48 @@ export function Back({ onClick, label }: { onClick: () => void; label: string })
   )
 }
 
+/**
+ * 임시 저장 · 불러오기 · 삭제하기, one quiet group at the right of every tool's page head.
+ * The work stays in this browser's Local Storage; nothing is sent anywhere.
+ */
+export function SaveTools({
+  onSave,
+  onLoad,
+  onDelete,
+}: {
+  onSave: () => void
+  onLoad: () => void
+  onDelete: () => void
+}): ReactElement {
+  return (
+    <div
+      className="sf-save"
+      role="group"
+      aria-label="임시 저장"
+      title="작업 내용은 이 브라우저에만 저장해요. 외부 서버로 보내지 않아요."
+    >
+      <button type="button" onClick={onSave}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M3 2.5h8l2.5 2.5v8.5H3z"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
+          <path d="M5.5 2.5v3h4.5v-3M5.5 13.5V10h5v3.5" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+        임시 저장
+      </button>
+      <button type="button" onClick={onLoad}>
+        불러오기
+      </button>
+      <button type="button" className="is-danger" onClick={onDelete}>
+        삭제하기
+      </button>
+    </div>
+  )
+}
+
 export interface Toast {
   text: string
   bad?: boolean

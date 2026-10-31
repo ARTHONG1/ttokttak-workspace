@@ -62,6 +62,11 @@
   font-size: 12.5px;
   font-weight: 700;
 }
+/* the hub's colours: 똑딱업무 violet (HubTiles), 똑딱수업 green (.ct-eyebrow) */
+.sf-eyebrow-work {
+  background: rgb(124 92 255 / 12%);
+  color: #7357f6;
+}
 .sf-head h1 {
   margin: 12px 0 0;
   font-size: 28px;
@@ -125,17 +130,6 @@ button.sf-card:active {
   border-radius: 13px;
   background: var(--sf-accent-soft);
   color: var(--sf-accent);
-}
-.sf-badge {
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--sf-accent);
-  color: var(--sf-on-accent);
-  font-size: 10.5px;
-  font-weight: 800;
-  line-height: 20px;
-  letter-spacing: 0.04em;
 }
 .sf-card-title {
   font-size: 17px;
@@ -239,6 +233,10 @@ button.sf-card:hover .sf-card-go svg {
   gap: 14px;
   margin: 14px 0 18px;
 }
+.sf-page-title {
+  flex: 1;
+  min-width: 0;
+}
 .sf-page-head h1 {
   margin: 0;
   font-size: 24px;
@@ -249,6 +247,75 @@ button.sf-card:hover .sf-card-go svg {
   margin: 3px 0 0;
   font-size: 14px;
   color: var(--sf-ink-2);
+}
+
+/* 임시 저장 · 불러오기 · 삭제하기: one segmented group at the right of the page head */
+.sf-save {
+  flex: none;
+  display: inline-flex;
+  align-self: center;
+  padding: 3px;
+  border: 1px solid var(--sf-line);
+  border-radius: 11px;
+  background: var(--sf-card);
+}
+.sf-save button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--sf-ink-2);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.sf-save button + button {
+  position: relative;
+}
+.sf-save button + button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--sf-line);
+}
+.sf-save button:hover {
+  background: var(--sf-soft);
+  color: var(--sf-ink);
+}
+.sf-save button:hover::before,
+.sf-save button:hover + button::before {
+  opacity: 0;
+}
+.sf-save button.is-danger:hover {
+  color: #d92d3a;
+}
+.sf-save button:focus-visible {
+  outline: 2px solid var(--sf-accent);
+  outline-offset: 1px;
+}
+@media (max-width: 720px) {
+  .sf-page-head {
+    flex-wrap: wrap;
+  }
+  .sf-save {
+    order: 3;
+    width: 100%;
+  }
+  .sf-save button {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 /* ---- 품의서 생성 ---- */
@@ -288,15 +355,6 @@ button.sf-card:hover .sf-card-go svg {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-.sf-note {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--sf-ink-3);
-}
-.sf-store .sf-box-head {
-  margin-bottom: 8px;
 }
 .sf-field {
   display: flex;

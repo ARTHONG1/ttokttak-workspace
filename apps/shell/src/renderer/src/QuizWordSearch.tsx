@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import type { ReactElement } from 'react'
+import { useImperativeHandle, useMemo, useState } from 'react'
+import type { ReactElement, RefObject } from 'react'
 import { Modal, askAi } from './special-common'
 import {
   LEVELS,
@@ -57,10 +57,19 @@ const OVERLAP_LABEL: { value: Overlap; label: string }[] = [
 
 type SheetTab = 'puzzle' | 'answer'
 
+/** 임시 저장 · 불러오기 · 삭제하기 of this tab, run from the page head's save group */
+export interface SaveActions {
+  save: () => void
+  load: () => void
+  remove: () => void
+}
+
 export function QuizWordSearch({
   say,
+  saveRef,
 }: {
   say: (text: string, bad?: boolean) => void
+  saveRef?: RefObject<SaveActions | null>
 }): ReactElement {
   const [words, setWords] = useState<string[]>([])
   const [defs, setDefs] = useState<Record<string, string>>({})
@@ -241,21 +250,10 @@ export function QuizWordSearch({
   }
 
   const sheetWords = shown ? cardWords(shown) : []
+  useImperativeHandle(saveRef, () => ({ save: saveTemp, load: loadTemp, remove: deleteTemp }))
 
   return (
     <div className="sf-stack">
-      <div className="qz-head-tools ws-tools">
-        <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
-          임시 저장
-        </button>
-        <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
-          불러오기
-        </button>
-        <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
-          삭제하기
-        </button>
-      </div>
-
       <section className="sf-box" aria-labelledby="ws-words">
         <div className="sf-box-head">
           <h2 id="ws-words" className="qz-step">

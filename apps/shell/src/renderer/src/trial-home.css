@@ -147,7 +147,7 @@
   color: var(--t-ink-3);
 }
 
-/* ---- new-document tiles, one colour per format ---- */
+/* ---- new-document tiles: one compact row each, a colour per format on hover ---- */
 .trial-tile[data-ext='hwp'] {
   --acc: #2f6bff;
   --acc-soft: #eaf0ff;
@@ -183,19 +183,18 @@
 .trial-tiles {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .trial-tile {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  min-height: 150px;
-  padding: 16px 16px 15px;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
   overflow: hidden;
   border: 0;
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--t-card);
   box-shadow:
     0 0 0 1px var(--t-line) inset,
@@ -211,14 +210,14 @@
 .trial-tile::before {
   content: '';
   position: absolute;
-  inset: 0 0 auto;
-  height: 4px;
+  inset: 0 auto 0 0;
+  width: 3px;
   background: var(--acc);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 .trial-tile:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow:
     0 0 0 1px var(--acc) inset,
     var(--t-shadow-md);
@@ -226,39 +225,31 @@
 .trial-tile:hover::before {
   opacity: 1;
 }
-.trial-tile-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 8px;
-}
-.trial-tile-top img {
+.trial-tile img {
+  flex: none;
   transition: transform 0.2s var(--t-ease);
 }
-.trial-tile:hover .trial-tile-top img {
+.trial-tile:hover img {
   transform: rotate(-6deg) scale(1.06);
 }
-.trial-tile-type {
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--acc-soft);
-  color: var(--acc);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 22px;
-  letter-spacing: 0.03em;
+.trial-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .trial-tile-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 750;
   letter-spacing: -0.02em;
 }
 .trial-tile-hint {
-  font-size: 13px;
-  line-height: 1.5;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.45;
   color: var(--t-ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: color 0.2s ease;
 }
 .trial-tile:hover .trial-tile-hint {
@@ -458,8 +449,8 @@
   }
 }
 @media (max-width: 620px) {
-  .trial-tile {
-    min-height: 0;
+  .trial-tiles {
+    grid-template-columns: 1fr;
   }
   .trial-maker-go {
     display: none;

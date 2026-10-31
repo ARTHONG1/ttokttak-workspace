@@ -70,7 +70,6 @@ const SAMPLES: Sample[] = [
 interface NewItem {
   ext: string
   label: string
-  type: string
   hint: string
   make: () => Promise<void>
 }
@@ -79,56 +78,48 @@ const NEW_ITEMS: NewItem[] = [
   {
     ext: 'hwp',
     label: '한글 문서',
-    type: 'HWP',
     hint: '가정통신문 초안 써 줘',
     make: () => window.aiOffice.newHwp(),
   },
   {
     ext: 'docx',
     label: '워드 문서',
-    type: 'DOCX',
     hint: '회의록 양식 만들어 줘',
     make: () => window.aiOffice.newDoc(),
   },
   {
     ext: 'xlsx',
     label: '엑셀 표',
-    type: 'XLSX',
     hint: '월별 지출표 만들어 줘',
     make: () => window.aiOffice.newSheet(),
   },
   {
     ext: 'pptx',
     label: 'PPT 발표 자료',
-    type: 'PPTX',
     hint: '수업 소개 5장 만들어 줘',
     make: () => window.aiOffice.newSlide(),
   },
   {
     ext: 'pdf',
     label: 'PDF 문서',
-    type: 'PDF',
     hint: '안내문 한 장 만들어 줘',
     make: () => window.aiOffice.newPdf(),
   },
   {
     ext: 'md',
     label: '마크다운',
-    type: 'MD',
     hint: '업무 메모를 정리해 줘',
     make: () => window.aiOffice.newMarkdown(),
   },
   {
     ext: 'html',
     label: 'HTML 페이지',
-    type: 'HTML',
     hint: '행사 안내 페이지 만들어 줘',
     make: () => window.aiOffice.newHtml(),
   },
   {
     ext: 'xmind',
     label: '마인드맵',
-    type: 'XMIND',
     hint: '단원 개념 지도 그려 줘',
     make: () => window.aiOffice.newMindmap(),
   },
@@ -299,12 +290,11 @@ export function TrialHome(): ReactElement {
                 data-ext={n.ext}
                 onClick={() => void n.make()}
               >
-                <span className="trial-tile-top">
-                  <Icon ext={n.ext} size={40} />
-                  <span className="trial-tile-type">{n.type}</span>
+                <Icon ext={n.ext} size={34} />
+                <span className="trial-tile-text">
+                  <span className="trial-tile-name">{n.label}</span>
+                  <span className="trial-tile-hint">“{n.hint}”</span>
                 </span>
-                <span className="trial-tile-name">{n.label}</span>
-                <span className="trial-tile-hint">“{n.hint}”</span>
               </button>
             ))}
           </div>

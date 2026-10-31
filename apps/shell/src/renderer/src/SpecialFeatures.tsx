@@ -1,7 +1,15 @@
 import { useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { CartFileKind } from '../../shared/home-api'
-import { Back, ToastView, askAi, copyText, downloadBlob, useToast } from './special-common'
+import {
+  Back,
+  SaveTools,
+  ToastView,
+  askAi,
+  copyText,
+  downloadBlob,
+  useToast,
+} from './special-common'
 import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import './special-features.css'
 import './quiz-generator.css'
@@ -31,14 +39,14 @@ const FEATURES: Feature[] = [
     id: 'proposal',
     title: '품의서 생성',
     summary: '장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.',
-    tags: ['AI', '기안문', '품의 목록', 'CSV'],
+    tags: ['기안문', '품의 목록', 'CSV'],
   },
   {
     id: 'quiz',
     title: '똑딱퀴즈',
     summary:
       '학습 자료나 유튜브 영상으로 다섯 가지 유형의 퀴즈를 만들고, 바로 풀거나 학습지로 뽑아요.',
-    tags: ['AI', '5가지 유형', '학습지 PDF', '블루킷·퀴즈앤'],
+    tags: ['5가지 유형', '단어 찾기', '학습지 PDF', '블루킷·퀴즈앤'],
   },
 ]
 
@@ -229,9 +237,9 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
   return (
     <div className="sf-list">
       <header className="sf-head">
-        <span className="sf-eyebrow">똑딱업무</span>
-        <h1>학교 업무 문서를 양식에 맞춰</h1>
-        <p>자주 쓰는 업무 문서를 AI와 함께 빠르게 만들어요. 도구는 계속 늘어납니다.</p>
+        <span className="sf-eyebrow sf-eyebrow-work">똑딱업무</span>
+        <h1>학교 업무 문서, AI와 함께 빠르게</h1>
+        <p>필요한 도구를 골라 내용만 넣으면 양식에 맞춰 만들어 드려요. 도구는 계속 늘어나요.</p>
       </header>
       <div className="sf-grid">
         {FEATURES.map((f) => (
@@ -246,7 +254,6 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
               <span className="sf-card-icon">
                 {f.id === 'quiz' ? <QuizIcon /> : <ProposalIcon />}
               </span>
-              <span className="sf-badge">NEW</span>
             </span>
             <span className="sf-card-title">{f.title}</span>
             <span className="sf-card-sum">{f.summary}</span>
@@ -427,38 +434,14 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
         <span className="sf-card-icon">
           <ProposalIcon />
         </span>
-        <div>
+        <div className="sf-page-title">
           <h1>품의서 생성</h1>
           <p>장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.</p>
         </div>
+        <SaveTools onSave={saveTemp} onLoad={loadTemp} onDelete={deleteTemp} />
       </header>
 
       <div className="sf-stack">
-        <section className="sf-box sf-store" aria-labelledby="sf-store-title">
-          <div className="sf-box-head">
-            <div>
-              <h2 id="sf-store-title">임시 저장소</h2>
-              <p className="sf-box-sub">
-                작업 내용을 이 브라우저에 잠시 저장하거나 불러올 수 있어요.
-              </p>
-            </div>
-            <div className="sf-btn-row">
-              <button type="button" className="sf-secondary sf-sm" onClick={saveTemp}>
-                임시 저장
-              </button>
-              <button type="button" className="sf-secondary sf-sm" onClick={loadTemp}>
-                불러오기
-              </button>
-              <button type="button" className="sf-secondary sf-sm sf-danger" onClick={deleteTemp}>
-                삭제하기
-              </button>
-            </div>
-          </div>
-          <p className="sf-note">
-            저장한 내용은 외부 서버로 보내지 않고 이 브라우저의 저장소(Local Storage)에만 둡니다.
-          </p>
-        </section>
-
         <section className="sf-box" aria-labelledby="sf-input-title">
           <div className="sf-box-head">
             <div>

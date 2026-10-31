@@ -6,11 +6,6 @@
 .qz-page .sf-page-head {
   flex-wrap: wrap;
 }
-.qz-head-tools {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
 .qz-step {
   display: flex;
   align-items: center;
@@ -762,9 +757,6 @@
   .qz-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .qz-head-tools {
-    margin-left: 0;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .qz-page *,
@@ -812,10 +804,6 @@
 }
 .qz-mode.is-on b {
   color: var(--sf-accent);
-}
-.ws-tools {
-  justify-content: flex-end;
-  margin: -4px 0 0;
 }
 .ws-count {
   min-width: 22px;
