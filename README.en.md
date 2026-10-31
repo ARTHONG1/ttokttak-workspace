@@ -11,6 +11,29 @@ the app never reads or stores those logins.
 
 The full documentation is in Korean: see [README.md](README.md).
 
+## What ttokttak-studio adds
+
+ttokttak-studio is built on open-source projects rather than written from
+scratch: IeumOffice 0.12.5 and GenOffice (Apache-2.0) for the app itself, rhwp
+(MIT) for Hangul documents, Univer (Apache-2.0) for spreadsheets, Tiptap (MIT)
+for Word and Markdown, and PDF.js and EmbedPDF (Apache-2.0, MIT) for PDF. On
+top of them it adds:
+
+- HWPX saves that Hancom Hangul opens: the causes of its "damaged file"
+  refusals fixed, checked by editing and saving 114 Hangul documents and
+  opening each in the Hancom Office HWP Viewer
+- saves that protect the original: HWP is saved as HWPX beside it, and the
+  package, XML, memos and master pages are checked before anything is written
+- tables longer than a page split between rows, with the title row repeated
+- a browser trial edition (web/) that runs the unmodified desktop app per
+  session, with each session confined to its own files
+- school work tools ported from the maker's 클래스똑딱 web tools: a purchase
+  request generator, a quiz maker and a word-search sheet maker
+- a Korean home screen and Korean menus, settings and PDF labels
+
+Made by 홍찬우 (Incheon Bongsu Elementary School), who runs the teachers'
+edtech group [클래스똑딱](https://classddok.com).
+
 ## License and acknowledgement
 
 ttokttak-studio is licensed under the [Apache License 2.0](LICENSE).

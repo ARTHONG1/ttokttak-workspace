@@ -18,6 +18,15 @@
   --sf-paper-ink: #1f2328;
   --sf-paper-line: #3a3f45;
   --sf-shadow: 0 10px 28px -14px rgb(15 23 42 / 22%);
+  /* the home hub's colours: 똑딱업무 violet, 똑딱수업 green (hub-tiles.css) */
+  --sf-work: #7357f6;
+  --sf-work-soft: rgb(124 92 255 / 12%);
+  --sf-class: #0e9f6e;
+  --sf-class-2: #3ccf98;
+  --sf-class-soft: rgb(16 185 129 / 12%);
+  --sf-class-glow: rgb(16 185 129 / 10%);
+  --sf-on-color: #ffffff;
+  --sf-danger: #d92d3a;
   --sf-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color: var(--sf-ink);
   word-break: keep-all;
@@ -64,8 +73,8 @@
 }
 /* the hub's colours: 똑딱업무 violet (HubTiles), 똑딱수업 green (.ct-eyebrow) */
 .sf-eyebrow-work {
-  background: rgb(124 92 255 / 12%);
-  color: #7357f6;
+  background: var(--sf-work-soft);
+  color: var(--sf-work);
 }
 .sf-head h1 {
   margin: 12px 0 0;
@@ -298,7 +307,7 @@ button.sf-card:hover .sf-card-go svg {
   opacity: 0;
 }
 .sf-save button.is-danger:hover {
-  color: #d92d3a;
+  color: var(--sf-danger);
 }
 .sf-save button:focus-visible {
   outline: 2px solid var(--sf-accent);
@@ -683,8 +692,8 @@ button.sf-card:hover .sf-card-go svg {
 
 /* 똑딱수업 (ClassTools.tsx): the coming page */
 .ct-eyebrow {
-  background: rgb(16 185 129 / 12%);
-  color: #0e9f6e;
+  background: var(--sf-class-soft);
+  color: var(--sf-class);
 }
 .ct-empty {
   display: flex;
@@ -696,7 +705,7 @@ button.sf-card:hover .sf-card-go svg {
   border: 1px solid var(--sf-line);
   border-radius: 20px;
   background:
-    radial-gradient(420px 220px at 50% 0%, rgb(16 185 129 / 10%), transparent 70%), var(--sf-card);
+    radial-gradient(420px 220px at 50% 0%, var(--sf-class-glow), transparent 70%), var(--sf-card);
   text-align: center;
 }
 .ct-mark {
@@ -706,9 +715,9 @@ button.sf-card:hover .sf-card-go svg {
   height: 68px;
   margin-bottom: 8px;
   border-radius: 22px;
-  background: linear-gradient(140deg, #0e9f6e, #3ccf98);
-  color: #ffffff;
-  box-shadow: 0 14px 28px -16px #0e9f6e;
+  background: linear-gradient(140deg, var(--sf-class), var(--sf-class-2));
+  color: var(--sf-on-color);
+  box-shadow: 0 14px 28px -16px var(--sf-class);
 }
 .ct-empty h2 {
   margin: 0;
@@ -741,8 +750,8 @@ button.sf-card:hover .sf-card-go svg {
     transform 0.15s ease;
 }
 .ct-work:hover {
-  border-color: #7357f6;
-  color: #7357f6;
+  border-color: var(--sf-work);
+  color: var(--sf-work);
 }
 .ct-work:active {
   transform: translateY(1px);

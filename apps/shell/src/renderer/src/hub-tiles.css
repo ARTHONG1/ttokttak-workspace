@@ -11,6 +11,10 @@
   --hub-ink: var(--text-primary, #232425);
   --hub-ink-2: var(--text-secondary, #606366);
   --hub-ink-3: var(--text-tertiary, #909499);
+  /* the three hub colours, shared with the 똑딱업무 / 똑딱수업 pages */
+  --hub-on-color: #ffffff;
+  --hub-new: #ffd84d;
+  --hub-new-ink: #3b2f00;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
@@ -107,7 +111,7 @@
   height: 54px;
   border-radius: 17px;
   background: linear-gradient(140deg, var(--c), var(--c2));
-  color: #ffffff;
+  color: var(--hub-on-color);
   box-shadow: 0 12px 24px -14px var(--c);
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -126,8 +130,8 @@
   letter-spacing: 0.03em;
 }
 .hub-tile[data-hub='work'] .hub-badge {
-  background: #ffd84d;
-  color: #3b2f00;
+  background: var(--hub-new);
+  color: var(--hub-new-ink);
 }
 .hub-title {
   font-size: 21px;

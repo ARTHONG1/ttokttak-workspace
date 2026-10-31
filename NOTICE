@@ -7,9 +7,13 @@ This product includes software developed at Mainfunc, Inc.
 This program is a modified version of IeumOffice 0.12.5
 (https://github.com/pblsketch/openoffice, commit 4e4e9cc), itself based on
 GenOffice. Both are licensed under the Apache License 2.0. Modifications:
-product identity (name, app id, data folder), disabled update feed, a web
-trial edition that runs the desktop app in a browser (web/), a trial home
-screen, and Gemini 4 Argon as the default Gemini model.
+product identity (name, app id, data folder), disabled update feed, HWPX
+saving that Hancom Hangul opens and that is validated before it overwrites a
+file, tables that split between pages, a web trial edition that runs the
+desktop app in a browser (web/), the school work tools (purchase request
+generator, quiz maker, word search), a Korean home screen and labels, and
+Gemini 4 Argon as the default Gemini model. The repository history records
+each changed file.
 
 Bundled third-party components are listed in THIRD-PARTY-NOTICES.txt, which
 tools/gen-third-party-notices.mjs generates at packaging time. It is not
