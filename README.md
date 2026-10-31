@@ -214,6 +214,6 @@ Apache License 2.0은 누구나 고쳐서 다시 배포하는 것을 허락합�
 **인천봉수초 홍찬우**는 **ACE 연구회 회장**이며, 교실과 학교의 수업·업무를 돕는 도구와 자료를 나누는 **클래스똑딱** 홈페이지를 운영합니다.
 
 <p align="center">
-  <a href="https://classddok.com"><img src="docs/assets/classddok-home.png" width="840" alt="ACE 연구회의 클래스똑딱 홈페이지와 교육 도구 소개 화면" /></a><br />
+  <a href="https://classddok.com"><img src="docs/assets/classddok-home.png" width="840" alt="ACE 연구회의 클래스똑딱 홈페이지 첫 화면" /></a><br />
   <a href="https://classddok.com">클래스똑딱 홈페이지 둘러보기 · classddok.com ↗</a>
 </p>
