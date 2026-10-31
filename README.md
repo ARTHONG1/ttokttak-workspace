@@ -88,11 +88,31 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 - **한글 문서 저장 안전장치**: 한컴오피스가 "손상된 파일"로 거부하던 원인을 고쳤고, 저장 직전에 파일 구조·메모·바탕쪽을 검사해 하나라도 빠지면 원본을 덮어쓰지 않습니다.
 - **긴 표**: 페이지를 넘는 표는 줄 단위로 나뉘고 제목 줄이 반복됩니다.
 
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/word-editing.png" alt="워드 편집기에서 독서 행사 안내문을 연 화면" /></td>
+<td width="50%"><img src="docs/assets/spreadsheet-editing.png" alt="엑셀 편집기에서 분기별 예산표를 연 화면" /></td>
+</tr>
+<tr>
+<td align="center"><sub>워드 · 안내문 작성과 편집</sub></td>
+<td align="center"><sub>엑셀 · 예산표 확인과 편집</sub></td>
+</tr>
+</table>
+
+한글뿐 아니라 워드 안내문과 엑셀 예산표도 각 문서에 맞는 편집기에서 작업할 수 있습니다. PPT 발표 자료, PDF, HTML 등도 열어 보세요.
+
 ### 학교 업무 도구, 똑딱업무
 
 - **품의서 생성**: 쇼핑몰 장바구니나 이미지·한글·PDF·엑셀 파일을 넣으면 품의 목록과 기안문을 만듭니다. 목록을 고치면 기안문의 금액도 따라 바뀝니다.
 - **똑딱퀴즈**: 학습 자료(직접 입력, PDF·한글, 유튜브 자막)로 선택형·OX·단답형·순서·초성 퀴즈를 만들고 문제지 PDF, 블루킷 CSV, 퀴즈앤 XLSX, 퀴즈 동영상으로 내보냅니다.
 - **단어 찾기**: 단어와 뜻으로 단어 찾기 학습지, 문장 만들기, 단어 잇기, 단어 카드를 PDF로 만듭니다.
+
+<p align="center">
+  <img src="docs/assets/work-proposal.png" width="720" alt="학급 독서 활동 물품을 예시로 입력한 품의서 생성 화면" /><br />
+  <sub>품의서 생성 · 학급 물품 구입을 위한 예시 입력 화면</sub>
+</p>
+
+위 화면은 가상의 학급 물품을 입력한 실제 작업 화면입니다. 장바구니를 붙여 넣거나 자료를 불러와 품의 기안문과 목록을 만드는 데 활용할 수 있습니다.
 
 ### AI 에이전트와 함께
 
