@@ -89,7 +89,7 @@ const ALLOW = [
   },
   {
     path: 'web/runtime/client/intro.html',
-    line: /github\.com\/genspark-ai\/genoffice/,
+    line: /github\.com\/genspark-ai\/genoffice|<small>Mainfunc · Apache-2\.0<\/small>/,
     reason: "the web edition's credits list naming the original project and its copyright holder",
   },
   {
