@@ -145,6 +145,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libxml2-utils
 
       - name: Test
+        # four test workers at most: a runner's memory (16 GB) ran out with one per core
+        env:
+          VITEST_MAX_WORKERS: '4'
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm test
 
       # Preservation gate: a no-op-adjacent edit through the OOXML gateway must
