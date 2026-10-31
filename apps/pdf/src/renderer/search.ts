@@ -114,6 +114,67 @@ export interface SearchIndexCache {
   clear(): void
 }
 
+/** Character-offset spans [start, end) matching `query` on one page. Falls back to
+    matching across intra-line tracking spaces when pdf.js splits CJK runs by kerning. */
+export function findPageTextSpans(
+  entry: PageEntry,
+  query: string,
+  opts: SearchOptions = {},
+): [number, number][] {
+  const matchCase = opts.matchCase ?? false
+  const wholeWord = opts.wholeWord ?? false
+  const q = matchCase ? query : foldCase(query)
+  if (!q) return []
+  const { text, lower } = entry
+  const hay = matchCase ? text : lower
+  const spans: [number, number][] = []
+  let from = 0
+  while (spans.length < MAX_MATCHES) {
+    const s = hay.indexOf(q, from)
+    if (s < 0) break
+    if (wholeWord && !wordBoundaryOk(text, s, q.length)) {
+      from = s + 1
+      continue
+    }
+    const e = s + q.length
+    from = e
+    spans.push([s, e])
+  }
+  if (spans.length > 0 || wholeWord || /[\r\n]/.test(q)) return spans
+  const qCompact = q.replace(/[ \t]+/g, '')
+  if (qCompact.length < 2 || !CJK_RE.test(qCompact)) return spans
+  let compact = ''
+  const origPos: number[] = []
+  for (let i = 0; i < hay.length; i++) {
+    const ch = hay[i]!
+    if (ch === ' ' || ch === '\t') continue
+    compact += ch
+    origPos.push(i)
+  }
+  let cFrom = 0
+  while (spans.length < MAX_MATCHES) {
+    const hit = compact.indexOf(qCompact, cFrom)
+    if (hit < 0) break
+    const s = origPos[hit]!
+    const e = origPos[hit + qCompact.length - 1]! + 1
+    let sameLine = true
+    for (let k = hit; k < hit + qCompact.length - 1; k++) {
+      const gap = origPos[k + 1]! - origPos[k]!
+      if (gap > 4) {
+        sameLine = false
+        break
+      }
+    }
+    if (sameLine && !/[\r\n]/.test(hay.slice(s, e))) {
+      spans.push([s, e])
+      cFrom = hit + qCompact.length
+    } else {
+      cFrom = hit + 1
+    }
+  }
+  return spans
+}
+
 /** Building the index walks every page of the document, so it must happen once per
     loaded document: search, paragraph boxes, the AI tools and the auto-OCR pass all
     read this cache instead of extracting the text a second time. */
@@ -136,27 +197,12 @@ export function searchInIndex(
   query: string,
   opts: SearchOptions = {},
 ): SearchMatch[] {
-  const matchCase = opts.matchCase ?? false
-  const wholeWord = opts.wholeWord ?? false
-  const q = matchCase ? query : foldCase(query)
-  if (!q) return []
   const matches: SearchMatch[] = []
   for (let pageIndex = 0; pageIndex < index.length; pageIndex++) {
-    const { text, lower, items } = index[pageIndex]!
-    // The sensitive path reads the original text; the insensitive path reuses
-    // the precomputed fold so a search never re-folds the whole page. foldCase
-    // is length-preserving, so hit offsets are valid in `text` either way.
-    const hay = matchCase ? text : lower
-    let from = 0
-    while (matches.length < MAX_MATCHES) {
-      const s = hay.indexOf(q, from)
-      if (s < 0) break
-      if (wholeWord && !wordBoundaryOk(text, s, q.length)) {
-        from = s + 1
-        continue
-      }
-      const e = s + q.length
-      from = e
+    const entry = index[pageIndex]!
+    const { items } = entry
+    for (const [s, e] of findPageTextSpans(entry, query, opts)) {
+      if (matches.length >= MAX_MATCHES) break
       const rects: [number, number, number, number][] = []
       for (const it of items) {
         if (it.end <= s || it.start >= e) continue

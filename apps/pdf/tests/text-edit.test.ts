@@ -11,6 +11,7 @@ import {
   loadPdfium,
   saveDoc,
   validateTextEdits,
+  verifyTextEdits,
   withDocument,
 } from '../src/main/text-edit'
 import { SYNTHETIC_BOLD_STROKE_EM } from '../src/shared/ipc'
@@ -1703,5 +1704,48 @@ describe('eraseTextRuns', () => {
     const { erased, bytes } = await erase(f.bytes, [edit(f, 'Never was here', '')])
     expect(erased).toEqual([false])
     expect(await extractText(bytes)).toBe('Still here')
+  })
+})
+
+describe('Form XObject text editing', () => {
+  function makeFormXObjectPdf(): Uint8Array {
+    const pageStream = 'q 595 0 0 842 0 0 cm /Fm0 Do Q'
+    const formStream =
+      'BT /F1 1 Tf 0.0235294 0 0 0.016627 0.0840336 0.8313539 Tm (Plan Draft 6000) Tj ET'
+    const objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [4 0 R] /Count 1 >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 5 0 R /Resources << /XObject << /Fm0 6 0 R >> >> >>',
+      `<< /Length ${pageStream.length} >>\nstream\n${pageStream}\nendstream`,
+      `<< /Type /XObject /Subtype /Form /BBox [0 0 1 1] /Resources << /Font << /F1 3 0 R >> >> /Length ${formStream.length} >>\nstream\n${formStream}\nendstream`,
+    ]
+    let body = '%PDF-1.4\n'
+    const offsets: number[] = []
+    objects.forEach((obj, i) => {
+      offsets.push(body.length)
+      body += `${i + 1} 0 obj\n${obj}\nendobj\n`
+    })
+    const xref = body.length
+    body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+    for (const off of offsets) body += `${String(off).padStart(10, '0')} 00000 n \n`
+    body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+    return new Uint8Array(Buffer.from(body, 'latin1'))
+  }
+
+  it('validates, applies, and verifies text edits inside a scaled Form XObject', async () => {
+    const bytes = makeFormXObjectPdf()
+    const input: TextEditInput = {
+      pageIndex: 0,
+      rect: [45, 695, 320, 725],
+      oldText: 'Plan Draft 6000',
+      newText: 'Plan Final 6500',
+      fontSize: 18,
+    }
+    const [v] = await validateTextEdits(bytes, [input])
+    expect(v?.reason).toBeNull()
+    const applied = await applyAll(bytes, [input])
+    expect(await verifyTextEdits(applied, [{ pageIndex: 0, newText: 'Plan Final 6500' }])).toEqual([])
+    expect(await extractText(applied)).toContain('Plan Final 6500')
   })
 })

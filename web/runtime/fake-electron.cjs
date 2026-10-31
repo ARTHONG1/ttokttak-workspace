@@ -12,6 +12,7 @@ const path = require('node:path')
 const os = require('node:os')
 const { fork } = require('node:child_process')
 const { fileURLToPath } = require('node:url')
+const zlib = require('node:zlib')
 
 /** set by session-host: (msg) => void, and an async request(msg) => reply */
 const link = { send: () => {}, request: async () => ({}) }
@@ -1249,22 +1250,84 @@ const screen = lenient(
 )
 
 // ---------------------------------------------------------------- nativeImage
-function makeImage(buffer, size) {
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256)
+  for (let n = 0; n < 256; n++) {
+    let c = n
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    t[n] = c >>> 0
+  }
+  return t
+})()
+
+function crc32(buf) {
+  let c = 0xffffffff
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8)
+  return (c ^ 0xffffffff) >>> 0
+}
+
+function pngChunk(type, payload) {
+  const out = Buffer.alloc(12 + payload.length)
+  out.writeUInt32BE(payload.length, 0)
+  out.write(type, 4, 4, 'ascii')
+  payload.copy(out, 8)
+  out.writeUInt32BE(crc32(out.subarray(4, 8 + payload.length)), 8 + payload.length)
+  return out
+}
+
+function bgraToPng(bgra, width, height) {
+  if (!bgra || width <= 0 || height <= 0 || bgra.length < width * height * 4) return Buffer.alloc(0)
+  const stride = width * 4
+  const raw = Buffer.alloc(height * (1 + stride))
+  for (let y = 0; y < height; y++) {
+    const rowOff = y * (1 + stride)
+    raw[rowOff] = 0
+    const srcRow = y * stride
+    for (let x = 0; x < width; x++) {
+      const s = srcRow + x * 4
+      const d = rowOff + 1 + x * 4
+      raw[d] = bgra[s + 2]
+      raw[d + 1] = bgra[s + 1]
+      raw[d + 2] = bgra[s]
+      raw[d + 3] = bgra[s + 3]
+    }
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0)
+  ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8
+  ihdr[9] = 6
+  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+  return Buffer.concat([
+    sig,
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', zlib.deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
+function makeImage(buffer, size, isBitmap = false) {
   const data = buffer ? Buffer.from(buffer) : Buffer.alloc(0)
   let dims = size || { width: 0, height: 0 }
   if (!size && data.length > 24 && data.readUInt32BE(0) === 0x89504e47)
     dims = { width: data.readUInt32BE(16), height: data.readUInt32BE(20) }
+  let cachedPng = null
+  const asPng = () => {
+    if (!isBitmap) return data
+    if (!cachedPng) cachedPng = bgraToPng(data, dims.width, dims.height)
+    return cachedPng
+  }
   return lenient(
     {
       isEmpty: () => data.length === 0,
       getSize: () => ({ ...dims }),
-      toPNG: () => data,
-      toJPEG: () => data,
+      toPNG: () => asPng(),
+      toJPEG: () => asPng(),
       toBitmap: () => data,
       getBitmap: () => data,
-      toDataURL: () => 'data:image/png;base64,' + data.toString('base64'),
-      resize: () => makeImage(data, dims),
-      crop: () => makeImage(data, dims),
+      toDataURL: () => 'data:image/png;base64,' + asPng().toString('base64'),
+      resize: () => makeImage(data, dims, isBitmap),
+      crop: () => makeImage(data, dims, isBitmap),
       getAspectRatio: () => (dims.height ? dims.width / dims.height : 1),
       setTemplateImage() {},
       isTemplateImage: () => false,
@@ -1288,7 +1351,7 @@ const nativeImage = {
     const m = /^data:[^;]+;base64,(.*)$/.exec(String(u || ''))
     return makeImage(m ? Buffer.from(m[1], 'base64') : null)
   },
-  createFromBitmap: (b, o) => makeImage(b, o),
+  createFromBitmap: (b, o) => makeImage(b, o, true),
   createThumbnailFromPath: async (p) => nativeImage.createFromPath(p),
 }
 
