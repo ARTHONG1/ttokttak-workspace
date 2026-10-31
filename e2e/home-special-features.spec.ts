@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test'
 import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
 
 /**
- * Home's 특화 기능 entry: the sidebar opens the feature list in the content pane; the
- * 품의서 생성 page checks its inputs before it calls the AI, and the 퀴즈 생성기 page checks
- * the question count. The AI turns themselves are not run here (no provider in the test app).
+ * Home's three tiles: 문서 업로드, 똑딱업무 and 똑딱수업. 똑딱업무 opens the work tools in the
+ * content pane (the sidebar too); the 품의서 생성 page checks its inputs before it calls the
+ * AI, and 똑딱퀴즈 checks the question count. The AI turns themselves are not run here (no
+ * provider in the test app).
  */
 test('special features open from the home sidebar', async () => {
   const launched = await launchShell({
@@ -14,9 +15,26 @@ test('special features open from the home sidebar', async () => {
   })
   const { page } = launched
   try {
-    await page.getByTestId('home-features-nav').click()
+    await expect(page.locator('.hub-tile')).toHaveCount(3)
+    await expect(page.locator('.hub-title')).toHaveText(['문서 업로드', '똑딱업무', '똑딱수업'])
+    await page.screenshot({ path: screenshotPath('home-hub') })
+
+    // 똑딱수업: still coming, with the way over to 똑딱업무
+    await page.getByTestId('home-hub-class').click()
+    await expect(page.getByTestId('class-tools')).toBeVisible()
+    await expect(page.getByTestId('home-class-nav')).toHaveAttribute('aria-current', 'page')
+    await page.screenshot({ path: screenshotPath('home-class-tools') })
+    await page.getByTestId('class-to-work').click()
+    await expect(page.getByTestId('special-features')).toBeVisible()
+    await expect(page.getByTestId('home-features-nav')).toHaveAttribute('aria-current', 'page')
+    await page.locator('.nav-item').first().click()
+
+    await page.getByTestId('home-hub-work').click()
     await expect(page.getByTestId('special-features')).toBeVisible()
     await page.screenshot({ path: screenshotPath('home-special-features-list') })
+    await page.locator('.nav-item').first().click()
+    await page.getByTestId('home-features-nav').click()
+    await expect(page.getByTestId('special-features')).toBeVisible()
 
     await page.getByTestId('special-feature-proposal').click()
     await expect(page.getByRole('heading', { name: '품의서 생성' })).toBeVisible()

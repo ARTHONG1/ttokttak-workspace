@@ -64,6 +64,8 @@ import { agentText } from './i18n/strings-agent'
 import { DriveNavIcon, DrivePanel, useDriveState } from './DrivePanel'
 import { driveUiText } from './i18n/strings-drive'
 import { isWebEdition } from './edition'
+import { ClassTools } from './ClassTools'
+import { HubTiles, type HubPage } from './HubTiles'
 import { SpecialFeatures } from './SpecialFeatures'
 
 declare global {
@@ -1084,8 +1086,9 @@ export function Home({
   const [askMode, setAskMode] = useState(false)
   // Google Drive (decision 0033) takes over the content area the same way
   const [driveMode, setDriveMode] = useState(false)
-  // 특화 기능 (SpecialFeatures.tsx) takes over the content area the same way
-  const [featuresMode, setFeaturesMode] = useState(false)
+  // 똑딱업무 (SpecialFeatures.tsx) and 똑딱수업 (ClassTools.tsx) take over the content area
+  // the same way
+  const [hubPage, setHubPage] = useState<HubPage | null>(null)
   const driveState = useDriveState()
   const driveOffered = driveState !== null && driveState.state !== 'unavailable'
   const [filter, setFilter] = useState('all')
@@ -1573,10 +1576,20 @@ export function Home({
     setSelectedFolder(null)
     setAskMode(false)
     setDriveMode(false)
-    setFeaturesMode(false)
+    setHubPage(null)
     setSelected(new Set())
     setRowMenu(null)
     setGroupFilter(null)
+  }
+
+  /** the hub tiles and the sidebar open 똑딱업무 and 똑딱수업 in the content area */
+  const openHubPage = (page: HubPage) => {
+    setHubPage(page)
+    setAskMode(false)
+    setDriveMode(false)
+    setSelectedFolder(null)
+    setSelected(new Set())
+    setRowMenu(null)
   }
 
   const changeFilter = (key: string) => {
@@ -1595,7 +1608,7 @@ export function Home({
     setSelectedFolder(dir)
     setAskMode(false)
     setDriveMode(false)
-    setFeaturesMode(false)
+    setHubPage(null)
     setSelected(new Set())
     setRowMenu(null)
     setFolderMenu(null)
@@ -1909,27 +1922,22 @@ export function Home({
     },
   ]
 
-  // Opening an existing file has one entry, on the home and folder views alike:
-  // a zone that takes a click (browse) or a dropped file
-  function renderUploadZone() {
+  // The three ways in, on the home and folder views alike: open an existing file (a click
+  // browses; a file dropped anywhere on the window opens too), 똑딱업무 and 똑딱수업
+  function renderHub() {
     return (
-      <button
-        type="button"
-        className="upload-zone"
-        data-testid="home-upload-document"
-        onClick={() => void window.aiOffice.browse()}
-      >
-        <span className="upload-zone-icon" aria-hidden="true">
-          <FolderIcon size={22} />
-        </span>
-        <span className="upload-zone-text">
-          <span className="upload-zone-title">{t('uploadDocTitle')}</span>
-          <span className="upload-zone-sub">{t('uploadDocSub')}</span>
-        </span>
-        <span className="upload-zone-action" aria-hidden="true">
-          {t('openLocal')}
-        </span>
-      </button>
+      <HubTiles
+        uploadTitle={t('uploadDocTitle')}
+        uploadSub={t('uploadDocSub')}
+        uploadGo={t('openLocal')}
+        testIds={{
+          upload: 'home-upload-document',
+          work: 'home-hub-work',
+          class: 'home-hub-class',
+        }}
+        onUpload={() => void window.aiOffice.browse()}
+        onOpen={openHubPage}
+      />
     )
   }
 
@@ -2947,7 +2955,7 @@ export function Home({
           }
           return
         }
-      } else if (event.key === ' ' && !askMode && !driveMode && !featuresMode) {
+      } else if (event.key === ' ' && !askMode && !driveMode && !hubPage) {
         const checkedPath = selectedFolder ? folderSelectedPaths[0] : selectedPaths[0]
         const candidate = hoveredFilePathRef.current ?? checkedPath ?? null
         if (candidate) {
@@ -2984,7 +2992,7 @@ export function Home({
     return (
       <main className="content">
         <section className="quick-start" aria-label={t('secQuickStart')}>
-          {renderUploadZone()}
+          {renderHub()}
           {renderQuickCards()}
         </section>
 
@@ -3110,7 +3118,7 @@ export function Home({
               <span className="hero-ask">{t(greetAskKey)}</span>
             </h1>
           </div>
-          {renderUploadZone()}
+          {renderHub()}
           {renderQuickCards()}
         </section>
 
@@ -3280,8 +3288,7 @@ export function Home({
       return parent?.folders.some((f) => f.path === p) ?? false
     })
 
-  const activeNav =
-    !selectedFolder && !driveMode ? (askMode ? 'ask' : featuresMode ? 'features' : view) : null
+  const activeNav = !selectedFolder && !driveMode ? (askMode ? 'ask' : (hubPage ?? view)) : null
 
   const onSidebarResizeStart = (e: ReactPointerEvent<HTMLDivElement>) => {
     const startX = e.clientX
@@ -3361,7 +3368,7 @@ export function Home({
             onClick={() => {
               setAskMode(true)
               setDriveMode(false)
-              setFeaturesMode(false)
+              setHubPage(null)
               setSelectedFolder(null)
               setSelected(new Set())
               setRowMenu(null)
@@ -3384,53 +3391,52 @@ export function Home({
             <span className="nav-label">{t('navAsk')}</span>
           </button>
           <button
-            className={`nav-item nav-item-features${activeNav === 'features' ? ' active' : ''}`}
-            aria-current={activeNav === 'features' ? 'page' : undefined}
+            className={`nav-item nav-item-features${activeNav === 'work' ? ' active' : ''}`}
+            aria-current={activeNav === 'work' ? 'page' : undefined}
             data-testid="home-features-nav"
-            onClick={() => {
-              setFeaturesMode(true)
-              setAskMode(false)
-              setDriveMode(false)
-              setSelectedFolder(null)
-              setSelected(new Set())
-              setRowMenu(null)
-            }}
+            onClick={() => openHubPage('work')}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect
                 x="2"
-                y="2"
-                width="5"
-                height="5"
-                rx="1.4"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <rect
-                x="9"
-                y="2"
-                width="5"
-                height="5"
-                rx="1.4"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <rect
-                x="2"
-                y="9"
-                width="5"
-                height="5"
-                rx="1.4"
+                y="4.6"
+                width="12"
+                height="9"
+                rx="1.8"
                 stroke="currentColor"
                 strokeWidth="1.3"
               />
               <path
-                d="M11.5 8.6l.55 1.35 1.35.55-1.35.55-.55 1.35-.55-1.35-1.35-.55 1.35-.55z"
-                fill="currentColor"
+                d="M5.8 4.6v-1A1.1 1.1 0 0 1 6.9 2.5h2.2a1.1 1.1 0 0 1 1.1 1.1v1M2 8.4h12"
+                stroke="currentColor"
+                strokeWidth="1.3"
               />
             </svg>
-            <span className="nav-label">특화 기능</span>
+            <span className="nav-label">똑딱업무</span>
             <span className="nav-count nav-new">NEW</span>
+          </button>
+          <button
+            className={`nav-item${activeNav === 'class' ? ' active' : ''}`}
+            aria-current={activeNav === 'class' ? 'page' : undefined}
+            data-testid="home-class-nav"
+            onClick={() => openHubPage('class')}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M1.6 6.1 8 2.9l6.4 3.2L8 9.3 1.6 6.1Z"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M4.2 7.4v3.1c0 1 1.7 2.1 3.8 2.1s3.8-1.1 3.8-2.1V7.4M14.4 6.1v3.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="nav-label">똑딱수업</span>
           </button>
           {/* decision 0032: the agent opens a window of its own, hence the mark on the right */}
           {window.aiOfficeAgent && !isWebEdition() ? (
@@ -3472,7 +3478,7 @@ export function Home({
               onClick={() => {
                 setDriveMode(true)
                 setAskMode(false)
-                setFeaturesMode(false)
+                setHubPage(null)
                 setSelectedFolder(null)
                 setSelected(new Set())
                 setRowMenu(null)
@@ -3510,8 +3516,10 @@ export function Home({
           onOpenPath={(path) => void window.aiOffice.openPath(path)}
           onGoToRecents={() => changeView('recent')}
         />
-      ) : featuresMode ? (
+      ) : hubPage === 'work' ? (
         <SpecialFeatures variant="desktop" />
+      ) : hubPage === 'class' ? (
+        <ClassTools variant="desktop" onWork={() => openHubPage('work')} />
       ) : (
         renderGlobalContent()
       )}

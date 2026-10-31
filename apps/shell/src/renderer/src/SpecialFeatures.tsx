@@ -229,9 +229,9 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
   return (
     <div className="sf-list">
       <header className="sf-head">
-        <span className="sf-eyebrow">똑딱작업실 특화 기능</span>
-        <h1>학교·기관 업무에 맞춘 문서 도구</h1>
-        <p>자주 쓰는 업무 문서를 양식에 맞춰 빠르게 만들어요. 기능은 계속 늘어납니다.</p>
+        <span className="sf-eyebrow">똑딱업무</span>
+        <h1>학교 업무 문서를 양식에 맞춰</h1>
+        <p>자주 쓰는 업무 문서를 AI와 함께 빠르게 만들어요. 도구는 계속 늘어납니다.</p>
       </header>
       <div className="sf-grid">
         {FEATURES.map((f) => (
@@ -421,7 +421,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   return (
     <div className="sf-page">
       <div className="sf-page-bar">
-        <Back onClick={onBack} label="특화 기능" />
+        <Back onClick={onBack} label="똑딱업무" />
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">

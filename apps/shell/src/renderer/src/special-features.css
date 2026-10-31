@@ -622,3 +622,100 @@ button.sf-card:hover .sf-card-go svg {
   font-size: 12px;
   color: var(--sf-ink-3);
 }
+
+/* 똑딱수업 (ClassTools.tsx): the coming page */
+.ct-eyebrow {
+  background: rgb(16 185 129 / 12%);
+  color: #0e9f6e;
+}
+.ct-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 40px 24px 36px;
+  border: 1px solid var(--sf-line);
+  border-radius: 20px;
+  background:
+    radial-gradient(420px 220px at 50% 0%, rgb(16 185 129 / 10%), transparent 70%), var(--sf-card);
+  text-align: center;
+}
+.ct-mark {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 8px;
+  border-radius: 22px;
+  background: linear-gradient(140deg, #0e9f6e, #3ccf98);
+  color: #ffffff;
+  box-shadow: 0 14px 28px -16px #0e9f6e;
+}
+.ct-empty h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.ct-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--sf-ink-2);
+}
+.ct-work {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  margin-top: 14px;
+  padding: 0 16px;
+  border: 1px solid var(--sf-line);
+  border-radius: 11px;
+  background: var(--sf-card);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sf-ink);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.ct-work:hover {
+  border-color: #7357f6;
+  color: #7357f6;
+}
+.ct-work:active {
+  transform: translateY(1px);
+}
+.ct-work svg {
+  transition: transform 0.2s var(--sf-ease);
+}
+.ct-work:hover svg {
+  transform: translateX(2px);
+}
+.ct-card {
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-height: 132px;
+  text-align: left;
+}
+.ct-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.ct-card .sf-card-sum {
+  max-width: none;
+}
+.ct-soon {
+  height: 22px;
+  margin-bottom: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--sf-soft);
+  box-shadow: 0 0 0 1px var(--sf-line) inset;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 22px;
+  color: var(--sf-ink-3);
+}

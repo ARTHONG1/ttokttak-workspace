@@ -105,161 +105,23 @@
   color: var(--t-ink-2);
 }
 
-/* ---- drop zone: the one big action ---- */
-.trial-drop {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  width: 100%;
+/* the hub tiles sit right under the hero */
+.trial .hub-wrap {
   margin-top: 32px;
-  padding: 26px 28px;
-  border: 1.5px solid transparent;
-  border-radius: 24px;
-  background:
-    linear-gradient(var(--t-card), var(--t-card)) padding-box,
-    linear-gradient(120deg, var(--t-blue), var(--t-violet) 55%, var(--t-yellow)) border-box;
-  box-shadow: var(--t-shadow-md);
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    transform 0.2s var(--t-ease),
-    box-shadow 0.2s ease;
 }
-.trial-drop:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    var(--t-shadow-md),
-    0 0 0 6px var(--t-blue-soft);
-}
-.trial-drop:active {
-  transform: translateY(0) scale(0.997);
-}
-.trial-drop-icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: linear-gradient(140deg, var(--t-blue), var(--t-violet));
-  color: var(--t-on-accent);
-  box-shadow: var(--t-shadow-cta);
-  transition: transform 0.2s var(--t-ease);
-}
-.trial-drop:hover .trial-drop-icon {
-  transform: translateY(-3px);
-}
-.trial-drop-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.trial-drop-title {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-}
-.trial-drop-sub {
-  font-size: 14.5px;
-  color: var(--t-ink-2);
-}
-.trial-formats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 10px;
-}
-.trial-format {
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: var(--t-bg);
-  box-shadow: 0 0 0 1px var(--t-line) inset;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 22px;
-  letter-spacing: 0.02em;
-  color: var(--t-ink-2);
-}
-.trial-drop-cta {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 20px;
-  border-radius: 14px;
-  background: var(--t-blue);
-  color: var(--t-on-accent);
-  font-size: 15.5px;
-  font-weight: 700;
-  box-shadow: var(--t-shadow-cta);
-  transition: background 0.15s ease;
-}
-.trial-drop:hover .trial-drop-cta {
-  background: var(--t-blue-2);
-}
-.trial-drop:hover .trial-arrow,
-.trial-sample:hover .trial-arrow {
-  transform: translateX(3px);
+.trial .hub {
+  --hub-card: var(--t-card);
+  --hub-soft: var(--t-bg);
+  --hub-line: var(--t-line);
+  --hub-ink: var(--t-ink);
+  --hub-ink-2: var(--t-ink-2);
+  --hub-ink-3: var(--t-ink-3);
 }
 .trial-arrow {
   transition: transform 0.2s var(--t-ease);
 }
-.is-dragging .trial-drop {
-  transform: scale(1.01);
-  box-shadow:
-    var(--t-shadow-md),
-    0 0 0 8px var(--t-blue-soft);
-}
-.is-dragging .trial-drop-title {
-  color: var(--t-blue);
-}
-
-/* ---- three steps ---- */
-.trial-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.trial-steps li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--t-card);
-  box-shadow: 0 0 0 1px var(--t-line) inset;
-}
-.trial-steps b {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  background: var(--t-blue-soft);
-  color: var(--t-blue);
-  font-size: 14px;
-  font-weight: 800;
-}
-.trial-steps span {
-  display: flex;
-  flex-direction: column;
-  font-size: 12.5px;
-  color: var(--t-ink-3);
-}
-.trial-steps strong {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--t-ink);
+.trial-sample:hover .trial-arrow {
+  transform: translateX(3px);
 }
 
 /* ---- sections ---- */
@@ -587,93 +449,6 @@
   outline-offset: 3px;
 }
 
-/* ---- 특화 기능 entry ---- */
-.trial-features {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  margin-top: 16px;
-  padding: 16px 20px;
-  border: 0;
-  border-radius: 20px;
-  background: var(--t-card);
-  box-shadow:
-    0 0 0 1px var(--t-line) inset,
-    var(--t-shadow-sm);
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    transform 0.2s var(--t-ease),
-    box-shadow 0.2s ease;
-}
-.trial-features:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px var(--t-violet) inset,
-    var(--t-shadow-md);
-}
-.trial-features-icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 15px;
-  background: linear-gradient(140deg, var(--t-violet), var(--t-blue));
-  color: var(--t-on-accent);
-}
-.trial-features-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.trial-features-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.trial-features-title i {
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: var(--t-yellow);
-  color: var(--t-ink);
-  font-size: 10.5px;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 20px;
-  letter-spacing: 0.04em;
-}
-.trial-features-sub {
-  font-size: 14px;
-  color: var(--t-ink-2);
-}
-.trial-features-go {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--t-violet);
-}
-.trial-features:hover .trial-arrow {
-  transform: translateX(3px);
-}
-@media (max-width: 620px) {
-  .trial-features-go {
-    display: none;
-  }
-}
-
 @media (max-width: 860px) {
   .trial-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -683,28 +458,6 @@
   }
 }
 @media (max-width: 620px) {
-  .trial-drop {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 22px;
-  }
-  .trial-drop-cta {
-    width: 100%;
-    justify-content: center;
-  }
-  .trial-steps {
-    gap: 6px;
-  }
-  .trial-steps li {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 10px;
-  }
-  .trial-steps span {
-    font-size: 11.5px;
-  }
   .trial-tile {
     min-height: 0;
   }

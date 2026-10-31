@@ -10,6 +10,8 @@ import iconMd from './assets/file-md.svg'
 import iconHtml from './assets/file-html.svg'
 import iconMindmap from './assets/file-mindmap.svg'
 import iconEpub from './assets/file-epub.svg'
+import { ClassTools } from './ClassTools'
+import { HubTiles, type HubPage } from './HubTiles'
 import { SpecialFeatures } from './SpecialFeatures'
 import './trial-home.css'
 
@@ -36,21 +38,6 @@ const ICONS: Record<string, string> = {
   xmind: iconMindmap,
   epub: iconEpub,
 }
-
-/** what the open dialog takes, as shown on the drop zone */
-const OPENABLE = [
-  'HWP',
-  'HWPX',
-  'DOCX',
-  'XLSX',
-  'PPTX',
-  'PDF',
-  'MD',
-  'HTML',
-  'XMIND',
-  'EPUB',
-  'CSV',
-]
 
 interface Sample {
   file: string
@@ -222,7 +209,7 @@ export function TrialHome(): ReactElement {
   const sampleDir = useSampleDir()
   const recents = useRecents()
   const [dragging, setDragging] = useState(false)
-  const [featuresOpen, setFeaturesOpen] = useState(false)
+  const [page, setPage] = useState<HubPage | null>(null)
 
   useEffect(() => {
     let depth = 0
@@ -257,10 +244,14 @@ export function TrialHome(): ReactElement {
     if (sampleDir) void window.aiOffice.openPath(sampleDir + s.file)
   }
 
-  if (featuresOpen) {
+  if (page) {
     return (
       <div className="trial">
-        <SpecialFeatures variant="web" onExit={() => setFeaturesOpen(false)} />
+        {page === 'work' ? (
+          <SpecialFeatures variant="web" onExit={() => setPage(null)} />
+        ) : (
+          <ClassTools variant="web" onExit={() => setPage(null)} onWork={() => setPage('work')} />
+        )}
       </div>
     )
   }
@@ -285,123 +276,14 @@ export function TrialHome(): ReactElement {
           </p>
         </header>
 
-        <button
-          type="button"
-          className="trial-drop"
-          data-testid="trial-open"
-          onClick={() => void window.aiOffice.browse()}
-        >
-          <span className="trial-drop-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 15V4.5M7.5 9l4.5-4.5L16.5 9"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M4.5 14.5v3A2 2 0 0 0 6.5 19.5h11a2 2 0 0 0 2-2v-3"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <span className="trial-drop-body">
-            <span className="trial-drop-title">
-              {dragging ? '여기에 놓으면 바로 열려요' : '내 문서 열기'}
-            </span>
-            <span className="trial-drop-sub">파일을 이 화면에 끌어다 놓거나, 눌러서 고르세요</span>
-            <span className="trial-formats" aria-label="열 수 있는 형식">
-              {OPENABLE.map((f) => (
-                <span key={f} className="trial-format">
-                  {f}
-                </span>
-              ))}
-            </span>
-          </span>
-          <span className="trial-drop-cta" aria-hidden="true">
-            파일 고르기
-            <Arrow />
-          </span>
-        </button>
-
-        <ol className="trial-steps" aria-label="사용 순서">
-          <li>
-            <b>1</b>
-            <span>
-              <strong>열기</strong>내 문서나 빈 문서
-            </span>
-          </li>
-          <li>
-            <b>2</b>
-            <span>
-              <strong>말하기</strong>오른쪽 AI에게 요청
-            </span>
-          </li>
-          <li>
-            <b>3</b>
-            <span>
-              <strong>저장</strong>고친 문서 내려받기
-            </span>
-          </li>
-        </ol>
-
-        <button
-          type="button"
-          className="trial-features"
-          data-testid="trial-features"
-          onClick={() => setFeaturesOpen(true)}
-        >
-          <span className="trial-features-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-              <rect
-                x="2"
-                y="2"
-                width="5"
-                height="5"
-                rx="1.4"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <rect
-                x="9"
-                y="2"
-                width="5"
-                height="5"
-                rx="1.4"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <rect
-                x="2"
-                y="9"
-                width="5"
-                height="5"
-                rx="1.4"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <path
-                d="M11.5 8.6l.55 1.35 1.35.55-1.35.55-.55 1.35-.55-1.35-1.35-.55 1.35-.55z"
-                fill="currentColor"
-              />
-            </svg>
-          </span>
-          <span className="trial-features-body">
-            <span className="trial-features-title">
-              특화 기능 <i>NEW</i>
-            </span>
-            <span className="trial-features-sub">
-              품의서처럼 학교·기관에서 자주 쓰는 문서를 양식에 맞춰 만들어요
-            </span>
-          </span>
-          <span className="trial-features-go" aria-hidden="true">
-            둘러보기
-            <Arrow />
-          </span>
-        </button>
+        <HubTiles
+          dragging={dragging}
+          uploadTitle="문서 업로드"
+          uploadSub="내 문서를 열고 AI에게 말하면 고쳐 줘요. 이 화면에 끌어다 놓아도 돼요."
+          testIds={{ upload: 'trial-open', work: 'trial-features', class: 'trial-class' }}
+          onUpload={() => void window.aiOffice.browse()}
+          onOpen={setPage}
+        />
 
         <section className="trial-section" aria-labelledby="trial-new">
           <div className="trial-section-head">

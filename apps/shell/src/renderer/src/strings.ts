@@ -2118,9 +2118,8 @@ export const strings = {
     newPdf: 'PDF 문서',
     openLocal: '파일 고르기',
     dropToOpenTitle: '놓아서 파일 열기',
-    uploadDocTitle: '내 문서 불러오기',
-    uploadDocSub:
-      '한글(HWP·HWPX)·워드·엑셀·PPT·PDF 파일을 여기로 끌어다 놓거나 눌러서 고르세요. 문서가 열리면 왼쪽 AI 도우미에게 고칠 내용을 말하면 됩니다.',
+    uploadDocTitle: '문서 업로드',
+    uploadDocSub: '한글·워드·엑셀·PPT·PDF를 열고 AI에게 말해서 고쳐요. 창에 끌어다 놓아도 열려요.',
     greetMorning: '좋은 아침이에요',
     greetAfternoon: '안녕하세요',
     greetEvening: '좋은 저녁이에요',

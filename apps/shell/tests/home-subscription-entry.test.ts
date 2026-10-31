@@ -193,8 +193,8 @@ describe('home settings entry', () => {
 describe('home screen without the removed areas', () => {
   it('has no cloud projects entry, sign-in or credits', async () => {
     await renderHome(statuses({ state: 'ready' }, { state: 'ready' }))
-    // recents, starred, the knowledge-base ask panel and 특화 기능
-    expect(host.querySelectorAll('.sidebar-nav .nav-item')).toHaveLength(4)
+    // recents, starred, the knowledge-base ask panel, 똑딱업무 and 똑딱수업
+    expect(host.querySelectorAll('.sidebar-nav .nav-item')).toHaveLength(5)
     expect(host.querySelector('.login-hint, .cloud-projects, .nav-external')).toBeNull()
     expect(host.textContent).not.toMatch(/credits|sign in/i)
   })

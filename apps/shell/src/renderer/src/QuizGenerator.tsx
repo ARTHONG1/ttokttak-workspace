@@ -872,7 +872,7 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
   return (
     <div className="sf-page qz-page">
       <div className="sf-page-bar">
-        <Back onClick={onBack} label="특화 기능" />
+        <Back onClick={onBack} label="똑딱업무" />
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">

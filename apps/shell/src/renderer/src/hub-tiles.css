@@ -1,0 +1,226 @@
+/* The three entry tiles (HubTiles.tsx). Colours come from the host: the desktop home's theme
+   tokens (light and dark), or the web trial's palette set on .trial. Motion is transform and
+   opacity only and follows prefers-reduced-motion (AGENTS.md: keep the Mac light). */
+.hub-wrap {
+  container-type: inline-size;
+}
+.hub {
+  --hub-card: var(--surface, #ffffff);
+  --hub-soft: var(--surface-subtle, #f6f7f9);
+  --hub-line: var(--border, #e3e6ea);
+  --hub-ink: var(--text-primary, #232425);
+  --hub-ink-2: var(--text-secondary, #606366);
+  --hub-ink-3: var(--text-tertiary, #909499);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  word-break: keep-all;
+}
+.hub-tile {
+  --c: #2f6bff;
+  --c2: #6a8dff;
+  --c-soft: rgb(47 107 255 / 10%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 236px;
+  padding: 22px 22px 20px;
+  overflow: hidden;
+  border: 1px solid var(--hub-line);
+  border-radius: 20px;
+  background:
+    radial-gradient(260px 170px at 100% 0%, var(--c-soft), transparent 72%), var(--hub-card);
+  font: inherit;
+  color: var(--hub-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.hub-tile[data-hub='work'] {
+  --c: #7357f6;
+  --c2: #a78bfa;
+  --c-soft: rgb(124 92 255 / 12%);
+}
+.hub-tile[data-hub='class'] {
+  --c: #0e9f6e;
+  --c2: #3ccf98;
+  --c-soft: rgb(16 185 129 / 12%);
+}
+.hub-tile:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--c) 55%, var(--hub-line));
+  box-shadow: 0 18px 38px -22px color-mix(in srgb, var(--c) 70%, transparent);
+}
+.hub-tile:active {
+  transform: translateY(-1px);
+}
+.hub-tile:focus-visible {
+  outline: 2px solid var(--c);
+  outline-offset: 3px;
+}
+.hub-tile.is-dragging {
+  border: 1.5px dashed var(--c);
+  transform: scale(1.015);
+  box-shadow: 0 0 0 6px var(--c-soft);
+}
+/* the tile's own icon, large and faint in the lower right corner */
+.hub-mark {
+  position: absolute;
+  right: -18px;
+  bottom: -22px;
+  color: var(--c);
+  opacity: 0.07;
+  pointer-events: none;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+.hub-mark svg {
+  display: block;
+  width: 150px;
+  height: 150px;
+}
+/* the tile's content paints over the corner icon */
+.hub-tile > :not(.hub-mark) {
+  position: relative;
+}
+.hub-tile:hover .hub-mark {
+  opacity: 0.11;
+  transform: translate(-4px, -4px) rotate(-6deg);
+}
+.hub-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 18px;
+}
+.hub-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  background: linear-gradient(140deg, var(--c), var(--c2));
+  color: #ffffff;
+  box-shadow: 0 12px 24px -14px var(--c);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hub-tile:hover .hub-icon {
+  transform: translateY(-2px) rotate(-4deg);
+}
+.hub-badge {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 14%, var(--hub-card));
+  color: var(--c);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 22px;
+  letter-spacing: 0.03em;
+}
+.hub-tile[data-hub='work'] .hub-badge {
+  background: #ffd84d;
+  color: #3b2f00;
+}
+.hub-title {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+.hub-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--hub-ink-2);
+}
+.hub-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.hub-chip {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: var(--hub-soft);
+  box-shadow: 0 0 0 1px var(--hub-line) inset;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: 0.01em;
+  color: var(--hub-ink-2);
+}
+.hub-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--c);
+}
+.hub-go svg {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hub-tile:hover .hub-go svg {
+  transform: translateX(3px);
+}
+
+/* a narrow column: the tiles stack, each a row with the icon on the left */
+@container (max-width: 720px) {
+  .hub {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .hub-tile {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    column-gap: 16px;
+    align-items: center;
+    min-height: 0;
+    padding: 16px 18px;
+  }
+  .hub-top {
+    grid-row: 1 / span 3;
+    margin: 0;
+  }
+  .hub-top .hub-badge {
+    display: none;
+  }
+  .hub-mark {
+    display: none;
+  }
+  .hub-title {
+    font-size: 17px;
+  }
+  .hub-sub {
+    margin-top: 2px;
+    font-size: 13px;
+  }
+  .hub-chips {
+    display: none;
+  }
+  .hub-go {
+    margin-top: 6px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-tile,
+  .hub-icon,
+  .hub-mark,
+  .hub-go svg {
+    transition: none;
+  }
+}

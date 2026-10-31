@@ -21,17 +21,18 @@ test.describe('home screen', () => {
       await expect(page.locator('.quick-card').nth(7)).toContainText('Mind Map')
       await expect(page.locator('.quick-card').nth(8)).toContainText('PDF tools')
       await expect(page.locator('.ai-chip')).toHaveCount(0)
-      // the agent is not a document to make: it sits in the sidebar, under Ask AI
+      // the agent is not a document to make: it sits in the sidebar, under Ask AI and the
+      // 똑딱업무 / 똑딱수업 pages
       const nav = page.locator('.sidebar-nav .nav-label')
-      await expect(nav).toHaveText(['Recent', 'Starred', 'Ask AI', 'Agent'])
-      await expect(page.locator('.sidebar-nav .nav-item').nth(3)).toHaveAttribute(
+      await expect(nav).toHaveText(['Recent', 'Starred', 'Ask AI', '똑딱업무', '똑딱수업', 'Agent'])
+      await expect(page.locator('.sidebar-nav .nav-item').nth(5)).toHaveAttribute(
         'title',
         'Work in a folder with Claude Code or Codex',
       )
       await expect(page.locator('.tab-bar .tab-item.tab-home')).toBeVisible()
       await page.screenshot({ path: screenshotPath('home-overview') })
       // clicking it opens the agent window
-      await page.locator('.sidebar-nav .nav-item').nth(3).click()
+      await page.locator('.sidebar-nav .nav-item').nth(5).click()
       const agent = await waitForPageWithUrl(launched.app, 'agent.html', 30_000)
       await expect(agent.locator('.agent')).toBeVisible()
     } finally {

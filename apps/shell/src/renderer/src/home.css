@@ -221,7 +221,7 @@ body.vib .home {
   justify-content: center;
 }
 
-/* 특화 기능: a small mark for the new entry */
+/* 똑딱업무: a small mark for the new entry */
 .nav-new {
   min-width: 0;
   padding: 0 6px;
@@ -368,72 +368,6 @@ body.vib .home {
   font-weight: 500;
 }
 
-/* the first thing on the home page: bring an existing document in (click or drop) */
-.upload-zone {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 14px;
-  padding: 22px 24px;
-  border: 1.5px dashed var(--accent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    box-shadow 0.12s;
-}
-
-.upload-zone:hover {
-  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
-  box-shadow: 0 3px 12px rgb(0 0 0 / 8%);
-}
-
-.upload-zone-icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #fff;
-}
-
-.upload-zone-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-/* looks like a button so the zone reads as clickable, not only droppable */
-.upload-zone-action {
-  flex: none;
-  padding: 8px 16px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.upload-zone-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.upload-zone-sub {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
 /* "Create new": one compact row of tiles under its own label */
 .quick-new {
   margin-top: 26px;
@@ -482,8 +416,7 @@ body.vib .home {
   transform: translateY(1px);
 }
 
-.quick-card:focus-visible,
-.upload-zone:focus-visible {
+.quick-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
