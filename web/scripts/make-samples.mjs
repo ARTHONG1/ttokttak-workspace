@@ -8,8 +8,8 @@ import JSZip from 'jszip'
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'runtime', 'samples')
 mkdirSync(OUT, { recursive: true })
 
-// 한글: the plan used on the intro page
-copyFileSync(join(OUT, '..', '..', '..', '..', 'samples', '2026_AI문서혁신_추진계획안.hwpx'), join(OUT, '사업 추진계획(안).hwpx'))
+// 한글: a school field-trip plan with a budget table to fix
+copyFileSync(join(OUT, '..', '..', '..', '..', 'samples', '2026_현장체험학습_운영계획안.hwpx'), join(OUT, '현장체험학습 운영계획(안).hwpx'))
 
 // 워드: a short notice to polish
 const p = (text, opts = {}) => new Paragraph({ spacing: { after: 160, line: 360 }, ...opts, children: [new TextRun({ text, font: 'Malgun Gothic', size: 22, ...(opts.run || {}) })] })

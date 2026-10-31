@@ -48,10 +48,10 @@ interface Sample {
 
 const SAMPLES: Sample[] = [
   {
-    file: '사업 추진계획(안).hwpx',
-    title: '사업 추진계획',
+    file: '현장체험학습 운영계획(안).hwpx',
+    title: '현장체험학습 계획',
     ext: 'hwpx',
-    ask: '제목을 최종안으로 바꾸고, 3단계 예산을 1,800만 원으로 고쳐 줘',
+    ask: '제목을 최종안으로 바꾸고, 2차 예산을 650만 원으로 고치고 합계도 맞춰 줘',
   },
   {
     file: '독서 행사 안내문.docx',
