@@ -1,3 +1,4 @@
+import { INTRO_LINKS, isIntroLinkKey } from '../shared/intro-links'
 import { execSync, spawn } from 'node:child_process'
 import {
   existsSync,
@@ -5761,8 +5762,8 @@ function registerHomeIpc(): void {
   )
 
   ipcMain.handle(HOME_CHANNELS.openFeatureLink, (_event, site: unknown) => {
-    if (site !== 'blooket' && site !== 'quizn') return
-    const url = safeExternalUrl(FEATURE_LINKS[site])
+    if (site !== 'blooket' && site !== 'quizn' && !isIntroLinkKey(site)) return
+    const url = safeExternalUrl(isIntroLinkKey(site) ? INTRO_LINKS[site] : FEATURE_LINKS[site])
     if (!url) return
     shell.openExternal(url).catch(() => {
       // no browser handler available; nothing actionable for the user here

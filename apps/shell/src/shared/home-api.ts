@@ -280,7 +280,7 @@ export interface HomeApi {
   /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
   readFeatureAsset(name: string): Promise<Uint8Array | null>
   /** 특화 기능: open one of the fixed partner sites (Blooket, QuizN) in the browser */
-  openFeatureLink(site: 'blooket' | 'quizn'): Promise<void>
+  openFeatureLink(site: 'blooket' | 'quizn' | import('./intro-links').IntroLinkKey): Promise<void>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>
   /** open an existing file, routing to the right module by extension */
