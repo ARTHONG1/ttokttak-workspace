@@ -13,6 +13,7 @@ import iconEpub from './assets/file-epub.svg'
 import { ClassTools } from './ClassTools'
 import { HubTiles, type HubPage } from './HubTiles'
 import { SpecialFeatures } from './SpecialFeatures'
+import { isWebEdition } from './edition'
 import './trial-home.css'
 
 /**
@@ -248,7 +249,11 @@ export function TrialHome(): ReactElement {
         )}
 
         <footer className="trial-foot">
-          <p className="trial-note">체험판은 문서를 잠시만 보관해요. 저장한 뒤 내려받아 두세요.</p>
+          <p className="trial-note">
+            {isWebEdition()
+              ? '체험판은 문서를 잠시만 보관해요. 저장한 뒤 내려받아 두세요.'
+              : '작업을 마치면 문서를 저장해 주세요.'}
+          </p>
           <a
             className="trial-maker"
             href="https://classddok.com"

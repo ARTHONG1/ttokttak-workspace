@@ -213,12 +213,12 @@ const SECTIONS: readonly SectionEntry[] = [
 const WEB_HIDDEN_SECTIONS: readonly SectionId[] = ['account', 'integrations']
 
 function visibleSections(): readonly SectionEntry[] {
-  return isWebEdition() ? SECTIONS.filter((s) => !WEB_HIDDEN_SECTIONS.includes(s.id)) : SECTIONS
+  return SECTIONS.filter((s) => !WEB_HIDDEN_SECTIONS.includes(s.id))
 }
 
 function openableSection(id: SectionId | undefined): SectionId {
   if (id && !(isWebEdition() && WEB_HIDDEN_SECTIONS.includes(id))) return id
-  return isWebEdition() ? 'aiModel' : 'account'
+  return 'aiModel'
 }
 
 function SectionIcon({ id }: { id: SectionId }) {
@@ -1733,25 +1733,41 @@ export function SettingsModal({
               />
             )}
             {navSection === 'aiModel' && (
-              <AiSection
-                t={t}
-                lang={lang}
-                connection={connection}
-                openTab={section === 'aiMedia' ? 'media' : undefined}
-                advanced={(tab) =>
-                  tab === 'model' ? (
-                    <AiModelPane t={t} />
-                  ) : (
-                    <AiMediaPane
+              <>
+                <AiSection
+                  t={t}
+                  lang={lang}
+                  connection={connection}
+                  openTab={section === 'aiMedia' ? 'media' : undefined}
+                  advanced={(tab) =>
+                    tab === 'model' ? (
+                      <AiModelPane t={t} />
+                    ) : (
+                      <AiMediaPane
+                        t={t}
+                        lang={lang}
+                        codexImageAvailable={connection.codexImageAvailable}
+                        onFileSearchChange={onFileSearchChange}
+                        focusBlock={target?.block}
+                      />
+                    )
+                  }
+                />
+                {!isWebEdition() && (
+                  <details className="set-field">
+                    <summary>
+                      {t('setSecIntegrations')}
+                      {updateDue && (
+                        <span className="set-nav-dot" role="img" aria-label={t('intgUpdateDue')} />
+                      )}
+                    </summary>
+                    <IntegrationsPane
                       t={t}
-                      lang={lang}
-                      codexImageAvailable={connection.codexImageAvailable}
-                      onFileSearchChange={onFileSearchChange}
-                      focusBlock={target?.block}
+                      onStatus={(st) => onSkillUpdateDue?.(skillUpdateDue(st))}
                     />
-                  )
-                }
-              />
+                  </details>
+                )}
+              </>
             )}
             {section === 'general' && (
               <>

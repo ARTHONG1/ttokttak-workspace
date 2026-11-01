@@ -26,17 +26,9 @@ export const UPSTREAM_NAME_LITERAL = `{{${UPSTREAM_PRODUCT_NAME}}}`
  */
 export const PRODUCT_NAME = 'HangulAIWorkbench'
 
-/** Languages that show a localized product name instead of PRODUCT_NAME. */
-const LOCALIZED_PRODUCT_NAMES: Readonly<Record<string, string>> = {
-  ko: '똑딱작업실',
-}
-
 /** The product name as shown in a UI language (a Lang or a raw locale tag). */
-export function productName(lang: string | null | undefined): string {
-  const base = lang?.trim().toLowerCase().split(/[-_]/)[0] ?? ''
-  return Object.hasOwn(LOCALIZED_PRODUCT_NAMES, base)
-    ? LOCALIZED_PRODUCT_NAMES[base]!
-    : PRODUCT_NAME
+export function productName(_lang: string | null | undefined): string {
+  return '똑딱작업실'
 }
 
 /** Electron userData folder name of the installed app (under the per-user app-data root). */

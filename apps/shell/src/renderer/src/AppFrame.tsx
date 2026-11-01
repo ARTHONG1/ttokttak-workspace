@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { SplitViewState } from '../../shared/split-view-api'
-import { useFirstConnectionNotice } from './FirstConnectionNotice'
-import { Home } from './Home'
-import { TrialHome } from './TrialHome'
-import { isWebEdition } from './edition'
-import { Onboarding } from './Onboarding'
+import { WorkspaceHome } from './WorkspaceHome'
 import {
   SPLIT_EVEN_RATIO,
   dividerRect,
@@ -13,7 +9,6 @@ import {
   type ViewportSize,
 } from './split-view-geometry'
 import { TabBar } from './TabBar'
-import { useSubscriptionConnection } from './subscription-client'
 
 interface AppFrameProps {
   /** resolved before first paint (main.tsx) so home never flashes under the overlay */
@@ -166,15 +161,10 @@ function SplitDivider({ split, viewport }: { split: SplitViewState; viewport: Vi
   )
 }
 
-export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
+export function AppFrame(_props: AppFrameProps) {
   const [homeActive, setHomeActive] = useState(true)
-  const [showOnboarding, setShowOnboarding] = useState(!initialOnboardingSeen)
   const split = useSplitView()
   const viewport = useViewportSize()
-  // one live view of the subscription connection for the home screen, the
-  // onboarding and the first-connection notice
-  const connection = useSubscriptionConnection()
-  const notice = useFirstConnectionNotice(connection.statuses)
 
   useEffect(() => {
     const applyTabs = (tabs: Awaited<ReturnType<typeof window.aiOfficeTabs.list>>) => {
@@ -184,17 +174,6 @@ export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
     void window.aiOfficeTabs.list().then(applyTabs)
     return window.aiOfficeTabs.onChanged(applyTabs)
   }, [])
-
-  const finishOnboarding = async (): Promise<boolean> => {
-    try {
-      const persisted = await window.aiOffice.setOnboardingSeen()
-      if (!persisted) return false
-      setShowOnboarding(false)
-      return true
-    } catch {
-      return false
-    }
-  }
 
   return (
     <div className="app-frame">
@@ -206,29 +185,8 @@ export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
       {/* docs/sheets tabs render as WebContentsView children of this window, positioned
        * by the main process to cover this area — only Home paints its own content here. */}
       <div className="app-frame-content" style={{ visibility: homeActive ? 'visible' : 'hidden' }}>
-        {/* the web trial gets a home of its own: open a document, ask the AI */}
-        {isWebEdition() ? (
-          <TrialHome />
-        ) : (
-          <Home
-            connection={connection}
-            aiSettings={notice.settings}
-            // during the onboarding its connect step shows the notice instead
-            noticeDue={notice.due && !showOnboarding}
-            onNoticeAcknowledge={notice.acknowledge}
-          />
-        )}
+        <WorkspaceHome />
       </div>
-      {/* editor WebContentsViews paint above ALL shell DOM, so the overlay only
-       * renders while the home tab is active — it comes back when home does */}
-      {showOnboarding && homeActive && (
-        <Onboarding
-          onDone={finishOnboarding}
-          connection={connection}
-          noticeDue={notice.due}
-          onNoticeAcknowledge={notice.acknowledge}
-        />
-      )}
     </div>
   )
 }

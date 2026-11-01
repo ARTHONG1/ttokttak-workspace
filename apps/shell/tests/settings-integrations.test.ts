@@ -119,7 +119,7 @@ async function openIntegrations(
     )
     await Promise.resolve()
   })
-  await click(buttonWithText('Integrations'))
+  await click(host.querySelector('details > summary'))
 }
 
 describe('Settings → Integrations', () => {
@@ -251,7 +251,7 @@ describe('Settings → Integrations', () => {
       { status: async () => baseStatus() },
       { skillUpdateDue: true, onSkillUpdateDue: onDue },
     )
-    expect(buttonWithText('Integrations')!.querySelector('.set-nav-dot')).toBeTruthy()
+    expect(host.querySelector('summary .set-nav-dot')).toBeTruthy()
     // codex is outdated in baseStatus → the pane reports "update due" once it has probed
     expect(onDue).toHaveBeenLastCalledWith(true)
 
@@ -261,7 +261,7 @@ describe('Settings → Integrations', () => {
       { status: async () => fresh },
       { skillUpdateDue: false, onSkillUpdateDue: onDue },
     )
-    expect(buttonWithText('Integrations')!.querySelector('.set-nav-dot')).toBeNull()
+    expect(host.querySelector('summary .set-nav-dot')).toBeNull()
     expect(onDue).toHaveBeenLastCalledWith(false)
   })
 })

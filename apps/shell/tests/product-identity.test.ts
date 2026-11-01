@@ -52,13 +52,16 @@ const UPSTREAM = {
 }
 
 describe('one product name', () => {
+  it('uses the Korean product name for the macOS bundle display', () => {
+    expect(config.mac.extendInfo.CFBundleDisplayName).toBe('똑딱작업실')
+  })
   it('is what the installer, the Electron app name and the UI agree on', () => {
     // Electron names the app (and its userData folder) after package.json
     // "productName"; electron-builder names the installer and the executable
     // after its own. Both have to be the name the UI shows.
     expect(config.productName).toBe(PRODUCT_NAME)
     expect(shellPackage.productName).toBe(PRODUCT_NAME)
-    expect(productName('en')).toBe(PRODUCT_NAME)
+    expect(productName('en')).toBe('똑딱작업실')
     expect(USER_DATA_DIR_NAME).toBe(shellPackage.productName)
   })
 
@@ -78,9 +81,9 @@ describe('one product name', () => {
     }
   })
 
-  it('shows the Korean name only in the Korean UI', () => {
+  it('shows the same product name in every language', () => {
     for (const lang of LANGS) {
-      expect(productName(lang), lang).toBe(lang === 'ko' ? '똑딱작업실' : PRODUCT_NAME)
+      expect(productName(lang), lang).toBe('똑딱작업실')
     }
   })
 })
@@ -108,11 +111,11 @@ describe('the name in the shell UI', () => {
       }
     }
     expect(t('ko', 'onbTitle1')).toContain('똑딱작업실')
-    expect(t('en', 'onbTitle1')).toContain('HangulAIWorkbench')
+    expect(t('en', 'onbTitle1')).toContain('똑딱작업실')
   })
 
   it('names the product in the manual: titles and bodies', async () => {
-    expect(topicTitle('install', 'en')).toBe('Installing HangulAIWorkbench')
+    expect(topicTitle('install', 'en')).toBe('Installing 똑딱작업실')
     expect(topicTitle('install', 'ko')).toBe('똑딱작업실 설치')
     for (const lang of ['en', 'ko', 'ja'] as const) {
       for (const topic of HELP_TOPICS) {

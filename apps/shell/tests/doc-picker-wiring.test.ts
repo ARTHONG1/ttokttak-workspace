@@ -42,7 +42,7 @@ describe('doc-picker strings', () => {
       for (const value of Object.values(dict)) expect(value, lang).not.toMatch(/HangulAIWorkbench/)
     }
     expect(docPickerText('ko', 'docPickTitle')).toContain('똑딱작업실')
-    expect(docPickerText('en', 'docPickTitle')).toContain('HangulAIWorkbench')
+    expect(docPickerText('en', 'docPickTitle')).toContain('똑딱작업실')
   })
 })
 

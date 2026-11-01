@@ -558,6 +558,7 @@ import {
 } from './detached-windows'
 import { applyUpdateChannel, checkForUpdatesNow, initAutoUpdater } from './updater'
 import { cancelUpdateRestart } from './update-restart'
+import { applyDisplayName } from './app-display-name'
 import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 
 /**
@@ -585,6 +586,7 @@ if (!app.isPackaged) {
     app.setPath('userData', join(app.getPath('appData'), DEV_USER_DATA_DIR_NAME))
   }
 }
+applyDisplayName(app)
 
 /**
  * `--headless-export <file> --to <format> --out <path> [--json]`: one document, no
@@ -7217,6 +7219,14 @@ function buildHomeMenu(): void {
           label: tm('menuOpen'),
           accelerator: 'CmdOrCtrl+O',
           click: () => void openFileViaDialog(),
+        },
+        {
+          id: 'workspace-ai-settings',
+          label: 'AI',
+          click: () => {
+            tabManager?.openHomeTab()
+            shellWindow?.webContents.send(HOME_CHANNELS.openSettings, { section: 'aiModel' })
+          },
         },
         { type: 'separator' },
         { role: 'close', label: tm('menuClose') },

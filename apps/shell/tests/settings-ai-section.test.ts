@@ -271,7 +271,7 @@ describe('the default view', () => {
     const labels = [...host.querySelectorAll('.set-nav-item')].map((item) =>
       item.textContent?.trim(),
     )
-    expect(labels).toEqual(['Account', 'AI', 'Skills', 'General', 'Integrations', 'About'])
+    expect(labels).toEqual(['AI', 'Skills', 'General', 'About'])
   })
 
   it('shows both subscription cards, the free cards, and no paid key input', async () => {
@@ -346,7 +346,7 @@ describe('the default view', () => {
       'claude-code': status('claude-code', 'ready', { planName: 'max' }),
       codex: status('codex', 'not-installed'),
     })
-    await openModal()
+    await openModal({ section: 'account' })
     const rows = [...host.querySelectorAll<HTMLElement>('.set-field[data-provider]')]
     expect(rows.map((row) => row.textContent)).toEqual([
       'ClaudeConnected · max',
@@ -565,7 +565,7 @@ describe('the account on a card', () => {
   it('shows the signed-in account next to the plan name, on the card only', async () => {
     installHome(defaultAiSettings())
     installSubscription(signedIn())
-    await openModal()
+    await openModal({ section: 'account' })
     // the account section sums up the state and names nobody
     expect(host.textContent).not.toContain(ACCOUNT)
 
@@ -1148,7 +1148,7 @@ describe('without the main-process handlers', () => {
   it('renders when the preload exposes no subscription bridge at all', async () => {
     installHome(defaultAiSettings())
     delete window.aiOfficeSubscription
-    await openModal()
+    await openModal({ section: 'account' })
     expect(host.querySelectorAll('.set-field[data-provider]')).toHaveLength(2)
     await openAiSection()
     expect(host.querySelectorAll('.ai-sub-card[data-state="checking"]')).toHaveLength(2)

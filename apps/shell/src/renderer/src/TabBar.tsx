@@ -6,7 +6,6 @@ import { TEAR_OFF_SLACK, insertionIndexForX, isBeyondBand } from '../../shared/t
 import { notifyFilesChanged } from './file-events'
 import { productName } from '@genoffice/i18n'
 import { useI18n } from './locale'
-import { isWebEdition } from './edition'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
 import iconPptx from './assets/file-pptx.svg'
@@ -596,32 +595,30 @@ export function TabBar({ split }: TabBarProps) {
             />
           </svg>
         </button>
-        {/* the web edition has no menu bar: opening a file sits beside "+" where it can be seen */}
-        {isWebEdition() && (
-          <button
-            className="tab-open-btn"
-            data-testid="tab-open-file"
-            title={lang === 'ko' ? '내 컴퓨터의 문서 불러오기' : t('open')}
-            onClick={() => void window.aiOffice.browse()}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.4l2 2h8.6A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 16v-5m0 0-2.2 2.2M12 11l2.2 2.2"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>{lang === 'ko' ? '불러오기' : t('open')}</span>
-          </button>
-        )}
+        {/* Keep the file entry beside the new-tab button in both editions. */}
+        <button
+          className="tab-open-btn"
+          data-testid="tab-open-file"
+          title={lang === 'ko' ? '내 컴퓨터의 문서 불러오기' : t('open')}
+          onClick={() => void window.aiOffice.browse()}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.4l2 2h8.6A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M12 16v-5m0 0-2.2 2.2M12 11l2.2 2.2"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>{lang === 'ko' ? '불러오기' : t('open')}</span>
+        </button>
       </div>
       {splitHint && (
         <div

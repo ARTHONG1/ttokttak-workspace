@@ -674,6 +674,7 @@ const config = {
   // Windows with the unscoped names (and with the two types it must not claim).
   npmRebuild: false,
   mac: {
+    extendInfo: { CFBundleDisplayName: '똑딱작업실' },
     // Two separate arch packages (NOT universal): arm64 keeps the exact
     // artifact names and update-feed entries it always had, x64 (via
     // GENOFFICE_MAC_X64=1, see includeMacX64 above) adds the Intel package:
