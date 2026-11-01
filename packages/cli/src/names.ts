@@ -1,4 +1,4 @@
-import { brandText, PRODUCT_NAME } from '@genoffice/i18n'
+import { brandText, PRODUCT_NAME, USER_DATA_DIR_NAME } from '@genoffice/i18n'
 
 /**
  * The names this product registers on a user's machine. The upstream GenOffice
@@ -25,6 +25,9 @@ export const HOME_DIR_NAME = `.${CLI_COMMAND}`
 
 /** the installed app binary (`<name>.exe` on Windows, `<name>.app/Contents/MacOS/<name>` on macOS) */
 export const APP_BINARY_NAME = PRODUCT_NAME
+
+/** Executable name used by releases before the visible product rename. */
+export const LEGACY_APP_BINARY_NAME = USER_DATA_DIR_NAME
 
 /** the launcher file for a platform */
 export function launcherFileName(platform: string): string {

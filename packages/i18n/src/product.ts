@@ -19,31 +19,22 @@ export const UPSTREAM_PRODUCT_NAME = 'GenOffice'
 export const UPSTREAM_NAME_LITERAL = `{{${UPSTREAM_PRODUCT_NAME}}}`
 
 /**
- * The product name in every language without a localized one. Also the name
- * everything registered on the user's machine derives from (the installer's
- * productName, the userData folder, the default save folder), which must stay
- * the same whatever the UI language is.
+ * The user-facing product name in every language, shared by the UI, installer,
+ * Finder, Dock and document windows. Persistent profiles are intentionally
+ * separate below so renaming the app never hides existing user settings.
  */
-export const PRODUCT_NAME = 'HangulAIWorkbench'
-
-/** Languages that show a localized product name instead of PRODUCT_NAME. */
-const LOCALIZED_PRODUCT_NAMES: Readonly<Record<string, string>> = {
-  ko: '똑딱작업실',
-}
+export const PRODUCT_NAME = '똑딱작업실'
 
 /** The product name as shown in a UI language (a Lang or a raw locale tag). */
-export function productName(lang: string | null | undefined): string {
-  const base = lang?.trim().toLowerCase().split(/[-_]/)[0] ?? ''
-  return Object.hasOwn(LOCALIZED_PRODUCT_NAMES, base)
-    ? LOCALIZED_PRODUCT_NAMES[base]!
-    : PRODUCT_NAME
+export function productName(_lang: string | null | undefined): string {
+  return PRODUCT_NAME
 }
 
-/** Electron userData folder name of the installed app (under the per-user app-data root). */
-export const USER_DATA_DIR_NAME = PRODUCT_NAME
+/** Legacy packaged profile name: never change when a display name changes. */
+export const USER_DATA_DIR_NAME = 'HangulAIWorkbench'
 
-/** userData folder name of an unpacked (development) run, kept apart from the installed app's. */
-export const DEV_USER_DATA_DIR_NAME = `${PRODUCT_NAME}-Dev`
+/** Legacy unpacked profile name, still isolated from installed runs. */
+export const DEV_USER_DATA_DIR_NAME = 'HangulAIWorkbench-Dev'
 
 /** The product's public GitHub repository: issues, releases and update checks all point here. */
 export const PRODUCT_REPO_OWNER = 'ARTHONG1'

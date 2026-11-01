@@ -25,14 +25,14 @@ const ROOT = resolve(SHELL, '../..')
 const builderSource = readFileSync(join(SHELL, 'electron-builder.cjs'), 'utf8')
 
 /** The packaging config as a build host with this environment would load it. */
-function loadBuilderConfig(env: Record<string, string> = {}) {
+function loadBuilderConfig(env: Record<string, string> = {}, platform = 'win32') {
   // Inspect packaging metadata without downloading Electron or compiling OCR
   // helpers (same approach as shell-new.test.ts).
   const configModule = { exports: {} as ReturnType<typeof require> }
   runInNewContext(builderSource, {
     module: configModule,
     __dirname: SHELL,
-    process: { platform: 'win32', arch: 'x64', env: { ...env } },
+    process: { platform, arch: platform === 'darwin' ? 'arm64' : 'x64', env: { ...env } },
     require: (id: string) =>
       id === 'node:fs' ? { ...require(id), existsSync: () => true } : require(id),
   })
@@ -53,13 +53,25 @@ const UPSTREAM = {
 
 describe('one product name', () => {
   it('is what the installer, the Electron app name and the UI agree on', () => {
-    // Electron names the app (and its userData folder) after package.json
-    // "productName"; electron-builder names the installer and the executable
-    // after its own. Both have to be the name the UI shows.
+    // Electron and electron-builder must show the same product name. Persistent
+    // userData intentionally retains its previous name across rebranding.
     expect(config.productName).toBe(PRODUCT_NAME)
     expect(shellPackage.productName).toBe(PRODUCT_NAME)
     expect(productName('en')).toBe(PRODUCT_NAME)
-    expect(USER_DATA_DIR_NAME).toBe(shellPackage.productName)
+    // On macOS, the bundle's internal identity remains ASCII because the
+    // Korean-named bundle crashed before opening its first window on this host.
+    // Its Finder/Dock label, however, stays Korean.
+    const macConfig = loadBuilderConfig({}, 'darwin')
+    expect(macConfig.productName).toBe('HangulAIWorkbench')
+    expect(macConfig.mac.executableName).toBe('HangulAIWorkbench')
+    expect(macConfig.mac.extendInfo.CFBundleName).toBe('HangulAIWorkbench')
+    expect(macConfig.mac.extendInfo.CFBundleDisplayName).toBe(PRODUCT_NAME)
+    // DMG and ZIP downloads are advertised as the Korean product even though
+    // Electron requires an ASCII bundle identity on this macOS host.
+    expect(macConfig.mac.artifactName).toBe('똑딱작업실-${version}-${arch}.${ext}')
+    expect(macConfig.dmg.artifactName).toBe('똑딱작업실-${version}-${arch}.${ext}')
+    // Branding must not move data created by previous HangulAIWorkbench installs.
+    expect(USER_DATA_DIR_NAME).toBe('HangulAIWorkbench')
   })
 
   it('titles every window document with the product name before any script runs', () => {
@@ -78,9 +90,9 @@ describe('one product name', () => {
     }
   })
 
-  it('shows the Korean name only in the Korean UI', () => {
+  it('shows the same product name in every UI language', () => {
     for (const lang of LANGS) {
-      expect(productName(lang), lang).toBe(lang === 'ko' ? '똑딱작업실' : PRODUCT_NAME)
+      expect(productName(lang), lang).toBe('똑딱작업실')
     }
   })
 })
@@ -108,11 +120,11 @@ describe('the name in the shell UI', () => {
       }
     }
     expect(t('ko', 'onbTitle1')).toContain('똑딱작업실')
-    expect(t('en', 'onbTitle1')).toContain('HangulAIWorkbench')
+    expect(t('en', 'onbTitle1')).toContain('똑딱작업실')
   })
 
   it('names the product in the manual: titles and bodies', async () => {
-    expect(topicTitle('install', 'en')).toBe('Installing HangulAIWorkbench')
+    expect(topicTitle('install', 'en')).toBe('Installing 똑딱작업실')
     expect(topicTitle('install', 'ko')).toBe('똑딱작업실 설치')
     for (const lang of ['en', 'ko', 'ja'] as const) {
       for (const topic of HELP_TOPICS) {
@@ -122,7 +134,7 @@ describe('the name in the shell UI', () => {
       }
     }
     // file names keep the Latin name whatever the language
-    expect(await helpBody('install', 'ko')).toContain('HangulAIWorkbench-Setup-<version>.exe')
+    expect(await helpBody('install', 'ko')).toContain('똑딱작업실-Setup-<version>.exe')
     expect(await helpBody('getting-started', 'ko')).toContain('똑딱작업실')
   })
 })
@@ -145,14 +157,17 @@ describe('coexistence with the upstream app on one machine', () => {
   })
 
   it('keeps its settings and data in its own folders', () => {
-    // packaged: Electron's default userData is <appData>/<productName>;
-    // unpacked runs set DEV_USER_DATA_DIR_NAME explicitly (src/main/index.ts).
+    // Both packaged and unpacked apps explicitly preserve their legacy profile
+    // locations so a visible name change cannot hide saved work.
     // The single-instance lock lives in userData, so it is separate as well.
     expect(USER_DATA_DIR_NAME).toBe('HangulAIWorkbench')
     expect(DEV_USER_DATA_DIR_NAME).toBe('HangulAIWorkbench-Dev')
     const main = readFileSync(join(SHELL, 'src/main/index.ts'), 'utf8')
     expect(main).toContain(
       "app.setPath('userData', join(app.getPath('appData'), DEV_USER_DATA_DIR_NAME))",
+    )
+    expect(main).toContain(
+      "app.setPath('userData', join(app.getPath('appData'), USER_DATA_DIR_NAME))",
     )
     // nothing may adopt, move or copy a folder the upstream app owns
     for (const upstreamDir of ['GenOffice-Dev', 'GenOffice Dev', 'AI Office']) {

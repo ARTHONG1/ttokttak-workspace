@@ -11,6 +11,12 @@ const WIN_APP: McpLaunch = {
   args: [`${WIN_DIR}\\genoffice.cjs`, 'mcp'],
   env: { ELECTRON_RUN_AS_NODE: '1' },
 }
+const NEW_WIN_DIR = 'C:\\Users\\Jane Doe\\AppData\\Local\\Programs\\똑딱작업실\\resources\\cli'
+const NEW_WIN_APP: McpLaunch = {
+  command: `${NEW_WIN_DIR}\\..\\..\\똑딱작업실.exe`,
+  args: [`${NEW_WIN_DIR}\\genoffice.cjs`, 'mcp'],
+  env: { ELECTRON_RUN_AS_NODE: '1' },
+}
 
 describe('mcp launch entry', () => {
   it('is the absolute launcher on macOS and Linux', () => {
@@ -45,6 +51,12 @@ describe('mcp launch entry', () => {
     expect(fromCli).toEqual(mcpLaunch({ status: 'present', launcherDir: WIN_DIR }))
   })
 
+  it('uses the renamed executable in a fresh Windows install', () => {
+    const exists = (p: string) => p === NEW_WIN_APP.command
+    expect(mcpLaunchFromLauncher(`${NEW_WIN_DIR}\\ieumoffice.cmd`, { exists })).toEqual(NEW_WIN_APP)
+    expect(mcpLaunch({ status: 'present', launcherDir: NEW_WIN_DIR })).toEqual(NEW_WIN_APP)
+  })
+
   it('runs a Windows checkout on the system node with the built bundle', () => {
     const dir = 'D:\\src\\ieumoffice\\packages\\cli\\bin'
     expect(mcpLaunchFromLauncher(`${dir}\\ieumoffice`, { exists: () => false })).toEqual({
@@ -63,6 +75,7 @@ describe('mcp launch entry', () => {
     expect(isGenofficeLauncher('/opt/HangulAIWorkbench/resources/cli/ieumoffice')).toBe(true)
     expect(isGenofficeLauncher('C:\\HangulAIWorkbench\\resources\\cli\\ieumoffice.cmd')).toBe(true)
     expect(isGenofficeLauncher('C:\\Program Files\\HangulAIWorkbench\\HangulAIWorkbench.exe')).toBe(true)
+    expect(isGenofficeLauncher('C:\\Program Files\\똑딱작업실\\똑딱작업실.exe')).toBe(true)
     expect(isGenofficeLauncher(WIN_APP.command, WIN_APP.args)).toBe(true)
     expect(
       isGenofficeLauncher('node', ['C:\\src\\packages\\cli\\dist\\genoffice.cjs', 'mcp']),

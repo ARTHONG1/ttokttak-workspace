@@ -26,6 +26,14 @@ const CLAUDE_MODELS: AiSubscriptionModel[] = [
 ]
 
 describe('subscriptionModelsOf', () => {
+  it('preserves provider-prefixed model ids and resolved ids', () => {
+    const entries = [
+      { id: 'anthropic/claude-opus-5-5', label: 'Claude', resolved: 'anthropic/claude-opus-5-5' },
+      { id: 'google-vertex/gemini-4-argon', label: 'Gemini' },
+      { id: 'kiro/kimi-k3', label: 'Kimi' },
+    ]
+    expect(subscriptionModelsOf(entries)).toEqual(entries)
+  })
   it('keeps the listed fields of a well-formed list', () => {
     expect(subscriptionModelsOf(CLAUDE_MODELS)).toEqual(CLAUDE_MODELS)
     // fields the contract does not list are left behind

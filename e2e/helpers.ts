@@ -83,7 +83,13 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
     await writeFile(aiSettingsPath, JSON.stringify(AI_SETTINGS_NOTICE_SEEN))
   }
   const require = createRequire(join(SHELL_DIR, 'package.json'))
-  const executablePath = require('electron') as unknown as string
+  // Opt in to exercising the actual packaged macOS binary, not just the
+  // unpackaged Electron entrypoint. Defaults remain unchanged for the suite.
+  const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
+  if (packagedExecutable && !existsSync(packagedExecutable)) {
+    throw new Error(`Packaged Electron executable missing: ${packagedExecutable}`)
+  }
+  const executablePath = packagedExecutable || (require('electron') as unknown as string)
   // ELECTRON_RUN_AS_NODE (set by VS Code/CI hosts) would boot Electron as
   // plain Node with no windows — strip it so the app always starts as an app
   const { ELECTRON_RUN_AS_NODE: _electronRunAsNode, ...hostEnv } = process.env
@@ -94,7 +100,7 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   // and they never leak into the argv the app parses for documents to open.
   const args: string[] = []
   if (process.platform === 'linux') args.push('--no-sandbox', '--disable-gpu')
-  args.push(SHELL_DIR)
+  if (!packagedExecutable) args.push(SHELL_DIR)
   if (options.openFile) args.push(options.openFile)
   if (options.openFiles) args.push(...options.openFiles)
   const app = await electron.launch({

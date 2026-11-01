@@ -1,5 +1,5 @@
 #!/bin/sh
-# ieumoffice launcher. Inside a packaged HangulAIWorkbench it runs the bundled CLI on the
+# ieumoffice launcher. Inside our packaged desktop app it runs the bundled CLI on the
 # app's own Node runtime (ELECTRON_RUN_AS_NODE); in a dev checkout it falls
 # back to the system node and the local build output. Usually reached through
 # a symlink on the PATH, so the real location is resolved first.
@@ -18,10 +18,14 @@ if [ -n "$GENOFFICE_NODE" ]; then
 fi
 
 case "$here" in
-  */Contents/Resources/cli) app="$here/../../MacOS/HangulAIWorkbench" ;;
+  */Contents/Resources/cli)
+    if [ -x "$here/../../MacOS/똑딱작업실" ]; then app="$here/../../MacOS/똑딱작업실"; else app="$here/../../MacOS/HangulAIWorkbench"; fi
+    ;;
   */resources/cli)
     # Linux install, or the Windows install reached from Git Bash / MSYS
-    if [ -x "$here/../../HangulAIWorkbench.exe" ]; then app="$here/../../HangulAIWorkbench.exe"; else app="$here/../../ieumoffice"; fi
+    if [ -x "$here/../../똑딱작업실.exe" ]; then app="$here/../../똑딱작업실.exe";
+    elif [ -x "$here/../../HangulAIWorkbench.exe" ]; then app="$here/../../HangulAIWorkbench.exe";
+    else app="$here/../../ieumoffice"; fi
     ;;
   *) app="" ;;
 esac

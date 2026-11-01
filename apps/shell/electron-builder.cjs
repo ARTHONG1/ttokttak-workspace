@@ -11,16 +11,19 @@ const { execFileSync } = require('node:child_process')
 const { existsSync, readFileSync, readdirSync, rmSync } = require('node:fs')
 const { join } = require('node:path')
 
-// Product identity of the installed app. PRODUCT_NAME must equal PRODUCT_NAME
-// in packages/i18n/src/product.ts and "productName" in ./package.json, and the
-// repository must equal the coordinates defined there
+// User-visible identity. PRODUCT_NAME must equal PRODUCT_NAME in
+// packages/i18n/src/product.ts and "productName" in ./package.json; macOS
+// packaging keeps a separate ASCII internal bundle name (see below).
+// The repository must equal the coordinates defined there
 // (tests/product-identity.test.ts keeps them in step). Everything registered
 // on the machine derives from these: the installer's product id and install
-// folder, the executable name, the userData folder and the Windows ProgIds.
+// folder, the executable name and the Windows ProgIds. The userData folder
+// deliberately remains HangulAIWorkbench for existing installations.
 // None of them may coincide with the upstream GenOffice app, so both can be
 // installed on one machine without touching each other's registration.
 const APP_ID = 'io.github.arthong1.hangul-ai-workbench'
-const PRODUCT_NAME = 'HangulAIWorkbench'
+const PRODUCT_NAME = '똑딱작업실'
+const MAC_INTERNAL_NAME = 'HangulAIWorkbench'
 // package.json "name" of the packaged app (the workspace keeps upstream's
 // "@genoffice/shell"): electron-builder and electron-updater name the per-user
 // folder that caches the installer and downloaded updates after it
@@ -500,7 +503,9 @@ const FILE_ASSOCIATIONS = [
 
 const config = {
   appId: APP_ID,
-  productName: PRODUCT_NAME,
+  // A Korean internal bundle name SIGTRAPs before showing a window on the
+  // tested macOS host. The Korean Finder/Dock label is set via extendInfo.
+  productName: process.platform === 'darwin' ? MAC_INTERNAL_NAME : PRODUCT_NAME,
   // Resolved from the installed electron package so dependency bumps can
   // never leave a stale hard-coded pin behind (packaging would silently ship
   // the old runtime).
@@ -674,6 +679,13 @@ const config = {
   // Windows with the unscoped names (and with the two types it must not claim).
   npmRebuild: false,
   mac: {
+    // Keep the Finder/Dock name Korean but use an ASCII Mach-O/bundle identity.
+    executableName: MAC_INTERNAL_NAME,
+    extendInfo: {
+      CFBundleName: MAC_INTERNAL_NAME,
+      CFBundleDisplayName: PRODUCT_NAME,
+    },
+    artifactName: `${PRODUCT_NAME}-\${version}-\${arch}.\${ext}`,
     // Two separate arch packages (NOT universal): arm64 keeps the exact
     // artifact names and update-feed entries it always had, x64 (via
     // GENOFFICE_MAC_X64=1, see includeMacX64 above) adds the Intel package:
@@ -929,7 +941,7 @@ config.dmg.sign = false
 // Every dmg names its CPU (decision 0065). electron-builder leaves the arch
 // out of an x64 name, which would make the Intel dmg the one without a label;
 // the arm64 name stays the one the site and the README point at.
-config.dmg.artifactName = '${productName}-${version}-${arch}.${ext}'
+config.dmg.artifactName = `${PRODUCT_NAME}-\${version}-\${arch}.\${ext}`
 
 // Auto-update feed: the releases of the public repository. Always configured,
 // so every installer carries an app-update.yml and can update itself — the

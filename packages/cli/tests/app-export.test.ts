@@ -138,7 +138,7 @@ describe('exportViaApp', () => {
     ).rejects.toMatchObject({
       code: 4,
       reason: 'app_crashed',
-      message: 'HangulAIWorkbench crashed (SIGSEGV) while exporting /tmp/a.docx: boom',
+      message: '똑딱작업실 crashed (SIGSEGV) while exporting /tmp/a.docx: boom',
     })
   })
 

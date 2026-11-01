@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { APP_BINARY_NAME, SKILL_NAME } from './names'
+import { APP_BINARY_NAME, LEGACY_APP_BINARY_NAME, SKILL_NAME } from './names'
 
 /**
  * Two layouts: packaged (Resources/cli/genoffice.cjs next to Resources/wasm,
@@ -143,7 +143,7 @@ export interface AppLaunch {
 }
 
 /**
- * How to start the HangulAIWorkbench GUI: the app binary that hosts this CLI, an installed app, or the dev checkout.
+ * How to start our GUI: the app binary that hosts this CLI, an installed app, or the dev checkout.
  * Only this product's own install locations are probed: an upstream GenOffice on the machine is never started.
  */
 export function appLaunch(env: NodeJS.ProcessEnv = process.env): AppLaunch | null {
@@ -175,6 +175,8 @@ export function installedAppBinaries(
         ...(shipped ? [shipped] : []),
         `/Applications/${APP_BINARY_NAME}.app/Contents/MacOS/${APP_BINARY_NAME}`,
         join(homedir(), `Applications/${APP_BINARY_NAME}.app/Contents/MacOS/${APP_BINARY_NAME}`),
+        `/Applications/${LEGACY_APP_BINARY_NAME}.app/Contents/MacOS/${LEGACY_APP_BINARY_NAME}`,
+        join(homedir(), `Applications/${LEGACY_APP_BINARY_NAME}.app/Contents/MacOS/${LEGACY_APP_BINARY_NAME}`),
       ]
     case 'win32':
       return [
@@ -183,17 +185,30 @@ export function installedAppBinaries(
           ? join(env.LOCALAPPDATA, 'Programs', APP_BINARY_NAME, `${APP_BINARY_NAME}.exe`)
           : '',
         env.ProgramFiles ? join(env.ProgramFiles, APP_BINARY_NAME, `${APP_BINARY_NAME}.exe`) : '',
+        env.LOCALAPPDATA
+          ? join(env.LOCALAPPDATA, 'Programs', LEGACY_APP_BINARY_NAME, `${LEGACY_APP_BINARY_NAME}.exe`)
+          : '',
+        env.ProgramFiles ? join(env.ProgramFiles, LEGACY_APP_BINARY_NAME, `${LEGACY_APP_BINARY_NAME}.exe`) : '',
       ].filter(Boolean)
     default:
       // /usr/bin/genoffice is the upstream app's name: never a place to look for ours
-      return [...(shipped ? [shipped] : []), `/opt/${APP_BINARY_NAME}/${LINUX_APP_BINARY}`]
+      return [
+        ...(shipped ? [shipped] : []),
+        `/opt/${APP_BINARY_NAME}/${LINUX_APP_BINARY}`,
+        `/opt/${LEGACY_APP_BINARY_NAME}/${LINUX_APP_BINARY}`,
+      ]
   }
 }
 
 export function appBinaryForResources(resources: string, platform: NodeJS.Platform): string {
   const install = dirname(resources)
-  if (platform === 'darwin') return join(install, 'MacOS', APP_BINARY_NAME)
-  if (platform === 'win32') return join(install, `${APP_BINARY_NAME}.exe`)
+  if (platform === 'darwin' || platform === 'win32') {
+    const base = platform === 'darwin' ? join(install, 'MacOS') : install
+    const suffix = platform === 'win32' ? '.exe' : ''
+    const current = join(base, `${APP_BINARY_NAME}${suffix}`)
+    const legacy = join(base, `${LEGACY_APP_BINARY_NAME}${suffix}`)
+    return existsSync(current) || !existsSync(legacy) ? current : legacy
+  }
   return join(install, LINUX_APP_BINARY)
 }
 

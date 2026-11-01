@@ -59,7 +59,7 @@ import menuEpubIcon2x from './assets/menu-epub@2x.png?asset'
 import menuHomeIcon1x from './assets/menu-home.png?asset'
 import menuHomeIcon2x from './assets/menu-home@2x.png?asset'
 import { createI18n, isLang, normalizeLang, setUiLang, type Lang } from '@genoffice/i18n'
-import { DEV_USER_DATA_DIR_NAME, PRODUCT_CONTACT_URL, productName } from '@genoffice/i18n'
+import { DEV_USER_DATA_DIR_NAME, USER_DATA_DIR_NAME, PRODUCT_CONTACT_URL, productName } from '@genoffice/i18n'
 import {
   DEFAULT_SAVE_DIR_KEY,
   DROP_OPEN_CHANNEL,
@@ -572,18 +572,15 @@ import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 // ANY unpacked run (`npm run shell`, `npm run dev`, `npx electron .`) must not
 // share the installed app's userData or single-instance lock — otherwise a dev
 // run silently quits and forwards its argv to the running installed GenOffice.
-// GENOFFICE_USER_DATA: test drivers point this at a scratch dir so an
-// automated instance can run alongside the dev instance (separate lock).
-if (!app.isPackaged) {
-  if (process.env.GENOFFICE_USER_DATA) {
-    app.setPath('userData', process.env.GENOFFICE_USER_DATA)
-  } else {
-    // One token, no space: a space breaks unquoted shell expansions, rsync
-    // targets and .desktop Exec= lines (genoffice#1817). The name follows the
-    // packaged profile's (Electron's default <appData>/<productName>), and both
-    // are this product's own: a profile of the upstream app is never adopted.
-    app.setPath('userData', join(app.getPath('appData'), DEV_USER_DATA_DIR_NAME))
-  }
+// GENOFFICE_USER_DATA isolates test instances, packaged or unpacked.
+// App/installer display names are allowed to change, but the established
+// userData locations and single-instance lock must not move with the name.
+if (process.env.GENOFFICE_USER_DATA) {
+  app.setPath('userData', process.env.GENOFFICE_USER_DATA)
+} else if (!app.isPackaged) {
+  app.setPath('userData', join(app.getPath('appData'), DEV_USER_DATA_DIR_NAME))
+} else {
+  app.setPath('userData', join(app.getPath('appData'), USER_DATA_DIR_NAME))
 }
 
 /**

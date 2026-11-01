@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { SplitViewState } from '../../shared/split-view-api'
 import { useFirstConnectionNotice } from './FirstConnectionNotice'
+import { DesktopWelcome } from './DesktopWelcome'
+import { DesktopConnectionPage } from './DesktopConnectionPage'
+import { codexCanStart, desktopCanEnterWorkspace, desktopEntryTransition } from './desktop-entry'
+import type { DesktopEntryAction, DesktopEntryScreen } from './desktop-entry'
 import { Home } from './Home'
 import { TrialHome } from './TrialHome'
 import { isWebEdition } from './edition'
@@ -167,23 +171,45 @@ function SplitDivider({ split, viewport }: { split: SplitViewState; viewport: Vi
 }
 
 export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
+  const webEdition = isWebEdition()
   const [homeActive, setHomeActive] = useState(true)
-  const [showOnboarding, setShowOnboarding] = useState(!initialOnboardingSeen)
+  // The web keeps its existing first-run walkthrough; the installed app opens
+  // the public website's introduction instead (even for returning users).
+  const [showOnboarding, setShowOnboarding] = useState(webEdition && !initialOnboardingSeen)
+  const [desktopScreen, setDesktopScreen] = useState<DesktopEntryScreen>('welcome')
+  const [tabsResolved, setTabsResolved] = useState(false)
   const split = useSplitView()
   const viewport = useViewportSize()
   // one live view of the subscription connection for the home screen, the
   // onboarding and the first-connection notice
   const connection = useSubscriptionConnection()
   const notice = useFirstConnectionNotice(connection.statuses)
+  const connectionReady = codexCanStart(connection.statuses.codex)
+  const canStart = desktopCanEnterWorkspace(connection.statuses.codex, notice.settings)
+
+  const enterDesktop = (action: DesktopEntryAction): void => {
+    // When the first transmission notice is due, show it on the connection
+    // page before exposing the work area. The notice is never auto-accepted.
+    if (action === 'start' && canStart && notice.due) {
+      setDesktopScreen('connect')
+      return
+    }
+    setDesktopScreen((current) => desktopEntryTransition(current, action, canStart))
+  }
 
   useEffect(() => {
     const applyTabs = (tabs: Awaited<ReturnType<typeof window.aiOfficeTabs.list>>) => {
       const active = tabs.find((tab) => tab.active)
-      setHomeActive(!active || active.kind === 'home')
+      const isHome = !active || active.kind === 'home'
+      setHomeActive(isHome)
+      // A file opened by macOS Finder, or restored after a crash, must be
+      // visible immediately and must never be covered by the welcome screen.
+      if (!webEdition && !isHome) setDesktopScreen('workspace')
+      setTabsResolved(true)
     }
-    void window.aiOfficeTabs.list().then(applyTabs)
+    void window.aiOfficeTabs.list().then(applyTabs, () => setTabsResolved(true))
     return window.aiOfficeTabs.onChanged(applyTabs)
-  }, [])
+  }, [webEdition])
 
   const finishOnboarding = async (): Promise<boolean> => {
     try {
@@ -196,6 +222,30 @@ export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
     }
   }
 
+  // Keep the editor view contract unchanged: the tab bar and Home remain
+  // mounted only in the working state, while the marketing and connection
+  // screens occupy the full viewport with no competing toolbar.
+  if (!webEdition && tabsResolved && homeActive && desktopScreen === 'welcome') {
+    return <div className="app-frame"><DesktopWelcome onConnect={() => enterDesktop('connect')} onStart={() => enterDesktop('start')} /></div>
+  }
+  if (!webEdition && tabsResolved && homeActive && desktopScreen === 'connect') {
+    return (
+      <div className="app-frame">
+        <DesktopConnectionPage
+          connection={connection}
+          canStart={canStart}
+          connectionReady={connectionReady}
+          settingsLoaded={notice.settings !== null}
+          noticeDue={notice.due}
+          onNoticeAcknowledge={notice.acknowledge}
+          onBack={() => enterDesktop('back')}
+          onStart={() => enterDesktop('start')}
+        />
+      </div>
+    )
+  }
+  if (!webEdition && !tabsResolved) return <div className="app-frame" />
+
   return (
     <div className="app-frame">
       <TabBar split={split} />
@@ -207,7 +257,7 @@ export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
        * by the main process to cover this area — only Home paints its own content here. */}
       <div className="app-frame-content" style={{ visibility: homeActive ? 'visible' : 'hidden' }}>
         {/* the web trial gets a home of its own: open a document, ask the AI */}
-        {isWebEdition() ? (
+        {webEdition ? (
           <TrialHome />
         ) : (
           <Home

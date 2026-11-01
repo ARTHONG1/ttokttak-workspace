@@ -1,4 +1,4 @@
-import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND } from './names'
+import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND, LEGACY_APP_BINARY_NAME } from './names'
 
 export { MCP_SERVER_NAME, SKILL_NAME } from './names'
 
@@ -29,12 +29,19 @@ export function mcpLaunch(cli: {
   return { command: onPath ? CLI_COMMAND : `${dir}/${CLI_COMMAND}`, args: ['mcp'] }
 }
 
-function windowsAppLaunch(dir: string): McpLaunch {
+function windowsAppLaunch(dir: string, executable = windowsExecutableForDir(dir)): McpLaunch {
   return {
-    command: `${dir}\\..\\..\\${APP_BINARY_NAME}.exe`,
+    command: `${dir}\\..\\..\\${executable}.exe`,
     args: [`${dir}\\${CLI_BUNDLE_FILE}`, 'mcp'],
     env: { ELECTRON_RUN_AS_NODE: '1' },
   }
+}
+
+/** Renderer cannot probe the filesystem; old default install folders identify old binaries. */
+function windowsExecutableForDir(dir: string): string {
+  return /(?:^|\\)HangulAIWorkbench\\resources\\cli$/i.test(dir)
+    ? LEGACY_APP_BINARY_NAME
+    : APP_BINARY_NAME
 }
 
 export interface LauncherLaunchOptions {
@@ -46,7 +53,7 @@ export interface LauncherLaunchOptions {
 /**
  * `mcp install`: always the absolute launcher, never the bare name. On Windows
  * the packaged app is run as Node (same entry as the app's snippet); a checkout
- * has no HangulAIWorkbench.exe beside it and runs the bundle on the system node, as the
+ * has no packaged app executable beside it and runs the bundle on the system node, as the
  * bin/ieumoffice script does. An upstream GenOffice.exe is never started.
  */
 export function mcpLaunchFromLauncher(
@@ -58,7 +65,9 @@ export function mcpLaunchFromLauncher(
   const sep = isWindowsPath(launcher) ? '\\' : '/'
   const dir = launcher.slice(0, Math.max(launcher.lastIndexOf('\\'), launcher.lastIndexOf('/')))
   const exists = opts.exists ?? (() => false)
-  if (exists(`${dir}${sep}..${sep}..${sep}${APP_BINARY_NAME}.exe`)) return windowsAppLaunch(dir)
+  for (const name of [APP_BINARY_NAME, LEGACY_APP_BINARY_NAME]) {
+    if (exists(`${dir}${sep}..${sep}..${sep}${name}.exe`)) return windowsAppLaunch(dir, name)
+  }
   const bundle = exists(`${dir}${sep}${CLI_BUNDLE_FILE}`)
     ? `${dir}${sep}${CLI_BUNDLE_FILE}`
     : `${dir}${sep}..${sep}dist${sep}${CLI_BUNDLE_FILE}`

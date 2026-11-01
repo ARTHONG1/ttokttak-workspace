@@ -45,6 +45,7 @@ import {
   type SubscriptionSpawn,
 } from '../subscription/process'
 import { codexAccountInfo } from '../subscription/status'
+import { codexOpenaiBaseUrlOverride, readCodexLocalEndpoint } from '../subscription/codex-local-route'
 import { APP_MCP_SERVER_NAME, isAgentAppMcpTool } from './claude'
 import { probeCodexSandbox, type CodexSandboxProbeResult } from './codex-sandbox-probe'
 import { agentPolicyVerdict, comparablePath, isInsidePath } from './policy'
@@ -89,8 +90,13 @@ const MAX_MCP_STATUS_PAGES = 10
  * inherited overrides: the chat window's "off" is left out, and a later `-c`
  * of the same key wins anyway (checked 2026-10-21, codex-cli 0.159.2).
  */
-export function codexAgentLaunchArgs(webSearch: AgentCodexWebSearch = 'cached'): string[] {
+export function codexAgentLaunchArgs(
+  webSearch: AgentCodexWebSearch = 'cached',
+  localEndpoint?: string,
+): string[] {
   const overrides = CODEX_CONFIG_OVERRIDES.filter((override) => !override.startsWith('web_search='))
+    .map((override) => override.startsWith('openai_base_url=')
+      ? codexOpenaiBaseUrlOverride(localEndpoint) : override)
   return [
     'app-server',
     ...overrides.flatMap((override) => ['-c', override]),
@@ -381,6 +387,7 @@ function itemStatus(item: Record<string, unknown>): 'done' | 'failed' | 'denied'
 }
 
 export interface CodexAgentDeps {
+  localEndpoint?: (() => Promise<string | undefined>) | undefined
   resolveProgram?:
     ((configuredPath: string | undefined) => Promise<SubscriptionProgram>) | undefined
   spawn?: SubscriptionSpawn | undefined
@@ -420,6 +427,7 @@ export async function startCodexAgentSession(
     deps.resolveProgram ??
     ((configuredPath) => resolveSubscriptionProgram(PROVIDER, { configuredPath }))
   )(options.cliPath)
+  const localEndpoint = await (deps.localEndpoint ?? readCodexLocalEndpoint)()
   const readableDirs = codexAgentReadableDirs(
     (deps.baseEnv ?? process.env).PATH ?? (deps.baseEnv ?? process.env).Path,
     options,
@@ -456,7 +464,7 @@ export async function startCodexAgentSession(
   try {
     // the session folder as working directory: no project configuration of wherever the app
     // was started applies to the process; the thread's own folder is given per thread
-    child = spawnSubscriptionProgram(program, codexAgentLaunchArgs(options.webSearch), {
+    child = spawnSubscriptionProgram(program, codexAgentLaunchArgs(options.webSearch, localEndpoint), {
       cwd: options.sessionDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       baseEnv: deps.baseEnv,

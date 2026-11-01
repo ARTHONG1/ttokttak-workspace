@@ -3,7 +3,7 @@ import { basename, dirname, isAbsolute, join } from 'node:path'
 import { agentConfigDir, type AgentId } from './agent-skills'
 import { realizedPath, writeOutput } from './fs'
 import type { McpLaunch } from './mcp-launch'
-import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND, MCP_SERVER_NAME } from './names'
+import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND, LEGACY_APP_BINARY_NAME, MCP_SERVER_NAME } from './names'
 
 /**
  * Registering `ieumoffice mcp` (stdio) in each coding agent's MCP config, the
@@ -230,7 +230,7 @@ export function removeMcpEntry(id: AgentId, file: string): boolean {
 }
 
 const LAUNCHER_NAMES = new Set(
-  [CLI_COMMAND, `${CLI_COMMAND}.cmd`, `${APP_BINARY_NAME}.exe`].map((n) => n.toLowerCase()),
+  [CLI_COMMAND, `${CLI_COMMAND}.cmd`, `${APP_BINARY_NAME}.exe`, `${LEGACY_APP_BINARY_NAME}.exe`].map((n) => n.toLowerCase()),
 )
 
 /** What an upstream entry starts: its launcher scripts, or its app binary run as Node on a bundle of the same file name as ours. */

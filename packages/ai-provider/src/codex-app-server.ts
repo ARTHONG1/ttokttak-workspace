@@ -23,6 +23,7 @@ import {
 import { AiRunError } from './run-error'
 import { subscriptionModelsOf } from './subscription/contract'
 import { onSubscriptionLoginChange } from './subscription/launch'
+import { codexOpenaiBaseUrlOverride, readCodexLocalEndpoint } from './subscription/codex-local-route'
 import { resolveSubscriptionProgram, type SubscriptionProgram } from './subscription/locate'
 import { setSubscriptionModelSource } from './subscription/models'
 import {
@@ -236,8 +237,8 @@ export const CODEX_CONFIG_OVERRIDES: readonly string[] = [
   'notify=[]',
   // no prompt history file
   'history.persistence="none"',
-  // the built-in OpenAI provider on its default address, whatever provider or
-  // address (a proxy, another vendor) the user configured: empty is "not set"
+  // Only the built-in OpenAI-compatible provider. An explicitly configured,
+  // validated loopback proxy may replace the empty default at launch.
   'model_provider="openai"',
   'openai_base_url=""',
   // the list of the user's skills is not added to the prompt
@@ -248,10 +249,13 @@ export const CODEX_CONFIG_OVERRIDES: readonly string[] = [
   'web_search="disabled"',
 ]
 
-export function codexAppServerLaunchArgs(): string[] {
+export function codexAppServerLaunchArgs(localEndpoint?: string): string[] {
+  const overrides = CODEX_CONFIG_OVERRIDES.map((value) =>
+    value.startsWith('openai_base_url=') ? codexOpenaiBaseUrlOverride(localEndpoint) : value,
+  )
   return [
     'app-server',
-    ...CODEX_CONFIG_OVERRIDES.flatMap((override) => ['-c', override]),
+    ...overrides.flatMap((override) => ['-c', override]),
     '--listen',
     'stdio://',
   ]
@@ -263,12 +267,15 @@ export interface CodexAppServerRuntime {
   /** the process spawner handed to `spawnSubscriptionProgram`; Node's own when absent */
   spawn: SubscriptionSpawn | undefined
   killTree: typeof killProcessTree
+  /** Read just the local proxy address from the existing user's Codex CLI config. */
+  localEndpoint: () => Promise<string | undefined>
 }
 
 const defaultRuntime: CodexAppServerRuntime = {
   resolve: resolveSubscriptionProgram,
   spawn: undefined,
   killTree: killProcessTree,
+  localEndpoint: readCodexLocalEndpoint,
 }
 let runtime = defaultRuntime
 
@@ -297,11 +304,12 @@ class CodexAppServerClient {
   constructor(
     program: SubscriptionProgram,
     private readonly onClosed: () => void,
+    localEndpoint?: string,
   ) {
     // Sanitised environment, no shell, registered so that quitting or crashing ends it. The
     // temp dir as working directory keeps the project configuration of wherever the app was
     // started out of the process.
-    this.child = spawnSubscriptionProgram(program, codexAppServerLaunchArgs(), {
+    this.child = spawnSubscriptionProgram(program, codexAppServerLaunchArgs(localEndpoint), {
       cwd: tmpdir(),
       stdio: ['pipe', 'pipe', 'pipe'],
       spawn: runtime.spawn,
@@ -562,13 +570,25 @@ onSubscriptionLoginChange((provider) => {
 })
 
 async function clientFor(cliPathValue: string | undefined): Promise<CodexAppServerClient> {
-  const program = await runtime.resolve('codex', { configuredPath: cliPathValue })
-  const key = process.platform === 'win32' ? program.entry.toLowerCase() : program.entry
+  const [program, localEndpoint] = await Promise.all([
+    runtime.resolve('codex', { configuredPath: cliPathValue }),
+    runtime.localEndpoint(),
+  ])
+  const entry = process.platform === 'win32' ? program.entry.toLowerCase() : program.entry
+  const keyPrefix = `${entry}\u0000`
+  const key = `${keyPrefix}${localEndpoint ?? ''}`
+  // A changed Codex CLI config must not leave a process using the old route.
+  for (const [previousKey, previousClient] of clients) {
+    if (previousKey !== key && previousKey.startsWith(keyPrefix)) {
+      clients.delete(previousKey)
+      previousClient.endOnceUnused()
+    }
+  }
   const existing = clients.get(key)
   if (existing && !existing.isClosed) return existing
   const client = new CodexAppServerClient(program, () => {
     if (clients.get(key) === client) clients.delete(key)
-  })
+  }, localEndpoint)
   clients.set(key, client)
   return client
 }

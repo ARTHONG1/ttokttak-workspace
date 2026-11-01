@@ -1,0 +1,98 @@
+/* The public landing page is the desktop's visual source of truth. All rules
+ * are isolated from the editor/toolbar CSS and the window's theme. */
+.desktop-welcome {
+  --dw-bg: #07080b;
+  --dw-fg: #f5f5f2;
+  --dw-sub: rgba(245,245,242,.64);
+  --dw-muted: rgba(245,245,242,.38);
+  --dw-line: rgba(255,255,255,.09);
+  --dw-yellow: #ffd60a;
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--dw-bg);
+  color: var(--dw-fg);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  word-break: keep-all;
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+.desktop-welcome *, .desktop-connect * { box-sizing: border-box; }
+.dw-background { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.dw-background i { position: absolute; border-radius: 50%; }
+.dw-background i:first-child { width: 900px; height: 620px; top: -360px; left: calc(50% - 450px); background: radial-gradient(closest-side,rgba(77,124,255,.55),transparent); }
+.dw-background i:nth-child(2) { width: 520px; height: 420px; top: -160px; left: 58%; background: radial-gradient(closest-side,rgba(255,214,10,.22),transparent); }
+.dw-background span { position: absolute; inset: 0; opacity: .55; background-image: linear-gradient(var(--dw-line) 1px,transparent 1px),linear-gradient(90deg,var(--dw-line) 1px,transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(ellipse 70% 52% at 50% 0%,black,transparent 72%); }
+.dw-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 2; height: 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 clamp(18px,3vw,36px); -webkit-app-region: drag; }
+body.mac .dw-nav { padding-left: max(96px,3vw); }
+.dw-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; text-decoration: none; color: var(--dw-fg); -webkit-app-region: no-drag; }
+.dw-brand svg { width: 26px; height: 26px; }
+.dw-links { display: flex; align-items: center; gap: 28px; font-size: 14px; white-space: nowrap; }
+.dw-links a { color: var(--dw-sub); text-decoration: none; -webkit-app-region: no-drag; }
+.dw-links a:hover { color: var(--dw-fg); }
+.dw-nav-cta { justify-self: end; border: 0; border-radius: 9px; background: var(--dw-fg); height: 34px; padding: 0 15px; color: var(--dw-bg); font-size: 14px; font-weight: 650; cursor: pointer; -webkit-app-region: no-drag; }
+.dw-nav-cta:hover { box-shadow: 0 0 0 4px rgba(255,255,255,.12); }
+.desktop-welcome main, .dw-footer { position: relative; }
+.dw-hero { display: flex; flex-direction: column; align-items: center; padding: clamp(128px,19vh,188px) 20px 0; text-align: center; }
+.dw-pill { display: inline-flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 14px 0 12px; border-radius: 999px; border: 1px solid var(--dw-line); background: rgba(255,255,255,.035); color: var(--dw-fg); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dw-pill:hover { border-color: rgba(255,255,255,.2); }
+.dw-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--dw-yellow); }
+.dw-pill span { padding-left: 10px; border-left: 1px solid var(--dw-line); color: var(--dw-sub); font-weight: 500; }
+.dw-hero h1 { margin: 30px 0 0; font-size: clamp(50px,8.2vw,124px); line-height: 1.02; font-weight: 820; letter-spacing: -.052em; }
+.dw-hero h1 > span { display: block; padding-bottom: .04em; background: linear-gradient(180deg,#fff 30%,rgba(255,255,255,.62)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dw-hero h1 em { font-style: normal; background: linear-gradient(180deg,#fff3a6,#ffd60a 55%,#f5a800); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dw-sub { max-width: 640px; margin: 26px 0 0; font-size: clamp(16px,1.35vw,19px); line-height: 1.7; letter-spacing: -.01em; color: var(--dw-sub); }
+.dw-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 38px; }
+.dw-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 50px; padding: 0 22px; border-radius: 13px; font: inherit; font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; cursor: pointer; transition: transform .2s ease,box-shadow .2s ease; }
+.dw-btn svg { width: 16px; height: 16px; }
+.dw-btn-primary { border: 1px solid rgba(255,255,255,.2); background: var(--dw-fg); color: var(--dw-bg); box-shadow: 0 10px 40px -8px rgba(255,255,255,.35); }
+.dw-btn-ghost { border: 1px solid var(--dw-line); background: rgba(255,255,255,.03); color: var(--dw-fg); }
+.dw-btn-ghost small { padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: 11.5px; }
+.dw-btn:hover { transform: translateY(-1px); }
+.dw-btn-ghost:hover { border-color: rgba(255,255,255,.22); }
+.dw-btn:focus-visible, .dw-nav button:focus-visible, .dw-links a:focus-visible, .dw-pill:focus-visible { outline: 2px solid var(--dw-yellow); outline-offset: 3px; }
+.dw-show { padding: clamp(56px,9vh,96px) 20px 0; }
+.dw-stage { position: relative; max-width: 1180px; margin: 0 auto; }
+.dw-beam { position: absolute; inset: -8% 10% 30%; background: radial-gradient(closest-side,rgba(77,124,255,.4),transparent); pointer-events: none; }
+.dw-frame { position: relative; border-radius: 16px; background: #0f1014; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.12),0 35px 100px -24px rgba(0,0,0,.9),0 0 110px -36px rgba(77,124,255,.4); }
+.dw-chrome { display: flex; align-items: center; justify-content: center; position: relative; height: 38px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 12px; color: var(--dw-muted); }
+.dw-dots { position: absolute; left: 14px; display: flex; gap: 7px; }
+.dw-dots i { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.14); }
+.dw-shot { aspect-ratio: 16/9; background: #07080b; }
+.dw-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dw-formats { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 34px; margin: clamp(56px,8vw,96px) 0 0; font-size: 13px; font-weight: 700; letter-spacing: .14em; color: var(--dw-muted); }
+.dw-universe { max-width: 1240px; margin: clamp(120px,18vh,200px) auto 0; padding: 0 30px; }
+.dw-kicker { color: var(--dw-yellow) !important; font-size: 14px; font-weight: 700; }
+.dw-universe h2,.dw-credits h2 { margin: 14px 0 0; font-size: clamp(32px,4.2vw,54px); line-height: 1.16; font-weight: 800; letter-spacing: -.045em; }
+.dw-universe > p:not(.dw-kicker),.dw-credits > p:not(.dw-kicker) { max-width: 640px; margin-top: 20px; color: var(--dw-sub); font-size: 17px; line-height: 1.75; }
+.dw-stats { display: flex; gap: 40px; margin-top: 34px; }
+.dw-stats div { display: flex; flex-direction: column; gap: 4px; }
+.dw-stats b { font-size: clamp(28px,3vw,40px); letter-spacing: -.04em; }
+.dw-stats div:first-child b { color: var(--dw-yellow); }
+.dw-stats span { font-size: 13px; color: var(--dw-muted); }
+.dw-credits { max-width: 1080px; margin: clamp(110px,16vh,180px) auto 0; padding: 0 20px; }
+.dw-credits .dw-btn { margin-top: 24px; }
+.dw-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; max-width: 1180px; margin: 110px auto 0; padding: 24px 20px 36px; border-top: 1px solid var(--dw-line); color: var(--dw-muted); font-size: 12.5px; }
+
+/* Connection is deliberately a separate, calm screen (the screenshot spec). */
+.desktop-connect { height: 100vh; width: 100%; padding: 30px clamp(20px,8vw,120px); overflow: auto; background: #f3f3f3; color: #242529; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif; color-scheme: light; }
+.dc-panel { width: min(100%,1140px); min-height: 540px; margin: 0 auto; padding: 38px 44px 54px; border-radius: 24px; background: #fff; --surface: #fff; --border: #dfe2e7; --text: #25262a; --text-secondary: #626671; --icon-muted: #a9b2bd; --success: #258949; --danger: #b23c3c; }
+.dc-back { border: 0; border-radius: 12px; background: #f3f3f3; padding: 9px 14px; font-size: 15px; cursor: pointer; }
+.dc-panel h1 { margin: 36px 0 20px; font-size: clamp(30px,4vw,43px); font-weight: 760; }
+.dc-lead { margin-bottom: 22px; font-size: 18px; line-height: 1.6; }
+.dc-status { margin: 14px 0 18px; font-size: 16px; }
+.dc-panel .ai-sub-card { border-radius: 12px; padding: 14px; font-size: 15px; }
+.dc-panel .ai-sub-card-head { gap: 10px; }
+.dc-panel .ai-sub-card-status { font-size: 14px; }
+.dc-panel .ai-sub-btn { border-radius: 8px; }
+.dc-help { margin-top: 16px; color: #656871; font-size: 14px; }
+.dc-help p { margin: 0 0 8px; }
+.dc-link { padding: 0; border: 0; background: transparent; text-decoration: underline; color: #525761; font: inherit; cursor: pointer; }
+.dc-error { color: #aa2929; }
+.dc-start { margin-top: 26px; padding: 11px 18px; background: #242529; color: white; border: none; border-radius: 11px; font-size: 15px; font-weight: 650; cursor: pointer; }
+.dc-start:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 900px) { .dw-links { display: none; } .dw-nav { grid-template-columns: 1fr auto; } .dw-break { display: none; } }
+@media (max-width: 560px) { .dw-pill span { display: none; } .dw-cta { flex-direction: column; width: min(100%,340px); } .dw-btn { width: 100%; } .dw-chrome > span:last-child { display: none; } .dw-formats { gap: 10px 18px; } .desktop-connect { padding: 20px 12px; } .dc-panel { padding: 24px 20px; } }
+@media (prefers-reduced-motion: reduce) { .desktop-welcome { scroll-behavior: auto; } .dw-btn { transition: none; } }

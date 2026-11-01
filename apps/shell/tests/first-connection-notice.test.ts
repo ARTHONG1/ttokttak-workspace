@@ -118,6 +118,35 @@ describe('first-connection notice', () => {
     expect(dialog()).toBeNull()
   })
 
+  it('does not mistake Escape for agreement to transmit documents', async () => {
+    await render(statuses('signed-out', 'ready'))
+    expect(dialog()).not.toBeNull()
+
+    await act(async () => {
+      dialog()!.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Escape', bubbles: true, cancelable: true,
+      }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(dialog()).not.toBeNull()
+    expect(stored.subscriptionNoticeSeen).not.toBe(true)
+    expect(setAiSettings).not.toHaveBeenCalled()
+  })
+
+  it('keeps requiring agreement if saving the notice fails', async () => {
+    setAiSettings.mockRejectedValueOnce(new Error('disk unavailable'))
+    await render(statuses('signed-out', 'ready'))
+
+    await act(async () => {
+      dialog()!.querySelector<HTMLButtonElement>('.ai-sub-btn')!.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(dialog()).not.toBeNull()
+    expect(stored.subscriptionNoticeSeen).not.toBe(true)
+  })
+
   it('does not show when it was acknowledged elsewhere (an editor AI panel)', async () => {
     stored = { ...defaultAiSettings(), subscriptionNoticeSeen: true }
     await render(statuses('ready', 'ready'))

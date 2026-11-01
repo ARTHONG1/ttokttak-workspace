@@ -515,14 +515,19 @@ describe('finding the app', () => {
   it('looks only where this product installs', () => {
     const env = { LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local', ProgramFiles: 'C:\\Program Files' }
     expect(installedAppBinaries(env, 'win32', null)).toEqual([
+      join(env.LOCALAPPDATA, 'Programs', '똑딱작업실', '똑딱작업실.exe'),
+      join(env.ProgramFiles, '똑딱작업실', '똑딱작업실.exe'),
       join(env.LOCALAPPDATA, 'Programs', 'HangulAIWorkbench', 'HangulAIWorkbench.exe'),
       join(env.ProgramFiles, 'HangulAIWorkbench', 'HangulAIWorkbench.exe'),
     ])
     expect(installedAppBinaries({}, 'darwin', null).map(posix)).toEqual([
+      '/Applications/똑딱작업실.app/Contents/MacOS/똑딱작업실',
+      posix(join(homedir(), 'Applications/똑딱작업실.app/Contents/MacOS/똑딱작업실')),
       '/Applications/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench',
       posix(join(homedir(), 'Applications/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench')),
     ])
     expect(installedAppBinaries({}, 'linux', null).map(posix)).toEqual([
+      '/opt/똑딱작업실/ieumoffice',
       '/opt/HangulAIWorkbench/ieumoffice',
     ])
     for (const platform of ['win32', 'darwin', 'linux'] as const) {
@@ -531,18 +536,18 @@ describe('finding the app', () => {
       for (const p of found) {
         expect(p).not.toMatch(/GenOffice|\/genoffice$/)
         expect(p).not.toBe('/usr/bin/genoffice')
-        expect(p).toMatch(/\/HangulAIWorkbench(\.app)?\//)
+        expect(p).toMatch(/\/(HangulAIWorkbench|똑딱작업실)(\.app)?\//)
       }
     }
   })
 
   it('resolves the binary of the install that ships this CLI', () => {
     expect(appBinaryForResources(join('D:\\Apps\\HangulAIWorkbench', 'resources'), 'win32')).toBe(
-      join('D:\\Apps\\HangulAIWorkbench', 'HangulAIWorkbench.exe'),
+      join('D:\\Apps\\HangulAIWorkbench', '똑딱작업실.exe'),
     )
     expect(
       posix(appBinaryForResources('/Volumes/Work/HangulAIWorkbench.app/Contents/Resources', 'darwin')),
-    ).toBe('/Volumes/Work/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench')
+    ).toBe('/Volumes/Work/HangulAIWorkbench.app/Contents/MacOS/똑딱작업실')
     expect(posix(appBinaryForResources('/opt/HangulAIWorkbench/resources', 'linux'))).toBe(
       '/opt/HangulAIWorkbench/ieumoffice',
     )
@@ -610,7 +615,7 @@ describe('what the CLI prints and tells agents to run', () => {
     expect((await run(['--version'])).stdout).toMatch(/^ieumoffice \d+\.\d+\.\d+/)
     const help = (await run(['help'])).stdout
     expect(help).toContain('Usage: ieumoffice <command> [options]')
-    expect(help).toMatch(/^ieumoffice \S+ — HangulAIWorkbench command line/)
+    expect(help).toMatch(/^ieumoffice \S+ — 똑딱작업실 command line/)
     expect(help).not.toMatch(OLD_NAME)
 
     const unknown = await run(['no-such-command'])
@@ -646,7 +651,7 @@ describe('what the CLI prints and tells agents to run', () => {
 
   it('names it in what the MCP server tells a client', () => {
     expect(INSTRUCTIONS).not.toMatch(OLD_NAME)
-    expect(INSTRUCTIONS).toContain('HangulAIWorkbench')
+    expect(INSTRUCTIONS).toContain('똑딱작업실')
     expect(remoteInstructions('http://h:1')).not.toMatch(OLD_NAME)
     for (const tool of resolveTools(defaultRegistry())) {
       expect(tool.description, tool.name).not.toMatch(OLD_NAME)
@@ -670,10 +675,13 @@ describe('what the CLI prints and tells agents to run', () => {
     expect(readdirSync(bin).sort()).toEqual(['ieumoffice', 'ieumoffice.cmd'])
     const sh = readFileSync(join(bin, 'ieumoffice'), 'utf-8')
     const cmd = readFileSync(join(bin, 'ieumoffice.cmd'), 'utf-8')
+    expect(sh).toContain('MacOS/똑딱작업실')
     expect(sh).toContain('MacOS/HangulAIWorkbench')
+    expect(sh).toContain('똑딱작업실.exe')
     expect(sh).toContain('HangulAIWorkbench.exe')
     expect(sh).toContain('"$here/../../ieumoffice"')
     expect(sh).not.toContain('"$here/../../genoffice"')
+    expect(cmd).toContain('똑딱작업실.exe')
     expect(cmd).toContain('HangulAIWorkbench.exe')
     expect(sh).not.toMatch(/GenOffice/)
     expect(cmd).not.toMatch(/GenOffice/)
