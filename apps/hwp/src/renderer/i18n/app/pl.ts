@@ -193,4 +193,12 @@ export const pl = {
   aiMemoApprovalTitle: 'Ta zmiana usuwa komentarze: {count}. Kontynuować?',
   aiMemoApprovalKeep: 'Zachowaj komentarze',
   aiMemoApprovalRemove: 'Kontynuuj i usuń',
+  formLock: 'Zachowaj układ',
+  formLockTip:
+    'Po włączeniu AI zmienia tylko tekst i nie zmienia czcionek, tabel ani układu. Po wyłączeniu AI też zachowuje układ, chyba że poprosisz inaczej.',
+  formAnalyzing: 'Analizowanie układu…',
+  formAnalyzed: 'Układ przeanalizowany',
+  formAnalyzedTip:
+    'Przeanalizowano: stron {pages}, tabel {tables}, pustych komórek {empty}, pól {fields}. AI edytuje w ramach tego układu.',
+  formAnalyzeFailed: 'Nie udało się przeanalizować układu',
 } satisfies Record<keyof typeof zh, string>

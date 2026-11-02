@@ -198,4 +198,12 @@ export const es = {
   aiMemoApprovalTitle: 'Esta edición elimina {count} comentario(s). ¿Continuar?',
   aiMemoApprovalKeep: 'Mantener los comentarios',
   aiMemoApprovalRemove: 'Continuar y eliminarlos',
+  formLock: 'Mantener diseño',
+  formLockTip:
+    'Activado, la IA solo cambia el texto y deja fuentes, tablas y diseño como están. Desactivado, la IA también mantiene el diseño salvo que pidas otra cosa.',
+  formAnalyzing: 'Analizando el diseño…',
+  formAnalyzed: 'Diseño analizado',
+  formAnalyzedTip:
+    'Se analizaron {pages} página(s), {tables} tabla(s), {empty} celda(s) vacía(s) y {fields} campo(s). La IA edita dentro de este diseño.',
+  formAnalyzeFailed: 'No se pudo analizar el diseño',
 } satisfies Record<keyof typeof zh, string>

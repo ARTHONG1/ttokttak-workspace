@@ -193,4 +193,12 @@ export const hi = {
   aiMemoApprovalTitle: 'यह संपादन टिप्पणियाँ हटा देगा: {count}। जारी रखें?',
   aiMemoApprovalKeep: 'टिप्पणियाँ रखें',
   aiMemoApprovalRemove: 'जारी रखें और हटाएँ',
+  formLock: 'लेआउट बनाए रखें',
+  formLockTip:
+    'चालू होने पर AI केवल पाठ बदलता है और फ़ॉन्ट, तालिकाएँ और लेआउट नहीं बदलता। बंद होने पर भी AI लेआउट बनाए रखता है, जब तक आप कुछ और न कहें।',
+  formAnalyzing: 'लेआउट का विश्लेषण हो रहा है…',
+  formAnalyzed: 'लेआउट का विश्लेषण हुआ',
+  formAnalyzedTip:
+    '{pages} पृष्ठ, {tables} तालिकाएँ, {empty} खाली सेल और {fields} फ़ील्ड का विश्लेषण किया गया। AI इसी लेआउट में संपादन करता है।',
+  formAnalyzeFailed: 'लेआउट का विश्लेषण नहीं हो सका',
 } satisfies Record<keyof typeof zh, string>

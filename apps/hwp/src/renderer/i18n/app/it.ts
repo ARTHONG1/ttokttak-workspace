@@ -198,4 +198,12 @@ export const it = {
   aiMemoApprovalTitle: 'Questa modifica elimina {count} commento/i. Continuare?',
   aiMemoApprovalKeep: 'Mantieni i commenti',
   aiMemoApprovalRemove: 'Continua ed elimina',
+  formLock: 'Mantieni layout',
+  formLockTip:
+    "Se attivo, l'IA cambia solo il testo e lascia invariati caratteri, tabelle e layout. Se disattivo, l'IA mantiene comunque il layout salvo diversa richiesta.",
+  formAnalyzing: 'Analisi del layout…',
+  formAnalyzed: 'Layout analizzato',
+  formAnalyzedTip:
+    "Analizzate {pages} pagine, {tables} tabelle, {empty} celle vuote e {fields} campi. L'IA modifica entro questo layout.",
+  formAnalyzeFailed: 'Impossibile analizzare il layout',
 } satisfies Record<keyof typeof zh, string>

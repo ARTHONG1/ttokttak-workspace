@@ -213,7 +213,8 @@ describe('the author of a new memo', () => {
     expect(authorNameOf({ value: '   ', fallback: ' pc ' })).toBe('pc')
     expect(authorNameOf({ value: '', fallback: '' })).toBe(MEMO_FALLBACK_AUTHOR)
     expect(authorNameOf(null)).toBe(MEMO_FALLBACK_AUTHOR)
-    expect(MEMO_FALLBACK_AUTHOR).toBe('HangulAIWorkbench')
+    // the product name (3e8c4631 renamed the product to 똑딱작업실)
+    expect(MEMO_FALLBACK_AUTHOR).toBe('똑딱작업실')
   })
 
   it('takes out separators and control characters and cuts at 64 units', () => {

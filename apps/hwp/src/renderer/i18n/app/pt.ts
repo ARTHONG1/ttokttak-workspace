@@ -196,4 +196,12 @@ export const pt = {
   aiMemoApprovalTitle: 'Esta edição exclui {count} comentário(s). Continuar?',
   aiMemoApprovalKeep: 'Manter os comentários',
   aiMemoApprovalRemove: 'Continuar e excluir',
+  formLock: 'Manter layout',
+  formLockTip:
+    'Ligado, a IA altera só o texto e mantém fontes, tabelas e layout. Desligado, a IA também mantém o layout, salvo se pedir outra coisa.',
+  formAnalyzing: 'Analisando o layout…',
+  formAnalyzed: 'Layout analisado',
+  formAnalyzedTip:
+    'Foram analisadas {pages} página(s), {tables} tabela(s), {empty} célula(s) vazia(s) e {fields} campo(s). A IA edita dentro deste layout.',
+  formAnalyzeFailed: 'Não foi possível analisar o layout',
 } satisfies Record<keyof typeof zh, string>

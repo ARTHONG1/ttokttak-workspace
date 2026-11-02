@@ -27,6 +27,7 @@ const METHODS = [
   'formatText',
   'formatParagraph',
   'listTables',
+  'formShape',
   'readTable',
   'fillCells',
   'checkBoxes',

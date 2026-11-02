@@ -193,4 +193,12 @@ export const ms = {
   aiMemoApprovalTitle: 'Edit ini memadam komen: {count}. Teruskan?',
   aiMemoApprovalKeep: 'Kekalkan komen',
   aiMemoApprovalRemove: 'Teruskan dan padam',
+  formLock: 'Kekalkan susun atur',
+  formLockTip:
+    'Apabila hidup, AI hanya menukar teks dan tidak mengubah fon, jadual dan susun atur. Apabila mati, AI tetap mengekalkan susun atur melainkan anda meminta lain.',
+  formAnalyzing: 'Menganalisis susun atur…',
+  formAnalyzed: 'Susun atur dianalisis',
+  formAnalyzedTip:
+    'Menganalisis {pages} halaman, {tables} jadual, {empty} sel kosong dan {fields} medan. AI menyunting dalam susun atur ini.',
+  formAnalyzeFailed: 'Tidak dapat menganalisis susun atur',
 } satisfies Record<keyof typeof zh, string>

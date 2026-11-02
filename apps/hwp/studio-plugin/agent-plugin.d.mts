@@ -636,6 +636,38 @@ export interface AgentChangeOptions {
   memoPolicy?: 'ask' | 'allow'
   /** the memos the user approved taking (ids of the refusal): any other one is refused again */
   approvedMemoIds?: number[]
+  /** fillCells: keep the look the cell already has (the form lock), instead of a plain answer */
+  keepLook?: boolean
+}
+
+/** Where a body table stands on its page, in CSS pixels. */
+export interface AgentTableBox {
+  page: number
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** What the form lock (양식 유지) compares before and after an AI change. */
+export interface AgentFormShape {
+  pages: number
+  /** body paragraphs, section by section */
+  paragraphs: number[]
+  /** objects of the document (tables, pictures, fields), memos left out */
+  objects: number
+  /** the tables could not all be looked into */
+  partial: boolean
+  /** in listTables order */
+  tables: {
+    rows: number
+    cols: number
+    cells: number
+    /** paragraphs of each cell, cell by cell */
+    paragraphs: number[]
+    /** null for a table inside a cell */
+    box: AgentTableBox | null
+  }[]
 }
 
 /**
@@ -778,6 +810,7 @@ export interface AgentPluginSurface {
     options?: AgentChangeOptions,
   ): AgentFormatParagraphResult
   listTables(): AgentTableList
+  formShape(): AgentFormShape
   readTable(table: number, fromRow?: number | null): AgentReadTableResult
   fillCells(
     table: number,

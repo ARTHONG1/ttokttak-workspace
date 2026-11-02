@@ -193,4 +193,12 @@ export const ru = {
   aiMemoApprovalTitle: 'Это изменение удалит примечания: {count}. Продолжить?',
   aiMemoApprovalKeep: 'Оставить примечания',
   aiMemoApprovalRemove: 'Продолжить и удалить',
+  formLock: 'Сохранять макет',
+  formLockTip:
+    'Если включено, ИИ меняет только текст и не трогает шрифты, таблицы и макет. Если выключено, ИИ тоже сохраняет макет, пока вы не попросите иначе.',
+  formAnalyzing: 'Анализ макета…',
+  formAnalyzed: 'Макет проанализирован',
+  formAnalyzedTip:
+    'Проанализировано: страниц {pages}, таблиц {tables}, пустых ячеек {empty}, полей {fields}. ИИ редактирует в рамках этого макета.',
+  formAnalyzeFailed: 'Не удалось проанализировать макет',
 } satisfies Record<keyof typeof zh, string>

@@ -188,4 +188,12 @@ export const ko = {
   aiMemoApprovalTitle: '이 편집으로 메모 {count}개가 지워집니다. 계속할까요?',
   aiMemoApprovalKeep: '메모 유지',
   aiMemoApprovalRemove: '메모와 함께 계속',
+  formLock: '양식 유지',
+  formLockTip:
+    '켜면 AI가 글자만 바꾸고 글꼴·표·배치는 바꾸지 않습니다. 꺼 두어도 AI는 양식을 유지하며 고칩니다.',
+  formAnalyzing: '양식 분석 중…',
+  formAnalyzed: '양식 분석됨',
+  formAnalyzedTip:
+    '{pages}쪽, 표 {tables}개, 빈 칸 {empty}개, 누름틀 {fields}개를 분석했습니다. AI가 이 양식에 맞춰 고칩니다.',
+  formAnalyzeFailed: '양식을 분석하지 못했습니다',
 } satisfies Record<keyof typeof zh, string>

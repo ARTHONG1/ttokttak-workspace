@@ -192,4 +192,12 @@ export const cs = {
   aiMemoApprovalTitle: 'Tato úprava smaže komentáře: {count}. Pokračovat?',
   aiMemoApprovalKeep: 'Ponechat komentáře',
   aiMemoApprovalRemove: 'Pokračovat a smazat',
+  formLock: 'Zachovat rozvržení',
+  formLockTip:
+    'Je-li zapnuto, AI mění jen text a nemění písma, tabulky ani rozvržení. Je-li vypnuto, AI rozvržení také zachová, pokud nepožádáte jinak.',
+  formAnalyzing: 'Analýza rozvržení…',
+  formAnalyzed: 'Rozvržení analyzováno',
+  formAnalyzedTip:
+    'Analyzováno: stran {pages}, tabulek {tables}, prázdných buněk {empty}, polí {fields}. AI upravuje v rámci tohoto rozvržení.',
+  formAnalyzeFailed: 'Rozvržení se nepodařilo analyzovat',
 } satisfies Record<keyof typeof zh, string>

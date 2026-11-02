@@ -200,4 +200,12 @@ export const de = {
   aiMemoApprovalTitle: 'Diese Änderung löscht {count} Kommentar(e). Fortfahren?',
   aiMemoApprovalKeep: 'Kommentare behalten',
   aiMemoApprovalRemove: 'Fortfahren und löschen',
+  formLock: 'Layout beibehalten',
+  formLockTip:
+    'Eingeschaltet ändert die KI nur Text und lässt Schriften, Tabellen und Layout unverändert. Ausgeschaltet behält die KI das Layout ebenfalls bei, sofern du nichts anderes verlangst.',
+  formAnalyzing: 'Layout wird analysiert…',
+  formAnalyzed: 'Layout analysiert',
+  formAnalyzedTip:
+    '{pages} Seite(n), {tables} Tabelle(n), {empty} leere Zelle(n) und {fields} Formularfeld(er) analysiert. Die KI bearbeitet innerhalb dieses Layouts.',
+  formAnalyzeFailed: 'Layout konnte nicht analysiert werden',
 } satisfies Record<keyof typeof zh, string>

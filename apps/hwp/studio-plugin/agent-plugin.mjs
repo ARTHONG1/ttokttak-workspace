@@ -2027,6 +2027,46 @@ function tablesOf(doc) {
  * cells; otherwise a refusal. The engine merges and splits cells by table and cell number,
  * which cannot name a table inside another table's cell.
  */
+/** How many paragraphs each cell of a table holds, cell by cell. */
+function cellParagraphCounts(doc, table) {
+  const counts = []
+  for (let cell = 0; cell < table.cells; cell++) {
+    try {
+      counts.push(
+        doc.getCellParagraphCountByPath(
+          table.sec,
+          table.para,
+          JSON.stringify(cellAt(table.path, cell, 0)),
+        ),
+      )
+    } catch {
+      counts.push(-1)
+    }
+  }
+  return counts
+}
+
+/**
+ * Where a body table stands: its page and its box there, rounded to a tenth of a pixel.
+ * The engine gives no box for a table inside a cell; its cell's height stands for it.
+ */
+function tableBoxOf(doc, table) {
+  if (table.path.length !== 1) return null
+  try {
+    const box = parse(doc.getTableBBox(table.sec, table.para, table.path[0].controlIndex))
+    const round = (value) => Math.round(Number(value) * 10) / 10
+    return {
+      page: box.pageIndex,
+      x: round(box.x),
+      y: round(box.y),
+      width: round(box.width),
+      height: round(box.height),
+    }
+  } catch {
+    return null
+  }
+}
+
 function bodyTable(doc, number) {
   const { tables } = tablesOf(doc)
   const table = Number.isInteger(number) ? tables[number - 1] : undefined
@@ -4196,6 +4236,30 @@ export const agentPlugin = {
       ),
 
       /**
+       * What the form lock (양식 유지) compares before and after an AI change: the pages,
+       * the body paragraphs of each section, the objects, and each table's grid, the
+       * paragraphs of its cells and where it stands on its page. Only reads.
+       */
+      formShape: guarded(() =>
+        host.read((doc) => {
+          const { tables, partial } = tablesOf(doc)
+          return {
+            pages: doc.pageCount(),
+            paragraphs: paragraphCounts(doc),
+            objects: objectsOf(doc).controls,
+            partial,
+            tables: tables.map((table) => ({
+              rows: table.rows,
+              cols: table.cols,
+              cells: table.cells,
+              paragraphs: cellParagraphCounts(doc, table),
+              box: tableBoxOf(doc, table),
+            })),
+          }
+        }),
+      ),
+
+      /**
        * The cells of table `number` row by row, from row `fromRow` (1-based). A merged cell
        * is listed once, at its first place, with its spans. A long table comes in parts:
        * `nextRow` is the row to go on from.
@@ -4792,14 +4856,19 @@ export const agentPlugin = {
                 })
                 target.lines.forEach((line, k) => {
                   // the look of a guide does not become the look of the answer
-                  if (line) plainAnswerInCell(doc, table, target.cell, k, [...line].length)
+                  // (unless the form lock keeps the look the cell already has)
+                  if (line && options?.keepLook !== true) {
+                    plainAnswerInCell(doc, table, target.cell, k, [...line].length)
+                  }
                 })
               }
-              plainAnswerFields(
-                doc,
-                null,
-                new Set(targets.filter((t) => t.field).map((t) => t.field.key)),
-              )
+              if (options?.keepLook !== true) {
+                plainAnswerFields(
+                  doc,
+                  null,
+                  new Set(targets.filter((t) => t.field).map((t) => t.field.key)),
+                )
+              }
               mustKeep(before, objectsOf(doc, own))
               const first = targets[0]
               return {

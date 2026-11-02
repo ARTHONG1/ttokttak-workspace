@@ -19,6 +19,14 @@ import type {
   AgentWhere,
 } from '../../../studio-plugin/agent-plugin.mjs'
 import type { AgentBridge } from './agent-bridge'
+import {
+  FORM_LOCK_CHECKED,
+  FORM_LOCK_REFUSED,
+  formContext,
+  shapeChange,
+  type FormMode,
+  type FormProfile,
+} from './form-guard'
 import type { StringKey } from '../i18n/locale'
 
 /** Document text attached to every user message; longer documents are read on demand. */
@@ -76,6 +84,10 @@ export interface HwpSkillDeps {
    * one retried edit; the caller never keeps the answer.
    */
   confirmMemoRemoval(refusal: AgentMemoRemovalRefusal): Promise<boolean>
+  /** 양식 유지: `lock` lets only text change; `keep` (the default) asks the AI to keep the form */
+  formMode?(): FormMode
+  /** the form analysis made when the document opened; null until it is there */
+  formProfile?(): FormProfile | null
 }
 
 export interface HwpSkill {
@@ -164,6 +176,7 @@ const SYSTEM_PROMPT = [
   '- Without that block nothing is selected. If the user then speaks of "the selected part", ask them to select the text in the document first.',
   '',
   '## Formatting rules',
+  '- Keep the form of the document: its fonts, sizes, colours, tables, cell sizes and page layout stay as they are unless the user asks to change them. An uploaded form is filled and reworded in place, never rebuilt.',
   '- Format only what the user asked for. Do not restyle text on your own: a new paragraph already looks like its neighbour, and official documents keep one look throughout.',
   '- When new content needs a look of its own (a heading, an emphasised line), insert the text first, then format it with a second call.',
   '- For emphasis prefer bold. Use colour and highlight only when the user asks for them.',
@@ -1164,6 +1177,12 @@ function hostLabel(rawUrl: string): string {
 
 export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
   const { bridge, label } = deps
+  const locked = (): boolean => deps.formMode?.() === 'lock'
+  /**
+   * Where a change goes when it is done. While locked, a call's changes are held until the
+   * form is found unchanged: a change taken back is not listed.
+   */
+  let report: (change: HwpChange) => void = deps.onChange
   let context = ''
   /** the runs the user selected, as they stand now (a replacement moves them on) */
   let selection: AgentSegment[] | null = null
@@ -1356,7 +1375,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, memoRemovalDeclined(outcome.refusal, outcome.kind))
         const result = outcome.result
         if (result.ok) {
-          deps.onChange({
+          report({
             kind: 'replace',
             from: find,
             to: replace,
@@ -1397,7 +1416,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, memoRemovalDeclined(outcome.refusal, outcome.kind))
         const result = outcome.result
         if (!result.ok) return bad(call, NOT_FOUND_HELP)
-        deps.onChange({
+        report({
           kind: 'replaceAll',
           from: find,
           to: replace,
@@ -1432,7 +1451,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, memoRemovalDeclined(outcome.refusal, outcome.kind))
         const result = outcome.result
         if (!result.ok) return bad(call, placeRefusal(result))
-        deps.onChange({
+        report({
           kind: 'insert',
           from: '',
           to: changeText(paragraphs.filter(Boolean).join(' ⏎ ')),
@@ -1459,7 +1478,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, memoRemovalDeclined(outcome.refusal, outcome.kind))
         const result = outcome.result
         if (!result.ok) return bad(call, placeRefusal(result))
-        deps.onChange({
+        report({
           kind: 'delete',
           from: changeText(result.text),
           to: '',
@@ -1510,7 +1529,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
         if (!result.ok) {
           return bad(call, result.reason === 'in_table' ? IN_TABLE_HELP : placeRefusal(result))
         }
-        deps.onChange({
+        report({
           kind: 'table',
           from: '',
           to: changeText(rows[0]!.join(' | ')),
@@ -1548,7 +1567,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
               : placeRefusal(result),
           )
         }
-        deps.onChange({
+        report({
           kind: 'format',
           from: changeText(find),
           to: describeFormat(format, label),
@@ -1585,7 +1604,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
               : placeRefusal(result),
           )
         }
-        deps.onChange({
+        report({
           kind: 'format',
           from: changeText(find),
           to: describeFormat(format, label),
@@ -1663,7 +1682,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
             ]
           : result.segments
         const after = paragraphs.join(' ⏎ ')
-        deps.onChange({
+        report({
           kind: 'replace',
           from: changeText(before),
           to: changeText(after),
@@ -1703,7 +1722,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
                 : HAS_OBJECTS_HELP,
           )
         }
-        deps.onChange({
+        report({
           kind: 'format',
           from: changeText(text),
           to: describeFormat(format, label),
@@ -1810,7 +1829,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           }
         }
         const range = `${fromRow}.${fromCol}–${toRow}.${toCol}`
-        deps.onChange({
+        report({
           kind: 'lines',
           from: label('aiTableName', { table: table! }),
           to: label('aiCellsMerged', { range }),
@@ -1885,7 +1904,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           }
         }
         const cell = `${row}.${col}`
-        deps.onChange({
+        report({
           kind: 'lines',
           from: label('aiTableName', { table: table as number }),
           to: result.unmerged
@@ -1944,7 +1963,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
             result.reason === 'style_exists' ? STYLE_EXISTS_HELP : noSuchStyle(result),
           )
         }
-        deps.onChange({
+        report({
           kind: 'format',
           from: `${label('aiFmtStyle')} ${result.name}`,
           to: [label('aiStyleNew'), describeFormat(format, label)].filter(Boolean).join(' · '),
@@ -1997,7 +2016,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           strings.next_style ? `${label('aiFmtNextStyle')} ${strings.next_style}` : '',
           describeFormat(format, label),
         ]
-        deps.onChange({
+        report({
           kind: 'format',
           from: `${label('aiFmtStyle')} ${name}`,
           to: changed.filter(Boolean).join(' · ') || (strings.english_name ?? ''),
@@ -2049,7 +2068,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           )
         }
         const name = label('aiFmtCellFill')
-        deps.onChange({
+        report({
           kind: 'format',
           from: label('aiTableName', { table }),
           to: background === 'none' ? label('aiFmtOff', { name }) : `${name} ${background}`,
@@ -2073,15 +2092,20 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           )
         }
         const overwrite = call.input.overwrite === true
+        // under the lock the answer keeps the cell's own look
+        const look: AgentChangeOptions | undefined = locked() ? { keepLook: true } : undefined
         const outcome = await changeWithMemoApproval(
-          () => bridge.fillCells(table, cells, overwrite),
-          (options) => bridge.fillCells(table, cells, overwrite, options),
+          () =>
+            look
+              ? bridge.fillCells(table, cells, overwrite, look)
+              : bridge.fillCells(table, cells, overwrite),
+          (options) => bridge.fillCells(table, cells, overwrite, { ...look, ...options }),
         )
         if (outcome.kind !== 'done')
           return bad(call, memoRemovalDeclined(outcome.refusal, outcome.kind))
         const result = outcome.result
         if (result.ok) {
-          deps.onChange({
+          report({
             kind: 'cells',
             from: label('aiTableName', { table }),
             to: changeText(cells.map((cell) => cell.text).join(' | ')),
@@ -2138,7 +2162,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
         }
         const result = await bridge.checkBoxes(table, cells)
         if (result.ok) {
-          deps.onChange({
+          report({
             kind: 'cells',
             from: label('aiTableName', { table }),
             to: '☑',
@@ -2197,7 +2221,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           count: result.count,
         })
         const name = label('aiTableName', { table: args.table })
-        deps.onChange({
+        report({
           kind: 'lines',
           from: name,
           to: what,
@@ -2226,7 +2250,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           count: result.count,
         })
         const name = label('aiTableName', { table: args.table })
-        deps.onChange({
+        report({
           kind: 'lines',
           from: name,
           to: result.text ? `${what} · ${changeText(result.text)}` : what,
@@ -2264,7 +2288,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
         }
         const name = label('aiTableName', { table })
         const what = label('aiTableRemoved')
-        deps.onChange({
+        report({
           kind: 'lines',
           from: name,
           to: result.text ? `${what} · ${changeText(result.text)}` : what,
@@ -2312,7 +2336,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
         }
         // by number first: names repeat, and a field nobody named has none
         const name = [`#${field}`, result.name.trim()].filter(Boolean).join(' ')
-        deps.onChange({ kind: 'field', from: name, to: value, count: 1, place: result.place })
+        report({ kind: 'field', from: name, to: value, count: 1, place: result.place })
         return {
           output: 'Filled.',
           mutated: true,
@@ -2379,7 +2403,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, placeRefusal(result))
         }
         const name = title?.trim() || label('aiTocName')
-        deps.onChange({
+        report({
           kind: 'table',
           from: '',
           to: changeText(`${name} (${result.count})`),
@@ -2417,7 +2441,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           return bad(call, placeRefusal(result))
         }
         if (result.changed > 0) {
-          deps.onChange({
+          report({
             kind: 'cells',
             from: title,
             to: label('aiTocPagesChanged', { count: result.changed }),
@@ -2476,7 +2500,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           )
         }
         const name = noteName(result.kind, result.number)
-        deps.onChange({
+        report({
           kind: 'note',
           from: name,
           to: changeText(text),
@@ -2512,7 +2536,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           )
         }
         const name = noteName(result.kind, result.number)
-        deps.onChange({
+        report({
           kind: 'note',
           from: name,
           to: changeText(text),
@@ -2537,7 +2561,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
         const result = outcome.result
         if (!result.ok) return bad(call, NO_NOTE_HELP(result.count))
         const name = noteName(result.kind, result.number)
-        deps.onChange({
+        report({
           kind: 'delete',
           from: changeText(`${name}: ${result.text}`),
           to: '',
@@ -2555,18 +2579,69 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
     }
   }
 
+  /**
+   * One text change under 양식 유지: the form is read before and after it, and when the
+   * change moved or grew a table, added a page or a paragraph, or took an object away, it
+   * is undone (one undo step per change it made) and refused.
+   */
+  const runLocked = async (call: AgentToolCall): Promise<ToolExecution> => {
+    const before = await bridge.formShape()
+    const held: HwpChange[] = []
+    report = (change) => held.push(change)
+    const result = await run(call)
+    report = deps.onChange
+    if (held.length === 0) return result
+    const after = await bridge.formShape()
+    const change = shapeChange(before, after)
+    if (!change) {
+      for (const item of held) deps.onChange(item)
+      return result
+    }
+    const undone = await bridge.undo(held.length, await bridge.foreignChanges())
+    if (!undone.ok) {
+      // the document changed meanwhile and the change stays: it is listed, and the model told
+      for (const item of held) deps.onChange(item)
+      return {
+        ...result,
+        output: `${result.output}\nWarning: 양식 유지 is on and this change would ${change}, but it could not be taken back because the document changed meanwhile. Tell the user.`,
+      }
+    }
+    return bad(
+      call,
+      `Nothing was changed: 양식 유지 (form lock) is on and this change would ${change}, so it was taken back. Offer a shorter wording, or tell the user that turning 양식 유지 off allows it.`,
+    )
+  }
+
   return {
     skill: {
       id: 'hwp',
       systemPrompt: SYSTEM_PROMPT,
       tools: TOOLS,
-      buildContext: () => [context, selectionContext()].filter(Boolean).join('\n\n'),
+      buildContext: () =>
+        [
+          context,
+          // the form goes with the document it describes, once that has been read
+          context ? formContext(deps.formProfile?.() ?? null, locked() ? 'lock' : 'keep') : '',
+          selectionContext(),
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
       executeTool: async (call) => {
         try {
-          return await run(call)
+          if (!locked()) return await run(call)
+          if (FORM_LOCK_REFUSED.has(call.name)) {
+            return bad(
+              call,
+              '양식 유지 (form lock) is on: this tool changes the form, so it was refused and nothing was changed. Only text may change. If the user wants this change, they can turn 양식 유지 off.',
+            )
+          }
+          if (!FORM_LOCK_CHECKED.has(call.name)) return await run(call)
+          return await runLocked(call)
         } catch (error) {
           // the editor refused or is gone: the model gets the cause and can say so
           return bad(call, error instanceof Error ? error.message : String(error))
+        } finally {
+          report = deps.onChange
         }
       },
     },

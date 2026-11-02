@@ -190,4 +190,12 @@ export const en = {
   aiMemoApprovalTitle: 'This edit deletes memos: {count}. Continue?',
   aiMemoApprovalKeep: 'Keep the memos',
   aiMemoApprovalRemove: 'Continue and delete them',
+  formLock: 'Keep layout',
+  formLockTip:
+    'When on, the AI changes only text and leaves fonts, tables and layout as they are. When off, the AI still keeps the layout unless you ask otherwise.',
+  formAnalyzing: 'Analysing layout…',
+  formAnalyzed: 'Layout analysed',
+  formAnalyzedTip:
+    'Analysed {pages} page(s), {tables} table(s), {empty} empty cell(s) and {fields} form field(s). The AI edits within this layout.',
+  formAnalyzeFailed: 'Could not analyse the layout',
 } satisfies Record<keyof typeof zh, string>

@@ -181,4 +181,12 @@ export const zh = {
   aiMemoApprovalTitle: '此编辑将删除 {count} 条批注。继续吗？',
   aiMemoApprovalKeep: '保留批注',
   aiMemoApprovalRemove: '继续并删除',
+  formLock: '保持版式',
+  formLockTip:
+    '开启后，AI 只修改文字，不改动字体、表格和版式。关闭时，除非你另有要求，AI 也会保持版式。',
+  formAnalyzing: '正在分析版式…',
+  formAnalyzed: '版式已分析',
+  formAnalyzedTip:
+    '已分析 {pages} 页、{tables} 个表格、{empty} 个空单元格和 {fields} 个表单字段。AI 会按此版式修改。',
+  formAnalyzeFailed: '无法分析版式',
 }

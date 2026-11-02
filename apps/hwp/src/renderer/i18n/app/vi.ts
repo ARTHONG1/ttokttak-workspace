@@ -190,4 +190,12 @@ export const vi = {
   aiMemoApprovalTitle: 'Chỉnh sửa này sẽ xóa ghi chú: {count}. Tiếp tục?',
   aiMemoApprovalKeep: 'Giữ ghi chú',
   aiMemoApprovalRemove: 'Tiếp tục và xóa',
+  formLock: 'Giữ bố cục',
+  formLockTip:
+    'Khi bật, AI chỉ thay đổi chữ và giữ nguyên phông chữ, bảng và bố cục. Khi tắt, AI vẫn giữ bố cục trừ khi bạn yêu cầu khác.',
+  formAnalyzing: 'Đang phân tích bố cục…',
+  formAnalyzed: 'Đã phân tích bố cục',
+  formAnalyzedTip:
+    'Đã phân tích {pages} trang, {tables} bảng, {empty} ô trống và {fields} trường. AI chỉnh sửa trong bố cục này.',
+  formAnalyzeFailed: 'Không thể phân tích bố cục',
 } satisfies Record<keyof typeof zh, string>

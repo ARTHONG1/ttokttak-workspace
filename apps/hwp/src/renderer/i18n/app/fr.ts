@@ -199,4 +199,12 @@ export const fr = {
   aiMemoApprovalTitle: 'Cette modification supprime {count} commentaire(s). Continuer ?',
   aiMemoApprovalKeep: 'Conserver les commentaires',
   aiMemoApprovalRemove: 'Continuer et les supprimer',
+  formLock: 'Garder la mise en page',
+  formLockTip:
+    "Activé, l'IA ne modifie que le texte et laisse polices, tableaux et mise en page intacts. Désactivé, l'IA garde aussi la mise en page sauf demande contraire.",
+  formAnalyzing: 'Analyse de la mise en page…',
+  formAnalyzed: 'Mise en page analysée',
+  formAnalyzedTip:
+    "{pages} page(s), {tables} tableau(x), {empty} cellule(s) vide(s) et {fields} champ(s) analysés. L'IA modifie dans cette mise en page.",
+  formAnalyzeFailed: "Impossible d'analyser la mise en page",
 } satisfies Record<keyof typeof zh, string>

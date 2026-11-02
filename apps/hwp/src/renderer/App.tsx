@@ -15,6 +15,7 @@ import {
 import { HwpAiDock } from './ai/AiDock'
 import type { HwpDockMode } from './ai/AiDock'
 import { createAgentBridge } from './ai/agent-bridge'
+import { analyzeForm, type FormProfile } from './ai/form-guard'
 import {
   DIRTY_EVENT,
   FILE_COMMAND_EVENT,
@@ -150,6 +151,11 @@ export default function App() {
   /** bumped by the editor's Insert > Memo menu: the memo panel opens its add dialog */
   const [memoInsertTick, setMemoInsertTick] = useState(0)
   const [autoSave, setAutoSave] = useAutoSavePref('hwpapp.autoSave', window.hwpApi)
+  /** 양식 유지: on, the AI may change only text; off, it is asked to keep the form */
+  const [formLock, setFormLock] = useState(false)
+  /** the form analysis made once the document is open, for every AI request */
+  const [formProfile, setFormProfile] = useState<FormProfile | null>(null)
+  const [formStatus, setFormStatus] = useState<'analyzing' | 'ready' | 'failed'>('analyzing')
   /** the file the document is in: the AI conversation is kept with it */
   const [filePath, setFilePath] = useState<string | null>(null)
   /** an untitled copy's name (a skill template's): the title it has until its first save */
@@ -178,6 +184,26 @@ export default function App() {
 
   // the shell's split panes: tell it whenever this pane gains focus
   useSplitPaneFocusPing()
+
+  // every document is analysed once it is open: its pages, tables, empty cells and fields
+  useEffect(() => {
+    if (phase !== 'ready') return
+    let gone = false
+    setFormStatus('analyzing')
+    analyzeForm(agentBridge).then(
+      (profile) => {
+        if (gone) return
+        setFormProfile(profile)
+        setFormStatus('ready')
+      },
+      () => {
+        if (!gone) setFormStatus('failed')
+      },
+    )
+    return () => {
+      gone = true
+    }
+  }, [phase, agentBridge])
 
   useEffect(() => {
     rememberAiPanelOpen(AI_OPEN_KEY, aiOpen)
@@ -489,7 +515,7 @@ export default function App() {
       },
       api: window.hwpApi,
       isBusy: () => savingRef.current,
-      restoredUnsaved: () => restoredRef.current,
+      restoredUnsaved: () => restoredRef.current || aiEditedRef.current,
     })
     copierRef.current = copier
     let disposed = false
@@ -581,7 +607,9 @@ export default function App() {
         if (savingRef.current && running) await running
         const dirty = await editorRef.current?.commands
           .context()
-          .then((context) => context.isDirty !== false || restoredRef.current || aiEditedRef.current)
+          .then(
+            (context) => context.isDirty !== false || restoredRef.current || aiEditedRef.current,
+          )
           .catch(() => true)
         window.hwpApi.sendCloseSaveResult(dirty ? await save('save') : true)
       })()
@@ -789,6 +817,37 @@ export default function App() {
     <div className={`hwp-app${presenting ? ' hwp-presenting' : ''}`} data-phase={phase}>
       {phase === 'ready' && (
         <div className="hwp-topbar">
+          <span
+            className={`form-status form-status-${formStatus}`}
+            data-tip={
+              formStatus === 'ready' && formProfile
+                ? t('formAnalyzedTip', {
+                    pages: formProfile.pages,
+                    tables: formProfile.tableCount,
+                    empty: formProfile.emptyCells,
+                    fields: formProfile.fields,
+                  })
+                : undefined
+            }
+          >
+            {formStatus === 'ready'
+              ? t('formAnalyzed')
+              : formStatus === 'failed'
+                ? t('formAnalyzeFailed')
+                : t('formAnalyzing')}
+          </span>
+          <label
+            className={`autosave-toggle form-lock-toggle${formLock ? ' on' : ''}`}
+            data-tip={t('formLockTip')}
+          >
+            <span className="autosave-knob" />
+            <span className="autosave-text">{t('formLock')}</span>
+            <input
+              type="checkbox"
+              checked={formLock}
+              onChange={(e) => setFormLock(e.target.checked)}
+            />
+          </label>
           <label className={`autosave-toggle${autoSave ? ' on' : ''}`} data-tip={t('autoSaveTip')}>
             <span className="autosave-knob" />
             <span className="autosave-text">{t('autoSave')}</span>
@@ -809,6 +868,8 @@ export default function App() {
             bridge={agentBridge}
             filePath={filePath}
             templateDocument={templateDocument}
+            formMode={formLock ? 'lock' : 'keep'}
+            formProfile={formProfile}
             mode={dockMode}
             setMode={setDockMode}
             onMemoModalOpenChange={setMemoBlocked}

@@ -24,6 +24,7 @@ import type { TemplateDocument } from '@genoffice/ui'
 import { useI18n } from '../i18n/locale'
 import type { AgentBridge } from './agent-bridge'
 import { AiPanel } from './AiPanel'
+import type { FormMode, FormProfile } from './form-guard'
 import { MemoPanel, type MemoNotice } from '../MemoPanel'
 
 /** Which of the two panels the shared dock shows. */
@@ -39,6 +40,10 @@ export interface HwpAiDockProps {
   filePath: string | null
   /** the document while it can go along as a skill's template (spec 5.7) */
   templateDocument?: TemplateDocument | null
+  /** 양식 유지 on (`lock`) or off (`keep`) */
+  formMode?: FormMode
+  /** the form analysis made when the document opened */
+  formProfile?: FormProfile | null
   /** the panel out now; without a mode the dock keeps its single AI panel */
   mode?: HwpDockMode
   setMode?(mode: HwpDockMode): void
@@ -61,6 +66,8 @@ export function HwpAiDock({
   bridge,
   filePath,
   templateDocument,
+  formMode = 'keep',
+  formProfile = null,
   mode,
   setMode,
   onMemoModalOpenChange,
@@ -124,6 +131,8 @@ export function HwpAiDock({
         filePath={filePath}
         onCollapse={() => setOpen(false)}
         templateDocument={templateDocument}
+        formMode={formMode}
+        formProfile={formProfile}
         onSkillHandoff={() => setOpen(true)}
       />
       {memoDock && (

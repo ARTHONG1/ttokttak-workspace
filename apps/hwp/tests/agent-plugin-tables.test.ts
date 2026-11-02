@@ -1315,3 +1315,56 @@ describe('changing the selected part', () => {
     expect(() => editor.plugin.replaceSelection([], ['a'])).toThrow(/selection/)
   })
 })
+
+describe('the form lock', () => {
+  const blueGuide = (d: HwpDocument) => {
+    // a guide left blue and italic, the way a form template prints its examples
+    d.insertTextInCellByPath(0, 1, cellPath(1), 0, 'x')
+    d.applyCharFormatInCellByPath(
+      0,
+      1,
+      cellPath(1),
+      0,
+      1,
+      JSON.stringify({ textColor: '#0000ff', italic: true, bold: true }),
+    )
+    d.deleteTextInCellByPath(0, 1, cellPath(1), 0, 1)
+  }
+
+  it("keeps the cell's own look when the answer is written with keepLook", () => {
+    const { plugin, doc } = openForm(blueGuide)
+    plugin.fillCells(1, [{ row: 1, col: 2, text: '홍길동' }], false, { keepLook: true })
+    const props = JSON.parse(doc().getCellCharPropertiesAtByPath(0, 1, cellPath(1), 1)) as {
+      bold: boolean
+      italic: boolean
+      textColor: string
+    }
+    expect(props).toMatchObject({ italic: true, textColor: '#0000ff', bold: true })
+  })
+
+  it('reports the pages, the body paragraphs and the grid and place of each table', () => {
+    const { plugin } = openForm()
+    const shape = plugin.formShape()
+    expect(shape.pages).toBe(1)
+    expect(shape.paragraphs).toEqual([3])
+    expect(shape.tables).toHaveLength(1)
+    expect(shape.tables[0]).toMatchObject({ rows: 3, cols: 4 })
+    expect(shape.tables[0]!.paragraphs.every((count) => count === 1)).toBe(true)
+    expect(shape.tables[0]!.box!.height).toBeGreaterThan(0)
+  })
+
+  it('shows a table that a long answer made taller as taller', () => {
+    const { plugin } = openForm()
+    const before = plugin.formShape()
+    plugin.fillCells(1, [{ row: 1, col: 2, text: '가나다라마바사아자차'.repeat(30) }], false)
+    const after = plugin.formShape()
+    expect(after.tables[0]!.box!.height).toBeGreaterThan(before.tables[0]!.box!.height)
+  })
+
+  it('counts a new paragraph inside a cell', () => {
+    const { plugin } = openForm()
+    const before = plugin.formShape()
+    plugin.fillCells(1, [{ row: 1, col: 2, text: '첫 줄\n둘째 줄' }], false)
+    expect(plugin.formShape().tables[0]!.paragraphs).not.toEqual(before.tables[0]!.paragraphs)
+  })
+})

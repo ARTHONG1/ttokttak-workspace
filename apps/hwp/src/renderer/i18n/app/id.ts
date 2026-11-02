@@ -193,4 +193,12 @@ export const id = {
   aiMemoApprovalTitle: 'Edit ini menghapus komentar: {count}. Lanjutkan?',
   aiMemoApprovalKeep: 'Pertahankan komentar',
   aiMemoApprovalRemove: 'Lanjutkan dan hapus',
+  formLock: 'Pertahankan tata letak',
+  formLockTip:
+    'Jika aktif, AI hanya mengubah teks dan tidak mengubah font, tabel, atau tata letak. Jika nonaktif, AI tetap mempertahankan tata letak kecuali Anda meminta lain.',
+  formAnalyzing: 'Menganalisis tata letak…',
+  formAnalyzed: 'Tata letak dianalisis',
+  formAnalyzedTip:
+    'Menganalisis {pages} halaman, {tables} tabel, {empty} sel kosong, dan {fields} kolom isian. AI mengedit sesuai tata letak ini.',
+  formAnalyzeFailed: 'Tidak dapat menganalisis tata letak',
 } satisfies Record<keyof typeof zh, string>

@@ -188,4 +188,12 @@ export const th = {
   aiMemoApprovalTitle: 'การแก้ไขนี้จะลบความคิดเห็น: {count} ดำเนินการต่อหรือไม่',
   aiMemoApprovalKeep: 'เก็บความคิดเห็นไว้',
   aiMemoApprovalRemove: 'ดำเนินการต่อและลบ',
+  formLock: 'คงรูปแบบ',
+  formLockTip:
+    'เมื่อเปิด AI จะแก้เฉพาะข้อความ ไม่เปลี่ยนแบบอักษร ตาราง และรูปแบบ เมื่อปิด AI ก็ยังคงรูปแบบไว้ เว้นแต่คุณจะขอเป็นอย่างอื่น',
+  formAnalyzing: 'กำลังวิเคราะห์รูปแบบ…',
+  formAnalyzed: 'วิเคราะห์รูปแบบแล้ว',
+  formAnalyzedTip:
+    'วิเคราะห์ {pages} หน้า ตาราง {tables} ตาราง ช่องว่าง {empty} ช่อง และช่องกรอก {fields} ช่อง AI จะแก้ไขตามรูปแบบนี้',
+  formAnalyzeFailed: 'ไม่สามารถวิเคราะห์รูปแบบได้',
 } satisfies Record<keyof typeof zh, string>

@@ -182,4 +182,12 @@ export const zhTW = {
   aiMemoApprovalTitle: '此編輯將刪除 {count} 則批註。要繼續嗎？',
   aiMemoApprovalKeep: '保留批註',
   aiMemoApprovalRemove: '繼續並刪除',
+  formLock: '保持版面',
+  formLockTip:
+    '開啟後，AI 只修改文字，不更動字型、表格與版面。關閉時，除非你另有要求，AI 也會保持版面。',
+  formAnalyzing: '正在分析版面…',
+  formAnalyzed: '版面已分析',
+  formAnalyzedTip:
+    '已分析 {pages} 頁、{tables} 個表格、{empty} 個空白儲存格與 {fields} 個表單欄位。AI 會依此版面修改。',
+  formAnalyzeFailed: '無法分析版面',
 } satisfies Record<keyof typeof zh, string>

@@ -198,4 +198,12 @@ export const nl = {
   aiMemoApprovalTitle: 'Deze bewerking verwijdert {count} opmerking(en). Doorgaan?',
   aiMemoApprovalKeep: 'Opmerkingen behouden',
   aiMemoApprovalRemove: 'Doorgaan en verwijderen',
+  formLock: 'Opmaak behouden',
+  formLockTip:
+    'Aan: de AI wijzigt alleen tekst en laat lettertypen, tabellen en opmaak ongemoeid. Uit: de AI behoudt de opmaak ook, tenzij je iets anders vraagt.',
+  formAnalyzing: 'Opmaak analyseren…',
+  formAnalyzed: 'Opmaak geanalyseerd',
+  formAnalyzedTip:
+    "{pages} pagina('s), {tables} tabel(len), {empty} lege cel(len) en {fields} veld(en) geanalyseerd. De AI bewerkt binnen deze opmaak.",
+  formAnalyzeFailed: 'Kan de opmaak niet analyseren',
 } satisfies Record<keyof typeof zh, string>

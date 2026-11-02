@@ -186,4 +186,12 @@ export const he = {
   aiMemoApprovalTitle: 'העריכה הזו תמחק הערות: {count}. להמשיך?',
   aiMemoApprovalKeep: 'להשאיר את ההערות',
   aiMemoApprovalRemove: 'להמשיך ולמחוק',
+  formLock: 'שמירת פריסה',
+  formLockTip:
+    'כשמופעל, הבינה המלאכותית משנה רק טקסט ולא משנה גופנים, טבלאות ופריסה. כשכבוי, היא שומרת על הפריסה אלא אם תבקשו אחרת.',
+  formAnalyzing: 'מנתח את הפריסה…',
+  formAnalyzed: 'הפריסה נותחה',
+  formAnalyzedTip:
+    'נותחו {pages} עמודים, {tables} טבלאות, {empty} תאים ריקים ו-{fields} שדות. העריכה נעשית בתוך פריסה זו.',
+  formAnalyzeFailed: 'לא ניתן לנתח את הפריסה',
 } satisfies Record<keyof typeof zh, string>

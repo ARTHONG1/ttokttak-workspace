@@ -74,6 +74,7 @@ import {
   type SelectionScope,
 } from './selection-scope'
 import { createHwpSkill, type HwpChange } from './hwp-skill'
+import type { FormMode, FormProfile } from './form-guard'
 import { MemoApprovalGate, memoApprovalPreview } from './memo-approval'
 import { useSubscriptionConnection } from './subscription-client'
 import { createElectronTransport } from './transport'
@@ -157,6 +158,8 @@ export function AiPanel({
   onCollapse,
   templateDocument,
   onSkillHandoff,
+  formMode = 'keep',
+  formProfile = null,
 }: {
   /** the document operations of the open editor */
   bridge: AgentBridge
@@ -167,8 +170,16 @@ export function AiPanel({
   templateDocument?: TemplateDocument | null
   /** this tab took a request handed over by the template flow: show the panel */
   onSkillHandoff?: () => void
+  /** 양식 유지 on (`lock`) or off (`keep`): read by every tool call as it runs */
+  formMode?: FormMode
+  /** the form analysis made when the document opened */
+  formProfile?: FormProfile | null
 }): ReactElement {
   const { lang, t } = useI18n()
+  const formModeRef = useRef<FormMode>(formMode)
+  formModeRef.current = formMode
+  const formProfileRef = useRef<FormProfile | null>(formProfile)
+  formProfileRef.current = formProfile
   const [chat, setChat] = useState<ChatEntry[]>([])
   /** the conversation shown now, for code that must decide before the next render */
   const chatNowRef = useRef(chat)
@@ -593,6 +604,8 @@ export function AiPanel({
         if (change.place) void bridgeRef.current.reveal(change.place).catch(() => {})
       },
       confirmMemoRemoval: (refusal) => memoGateRef.current!.ask(refusal),
+      formMode: () => formModeRef.current,
+      formProfile: () => formProfileRef.current,
     })
 
   // The loop is built once; every mutable value goes through a ref getter

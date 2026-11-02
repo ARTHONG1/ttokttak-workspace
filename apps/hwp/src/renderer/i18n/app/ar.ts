@@ -186,4 +186,12 @@ export const ar = {
   aiMemoApprovalTitle: 'سيحذف هذا التعديل تعليقات: {count}. هل تريد المتابعة؟',
   aiMemoApprovalKeep: 'الإبقاء على التعليقات',
   aiMemoApprovalRemove: 'المتابعة والحذف',
+  formLock: 'الحفاظ على التخطيط',
+  formLockTip:
+    'عند التشغيل، يغيّر الذكاء الاصطناعي النص فقط ولا يغيّر الخطوط والجداول والتخطيط. عند الإيقاف، يحافظ أيضًا على التخطيط ما لم تطلب غير ذلك.',
+  formAnalyzing: 'جارٍ تحليل التخطيط…',
+  formAnalyzed: 'تم تحليل التخطيط',
+  formAnalyzedTip:
+    'تم تحليل {pages} صفحة و{tables} جدول و{empty} خلية فارغة و{fields} حقل. يحرّر الذكاء الاصطناعي ضمن هذا التخطيط.',
+  formAnalyzeFailed: 'تعذّر تحليل التخطيط',
 } satisfies Record<keyof typeof zh, string>

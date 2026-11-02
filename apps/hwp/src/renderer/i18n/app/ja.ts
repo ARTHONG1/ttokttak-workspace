@@ -191,4 +191,12 @@ export const ja = {
   aiMemoApprovalTitle: 'この編集でコメント {count} 件が削除されます。続けますか？',
   aiMemoApprovalKeep: 'コメントを残す',
   aiMemoApprovalRemove: '続けて削除する',
+  formLock: '書式を保持',
+  formLockTip:
+    'オンにすると、AI は文字だけを変更し、フォント・表・レイアウトは変えません。オフでも、指示がない限り AI は書式を保ちます。',
+  formAnalyzing: '書式を分析中…',
+  formAnalyzed: '書式を分析しました',
+  formAnalyzedTip:
+    '{pages} ページ、表 {tables} 個、空のセル {empty} 個、入力欄 {fields} 個を分析しました。AI はこの書式に沿って編集します。',
+  formAnalyzeFailed: '書式を分析できませんでした',
 } satisfies Record<keyof typeof zh, string>

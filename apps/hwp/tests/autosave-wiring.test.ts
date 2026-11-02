@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest'
 const source = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')
 
 describe('HWP autosave wiring', () => {
+  it('treats an AI edit as unsaved when deciding whether to make a recovery copy', () => {
+    const app = source('src/renderer/App.tsx')
+    expect(app).toContain('restoredUnsaved: () => restoredRef.current || aiEditedRef.current')
+  })
   it('shows the shared AutoSave toggle and saves with the automatic flag', () => {
     const app = source('src/renderer/App.tsx')
     expect(app).toContain("useAutoSavePref('hwpapp.autoSave', window.hwpApi)")

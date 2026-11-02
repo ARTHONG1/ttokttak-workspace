@@ -150,6 +150,16 @@ describe('a recovery copy', () => {
     expect(editor.exportHwp).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps an AI-only change even when the editor reports the document as clean', async () => {
+    let aiEdited = true
+    const { copier, api, advance } = setup({ dirty: false, restored: () => aiEdited })
+    copier.noteChange()
+    advance(intervalMs)
+    expect(await copier.tick()).toBe('written')
+    expect(api.recoveryWrite).toHaveBeenCalledTimes(1)
+    aiEdited = false
+  })
+
   it('is never taken of a password document, nor of one whose protection is unknown', async () => {
     for (const protectedDoc of [true, 'unknown'] as const) {
       const { copier, editor, api, advance } = setup({ protectedDoc })

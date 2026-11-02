@@ -92,6 +92,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 12px;
   padding: 0 8px;
 }
 
@@ -140,6 +141,18 @@ body {
   font-size: 11px;
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* the form analysis made when the document opened, beside the 양식 유지 switch */
+.form-status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.form-status-failed {
+  color: var(--danger);
 }
 
 /* body row: the AI dock and the editor */
