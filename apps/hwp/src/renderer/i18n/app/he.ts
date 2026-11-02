@@ -203,4 +203,5 @@ export const he = {
   formReportLists: 'מספור ותבליטים: {lists}',
   formRenumbered: 'מוספרו מחדש {count} שורות',
   formUndoLast: 'בטל את האחרון',
+  formMatchedLook: 'המראה הותאם לפריטים מאותו סוג ({count})',
 } satisfies Record<keyof typeof zh, string>

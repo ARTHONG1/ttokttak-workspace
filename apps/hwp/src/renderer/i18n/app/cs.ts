@@ -209,4 +209,5 @@ export const cs = {
   formReportLists: 'Číslování a odrážky: {lists}',
   formRenumbered: 'Přečíslováno řádků: {count}',
   formUndoLast: 'Vrátit poslední',
+  formMatchedLook: 'Vzhled sladěn s podobnými položkami ({count})',
 } satisfies Record<keyof typeof zh, string>

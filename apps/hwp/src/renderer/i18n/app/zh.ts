@@ -197,4 +197,5 @@ export const zh = {
   formReportLists: '编号与项目符号：{lists}',
   formRenumbered: '已重新编号 {count} 处',
   formUndoLast: '撤销最后一项',
+  formMatchedLook: '已套用同类项目的样式（{count} 处）',
 }

@@ -210,4 +210,5 @@ export const pl = {
   formReportLists: 'Numeracja i punktory: {lists}',
   formRenumbered: 'Przenumerowano wierszy: {count}',
   formUndoLast: 'Cofnij ostatnią',
+  formMatchedLook: 'Wygląd dopasowany do podobnych punktów ({count})',
 } satisfies Record<keyof typeof zh, string>

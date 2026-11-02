@@ -210,4 +210,5 @@ export const ms = {
   formReportLists: 'Penomboran dan bulet: {lists}',
   formRenumbered: '{count} baris dinombor semula',
   formUndoLast: 'Buat asal yang terakhir',
+  formMatchedLook: 'Rupa disamakan dengan item sejenis ({count})',
 } satisfies Record<keyof typeof zh, string>

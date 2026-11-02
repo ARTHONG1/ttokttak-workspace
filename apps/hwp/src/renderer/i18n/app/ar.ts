@@ -203,4 +203,5 @@ export const ar = {
   formReportLists: 'الترقيم والتعداد: {lists}',
   formRenumbered: 'أُعيد ترقيم {count} سطر',
   formUndoLast: 'تراجع عن الأخير',
+  formMatchedLook: 'طُوبق الشكل مع العناصر المماثلة ({count})',
 } satisfies Record<keyof typeof zh, string>

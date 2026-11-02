@@ -218,4 +218,5 @@ export const fr = {
   formReportLists: 'Numérotation et puces : {lists}',
   formRenumbered: '{count} ligne(s) renumérotée(s)',
   formUndoLast: 'Annuler la dernière',
+  formMatchedLook: 'Aspect aligné sur les éléments du même type ({count})',
 } satisfies Record<keyof typeof zh, string>

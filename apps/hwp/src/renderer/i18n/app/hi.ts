@@ -210,4 +210,5 @@ export const hi = {
   formReportLists: 'क्रमांक और बुलेट: {lists}',
   formRenumbered: '{count} पंक्तियों का क्रमांक फिर से किया',
   formUndoLast: 'अंतिम को पूर्ववत करें',
+  formMatchedLook: 'समान प्रकार के आइटम जैसा रूप दिया ({count})',
 } satisfies Record<keyof typeof zh, string>

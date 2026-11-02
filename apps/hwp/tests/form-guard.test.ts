@@ -123,6 +123,27 @@ describe('text the change did not report', () => {
       ]),
     ).toEqual([])
   })
+
+  it('accepts several paragraphs added in one call, as the change list joins them', () => {
+    expect(
+      unexplainedLines('1. 목적\n2. 일정', '1. 목적\n2. 사전 준비\n- 동의서를 받음.\n3. 일정', [
+        { kind: 'insert', from: '', to: '2. 사전 준비 ⏎ - 동의서를 받음.', count: 2 },
+        { kind: 'replace', from: '', to: '번호', count: 1 },
+      ]),
+    ).toEqual([])
+  })
+
+  it('accepts text the call asked for even when the change list cut it short', () => {
+    const long = '가'.repeat(250)
+    expect(
+      unexplainedLines(
+        '제목',
+        `제목\n${long}`,
+        [{ kind: 'insert', from: '', to: '가…', count: 1 }],
+        [long],
+      ),
+    ).toEqual([])
+  })
 })
 
 describe('the form context of every AI request', () => {

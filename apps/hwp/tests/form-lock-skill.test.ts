@@ -32,6 +32,7 @@ function setup(
     texts?: string[]
     renumbered?: number
     whole?: boolean
+    matched?: number
   } = {},
 ) {
   const shapes = options.shapes ?? [shape(), shape()]
@@ -43,6 +44,7 @@ function setup(
     checkRoundTrip: vi.fn(async () =>
       options.whole === false ? { ok: false, reason: 'unreadable' } : { ok: true },
     ),
+    matchListLook: vi.fn(async () => ({ ok: true as const, count: options.matched ?? 0 })),
     renumberAround: vi.fn(async () => ({
       ok: true as const,
       count: options.renumbered ?? 0,
@@ -147,10 +149,11 @@ describe('서식 고정 (the formatting lock)', () => {
     expect(changes).toHaveLength(0)
   })
 
-  it('lets a paragraph be added, and renumbers the list around it in the same run', async () => {
+  it('lets a paragraph be added, matches its look and renumbers the list in the same run', async () => {
     const { bridge, call, changes } = setup('lock', {
       texts: ['1. 목적\n2. 안전', '1. 목적\n2. 새 항목\n3. 안전'],
       renumbered: 1,
+      matched: 1,
     })
     const result = await call('insert_paragraphs', {
       anchor: '목적',
@@ -158,9 +161,11 @@ describe('서식 고정 (the formatting lock)', () => {
       paragraphs: ['2. 새 항목'],
     })
     expect(result.isError).toBeFalsy()
+    expect(bridge.matchListLook).toHaveBeenCalledWith({ sec: 0, para: 4, count: 1 })
     expect(bridge.renumberAround).toHaveBeenCalledWith({ sec: 0, para: 4 })
-    expect(changes).toHaveLength(2)
-    expect(changes[1]!.to).toMatch(/formRenumbered/)
+    expect(changes).toHaveLength(3)
+    expect(changes[1]!.to).toMatch(/formMatchedLook/)
+    expect(changes[2]!.to).toMatch(/formRenumbered/)
   })
 
   it('lets table rows be added, and shows the table after it', async () => {

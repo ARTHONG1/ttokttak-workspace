@@ -215,4 +215,5 @@ export const it = {
   formReportLists: 'Numerazione ed elenchi puntati: {lists}',
   formRenumbered: '{count} righe rinumerate',
   formUndoLast: "Annulla l'ultima",
+  formMatchedLook: 'Aspetto allineato agli elementi dello stesso tipo ({count})',
 } satisfies Record<keyof typeof zh, string>

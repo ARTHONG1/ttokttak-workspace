@@ -219,4 +219,5 @@ export const de = {
   formReportLists: 'Nummerierung und Aufzählungszeichen: {lists}',
   formRenumbered: '{count} Zeile(n) neu nummeriert',
   formUndoLast: 'Letzte rückgängig',
+  formMatchedLook: 'An gleichartige Punkte angeglichen ({count})',
 } satisfies Record<keyof typeof zh, string>

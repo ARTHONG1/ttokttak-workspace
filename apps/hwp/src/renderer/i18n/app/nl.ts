@@ -216,4 +216,5 @@ export const nl = {
   formReportLists: 'Nummering en opsommingstekens: {lists}',
   formRenumbered: '{count} regel(s) hernummerd',
   formUndoLast: 'Laatste ongedaan maken',
+  formMatchedLook: 'Opmaak gelijkgetrokken met soortgelijke items ({count})',
 } satisfies Record<keyof typeof zh, string>

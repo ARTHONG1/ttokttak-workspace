@@ -189,20 +189,29 @@ export function shapeChange(before: AgentFormShape, after: AgentFormShape): stri
   return null
 }
 
-/** The pieces of a change that new text may contain: its old and new text, cell by cell. */
-function piecesOf(change: HwpChange): string[] {
-  return [change.from, change.to]
-    .flatMap((text) => text.split(/\s*\|\s*|\n/))
+/**
+ * The pieces new text may contain: a change's old and new text, cell by cell and paragraph
+ * by paragraph (the change list joins paragraphs with ⏎ and cells with |).
+ */
+function piecesOf(texts: string[]): string[] {
+  return texts
+    .flatMap((text) => text.split(/\s*[|⏎]\s*|\n/))
     .map((piece) => piece.trim())
     .filter((piece) => piece.length >= 2)
 }
 
 /**
  * Lines of the document that a call changed without one of its changes saying so: a new
- * line is accounted for when it holds a piece of a change, or when it is a line that was
- * there with its number rewritten. Empty lines are left out.
+ * line is accounted for when it holds a piece of a change or of the text the call asked to
+ * write (`asked`: the change list shortens long text), or when it is a line that was there
+ * with its number rewritten. Empty lines are left out.
  */
-export function unexplainedLines(before: string, after: string, changes: HwpChange[]): string[] {
+export function unexplainedLines(
+  before: string,
+  after: string,
+  changes: HwpChange[],
+  asked: string[] = [],
+): string[] {
   const lines = (text: string) =>
     text
       .split(/\r?\n/)
@@ -219,7 +228,7 @@ export function unexplainedLines(before: string, after: string, changes: HwpChan
   const removed = new Set(
     [...left.entries()].filter(([, count]) => count > 0).map(([line]) => withoutMarker(line)),
   )
-  const pieces = changes.flatMap(piecesOf)
+  const pieces = piecesOf([...changes.flatMap((change) => [change.from, change.to]), ...asked])
   return added.filter(
     (line) => !pieces.some((piece) => line.includes(piece)) && !removed.has(withoutMarker(line)),
   )

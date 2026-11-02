@@ -209,4 +209,5 @@ export const en = {
   formReportLists: 'Numbering and bullets: {lists}',
   formRenumbered: 'Renumbered {count} line(s)',
   formUndoLast: 'Undo the last one',
+  formMatchedLook: 'Matched the look of similar items ({count})',
 } satisfies Record<keyof typeof zh, string>

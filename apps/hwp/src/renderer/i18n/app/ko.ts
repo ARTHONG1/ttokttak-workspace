@@ -205,4 +205,5 @@ export const ko = {
   formReportLists: '번호·글머리: {lists}',
   formRenumbered: '번호 다시 매김 {count}곳',
   formUndoLast: '마지막 1개 되돌리기',
+  formMatchedLook: '같은 종류 항목 모양으로 맞춤 {count}곳',
 } satisfies Record<keyof typeof zh, string>

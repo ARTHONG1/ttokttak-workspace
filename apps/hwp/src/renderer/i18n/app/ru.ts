@@ -210,4 +210,5 @@ export const ru = {
   formReportLists: 'Нумерация и маркеры: {lists}',
   formRenumbered: 'Перенумеровано строк: {count}',
   formUndoLast: 'Отменить последнее',
+  formMatchedLook: 'Оформление как у однотипных пунктов ({count})',
 } satisfies Record<keyof typeof zh, string>

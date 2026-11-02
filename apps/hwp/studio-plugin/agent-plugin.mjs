@@ -2258,6 +2258,76 @@ function numberFixesAround(doc, place) {
   return fixes
 }
 
+/** A typed bullet at the start of a line (- · □ ○ …), as the analysis counts them. */
+const TYPED_BULLET = /^(\s*)([-·•□■○●◦ㅇ※*▪◇◆▶►])\s/
+
+/** What kind of list item a line is: its number scheme or bullet and its leading spaces. */
+function itemKindOf(text) {
+  const number = typedNumberOf(text)
+  if (number) return `${number.scheme.id}|${number.lead}`
+  const bullet = TYPED_BULLET.exec(text)
+  return bullet ? `${bullet[2]}|${bullet[1].length}` : null
+}
+
+/**
+ * The looks to give the new body paragraphs `place.para` … `place.para + count - 1`: each
+ * list item takes the paragraph and character shape of the nearest other paragraph of its
+ * kind (`1.` items like `1.` items, `-` items like `-` items), so an item added under a
+ * heading does not keep the heading's look. Only shapes already in use are given.
+ */
+function listLookFixesFor(doc, place) {
+  const sec = place.sec
+  const total = doc.getParagraphCount(sec)
+  const first = place.para
+  const last = Math.min(total - 1, place.para + Math.max(1, place.count) - 1)
+  const textAt = (k) => {
+    const length = doc.getParagraphLength(sec, k)
+    return length > 0 ? doc.getTextRange(sec, k, 0, length) : ''
+  }
+  const lookAt = (k) => {
+    const length = doc.getParagraphLength(sec, k)
+    const runs = length > 0 ? parse(doc.getCharShapeRuns(sec, k, 0, length)) : []
+    return {
+      para: parse(doc.getParaPropertiesAt(sec, k)).paraShapeId,
+      char: runs.length > 0 ? runs[0].charShapeId : null,
+      mixed: runs.length > 1,
+      length,
+    }
+  }
+  const fixes = []
+  for (let k = first; k <= last; k++) {
+    const kind = itemKindOf(textAt(k))
+    if (!kind) continue
+    let model = -1
+    for (let distance = 1; distance < total && model < 0; distance++) {
+      for (const other of [k - distance, k + distance]) {
+        if (other < 0 || other >= total || (other >= first && other <= last)) continue
+        if (itemKindOf(textAt(other)) === kind) {
+          model = other
+          break
+        }
+      }
+    }
+    if (model < 0) continue
+    const want = lookAt(model)
+    const have = lookAt(k)
+    // an item whose model mixes looks inside it keeps its own character look
+    const char = want.mixed ? null : want.char
+    const needsPara = Number.isInteger(want.para) && want.para !== have.para
+    const needsChar =
+      Number.isInteger(char) && have.length > 0 && (have.mixed || have.char !== char)
+    if (needsPara || needsChar) {
+      fixes.push({
+        sec,
+        para: k,
+        length: have.length,
+        paraShape: needsPara ? want.para : null,
+        charShape: needsChar ? char : null,
+      })
+    }
+  }
+  return fixes
+}
 /**
  * Where a body table stands: its page and its box there, rounded to a tenth of a pixel.
  * The engine gives no box for a table inside a cell; its cell's height stands for it.
@@ -4477,6 +4547,36 @@ export const agentPlugin = {
           }
         }),
       ),
+
+      /**
+       * Give the new body paragraphs `place.para` … `+ count - 1` the look of the nearest
+       * other item of their kind, in one undo step (서식 고정: an item added under a heading
+       * looks like the other items, not like the heading). Nothing is changed, and no step is
+       * added, when they already do.
+       */
+      matchListLook: guarded((place) => {
+        if (!place || !Number.isInteger(place.sec) || !Number.isInteger(place.para)) {
+          throw fail('BAD_ARGUMENT', 'place must name a body paragraph')
+        }
+        const at = { sec: place.sec, para: place.para, count: Number(place.count) || 1 }
+        const fixes = host.read((doc) => listLookFixesFor(doc, at))
+        if (fixes.length === 0) return { ok: true, count: 0 }
+        return change('match-look', (doc) => {
+          const now = listLookFixesFor(doc, at)
+          for (const fix of now) {
+            if (fix.paraShape !== null) {
+              expectOk(doc.setParaShapeId(fix.sec, fix.para, fix.paraShape), 'match the look')
+            }
+            if (fix.charShape !== null) {
+              expectOk(
+                doc.setCharShapeId(fix.sec, fix.para, 0, fix.length, fix.charShape),
+                'match the look',
+              )
+            }
+          }
+          return { ok: true, count: now.length }
+        })
+      }),
 
       /**
        * Whether the document as it is now comes back whole from a save and a reopen in the

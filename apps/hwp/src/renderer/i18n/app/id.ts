@@ -210,4 +210,5 @@ export const id = {
   formReportLists: 'Penomoran dan poin: {lists}',
   formRenumbered: '{count} baris dinomori ulang',
   formUndoLast: 'Batalkan yang terakhir',
+  formMatchedLook: 'Tampilan disamakan dengan butir sejenis ({count})',
 } satisfies Record<keyof typeof zh, string>

@@ -205,4 +205,5 @@ export const th = {
   formReportLists: 'เลขลำดับและสัญลักษณ์: {lists}',
   formRenumbered: 'เรียงเลขใหม่ {count} บรรทัด',
   formUndoLast: 'เลิกทำรายการล่าสุด',
+  formMatchedLook: 'ปรับรูปแบบตามรายการชนิดเดียวกัน {count} แห่ง',
 } satisfies Record<keyof typeof zh, string>

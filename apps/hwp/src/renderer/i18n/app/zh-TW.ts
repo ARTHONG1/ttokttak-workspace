@@ -198,4 +198,5 @@ export const zhTW = {
   formReportLists: '編號與項目符號：{lists}',
   formRenumbered: '已重新編號 {count} 處',
   formUndoLast: '復原最後一項',
+  formMatchedLook: '已套用同類項目的樣式（{count} 處）',
 } satisfies Record<keyof typeof zh, string>

@@ -216,4 +216,5 @@ export const es = {
   formReportLists: 'Numeración y viñetas: {lists}',
   formRenumbered: '{count} línea(s) renumerada(s)',
   formUndoLast: 'Deshacer la última',
+  formMatchedLook: 'Aspecto igualado al de elementos del mismo tipo ({count})',
 } satisfies Record<keyof typeof zh, string>

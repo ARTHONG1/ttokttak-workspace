@@ -1177,6 +1177,14 @@ function hostLabel(rawUrl: string): string {
   }
 }
 
+/** Every string in a tool call's input, nested lists and objects included. */
+function textsIn(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (Array.isArray(value)) return value.flatMap(textsIn)
+  if (value && typeof value === 'object') return Object.values(value).flatMap(textsIn)
+  return []
+}
+
 export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
   const { bridge, label } = deps
   const locked = (): boolean => deps.formMode?.() === 'lock'
@@ -2597,6 +2605,24 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
     if (held.length > 0 && FORM_LOCK_RENUMBERED.has(call.name)) {
       const at = held[0]!.place
       if (at && !at.path) {
+        if (call.name === 'insert_paragraphs') {
+          // a new item takes the look of the other items of its kind, not of its anchor
+          const added = Array.isArray(call.input.paragraphs) ? call.input.paragraphs.length : 1
+          const matched = await bridge.matchListLook({ sec: at.sec, para: at.para, count: added })
+          if (matched.count > 0) {
+            held.push({
+              kind: 'format',
+              from: '',
+              to: label('formMatchedLook', { count: matched.count }),
+              count: matched.count,
+              place: at,
+            })
+            result = {
+              ...result,
+              output: `${result.output}\n${matched.count} new list item(s) were given the look of the other items of their kind.`,
+            }
+          }
+        }
         const renumbered = await bridge.renumberAround({ sec: at.sec, para: at.para })
         if (renumbered.count > 0) {
           held.push({
@@ -2642,7 +2668,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
     }
     // rows and columns move whole lines of the text around; their content is checked as cells
     if (!problem && !held.some((item) => item.kind === 'lines')) {
-      const stray = unexplainedLines(beforeText, await bridge.readText(), held)
+      const stray = unexplainedLines(beforeText, await bridge.readText(), held, textsIn(call.input))
       if (stray.length > 0) {
         problem = `change text it did not report: ${stray
           .slice(0, 3)

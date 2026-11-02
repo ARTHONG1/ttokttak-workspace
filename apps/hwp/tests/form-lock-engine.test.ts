@@ -192,3 +192,29 @@ describe('content growing along the form', () => {
     expect(editor.plugin.checkRoundTrip()).toEqual({ ok: true })
   })
 })
+
+describe('the look of a new list item', () => {
+  it('takes the look of the nearest item of its own kind, not of the heading it was added under', () => {
+    const editor = open(['1. 목적', '- 첫째 내용입니다.', '2. 일정'])
+    // the headings look different from the items
+    editor.plugin.formatText('목적', null, false, { bold: true, size: 14 })
+    editor.plugin.formatParagraph('목적', null, { align: 'center' })
+    editor.insertAfter(0, '- 새 항목입니다.')
+    const para = (k: number) =>
+      (JSON.parse(editor.doc().getParaPropertiesAt(0, k)) as { paraShapeId: number }).paraShapeId
+    expect(para(1)).toBe(para(0))
+    const result = editor.plugin.matchListLook({ sec: 0, para: 1, count: 1 })
+    expect(result).toMatchObject({ ok: true, count: 1 })
+    expect(para(1)).toBe(para(2))
+    expect(editor.charAt(1)).toBe(editor.charAt(2))
+  })
+
+  it('leaves a new item that already looks like its kind', () => {
+    const editor = open(['- 첫째', '- 둘째'])
+    editor.insertAfter(0, '- 새 항목')
+    expect(editor.plugin.matchListLook({ sec: 0, para: 1, count: 1 })).toMatchObject({
+      ok: true,
+      count: 0,
+    })
+  })
+})

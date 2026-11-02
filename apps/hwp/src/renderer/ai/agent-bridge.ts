@@ -30,6 +30,7 @@ const METHODS = [
   'formShape',
   'checkRoundTrip',
   'renumberAround',
+  'matchListLook',
   'readTable',
   'fillCells',
   'checkBoxes',

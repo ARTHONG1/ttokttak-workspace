@@ -207,4 +207,5 @@ export const vi = {
   formReportLists: 'Đánh số và dấu đầu dòng: {lists}',
   formRenumbered: 'Đã đánh số lại {count} dòng',
   formUndoLast: 'Hoàn tác mục cuối',
+  formMatchedLook: 'Đã khớp kiểu với các mục cùng loại ({count})',
 } satisfies Record<keyof typeof zh, string>

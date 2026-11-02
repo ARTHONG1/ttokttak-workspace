@@ -208,4 +208,5 @@ export const ja = {
   formReportLists: '番号・箇条書き：{lists}',
   formRenumbered: '{count} か所の番号を振り直しました',
   formUndoLast: '最後の 1 件を元に戻す',
+  formMatchedLook: '同じ種類の項目の見た目に合わせました（{count} か所）',
 } satisfies Record<keyof typeof zh, string>

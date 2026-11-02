@@ -214,4 +214,5 @@ export const pt = {
   formReportLists: 'Numeração e marcadores: {lists}',
   formRenumbered: '{count} linha(s) renumerada(s)',
   formUndoLast: 'Desfazer a última',
+  formMatchedLook: 'Aspeto igualado ao de itens do mesmo tipo ({count})',
 } satisfies Record<keyof typeof zh, string>

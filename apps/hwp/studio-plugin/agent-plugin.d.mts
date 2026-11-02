@@ -813,6 +813,8 @@ export interface AgentPluginSurface {
   ): AgentFormatParagraphResult
   listTables(): AgentTableList
   formShape(): AgentFormShape
+  /** give new list items the look of the nearest other item of their kind; one undo step */
+  matchListLook(place: { sec: number; para: number; count: number }): { ok: true; count: number }
   /** whether the document comes back whole from a save and a reopen in the engine */
   checkRoundTrip(): { ok: true } | { ok: false; reason: 'changed' | 'unreadable' }
   /** put the typed numbers of the list around a body paragraph in order; one undo step */
