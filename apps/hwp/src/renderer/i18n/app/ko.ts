@@ -191,9 +191,14 @@ export const ko = {
   formLock: '양식 유지',
   formLockTip:
     '켜면 AI가 글자만 바꾸고 글꼴·표·배치는 바꾸지 않습니다. 꺼 두어도 AI는 양식을 유지하며 고칩니다.',
-  formAnalyzing: '양식 분석 중…',
-  formAnalyzed: '양식 분석됨',
-  formAnalyzedTip:
-    '{pages}쪽, 표 {tables}개, 빈 칸 {empty}개, 누름틀 {fields}개를 분석했습니다. AI가 이 양식에 맞춰 고칩니다.',
-  formAnalyzeFailed: '양식을 분석하지 못했습니다',
+  formReportAnalyzing: '문서 양식을 분석하는 중…',
+  formReportTitle: '문서 양식을 분석했습니다',
+  formReportSummary: '{pages}쪽 · 표 {tables}개 · 빈 칸 {empty}개 · 누름틀 {fields}개',
+  formReportTable: '표 {table}: {rows}행 × {cols}열, 빈 칸 {empty}개',
+  formReportNear: '"{near}" 아래',
+  formReportMore: '표 {count}개 더',
+  formReportKeep: 'AI가 이 양식을 지키며 고칩니다. 글자만 바꾸게 하려면 아래 ‘양식 유지’를 켜세요.',
+  formReportLock:
+    '양식 유지가 켜져 있습니다. AI는 글자만 바꾸고, 서식·표·배치를 바꾸는 요청은 거절하며, 표가 커지는 수정은 되돌립니다.',
+  formReportFailed: '양식을 분석하지 못했습니다. AI는 그래도 양식을 지키며 고칩니다.',
 } satisfies Record<keyof typeof zh, string>

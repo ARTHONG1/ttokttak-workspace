@@ -199,9 +199,16 @@ export const pt = {
   formLock: 'Manter layout',
   formLockTip:
     'Ligado, a IA altera só o texto e mantém fontes, tabelas e layout. Desligado, a IA também mantém o layout, salvo se pedir outra coisa.',
-  formAnalyzing: 'Analisando o layout…',
-  formAnalyzed: 'Layout analisado',
-  formAnalyzedTip:
-    'Foram analisadas {pages} página(s), {tables} tabela(s), {empty} célula(s) vazia(s) e {fields} campo(s). A IA edita dentro deste layout.',
-  formAnalyzeFailed: 'Não foi possível analisar o layout',
+  formReportAnalyzing: 'Analisando o layout do documento…',
+  formReportTitle: 'Layout do documento analisado',
+  formReportSummary:
+    '{pages} página(s) · {tables} tabela(s) · {empty} célula(s) vazia(s) · {fields} campo(s)',
+  formReportTable: 'Tabela {table}: {rows} linhas × {cols} colunas, {empty} célula(s) vazia(s)',
+  formReportNear: 'abaixo de "{near}"',
+  formReportMore: 'mais {count} tabela(s)',
+  formReportKeep:
+    'A IA mantém este layout ao editar. Para alterar só o texto, ligue Manter layout abaixo.',
+  formReportLock:
+    'Manter layout está ligado. A IA altera só o texto, recusa pedidos que mudam formatação, tabelas ou layout e desfaz edições que aumentam uma tabela.',
+  formReportFailed: 'Não foi possível analisar o layout. A IA ainda mantém o layout.',
 } satisfies Record<keyof typeof zh, string>

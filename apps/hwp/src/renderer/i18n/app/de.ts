@@ -203,9 +203,17 @@ export const de = {
   formLock: 'Layout beibehalten',
   formLockTip:
     'Eingeschaltet ändert die KI nur Text und lässt Schriften, Tabellen und Layout unverändert. Ausgeschaltet behält die KI das Layout ebenfalls bei, sofern du nichts anderes verlangst.',
-  formAnalyzing: 'Layout wird analysiert…',
-  formAnalyzed: 'Layout analysiert',
-  formAnalyzedTip:
-    '{pages} Seite(n), {tables} Tabelle(n), {empty} leere Zelle(n) und {fields} Formularfeld(er) analysiert. Die KI bearbeitet innerhalb dieses Layouts.',
-  formAnalyzeFailed: 'Layout konnte nicht analysiert werden',
+  formReportAnalyzing: 'Layout des Dokuments wird analysiert…',
+  formReportTitle: 'Layout des Dokuments analysiert',
+  formReportSummary:
+    '{pages} Seite(n) · {tables} Tabelle(n) · {empty} leere Zelle(n) · {fields} Formularfeld(er)',
+  formReportTable: 'Tabelle {table}: {rows} Zeilen × {cols} Spalten, {empty} leere Zelle(n)',
+  formReportNear: 'unter „{near}“',
+  formReportMore: '{count} weitere Tabelle(n)',
+  formReportKeep:
+    'Die KI behält dieses Layout beim Bearbeiten bei. Damit sie nur Text ändert, schalte unten „Layout beibehalten“ ein.',
+  formReportLock:
+    '„Layout beibehalten“ ist an. Die KI ändert nur Text, lehnt Änderungen an Formatierung, Tabellen oder Layout ab und nimmt Änderungen zurück, die eine Tabelle vergrößern.',
+  formReportFailed:
+    'Das Layout konnte nicht analysiert werden. Die KI behält das Layout trotzdem bei.',
 } satisfies Record<keyof typeof zh, string>

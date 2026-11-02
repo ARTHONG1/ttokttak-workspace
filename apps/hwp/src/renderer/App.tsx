@@ -817,37 +817,6 @@ export default function App() {
     <div className={`hwp-app${presenting ? ' hwp-presenting' : ''}`} data-phase={phase}>
       {phase === 'ready' && (
         <div className="hwp-topbar">
-          <span
-            className={`form-status form-status-${formStatus}`}
-            data-tip={
-              formStatus === 'ready' && formProfile
-                ? t('formAnalyzedTip', {
-                    pages: formProfile.pages,
-                    tables: formProfile.tableCount,
-                    empty: formProfile.emptyCells,
-                    fields: formProfile.fields,
-                  })
-                : undefined
-            }
-          >
-            {formStatus === 'ready'
-              ? t('formAnalyzed')
-              : formStatus === 'failed'
-                ? t('formAnalyzeFailed')
-                : t('formAnalyzing')}
-          </span>
-          <label
-            className={`autosave-toggle form-lock-toggle${formLock ? ' on' : ''}`}
-            data-tip={t('formLockTip')}
-          >
-            <span className="autosave-knob" />
-            <span className="autosave-text">{t('formLock')}</span>
-            <input
-              type="checkbox"
-              checked={formLock}
-              onChange={(e) => setFormLock(e.target.checked)}
-            />
-          </label>
           <label className={`autosave-toggle${autoSave ? ' on' : ''}`} data-tip={t('autoSaveTip')}>
             <span className="autosave-knob" />
             <span className="autosave-text">{t('autoSave')}</span>
@@ -870,6 +839,8 @@ export default function App() {
             templateDocument={templateDocument}
             formMode={formLock ? 'lock' : 'keep'}
             formProfile={formProfile}
+            formStatus={formStatus}
+            onFormModeChange={(mode) => setFormLock(mode === 'lock')}
             mode={dockMode}
             setMode={setDockMode}
             onMemoModalOpenChange={setMemoBlocked}

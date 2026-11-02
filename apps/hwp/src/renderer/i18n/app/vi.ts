@@ -193,9 +193,15 @@ export const vi = {
   formLock: 'Giữ bố cục',
   formLockTip:
     'Khi bật, AI chỉ thay đổi chữ và giữ nguyên phông chữ, bảng và bố cục. Khi tắt, AI vẫn giữ bố cục trừ khi bạn yêu cầu khác.',
-  formAnalyzing: 'Đang phân tích bố cục…',
-  formAnalyzed: 'Đã phân tích bố cục',
-  formAnalyzedTip:
-    'Đã phân tích {pages} trang, {tables} bảng, {empty} ô trống và {fields} trường. AI chỉnh sửa trong bố cục này.',
-  formAnalyzeFailed: 'Không thể phân tích bố cục',
+  formReportAnalyzing: 'Đang phân tích bố cục tài liệu…',
+  formReportTitle: 'Đã phân tích bố cục tài liệu',
+  formReportSummary: '{pages} trang · {tables} bảng · {empty} ô trống · {fields} trường',
+  formReportTable: 'Bảng {table}: {rows} hàng × {cols} cột, {empty} ô trống',
+  formReportNear: 'bên dưới "{near}"',
+  formReportMore: 'thêm {count} bảng',
+  formReportKeep:
+    'AI giữ bố cục này khi chỉnh sửa. Để chỉ thay đổi chữ, hãy bật Giữ bố cục bên dưới.',
+  formReportLock:
+    'Giữ bố cục đang bật. AI chỉ thay đổi chữ, từ chối yêu cầu đổi định dạng, bảng hay bố cục và hoàn tác chỉnh sửa làm bảng to ra.',
+  formReportFailed: 'Không thể phân tích bố cục. AI vẫn giữ bố cục khi chỉnh sửa.',
 } satisfies Record<keyof typeof zh, string>

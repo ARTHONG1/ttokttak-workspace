@@ -196,9 +196,15 @@ export const ms = {
   formLock: 'Kekalkan susun atur',
   formLockTip:
     'Apabila hidup, AI hanya menukar teks dan tidak mengubah fon, jadual dan susun atur. Apabila mati, AI tetap mengekalkan susun atur melainkan anda meminta lain.',
-  formAnalyzing: 'Menganalisis susun atur…',
-  formAnalyzed: 'Susun atur dianalisis',
-  formAnalyzedTip:
-    'Menganalisis {pages} halaman, {tables} jadual, {empty} sel kosong dan {fields} medan. AI menyunting dalam susun atur ini.',
-  formAnalyzeFailed: 'Tidak dapat menganalisis susun atur',
+  formReportAnalyzing: 'Menganalisis susun atur dokumen…',
+  formReportTitle: 'Susun atur dokumen dianalisis',
+  formReportSummary: '{pages} halaman · {tables} jadual · {empty} sel kosong · {fields} medan',
+  formReportTable: 'Jadual {table}: {rows} baris × {cols} lajur, {empty} sel kosong',
+  formReportNear: 'di bawah "{near}"',
+  formReportMore: '{count} jadual lagi',
+  formReportKeep:
+    'AI mengekalkan susun atur ini semasa menyunting. Untuk menukar teks sahaja, hidupkan Kekalkan susun atur di bawah.',
+  formReportLock:
+    'Kekalkan susun atur dihidupkan. AI hanya menukar teks, menolak permintaan yang mengubah format, jadual atau susun atur, dan membatalkan suntingan yang membesarkan jadual.',
+  formReportFailed: 'Susun atur tidak dapat dianalisis. AI tetap mengekalkan susun atur.',
 } satisfies Record<keyof typeof zh, string>

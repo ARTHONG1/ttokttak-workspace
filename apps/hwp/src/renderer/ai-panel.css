@@ -1811,3 +1811,117 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
+
+/* the form analysis, reported as the first message of the conversation. Unlike the plain
+ * assistant replies it is a card, so the user sees what was analysed and how the AI keeps it. */
+.ai-chat .ai-form-report {
+  align-self: stretch;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-subtle);
+  font-size: var(--text-small);
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.ai-form-report-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.ai-form-report-summary {
+  margin-top: 4px;
+  color: var(--color-text-primary);
+}
+
+.ai-form-report-tables {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.ai-form-report-near {
+  color: var(--color-text-secondary);
+}
+
+.ai-form-report-rule {
+  margin-top: 8px;
+  padding-left: 8px;
+  border-left: 3px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+
+.ai-form-report-rule.on {
+  border-left-color: var(--accent);
+  color: var(--color-text-primary);
+}
+
+/* the 양식 유지 switch in the composer, next to the model picker */
+.ai-form-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 8px 0 5px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-30);
+  background: var(--color-bg-page);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ai-form-lock:hover {
+  border-color: var(--color-border-strong);
+}
+
+.ai-form-lock:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ai-form-lock-knob {
+  position: relative;
+  width: 24px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--border-strong);
+  transition: background 0.15s;
+}
+
+.ai-form-lock-knob::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-bg-page);
+  transition: transform 0.15s;
+}
+
+.ai-form-lock.on {
+  border-color: var(--accent);
+  color: var(--color-text-primary);
+}
+
+.ai-form-lock.on .ai-form-lock-knob {
+  background: var(--accent);
+}
+
+.ai-form-lock.on .ai-form-lock-knob::after {
+  transform: translateX(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-form-lock-knob,
+  .ai-form-lock-knob::after {
+    transition: none;
+  }
+}

@@ -201,9 +201,15 @@ export const it = {
   formLock: 'Mantieni layout',
   formLockTip:
     "Se attivo, l'IA cambia solo il testo e lascia invariati caratteri, tabelle e layout. Se disattivo, l'IA mantiene comunque il layout salvo diversa richiesta.",
-  formAnalyzing: 'Analisi del layout…',
-  formAnalyzed: 'Layout analizzato',
-  formAnalyzedTip:
-    "Analizzate {pages} pagine, {tables} tabelle, {empty} celle vuote e {fields} campi. L'IA modifica entro questo layout.",
-  formAnalyzeFailed: 'Impossibile analizzare il layout',
+  formReportAnalyzing: 'Analisi del layout del documento…',
+  formReportTitle: 'Layout del documento analizzato',
+  formReportSummary: '{pages} pagine · {tables} tabelle · {empty} celle vuote · {fields} campi',
+  formReportTable: 'Tabella {table}: {rows} righe × {cols} colonne, {empty} celle vuote',
+  formReportNear: 'sotto «{near}»',
+  formReportMore: 'altre {count} tabelle',
+  formReportKeep:
+    "L'IA mantiene questo layout durante le modifiche. Per cambiare solo il testo, attiva Mantieni layout qui sotto.",
+  formReportLock:
+    "Mantieni layout è attivo. L'IA cambia solo il testo, rifiuta richieste che cambiano formattazione, tabelle o layout e annulla le modifiche che ingrandiscono una tabella.",
+  formReportFailed: "Impossibile analizzare il layout. L'IA mantiene comunque il layout.",
 } satisfies Record<keyof typeof zh, string>

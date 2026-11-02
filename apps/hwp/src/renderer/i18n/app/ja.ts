@@ -194,9 +194,15 @@ export const ja = {
   formLock: '書式を保持',
   formLockTip:
     'オンにすると、AI は文字だけを変更し、フォント・表・レイアウトは変えません。オフでも、指示がない限り AI は書式を保ちます。',
-  formAnalyzing: '書式を分析中…',
-  formAnalyzed: '書式を分析しました',
-  formAnalyzedTip:
-    '{pages} ページ、表 {tables} 個、空のセル {empty} 個、入力欄 {fields} 個を分析しました。AI はこの書式に沿って編集します。',
-  formAnalyzeFailed: '書式を分析できませんでした',
+  formReportAnalyzing: '文書の書式を分析中…',
+  formReportTitle: '文書の書式を分析しました',
+  formReportSummary: '{pages} ページ · 表 {tables} 個 · 空のセル {empty} 個 · 入力欄 {fields} 個',
+  formReportTable: '表 {table}：{rows} 行 × {cols} 列、空のセル {empty} 個',
+  formReportNear: '「{near}」の下',
+  formReportMore: 'ほかに表 {count} 個',
+  formReportKeep:
+    'AI はこの書式を保って編集します。文字だけを変えさせるには、下の「書式を保持」をオンにしてください。',
+  formReportLock:
+    '「書式を保持」がオンです。AI は文字だけを変更し、書式・表・レイアウトを変える依頼は断り、表が大きくなる編集は元に戻します。',
+  formReportFailed: '書式を分析できませんでした。AI はそれでも書式を保って編集します。',
 } satisfies Record<keyof typeof zh, string>

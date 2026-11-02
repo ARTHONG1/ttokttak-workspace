@@ -75,6 +75,7 @@ import {
 } from './selection-scope'
 import { createHwpSkill, type HwpChange } from './hwp-skill'
 import type { FormMode, FormProfile } from './form-guard'
+import { FormLockToggle, FormReport, type FormStatus } from './FormReport'
 import { MemoApprovalGate, memoApprovalPreview } from './memo-approval'
 import { useSubscriptionConnection } from './subscription-client'
 import { createElectronTransport } from './transport'
@@ -160,6 +161,8 @@ export function AiPanel({
   onSkillHandoff,
   formMode = 'keep',
   formProfile = null,
+  formStatus = 'analyzing',
+  onFormModeChange,
 }: {
   /** the document operations of the open editor */
   bridge: AgentBridge
@@ -174,6 +177,10 @@ export function AiPanel({
   formMode?: FormMode
   /** the form analysis made when the document opened */
   formProfile?: FormProfile | null
+  /** where that analysis stands: reported as the first message of the conversation */
+  formStatus?: FormStatus
+  /** the 양식 유지 switch in the composer was used */
+  onFormModeChange?: (mode: FormMode) => void
 }): ReactElement {
   const { lang, t } = useI18n()
   const formModeRef = useRef<FormMode>(formMode)
@@ -1146,6 +1153,7 @@ export function AiPanel({
       </header>
 
       <div className="ai-chat" ref={chatRef} onScroll={onChatScroll}>
+        <FormReport status={formStatus} profile={formProfile} mode={formMode} t={t} />
         {chat.length === 0 && (
           <div className="ai-chat-empty">
             <div className="ai-chat-empty-title">{t('aiEmptyTitle')}</div>
@@ -1373,6 +1381,7 @@ export function AiPanel({
                 subscriptionStatuses={statuses ?? {}}
                 onRefreshSubscriptions={subscription.refresh}
               />
+              <FormLockToggle mode={formMode} onChange={(mode) => onFormModeChange?.(mode)} t={t} />
               <AiSubscriptionUsageLine usage={subscriptionUsage} lang={lang} />
               <button
                 type="button"

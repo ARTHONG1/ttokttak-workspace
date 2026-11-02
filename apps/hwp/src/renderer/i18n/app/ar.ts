@@ -189,9 +189,15 @@ export const ar = {
   formLock: 'الحفاظ على التخطيط',
   formLockTip:
     'عند التشغيل، يغيّر الذكاء الاصطناعي النص فقط ولا يغيّر الخطوط والجداول والتخطيط. عند الإيقاف، يحافظ أيضًا على التخطيط ما لم تطلب غير ذلك.',
-  formAnalyzing: 'جارٍ تحليل التخطيط…',
-  formAnalyzed: 'تم تحليل التخطيط',
-  formAnalyzedTip:
-    'تم تحليل {pages} صفحة و{tables} جدول و{empty} خلية فارغة و{fields} حقل. يحرّر الذكاء الاصطناعي ضمن هذا التخطيط.',
-  formAnalyzeFailed: 'تعذّر تحليل التخطيط',
+  formReportAnalyzing: 'جارٍ تحليل تخطيط المستند…',
+  formReportTitle: 'تم تحليل تخطيط المستند',
+  formReportSummary: '{pages} صفحة · {tables} جدول · {empty} خلية فارغة · {fields} حقل',
+  formReportTable: 'الجدول {table}: {rows} صفوف × {cols} أعمدة، {empty} خلية فارغة',
+  formReportNear: 'أسفل "{near}"',
+  formReportMore: '{count} جدول آخر',
+  formReportKeep:
+    'يحافظ الذكاء الاصطناعي على هذا التخطيط أثناء التحرير. لتغيير النص فقط، فعّل "الحفاظ على التخطيط" أدناه.',
+  formReportLock:
+    '"الحفاظ على التخطيط" مفعّل. يغيّر الذكاء الاصطناعي النص فقط، ويرفض طلبات تغيير التنسيق أو الجداول أو التخطيط، ويتراجع عن التعديلات التي تكبّر الجدول.',
+  formReportFailed: 'تعذّر تحليل التخطيط. ما زال الذكاء الاصطناعي يحافظ على التخطيط.',
 } satisfies Record<keyof typeof zh, string>

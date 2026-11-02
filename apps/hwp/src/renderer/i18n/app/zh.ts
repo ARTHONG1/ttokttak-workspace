@@ -184,9 +184,14 @@ export const zh = {
   formLock: '保持版式',
   formLockTip:
     '开启后，AI 只修改文字，不改动字体、表格和版式。关闭时，除非你另有要求，AI 也会保持版式。',
-  formAnalyzing: '正在分析版式…',
-  formAnalyzed: '版式已分析',
-  formAnalyzedTip:
-    '已分析 {pages} 页、{tables} 个表格、{empty} 个空单元格和 {fields} 个表单字段。AI 会按此版式修改。',
-  formAnalyzeFailed: '无法分析版式',
+  formReportAnalyzing: '正在分析文档版式…',
+  formReportTitle: '已分析文档版式',
+  formReportSummary: '{pages} 页 · {tables} 个表格 · {empty} 个空单元格 · {fields} 个表单字段',
+  formReportTable: '表格 {table}：{rows} 行 × {cols} 列，{empty} 个空单元格',
+  formReportNear: '位于“{near}”下方',
+  formReportMore: '还有 {count} 个表格',
+  formReportKeep: 'AI 会保持此版式进行修改。若只允许修改文字，请打开下方的“保持版式”。',
+  formReportLock:
+    '“保持版式”已开启。AI 只修改文字，拒绝更改格式、表格或版式的请求，并撤回会让表格变大的修改。',
+  formReportFailed: '无法分析版式。AI 仍会保持版式进行修改。',
 }

@@ -191,9 +191,15 @@ export const th = {
   formLock: 'คงรูปแบบ',
   formLockTip:
     'เมื่อเปิด AI จะแก้เฉพาะข้อความ ไม่เปลี่ยนแบบอักษร ตาราง และรูปแบบ เมื่อปิด AI ก็ยังคงรูปแบบไว้ เว้นแต่คุณจะขอเป็นอย่างอื่น',
-  formAnalyzing: 'กำลังวิเคราะห์รูปแบบ…',
-  formAnalyzed: 'วิเคราะห์รูปแบบแล้ว',
-  formAnalyzedTip:
-    'วิเคราะห์ {pages} หน้า ตาราง {tables} ตาราง ช่องว่าง {empty} ช่อง และช่องกรอก {fields} ช่อง AI จะแก้ไขตามรูปแบบนี้',
-  formAnalyzeFailed: 'ไม่สามารถวิเคราะห์รูปแบบได้',
+  formReportAnalyzing: 'กำลังวิเคราะห์รูปแบบเอกสาร…',
+  formReportTitle: 'วิเคราะห์รูปแบบเอกสารแล้ว',
+  formReportSummary: '{pages} หน้า · ตาราง {tables} · ช่องว่าง {empty} · ช่องกรอก {fields}',
+  formReportTable: 'ตาราง {table}: {rows} แถว × {cols} คอลัมน์ ช่องว่าง {empty}',
+  formReportNear: 'ใต้ "{near}"',
+  formReportMore: 'อีก {count} ตาราง',
+  formReportKeep:
+    'AI จะคงรูปแบบนี้ขณะแก้ไข หากต้องการให้แก้เฉพาะข้อความ ให้เปิด "คงรูปแบบ" ด้านล่าง',
+  formReportLock:
+    'เปิด "คงรูปแบบ" อยู่ AI จะแก้เฉพาะข้อความ ปฏิเสธคำขอที่เปลี่ยนรูปแบบ ตาราง หรือการจัดวาง และย้อนการแก้ไขที่ทำให้ตารางใหญ่ขึ้น',
+  formReportFailed: 'ไม่สามารถวิเคราะห์รูปแบบได้ AI ยังคงรักษารูปแบบขณะแก้ไข',
 } satisfies Record<keyof typeof zh, string>

@@ -196,9 +196,15 @@ export const pl = {
   formLock: 'Zachowaj układ',
   formLockTip:
     'Po włączeniu AI zmienia tylko tekst i nie zmienia czcionek, tabel ani układu. Po wyłączeniu AI też zachowuje układ, chyba że poprosisz inaczej.',
-  formAnalyzing: 'Analizowanie układu…',
-  formAnalyzed: 'Układ przeanalizowany',
-  formAnalyzedTip:
-    'Przeanalizowano: stron {pages}, tabel {tables}, pustych komórek {empty}, pól {fields}. AI edytuje w ramach tego układu.',
-  formAnalyzeFailed: 'Nie udało się przeanalizować układu',
+  formReportAnalyzing: 'Analizowanie układu dokumentu…',
+  formReportTitle: 'Układ dokumentu przeanalizowany',
+  formReportSummary: 'stron {pages} · tabel {tables} · pustych komórek {empty} · pól {fields}',
+  formReportTable: 'Tabela {table}: {rows} wierszy × {cols} kolumn, pustych komórek {empty}',
+  formReportNear: 'pod „{near}”',
+  formReportMore: 'jeszcze tabel: {count}',
+  formReportKeep:
+    'AI zachowuje ten układ podczas edycji. Aby zmieniała tylko tekst, włącz „Zachowaj układ” poniżej.',
+  formReportLock:
+    '„Zachowaj układ” jest włączone. AI zmienia tylko tekst, odrzuca prośby o zmianę formatowania, tabel lub układu i cofa zmiany, które powiększają tabelę.',
+  formReportFailed: 'Nie udało się przeanalizować układu. AI i tak zachowuje układ.',
 } satisfies Record<keyof typeof zh, string>

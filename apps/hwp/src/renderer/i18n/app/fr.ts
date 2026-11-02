@@ -202,9 +202,17 @@ export const fr = {
   formLock: 'Garder la mise en page',
   formLockTip:
     "Activé, l'IA ne modifie que le texte et laisse polices, tableaux et mise en page intacts. Désactivé, l'IA garde aussi la mise en page sauf demande contraire.",
-  formAnalyzing: 'Analyse de la mise en page…',
-  formAnalyzed: 'Mise en page analysée',
-  formAnalyzedTip:
-    "{pages} page(s), {tables} tableau(x), {empty} cellule(s) vide(s) et {fields} champ(s) analysés. L'IA modifie dans cette mise en page.",
-  formAnalyzeFailed: "Impossible d'analyser la mise en page",
+  formReportAnalyzing: 'Analyse de la mise en page du document…',
+  formReportTitle: 'Mise en page du document analysée',
+  formReportSummary:
+    '{pages} page(s) · {tables} tableau(x) · {empty} cellule(s) vide(s) · {fields} champ(s)',
+  formReportTable: 'Tableau {table} : {rows} lignes × {cols} colonnes, {empty} cellule(s) vide(s)',
+  formReportNear: 'sous « {near} »',
+  formReportMore: '{count} tableau(x) de plus',
+  formReportKeep:
+    "L'IA garde cette mise en page en modifiant. Pour ne laisser changer que le texte, activez Garder la mise en page ci-dessous.",
+  formReportLock:
+    "Garder la mise en page est activé. L'IA ne change que le texte, refuse les demandes qui changent la mise en forme, les tableaux ou la mise en page, et annule les modifications qui agrandissent un tableau.",
+  formReportFailed:
+    "La mise en page n'a pas pu être analysée. L'IA garde quand même la mise en page.",
 } satisfies Record<keyof typeof zh, string>

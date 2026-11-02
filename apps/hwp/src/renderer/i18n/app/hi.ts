@@ -196,9 +196,15 @@ export const hi = {
   formLock: 'लेआउट बनाए रखें',
   formLockTip:
     'चालू होने पर AI केवल पाठ बदलता है और फ़ॉन्ट, तालिकाएँ और लेआउट नहीं बदलता। बंद होने पर भी AI लेआउट बनाए रखता है, जब तक आप कुछ और न कहें।',
-  formAnalyzing: 'लेआउट का विश्लेषण हो रहा है…',
-  formAnalyzed: 'लेआउट का विश्लेषण हुआ',
-  formAnalyzedTip:
-    '{pages} पृष्ठ, {tables} तालिकाएँ, {empty} खाली सेल और {fields} फ़ील्ड का विश्लेषण किया गया। AI इसी लेआउट में संपादन करता है।',
-  formAnalyzeFailed: 'लेआउट का विश्लेषण नहीं हो सका',
+  formReportAnalyzing: 'दस्तावेज़ के लेआउट का विश्लेषण हो रहा है…',
+  formReportTitle: 'दस्तावेज़ के लेआउट का विश्लेषण हुआ',
+  formReportSummary: '{pages} पृष्ठ · {tables} तालिकाएँ · {empty} खाली सेल · {fields} फ़ील्ड',
+  formReportTable: 'तालिका {table}: {rows} पंक्तियाँ × {cols} स्तंभ, {empty} खाली सेल',
+  formReportNear: '"{near}" के नीचे',
+  formReportMore: '{count} और तालिकाएँ',
+  formReportKeep:
+    'AI संपादन करते समय यह लेआउट बनाए रखता है। केवल पाठ बदलवाने के लिए नीचे "लेआउट बनाए रखें" चालू करें।',
+  formReportLock:
+    '"लेआउट बनाए रखें" चालू है। AI केवल पाठ बदलता है, फ़ॉर्मेट, तालिका या लेआउट बदलने के अनुरोध अस्वीकार करता है और तालिका बड़ी करने वाले संपादन वापस लेता है।',
+  formReportFailed: 'लेआउट का विश्लेषण नहीं हो सका। AI फिर भी लेआउट बनाए रखता है।',
 } satisfies Record<keyof typeof zh, string>

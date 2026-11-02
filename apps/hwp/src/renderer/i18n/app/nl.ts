@@ -201,9 +201,16 @@ export const nl = {
   formLock: 'Opmaak behouden',
   formLockTip:
     'Aan: de AI wijzigt alleen tekst en laat lettertypen, tabellen en opmaak ongemoeid. Uit: de AI behoudt de opmaak ook, tenzij je iets anders vraagt.',
-  formAnalyzing: 'Opmaak analyseren…',
-  formAnalyzed: 'Opmaak geanalyseerd',
-  formAnalyzedTip:
-    "{pages} pagina('s), {tables} tabel(len), {empty} lege cel(len) en {fields} veld(en) geanalyseerd. De AI bewerkt binnen deze opmaak.",
-  formAnalyzeFailed: 'Kan de opmaak niet analyseren',
+  formReportAnalyzing: 'Opmaak van het document analyseren…',
+  formReportTitle: 'Opmaak van het document geanalyseerd',
+  formReportSummary:
+    "{pages} pagina('s) · {tables} tabel(len) · {empty} lege cel(len) · {fields} veld(en)",
+  formReportTable: 'Tabel {table}: {rows} rijen × {cols} kolommen, {empty} lege cel(len)',
+  formReportNear: 'onder "{near}"',
+  formReportMore: 'nog {count} tabel(len)',
+  formReportKeep:
+    'De AI behoudt deze opmaak bij het bewerken. Zet Opmaak behouden hieronder aan als alleen tekst mag veranderen.',
+  formReportLock:
+    'Opmaak behouden staat aan. De AI wijzigt alleen tekst, weigert verzoeken die opmaak, tabellen of indeling wijzigen en draait bewerkingen terug die een tabel groter maken.',
+  formReportFailed: 'De opmaak kon niet worden geanalyseerd. De AI behoudt de opmaak toch.',
 } satisfies Record<keyof typeof zh, string>

@@ -196,9 +196,15 @@ export const id = {
   formLock: 'Pertahankan tata letak',
   formLockTip:
     'Jika aktif, AI hanya mengubah teks dan tidak mengubah font, tabel, atau tata letak. Jika nonaktif, AI tetap mempertahankan tata letak kecuali Anda meminta lain.',
-  formAnalyzing: 'Menganalisis tata letak…',
-  formAnalyzed: 'Tata letak dianalisis',
-  formAnalyzedTip:
-    'Menganalisis {pages} halaman, {tables} tabel, {empty} sel kosong, dan {fields} kolom isian. AI mengedit sesuai tata letak ini.',
-  formAnalyzeFailed: 'Tidak dapat menganalisis tata letak',
+  formReportAnalyzing: 'Menganalisis tata letak dokumen…',
+  formReportTitle: 'Tata letak dokumen dianalisis',
+  formReportSummary: '{pages} halaman · {tables} tabel · {empty} sel kosong · {fields} kolom isian',
+  formReportTable: 'Tabel {table}: {rows} baris × {cols} kolom, {empty} sel kosong',
+  formReportNear: 'di bawah "{near}"',
+  formReportMore: '{count} tabel lagi',
+  formReportKeep:
+    'AI mempertahankan tata letak ini saat mengedit. Agar hanya teks yang berubah, aktifkan Pertahankan tata letak di bawah.',
+  formReportLock:
+    'Pertahankan tata letak aktif. AI hanya mengubah teks, menolak permintaan yang mengubah format, tabel, atau tata letak, dan membatalkan suntingan yang membuat tabel membesar.',
+  formReportFailed: 'Tata letak tidak dapat dianalisis. AI tetap mempertahankan tata letak.',
 } satisfies Record<keyof typeof zh, string>

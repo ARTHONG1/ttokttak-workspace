@@ -189,9 +189,15 @@ export const he = {
   formLock: 'שמירת פריסה',
   formLockTip:
     'כשמופעל, הבינה המלאכותית משנה רק טקסט ולא משנה גופנים, טבלאות ופריסה. כשכבוי, היא שומרת על הפריסה אלא אם תבקשו אחרת.',
-  formAnalyzing: 'מנתח את הפריסה…',
-  formAnalyzed: 'הפריסה נותחה',
-  formAnalyzedTip:
-    'נותחו {pages} עמודים, {tables} טבלאות, {empty} תאים ריקים ו-{fields} שדות. העריכה נעשית בתוך פריסה זו.',
-  formAnalyzeFailed: 'לא ניתן לנתח את הפריסה',
+  formReportAnalyzing: 'מנתח את פריסת המסמך…',
+  formReportTitle: 'פריסת המסמך נותחה',
+  formReportSummary: '{pages} עמודים · {tables} טבלאות · {empty} תאים ריקים · {fields} שדות',
+  formReportTable: 'טבלה {table}: {rows} שורות × {cols} עמודות, {empty} תאים ריקים',
+  formReportNear: 'מתחת ל-"{near}"',
+  formReportMore: 'עוד {count} טבלאות',
+  formReportKeep:
+    'הבינה המלאכותית שומרת על הפריסה בזמן העריכה. כדי לשנות טקסט בלבד, הפעילו את "שמירת פריסה" למטה.',
+  formReportLock:
+    '"שמירת פריסה" מופעלת. הבינה המלאכותית משנה טקסט בלבד, מסרבת לבקשות לשנות עיצוב, טבלאות או פריסה, ומבטלת עריכות שמגדילות טבלה.',
+  formReportFailed: 'לא ניתן לנתח את הפריסה. הבינה המלאכותית עדיין שומרת על הפריסה.',
 } satisfies Record<keyof typeof zh, string>

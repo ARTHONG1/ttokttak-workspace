@@ -25,6 +25,7 @@ import { useI18n } from '../i18n/locale'
 import type { AgentBridge } from './agent-bridge'
 import { AiPanel } from './AiPanel'
 import type { FormMode, FormProfile } from './form-guard'
+import type { FormStatus } from './FormReport'
 import { MemoPanel, type MemoNotice } from '../MemoPanel'
 
 /** Which of the two panels the shared dock shows. */
@@ -44,6 +45,10 @@ export interface HwpAiDockProps {
   formMode?: FormMode
   /** the form analysis made when the document opened */
   formProfile?: FormProfile | null
+  /** where that analysis stands */
+  formStatus?: FormStatus
+  /** the 양식 유지 switch in the AI composer was used */
+  onFormModeChange?(mode: FormMode): void
   /** the panel out now; without a mode the dock keeps its single AI panel */
   mode?: HwpDockMode
   setMode?(mode: HwpDockMode): void
@@ -68,6 +73,8 @@ export function HwpAiDock({
   templateDocument,
   formMode = 'keep',
   formProfile = null,
+  formStatus = 'analyzing',
+  onFormModeChange,
   mode,
   setMode,
   onMemoModalOpenChange,
@@ -133,6 +140,8 @@ export function HwpAiDock({
         templateDocument={templateDocument}
         formMode={formMode}
         formProfile={formProfile}
+        formStatus={formStatus}
+        onFormModeChange={onFormModeChange}
         onSkillHandoff={() => setOpen(true)}
       />
       {memoDock && (

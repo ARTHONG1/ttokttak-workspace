@@ -195,9 +195,15 @@ export const cs = {
   formLock: 'Zachovat rozvržení',
   formLockTip:
     'Je-li zapnuto, AI mění jen text a nemění písma, tabulky ani rozvržení. Je-li vypnuto, AI rozvržení také zachová, pokud nepožádáte jinak.',
-  formAnalyzing: 'Analýza rozvržení…',
-  formAnalyzed: 'Rozvržení analyzováno',
-  formAnalyzedTip:
-    'Analyzováno: stran {pages}, tabulek {tables}, prázdných buněk {empty}, polí {fields}. AI upravuje v rámci tohoto rozvržení.',
-  formAnalyzeFailed: 'Rozvržení se nepodařilo analyzovat',
+  formReportAnalyzing: 'Analýza rozvržení dokumentu…',
+  formReportTitle: 'Rozvržení dokumentu analyzováno',
+  formReportSummary: 'stran {pages} · tabulek {tables} · prázdných buněk {empty} · polí {fields}',
+  formReportTable: 'Tabulka {table}: {rows} řádků × {cols} sloupců, prázdných buněk {empty}',
+  formReportNear: 'pod „{near}“',
+  formReportMore: 'další tabulky: {count}',
+  formReportKeep:
+    'AI při úpravách zachovává toto rozvržení. Aby měnila jen text, zapněte níže „Zachovat rozvržení“.',
+  formReportLock:
+    '„Zachovat rozvržení“ je zapnuto. AI mění jen text, odmítá žádosti o změnu formátu, tabulek či rozvržení a vrací úpravy, které tabulku zvětší.',
+  formReportFailed: 'Rozvržení se nepodařilo analyzovat. AI rozvržení přesto zachovává.',
 } satisfies Record<keyof typeof zh, string>

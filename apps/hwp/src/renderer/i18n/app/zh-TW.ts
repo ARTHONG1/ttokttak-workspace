@@ -185,9 +185,14 @@ export const zhTW = {
   formLock: '保持版面',
   formLockTip:
     '開啟後，AI 只修改文字，不更動字型、表格與版面。關閉時，除非你另有要求，AI 也會保持版面。',
-  formAnalyzing: '正在分析版面…',
-  formAnalyzed: '版面已分析',
-  formAnalyzedTip:
-    '已分析 {pages} 頁、{tables} 個表格、{empty} 個空白儲存格與 {fields} 個表單欄位。AI 會依此版面修改。',
-  formAnalyzeFailed: '無法分析版面',
+  formReportAnalyzing: '正在分析文件版面…',
+  formReportTitle: '已分析文件版面',
+  formReportSummary: '{pages} 頁 · {tables} 個表格 · {empty} 個空白儲存格 · {fields} 個表單欄位',
+  formReportTable: '表格 {table}：{rows} 列 × {cols} 欄，{empty} 個空白儲存格',
+  formReportNear: '位於「{near}」下方',
+  formReportMore: '還有 {count} 個表格',
+  formReportKeep: 'AI 會保持此版面進行修改。若只允許修改文字，請開啟下方的「保持版面」。',
+  formReportLock:
+    '「保持版面」已開啟。AI 只修改文字，拒絕變更格式、表格或版面的要求，並撤回會讓表格變大的修改。',
+  formReportFailed: '無法分析版面。AI 仍會保持版面進行修改。',
 } satisfies Record<keyof typeof zh, string>

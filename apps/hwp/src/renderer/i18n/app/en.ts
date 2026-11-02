@@ -193,9 +193,17 @@ export const en = {
   formLock: 'Keep layout',
   formLockTip:
     'When on, the AI changes only text and leaves fonts, tables and layout as they are. When off, the AI still keeps the layout unless you ask otherwise.',
-  formAnalyzing: 'Analysing layout…',
-  formAnalyzed: 'Layout analysed',
-  formAnalyzedTip:
-    'Analysed {pages} page(s), {tables} table(s), {empty} empty cell(s) and {fields} form field(s). The AI edits within this layout.',
-  formAnalyzeFailed: 'Could not analyse the layout',
+  formReportAnalyzing: 'Analysing the layout of the document…',
+  formReportTitle: 'Layout of the document analysed',
+  formReportSummary:
+    '{pages} page(s) · {tables} table(s) · {empty} empty cell(s) · {fields} form field(s)',
+  formReportTable: 'Table {table}: {rows} rows × {cols} columns, {empty} empty cell(s)',
+  formReportNear: 'below "{near}"',
+  formReportMore: '{count} more table(s)',
+  formReportKeep:
+    'The AI keeps this layout while editing. To let it change only text, turn on Keep layout below.',
+  formReportLock:
+    'Keep layout is on. The AI changes only text, refuses requests that change formatting, tables or layout, and takes back edits that make a table grow.',
+  formReportFailed:
+    'The layout could not be analysed. The AI still keeps the layout while editing.',
 } satisfies Record<keyof typeof zh, string>

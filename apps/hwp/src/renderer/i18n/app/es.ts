@@ -201,9 +201,16 @@ export const es = {
   formLock: 'Mantener diseño',
   formLockTip:
     'Activado, la IA solo cambia el texto y deja fuentes, tablas y diseño como están. Desactivado, la IA también mantiene el diseño salvo que pidas otra cosa.',
-  formAnalyzing: 'Analizando el diseño…',
-  formAnalyzed: 'Diseño analizado',
-  formAnalyzedTip:
-    'Se analizaron {pages} página(s), {tables} tabla(s), {empty} celda(s) vacía(s) y {fields} campo(s). La IA edita dentro de este diseño.',
-  formAnalyzeFailed: 'No se pudo analizar el diseño',
+  formReportAnalyzing: 'Analizando el diseño del documento…',
+  formReportTitle: 'Diseño del documento analizado',
+  formReportSummary:
+    '{pages} página(s) · {tables} tabla(s) · {empty} celda(s) vacía(s) · {fields} campo(s)',
+  formReportTable: 'Tabla {table}: {rows} filas × {cols} columnas, {empty} celda(s) vacía(s)',
+  formReportNear: 'debajo de «{near}»',
+  formReportMore: '{count} tabla(s) más',
+  formReportKeep:
+    'La IA mantiene este diseño al editar. Para que solo cambie el texto, activa Mantener diseño abajo.',
+  formReportLock:
+    'Mantener diseño está activado. La IA solo cambia el texto, rechaza las peticiones que cambian formato, tablas o diseño y deshace las ediciones que agrandan una tabla.',
+  formReportFailed: 'No se pudo analizar el diseño. La IA mantiene el diseño de todos modos.',
 } satisfies Record<keyof typeof zh, string>
