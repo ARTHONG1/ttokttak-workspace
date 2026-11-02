@@ -19,7 +19,13 @@ export type FeatureAsset = (typeof FEATURE_ASSETS)[number]
 export const FEATURE_LINKS = {
   blooket: 'https://www.blooket.com/',
   quizn: 'https://quizn.show/',
+  aceCanvas: 'https://ace-canvas--project-0c1d3dab-8644-4690-9e4.asia-east1.hosted.app/',
+  aceCanvasVideo: 'https://youtu.be/1wl_L17E8R4',
 } as const
+export type FeatureLinkSite = keyof typeof FEATURE_LINKS
+
+export const isFeatureLinkSite = (site: unknown): site is FeatureLinkSite =>
+  typeof site === 'string' && Object.prototype.hasOwnProperty.call(FEATURE_LINKS, site)
 
 export const isFeatureAsset = (name: unknown): name is FeatureAsset =>
   typeof name === 'string' && (FEATURE_ASSETS as readonly string[]).includes(name)

@@ -149,6 +149,7 @@ import {
   checkSaveRequest,
   featureAssetsDirFor,
   isFeatureAsset,
+  isFeatureLinkSite,
   readFeatureAsset,
   withSaveExtension,
 } from './special-feature-files'
@@ -4696,6 +4697,11 @@ function createShellWindow(): void {
       sandbox: true,
     },
   })
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    const target = safeExternalUrl(url)
+    if (target) void shell.openExternal(target)
+    return { action: 'deny' }
+  })
   // the stored rectangle is the normal-state one, so a maximized session
   // reopens maximized instead of as a screen-sized ordinary window
   if (restored?.maximized) win.maximize()
@@ -5762,7 +5768,7 @@ function registerHomeIpc(): void {
   )
 
   ipcMain.handle(HOME_CHANNELS.openFeatureLink, (_event, site: unknown) => {
-    if (site !== 'blooket' && site !== 'quizn' && !isIntroLinkKey(site)) return
+    if (!isFeatureLinkSite(site) && !isIntroLinkKey(site)) return
     const url = safeExternalUrl(isIntroLinkKey(site) ? INTRO_LINKS[site] : FEATURE_LINKS[site])
     if (!url) return
     shell.openExternal(url).catch(() => {

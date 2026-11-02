@@ -177,10 +177,10 @@ export function HubTiles({
           hub="class"
           icon={<ClassIcon />}
           title="똑딱수업"
-          badge="준비 중"
-          sub="수업 시간에 바로 쓰는 도구가 이곳에 차례로 들어와요."
-          chips={['곧 공개']}
-          go="미리 보기"
+          badge="NEW"
+          sub="그림을 관찰하고 글을 쓰며 AI와 함께 작품을 완성하는 참여형 수업 도구예요."
+          chips={['ACE 명화']}
+          go="수업 도구 열기"
           onClick={() => onOpen('class')}
           testId={testIds.class}
         />
