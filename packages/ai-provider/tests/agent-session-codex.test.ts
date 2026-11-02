@@ -124,6 +124,7 @@ async function start(
   handlers: Record<string, Handler>,
   overrides: Partial<CodexAgentSessionOptions> = {},
   probe: CodexSandboxProbeResult = 'contained',
+  localEndpoint: () => Promise<string | undefined> = async () => undefined,
 ) {
   const events: AgentSessionEvent[] = []
   const spawnCalls: Array<{ command: string; args: string[]; options: SpawnOptions }> = []
@@ -133,6 +134,7 @@ async function start(
   })
   const probeSandbox = vi.fn(async () => probe)
   const run = startCodexAgentSession(options(overrides), (event) => events.push(event), {
+    localEndpoint,
     resolveProgram: async () => PROGRAM,
     probeSandbox,
     registry: null,
@@ -151,6 +153,16 @@ async function start(
 const tick = () => new Promise((resolve) => setImmediate(resolve))
 
 describe('the launch and the thread', () => {
+  it('starts the agent with the user Codex CLI loopback route, keeping the sandbox settings', async () => {
+    const endpoint = 'http://127.0.0.1:10100/v1'
+    const h = await start(baseHandlers(), {}, 'contained', async () => endpoint)
+    const session = await h.run
+    expect(h.spawnCalls).toHaveLength(1)
+    expect(h.spawnCalls[0]?.args).toEqual(codexAgentLaunchArgs('cached', endpoint))
+    expect(h.spawnCalls[0]?.args).toContain('windows.sandbox="mxc"')
+    session.stop()
+  })
+
   it('keeps the brain-only overrides, skill instructions included: the app lists the enabled skills', () => {
     const args = codexAgentLaunchArgs()
     expect(args).toContain('features.hooks=false')

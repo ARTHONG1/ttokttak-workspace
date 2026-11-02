@@ -237,9 +237,10 @@ async function newestManagedCodex(root: string, platform: NodeJS.Platform): Prom
  * The ChatGPT desktop app keeps its own Codex build, which can be newer than
  * the `codex` on PATH (OpenAI says features may reach one surface before the
  * other). The app's documented compatibility bundle path is
- * `/Applications/Codex.app/Contents/Resources/codex`; a ChatGPT.app copies the
- * same layout. Only an app copy newer than the PATH one is taken, so updating
- * the CLI yourself still wins.
+ * `/Applications/Codex.app/Contents/Resources/codex`. Current ChatGPT.app
+ * releases instead bundle CodexCLI.app in `Resources/codex-cli/`. Look in both
+ * layouts. Only an app copy newer than the PATH one is taken, so updating the
+ * CLI yourself still wins.
  */
 const MAC_CODEX_BUNDLES = ['Codex.app', 'ChatGPT.app'] as const
 
@@ -249,14 +250,22 @@ async function newestMacBundledCodex(context: Context): Promise<string | null> {
   const found: Array<{ path: string; modified: number }> = []
   for (const root of roots) {
     for (const bundle of MAC_CODEX_BUNDLES) {
-      const path = join(root, bundle, 'Contents', 'Resources', 'codex')
-      try {
-        const info = await stat(path)
-        if (!info.isFile()) continue
-        await access(path, constants.X_OK)
-        found.push({ path, modified: info.mtimeMs })
-      } catch {
-        // no such app, or no bundled CLI: the next place is asked
+      const resources = join(root, bundle, 'Contents', 'Resources')
+      const candidates = [
+        join(resources, 'codex'),
+        ...(bundle === 'ChatGPT.app'
+          ? [join(resources, 'codex-cli', 'CodexCLI.app', 'Contents', 'MacOS', 'codex')]
+          : []),
+      ]
+      for (const path of candidates) {
+        try {
+          const info = await stat(path)
+          if (!info.isFile()) continue
+          await access(path, constants.X_OK)
+          found.push({ path, modified: info.mtimeMs })
+        } catch {
+          // no such app or executable: keep looking in the other layout
+        }
       }
     }
   }

@@ -311,7 +311,7 @@ const SUBSCRIPTION_MODEL_LABEL_MAX = 80
  * the CLI, so a listed id is held to the shape the bridges accept: nothing
  * that could read as an option.
  */
-const MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:[\]-]{0,127}$/
+const MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/[\]-]{0,127}$/
 
 function modelIdOf(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined

@@ -131,7 +131,10 @@ describe('locateSubscriptionProgram on Windows', () => {
     const npm = join(env.APPDATA!, 'npm')
     await touch(join(npm, 'codex.cmd'), CODEX_SHIM)
     const entry = await touch(join(npm, 'node_modules', '@openai', 'codex', 'bin', 'codex.js'))
-    const runtime = { command: 'C:\\Program Files\\HangulAIWorkbench\\HangulAIWorkbench.exe', electron: true }
+    const runtime = {
+      command: 'C:\\Program Files\\HangulAIWorkbench\\HangulAIWorkbench.exe',
+      electron: true,
+    }
     const program = await locateSubscriptionProgram('codex', {
       env,
       platform: 'win32',
@@ -184,8 +187,10 @@ describe('locateSubscriptionProgram on Windows', () => {
     const env = windowsEnv()
     const links = join(env.LOCALAPPDATA!, 'Microsoft', 'WinGet', 'Links')
     const exe = await touch(join(links, 'codex.exe'))
+    // A WinGet Link is resolved to its real path. On macOS /var is a symlink
+    // to /private/var, so compare canonical file paths even in the Windows fixture.
     expect((await locateSubscriptionProgram('codex', { env, platform: 'win32' }))?.command).toBe(
-      exe,
+      await realpath(exe),
     )
     await rm(links, { recursive: true })
     const packaged = await touch(
@@ -198,7 +203,12 @@ describe('locateSubscriptionProgram on Windows', () => {
         'codex-x86_64-pc-windows-msvc.exe',
       ),
     )
-    const program = await locateSubscriptionProgram('codex', { env, platform: 'win32' })
+    // The fixture contains the x64 binary even when these tests run on ARM Macs.
+    const program = await locateSubscriptionProgram('codex', {
+      env,
+      platform: 'win32',
+      arch: 'x64',
+    })
     expect(program).toMatchObject({ command: packaged, source: 'winget' })
   })
 
@@ -392,7 +402,7 @@ describe('a user-configured path', () => {
       platform: 'win32',
       configuredPath: join(root, 'gone', 'codex.exe'),
     })
-    expect(program?.command).toBe(found)
+    expect(program?.command).toBe(await realpath(found))
   })
 
   it('inside the Codex desktop tree is treated as automatic, so an update is picked up', async () => {
@@ -466,6 +476,56 @@ describe('locateSubscriptionProgram on macOS', () => {
     if (at) await utimes(path, at, at)
     return path
   }
+
+  it('finds the Codex CLI inside the current ChatGPT.app helper bundle when Finder does not inherit PATH', async () => {
+    const apps = join(root, 'Applications')
+    const bundled = await touch(
+      join(
+        apps,
+        'ChatGPT.app',
+        'Contents',
+        'Resources',
+        'codex-cli',
+        'CodexCLI.app',
+        'Contents',
+        'MacOS',
+        'codex',
+      ),
+      '#!/bin/sh\nexit 0\n',
+    )
+    await chmod(bundled, 0o755)
+    const program = await locateSubscriptionProgram('codex', {
+      env: { HOME: root, PATH: '' },
+      platform: 'darwin',
+      applicationDirs: [apps],
+      commonDirs: [],
+    })
+    expect(program).toMatchObject({ command: bundled, prefixArgs: [], source: 'managed' })
+  })
+
+  it('never selects a bundled Codex helper file that lacks executable permission', async () => {
+    const apps = join(root, 'Applications')
+    await touch(
+      join(
+        apps,
+        'ChatGPT.app',
+        'Contents',
+        'Resources',
+        'codex-cli',
+        'CodexCLI.app',
+        'Contents',
+        'MacOS',
+        'codex',
+      ),
+    )
+    const program = await locateSubscriptionProgram('codex', {
+      env: { HOME: root, PATH: '' },
+      platform: 'darwin',
+      applicationDirs: [apps],
+      commonDirs: [],
+    })
+    expect(program).toBeNull()
+  })
 
   it('uses the CLI bundled with the desktop app when it is the newer copy', async () => {
     const apps = join(root, 'Applications')

@@ -141,6 +141,7 @@ let restoreRuntime: (() => void) | undefined
 function harness(
   overrides: Record<string, Handler> = {},
   setRuntime: typeof setCodexAppServerRuntime = setCodexAppServerRuntime,
+  localEndpoint: () => Promise<string | undefined> = async () => undefined,
 ): Harness {
   const handlers: Record<string, Handler> = {
     initialize: () => ({ userAgent: 'fake' }),
@@ -169,6 +170,7 @@ function harness(
     },
   }
   restoreRuntime = setRuntime({
+    localEndpoint,
     resolve: async () => PROGRAM,
     spawn: (command, args, options) => {
       const child = new FakeCodex(handlers)
@@ -219,6 +221,27 @@ afterEach(() => {
 })
 
 describe('Codex app-server launch', () => {
+  it('launches with the existing loopback proxy and changes process when its route changes', async () => {
+    let endpoint = 'http://127.0.0.1:10100/v1'
+    const h = harness({}, setCodexAppServerRuntime, async () => endpoint)
+    await run(callbacks().cb)
+    expect(h.spawns[0]?.args).toEqual(codexAppServerLaunchArgs(endpoint))
+    endpoint = 'http://127.0.0.1:10101/v1'
+    await run(callbacks().cb)
+    expect(h.spawns).toHaveLength(2)
+    expect(h.spawns[1]?.args).toEqual(codexAppServerLaunchArgs(endpoint))
+    expect(h.spawns[1]?.args).toContain('features.plugins=false')
+    expect(h.spawns[1]?.args).toContain('model_provider="openai"')
+  })
+
+  it('does not start Codex when reading the local route fails safety validation', async () => {
+    const h = harness({}, setCodexAppServerRuntime, async () => {
+      throw new AiRunError('unsafe-tools', 'Unsafe Codex proxy', { provider: 'codex' })
+    })
+    expect(await failure(run(callbacks().cb))).toMatchObject({ kind: 'unsafe-tools' })
+    expect(h.spawns).toHaveLength(0)
+  })
+
   it('starts the located program without a shell and without billing-route variables', async () => {
     for (const name of SUBSCRIPTION_STRIPPED_ENV_VARS) vi.stubEnv(name, 'secret-value')
     const h = harness()
