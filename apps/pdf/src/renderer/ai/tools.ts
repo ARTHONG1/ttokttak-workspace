@@ -3,7 +3,6 @@ import type { AgentToolCall, AgentToolDef, ToolExecution } from '@genoffice/agen
 import type { OutlineNode } from '../OutlinePanel'
 import type { PageEntry, SearchIndex } from '../search'
 import { findPageTextSpans, searchInIndex } from '../search'
-import { foldCase } from '@genoffice/ui'
 import { geomDispSize, pdfRectToCss, pdfToView, quadToRect, viewToPdf } from '../annotations'
 import type { PageGeom } from '../annotations'
 import { EDIT_FONTS } from '../../shared/ipc'
