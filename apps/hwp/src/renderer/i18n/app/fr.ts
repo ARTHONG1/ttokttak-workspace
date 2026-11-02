@@ -199,9 +199,9 @@ export const fr = {
   aiMemoApprovalTitle: 'Cette modification supprime {count} commentaire(s). Continuer ?',
   aiMemoApprovalKeep: 'Conserver les commentaires',
   aiMemoApprovalRemove: 'Continuer et les supprimer',
-  formLock: 'Garder la mise en page',
+  formLock: 'Verrouiller la mise en forme',
   formLockTip:
-    "Activé, l'IA ne modifie que le texte et laisse polices, tableaux et mise en page intacts. Désactivé, l'IA garde aussi la mise en page sauf demande contraire.",
+    'Activé, les polices, couleurs, alignements et autres mises en forme restent inchangés ; le contenu est modifié et étendu selon le modèle. Les lignes, colonnes et éléments de liste sont ajoutés avec le même aspect, et la numérotation continue.',
   formReportAnalyzing: 'Analyse de la mise en page du document…',
   formReportTitle: 'Mise en page du document analysée',
   formReportSummary:
@@ -210,9 +210,12 @@ export const fr = {
   formReportNear: 'sous « {near} »',
   formReportMore: '{count} tableau(x) de plus',
   formReportKeep:
-    "L'IA garde cette mise en page en modifiant. Pour ne laisser changer que le texte, activez Garder la mise en page ci-dessous.",
+    "L'IA garde cette mise en page en modifiant. Pour verrouiller la mise en forme, activez Verrouiller la mise en forme ci-dessous.",
   formReportLock:
-    "Garder la mise en page est activé. L'IA ne change que le texte, refuse les demandes qui changent la mise en forme, les tableaux ou la mise en page, et annule les modifications qui agrandissent un tableau.",
+    'Verrouiller la mise en forme est activé. Le contenu peut être modifié et étendu selon le modèle (lignes et colonnes, éléments de liste, numérotation continue) ; polices, couleurs et alignements ne changent pas.',
   formReportFailed:
     "La mise en page n'a pas pu être analysée. L'IA garde quand même la mise en page.",
+  formReportLists: 'Numérotation et puces : {lists}',
+  formRenumbered: '{count} ligne(s) renumérotée(s)',
+  formUndoLast: 'Annuler la dernière',
 } satisfies Record<keyof typeof zh, string>

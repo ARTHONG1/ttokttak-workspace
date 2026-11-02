@@ -649,7 +649,7 @@ export interface AgentTableBox {
   height: number
 }
 
-/** What the form lock (양식 유지) compares before and after an AI change. */
+/** What 서식 고정 (the form lock) compares before and after an AI change. */
 export interface AgentFormShape {
   pages: number
   /** body paragraphs, section by section */
@@ -658,6 +658,8 @@ export interface AgentFormShape {
   objects: number
   /** the tables could not all be looked into */
   partial: boolean
+  /** the character and paragraph shapes the text uses (body and cells), sorted */
+  formats: { char: number[]; para: number[] }
   /** in listTables order */
   tables: {
     rows: number
@@ -811,6 +813,14 @@ export interface AgentPluginSurface {
   ): AgentFormatParagraphResult
   listTables(): AgentTableList
   formShape(): AgentFormShape
+  /** whether the document comes back whole from a save and a reopen in the engine */
+  checkRoundTrip(): { ok: true } | { ok: false; reason: 'changed' | 'unreadable' }
+  /** put the typed numbers of the list around a body paragraph in order; one undo step */
+  renumberAround(place: { sec: number; para: number }): {
+    ok: true
+    count: number
+    place?: AgentPlace
+  }
   readTable(table: number, fromRow?: number | null): AgentReadTableResult
   fillCells(
     table: number,

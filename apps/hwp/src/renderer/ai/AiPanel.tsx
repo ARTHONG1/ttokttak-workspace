@@ -123,6 +123,8 @@ interface RunChanges {
   /** the editor's count of changes made by anyone else, read when the run began */
   foreign: number
   state: 'applied' | 'reverted' | 'refused'
+  /** made while 서식 고정 was on: its changes can also be taken back one at a time */
+  locked?: boolean
 }
 
 interface ChatEntry {
@@ -582,7 +584,12 @@ export function AiPanel({
     const foreign = runForeignRef.current
     // a run whose starting point is unknown cannot be checked, so it is not offered for undo
     return {
-      changes: { items, foreign: foreign ?? -1, state: foreign === null ? 'refused' : 'applied' },
+      changes: {
+        items,
+        foreign: foreign ?? -1,
+        state: foreign === null ? 'refused' : 'applied',
+        ...(formModeRef.current === 'lock' ? { locked: true } : {}),
+      },
     }
   }
 
@@ -960,6 +967,48 @@ export function AiPanel({
     )
   }
 
+  /**
+   * Take back the newest change of a run made under 서식 고정, leaving the ones before it:
+   * the editor's history is a stack, so the last change is the one that can go alone.
+   */
+  const revertLast = (idx: number): void => {
+    const changes = chat[idx]?.changes
+    if (
+      !changes ||
+      changes.state !== 'applied' ||
+      changes.items.length < 2 ||
+      idx !== revertableIdx ||
+      busy ||
+      reverting
+    )
+      return
+    const settle = (ok: boolean): void => {
+      if (!mountedRef.current) return
+      setChat((prev) =>
+        prev.map((entry, i) =>
+          i === idx && entry.changes
+            ? {
+                ...entry,
+                changes: ok
+                  ? { ...entry.changes, items: entry.changes.items.slice(0, -1) }
+                  : { ...entry.changes, state: 'refused' },
+              }
+            : entry,
+        ),
+      )
+      if (ok) {
+        revertedNoteDueRef.current = true
+        clearMarks()
+      }
+      setReverting(false)
+    }
+    setReverting(true)
+    bridgeRef.current.undo(1, changes.foreign).then(
+      (result) => settle(result.ok),
+      () => settle(false),
+    )
+  }
+
   // the conversation kept with this document: bound to its file, restored when the panel opens
   useEffect(() => {
     const api = window.projectApi
@@ -1249,6 +1298,7 @@ export function AiPanel({
                   changes={entry.changes}
                   canRevert={i === revertableIdx && !busy && !reverting}
                   onRevert={() => revert(i)}
+                  onRevertLast={() => revertLast(i)}
                   onClearMarks={i === revertableIdx && marksShown ? clearMarks : null}
                   onShow={(place) => void bridgeRef.current.reveal(place).catch(() => {})}
                 />
@@ -1477,12 +1527,15 @@ function RunChangesCard({
   changes,
   canRevert,
   onRevert,
+  onRevertLast,
   onClearMarks,
   onShow,
 }: {
   changes: RunChanges
   canRevert: boolean
   onRevert: () => void
+  /** take back only the newest change (runs made under 서식 고정) */
+  onRevertLast?: () => void
   /** set while the editor marks these changes on the pages */
   onClearMarks: (() => void) | null
   onShow: (place: AgentPlace) => void
@@ -1505,6 +1558,18 @@ function RunChangesCard({
             {t('aiRevert')}
           </button>
         )}
+        {changes.locked &&
+          changes.state === 'applied' &&
+          changes.items.length > 1 &&
+          onRevertLast && (
+            <button
+              className="ai-changes-revert ai-changes-revert-last"
+              disabled={!canRevert}
+              onClick={onRevertLast}
+            >
+              {t('formUndoLast')}
+            </button>
+          )}
       </div>
       <ul className="ai-changes-list">
         {changes.items.map((item, j) => (

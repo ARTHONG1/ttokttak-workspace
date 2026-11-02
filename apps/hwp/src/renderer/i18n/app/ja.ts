@@ -191,9 +191,9 @@ export const ja = {
   aiMemoApprovalTitle: 'この編集でコメント {count} 件が削除されます。続けますか？',
   aiMemoApprovalKeep: 'コメントを残す',
   aiMemoApprovalRemove: '続けて削除する',
-  formLock: '書式を保持',
+  formLock: '書式を固定',
   formLockTip:
-    'オンにすると、AI は文字だけを変更し、フォント・表・レイアウトは変えません。オフでも、指示がない限り AI は書式を保ちます。',
+    'オンにすると、フォント・色・配置などの書式はそのままに、内容を書式に沿って修正・追加します。表の行・列やリスト項目も同じ見た目で追加し、番号を続けます。',
   formReportAnalyzing: '文書の書式を分析中…',
   formReportTitle: '文書の書式を分析しました',
   formReportSummary: '{pages} ページ · 表 {tables} 個 · 空のセル {empty} 個 · 入力欄 {fields} 個',
@@ -201,8 +201,11 @@ export const ja = {
   formReportNear: '「{near}」の下',
   formReportMore: 'ほかに表 {count} 個',
   formReportKeep:
-    'AI はこの書式を保って編集します。文字だけを変えさせるには、下の「書式を保持」をオンにしてください。',
+    'AI はこの書式を保って編集します。書式を確実に固定するには、下の「書式を固定」をオンにしてください。',
   formReportLock:
-    '「書式を保持」がオンです。AI は文字だけを変更し、書式・表・レイアウトを変える依頼は断り、表が大きくなる編集は元に戻します。',
+    '「書式を固定」がオンです。内容は書式に沿って修正・追加でき（表の行・列、リスト項目、番号の継続）、フォント・色・配置などの書式は変わりません。',
   formReportFailed: '書式を分析できませんでした。AI はそれでも書式を保って編集します。',
+  formReportLists: '番号・箇条書き：{lists}',
+  formRenumbered: '{count} か所の番号を振り直しました',
+  formUndoLast: '最後の 1 件を元に戻す',
 } satisfies Record<keyof typeof zh, string>

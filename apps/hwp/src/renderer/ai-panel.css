@@ -1925,3 +1925,9 @@
     transition: none;
   }
 }
+
+.ai-form-report-lists {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}

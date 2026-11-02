@@ -193,9 +193,9 @@ export const ms = {
   aiMemoApprovalTitle: 'Edit ini memadam komen: {count}. Teruskan?',
   aiMemoApprovalKeep: 'Kekalkan komen',
   aiMemoApprovalRemove: 'Teruskan dan padam',
-  formLock: 'Kekalkan susun atur',
+  formLock: 'Kunci format',
   formLockTip:
-    'Apabila hidup, AI hanya menukar teks dan tidak mengubah fon, jadual dan susun atur. Apabila mati, AI tetap mengekalkan susun atur melainkan anda meminta lain.',
+    'Apabila hidup, fon, warna, penjajaran dan format lain kekal; kandungan disunting dan ditambah mengikut borang. Baris, lajur dan item senarai ditambah dengan rupa yang sama dan penomboran bersambung.',
   formReportAnalyzing: 'Menganalisis susun atur dokumen…',
   formReportTitle: 'Susun atur dokumen dianalisis',
   formReportSummary: '{pages} halaman · {tables} jadual · {empty} sel kosong · {fields} medan',
@@ -203,8 +203,11 @@ export const ms = {
   formReportNear: 'di bawah "{near}"',
   formReportMore: '{count} jadual lagi',
   formReportKeep:
-    'AI mengekalkan susun atur ini semasa menyunting. Untuk menukar teks sahaja, hidupkan Kekalkan susun atur di bawah.',
+    'AI mengekalkan susun atur ini semasa menyunting. Untuk mengunci format, hidupkan Kunci format di bawah.',
   formReportLock:
-    'Kekalkan susun atur dihidupkan. AI hanya menukar teks, menolak permintaan yang mengubah format, jadual atau susun atur, dan membatalkan suntingan yang membesarkan jadual.',
+    'Kunci format dihidupkan. Kandungan boleh disunting dan ditambah mengikut borang (baris dan lajur, item senarai, penomboran bersambung); fon, warna dan penjajaran tidak berubah.',
   formReportFailed: 'Susun atur tidak dapat dianalisis. AI tetap mengekalkan susun atur.',
+  formReportLists: 'Penomboran dan bulet: {lists}',
+  formRenumbered: '{count} baris dinombor semula',
+  formUndoLast: 'Buat asal yang terakhir',
 } satisfies Record<keyof typeof zh, string>

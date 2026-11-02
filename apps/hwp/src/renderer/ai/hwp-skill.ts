@@ -22,8 +22,10 @@ import type { AgentBridge } from './agent-bridge'
 import {
   FORM_LOCK_CHECKED,
   FORM_LOCK_REFUSED,
+  FORM_LOCK_RENUMBERED,
   formContext,
   shapeChange,
+  unexplainedLines,
   type FormMode,
   type FormProfile,
 } from './form-guard'
@@ -84,7 +86,7 @@ export interface HwpSkillDeps {
    * one retried edit; the caller never keeps the answer.
    */
   confirmMemoRemoval(refusal: AgentMemoRemovalRefusal): Promise<boolean>
-  /** 양식 유지: `lock` lets only text change; `keep` (the default) asks the AI to keep the form */
+  /** 서식 고정: `lock` enforces the formatting; `keep` (the default) asks the AI to keep the form */
   formMode?(): FormMode
   /** the form analysis made when the document opened; null until it is there */
   formProfile?(): FormProfile | null
@@ -2580,20 +2582,75 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
   }
 
   /**
-   * One text change under 양식 유지: the form is read before and after it, and when the
-   * change moved or grew a table, added a page or a paragraph, or took an object away, it
-   * is undone (one undo step per change it made) and refused.
+   * One change under 서식 고정: the formatting, objects and text are read before and after
+   * it. A list item added or removed has the typed numbers around it put in order, and new
+   * table rows or columns are shown back to the model. When the change brought in formatting
+   * the document did not use, removed an object, or changed text it did not report, it is
+   * undone (one undo step per change it made) and refused.
    */
   const runLocked = async (call: AgentToolCall): Promise<ToolExecution> => {
     const before = await bridge.formShape()
+    const beforeText = await bridge.readText()
     const held: HwpChange[] = []
     report = (change) => held.push(change)
-    const result = await run(call)
+    let result = await run(call)
+    if (held.length > 0 && FORM_LOCK_RENUMBERED.has(call.name)) {
+      const at = held[0]!.place
+      if (at && !at.path) {
+        const renumbered = await bridge.renumberAround({ sec: at.sec, para: at.para })
+        if (renumbered.count > 0) {
+          held.push({
+            kind: 'replace',
+            from: '',
+            to: label('formRenumbered', { count: renumbered.count }),
+            count: renumbered.count,
+            ...(renumbered.place ? { place: renumbered.place } : {}),
+          })
+          result = {
+            ...result,
+            output: `${result.output}\nThe typed numbers of that list were put in order (${renumbered.count} line(s)).`,
+          }
+        }
+      }
+    }
     report = deps.onChange
     if (held.length === 0) return result
+    if (call.name === 'add_to_table' && typeof call.input.table === 'number') {
+      const read = await bridge.readTable(call.input.table).catch(() => null)
+      if (read && read.ok) {
+        const firsts = read.cells
+          .filter((cell) => cell.col === 1)
+          .map((cell) => `${cell.row}: ${cell.text.replace(/\s+/g, ' ').trim() || '(empty)'}`)
+        result = {
+          ...result,
+          output: `${result.output}\nTable ${call.input.table} now, first column row by row: ${firsts.join(' | ')}. Check the new rows are where the user asked.`,
+        }
+      }
+    }
     const after = await bridge.formShape()
-    const change = shapeChange(before, after)
-    if (!change) {
+    let problem = shapeChange(before, after)
+    // a change that added or removed paragraphs, rows or columns must leave a document that
+    // comes back whole from a save and a reopen
+    if (
+      !problem &&
+      (FORM_LOCK_RENUMBERED.has(call.name) ||
+        call.name === 'add_to_table' ||
+        call.name === 'remove_from_table')
+    ) {
+      const whole = await bridge.checkRoundTrip()
+      if (!whole.ok) problem = 'leave a document that does not come back whole from a save'
+    }
+    // rows and columns move whole lines of the text around; their content is checked as cells
+    if (!problem && !held.some((item) => item.kind === 'lines')) {
+      const stray = unexplainedLines(beforeText, await bridge.readText(), held)
+      if (stray.length > 0) {
+        problem = `change text it did not report: ${stray
+          .slice(0, 3)
+          .map((line) => `"${line.slice(0, 60)}"`)
+          .join(', ')}`
+      }
+    }
+    if (!problem) {
       for (const item of held) deps.onChange(item)
       return result
     }
@@ -2603,12 +2660,12 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
       for (const item of held) deps.onChange(item)
       return {
         ...result,
-        output: `${result.output}\nWarning: 양식 유지 is on and this change would ${change}, but it could not be taken back because the document changed meanwhile. Tell the user.`,
+        output: `${result.output}\nWarning: 서식 고정 is on and this change would ${problem}, but it could not be taken back because the document changed meanwhile. Tell the user.`,
       }
     }
     return bad(
       call,
-      `Nothing was changed: 양식 유지 (form lock) is on and this change would ${change}, so it was taken back. Offer a shorter wording, or tell the user that turning 양식 유지 off allows it.`,
+      `Nothing was changed: 서식 고정 (formatting lock) is on and this change would ${problem}, so it was taken back. Do it without new formatting, or tell the user that turning 서식 고정 off allows it.`,
     )
   }
 
@@ -2632,7 +2689,7 @@ export function createHwpSkill(deps: HwpSkillDeps): HwpSkill {
           if (FORM_LOCK_REFUSED.has(call.name)) {
             return bad(
               call,
-              '양식 유지 (form lock) is on: this tool changes the form, so it was refused and nothing was changed. Only text may change. If the user wants this change, they can turn 양식 유지 off.',
+              '서식 고정 (formatting lock) is on: this tool changes the formatting, so it was refused and nothing was changed. Content may still change along the form (text, rows and columns, paragraphs and list items). If the user wants this change, they can turn 서식 고정 off.',
             )
           }
           if (!FORM_LOCK_CHECKED.has(call.name)) return await run(call)

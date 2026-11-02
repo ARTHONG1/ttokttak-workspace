@@ -196,9 +196,9 @@ export const pt = {
   aiMemoApprovalTitle: 'Esta edição exclui {count} comentário(s). Continuar?',
   aiMemoApprovalKeep: 'Manter os comentários',
   aiMemoApprovalRemove: 'Continuar e excluir',
-  formLock: 'Manter layout',
+  formLock: 'Bloquear formatação',
   formLockTip:
-    'Ligado, a IA altera só o texto e mantém fontes, tabelas e layout. Desligado, a IA também mantém o layout, salvo se pedir outra coisa.',
+    'Ligado, fontes, cores, alinhamento e demais formatação não mudam; o conteúdo é editado e ampliado conforme o modelo. Linhas, colunas e itens de lista são adicionados com o mesmo aspecto e a numeração continua.',
   formReportAnalyzing: 'Analisando o layout do documento…',
   formReportTitle: 'Layout do documento analisado',
   formReportSummary:
@@ -207,8 +207,11 @@ export const pt = {
   formReportNear: 'abaixo de "{near}"',
   formReportMore: 'mais {count} tabela(s)',
   formReportKeep:
-    'A IA mantém este layout ao editar. Para alterar só o texto, ligue Manter layout abaixo.',
+    'A IA mantém este layout ao editar. Para bloquear a formatação com segurança, ligue Bloquear formatação abaixo.',
   formReportLock:
-    'Manter layout está ligado. A IA altera só o texto, recusa pedidos que mudam formatação, tabelas ou layout e desfaz edições que aumentam uma tabela.',
+    'Bloquear formatação está ligado. O conteúdo pode ser editado e ampliado conforme o modelo (linhas e colunas, itens de lista, numeração contínua); fontes, cores e alinhamento não mudam.',
   formReportFailed: 'Não foi possível analisar o layout. A IA ainda mantém o layout.',
+  formReportLists: 'Numeração e marcadores: {lists}',
+  formRenumbered: '{count} linha(s) renumerada(s)',
+  formUndoLast: 'Desfazer a última',
 } satisfies Record<keyof typeof zh, string>

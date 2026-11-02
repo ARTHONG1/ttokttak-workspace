@@ -198,9 +198,9 @@ export const es = {
   aiMemoApprovalTitle: 'Esta edición elimina {count} comentario(s). ¿Continuar?',
   aiMemoApprovalKeep: 'Mantener los comentarios',
   aiMemoApprovalRemove: 'Continuar y eliminarlos',
-  formLock: 'Mantener diseño',
+  formLock: 'Bloquear formato',
   formLockTip:
-    'Activado, la IA solo cambia el texto y deja fuentes, tablas y diseño como están. Desactivado, la IA también mantiene el diseño salvo que pidas otra cosa.',
+    'Activado, las fuentes, colores, alineación y demás formato no cambian; el contenido se edita y amplía según la plantilla. Las filas, columnas y elementos de lista se añaden con el mismo aspecto y la numeración continúa.',
   formReportAnalyzing: 'Analizando el diseño del documento…',
   formReportTitle: 'Diseño del documento analizado',
   formReportSummary:
@@ -209,8 +209,11 @@ export const es = {
   formReportNear: 'debajo de «{near}»',
   formReportMore: '{count} tabla(s) más',
   formReportKeep:
-    'La IA mantiene este diseño al editar. Para que solo cambie el texto, activa Mantener diseño abajo.',
+    'La IA mantiene este diseño al editar. Para bloquear el formato con seguridad, activa Bloquear formato abajo.',
   formReportLock:
-    'Mantener diseño está activado. La IA solo cambia el texto, rechaza las peticiones que cambian formato, tablas o diseño y deshace las ediciones que agrandan una tabla.',
+    'Bloquear formato está activado. El contenido se puede editar y ampliar según la plantilla (filas y columnas, elementos de lista, numeración continua); fuentes, colores y alineación no cambian.',
   formReportFailed: 'No se pudo analizar el diseño. La IA mantiene el diseño de todos modos.',
+  formReportLists: 'Numeración y viñetas: {lists}',
+  formRenumbered: '{count} línea(s) renumerada(s)',
+  formUndoLast: 'Deshacer la última',
 } satisfies Record<keyof typeof zh, string>

@@ -193,9 +193,9 @@ export const pl = {
   aiMemoApprovalTitle: 'Ta zmiana usuwa komentarze: {count}. Kontynuować?',
   aiMemoApprovalKeep: 'Zachowaj komentarze',
   aiMemoApprovalRemove: 'Kontynuuj i usuń',
-  formLock: 'Zachowaj układ',
+  formLock: 'Zablokuj formatowanie',
   formLockTip:
-    'Po włączeniu AI zmienia tylko tekst i nie zmienia czcionek, tabel ani układu. Po wyłączeniu AI też zachowuje układ, chyba że poprosisz inaczej.',
+    'Po włączeniu czcionki, kolory, wyrównanie i inne formatowanie pozostają bez zmian, a treść jest edytowana i rozszerzana według wzoru. Wiersze, kolumny i punkty listy dodawane są w tym samym wyglądzie, a numeracja jest kontynuowana.',
   formReportAnalyzing: 'Analizowanie układu dokumentu…',
   formReportTitle: 'Układ dokumentu przeanalizowany',
   formReportSummary: 'stron {pages} · tabel {tables} · pustych komórek {empty} · pól {fields}',
@@ -203,8 +203,11 @@ export const pl = {
   formReportNear: 'pod „{near}”',
   formReportMore: 'jeszcze tabel: {count}',
   formReportKeep:
-    'AI zachowuje ten układ podczas edycji. Aby zmieniała tylko tekst, włącz „Zachowaj układ” poniżej.',
+    'AI zachowuje ten układ podczas edycji. Aby na pewno zablokować formatowanie, włącz „Zablokuj formatowanie” poniżej.',
   formReportLock:
-    '„Zachowaj układ” jest włączone. AI zmienia tylko tekst, odrzuca prośby o zmianę formatowania, tabel lub układu i cofa zmiany, które powiększają tabelę.',
+    '„Zablokuj formatowanie” jest włączone. Treść można edytować i rozszerzać według wzoru (wiersze i kolumny, punkty listy, ciągła numeracja); czcionki, kolory i wyrównanie się nie zmieniają.',
   formReportFailed: 'Nie udało się przeanalizować układu. AI i tak zachowuje układ.',
+  formReportLists: 'Numeracja i punktory: {lists}',
+  formRenumbered: 'Przenumerowano wierszy: {count}',
+  formUndoLast: 'Cofnij ostatnią',
 } satisfies Record<keyof typeof zh, string>

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // The form analysis made when a document opens is reported in the AI conversation, and the
-// 양식 유지 switch sits in the composer: the two places a user looks while talking to the AI.
+// 서식 고정 switch sits in the composer: the two places a user looks while talking to the AI.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -18,6 +18,10 @@ const PROFILE: FormProfile = {
   tableCount: 7,
   emptyCells: 9,
   fields: 3,
+  lists: [
+    { marker: '1.', count: 3 },
+    { marker: '-', count: 4 },
+  ],
   tables: [1, 2, 3, 4, 5, 6, 7].map((table) => ({
     table,
     rows: 4,
@@ -105,12 +109,13 @@ describe('the form report in the conversation', () => {
     expect(text).toContain('참가 신청서')
     // a long list is cut, and says so
     expect(text).toContain('표 2개 더')
-    expect(text).toContain('양식 유지')
+    expect(text).toContain('번호·글머리: 1. ×3, - ×4')
+    expect(text).toContain('서식 고정')
   })
 
   it('says what the lock does once it is on', async () => {
     await show({ formStatus: 'ready', formProfile: PROFILE, formMode: 'lock' })
-    expect(report()?.textContent).toContain('글자만 바꾸')
+    expect(report()?.textContent).toContain('서식 고정이 켜져 있습니다')
   })
 
   it('says when the analysis failed', async () => {
@@ -119,13 +124,13 @@ describe('the form report in the conversation', () => {
   })
 })
 
-describe('the 양식 유지 switch in the composer', () => {
+describe('the 서식 고정 switch in the composer', () => {
   it('sits in the composer and shows the mode', async () => {
     await show({ formStatus: 'ready', formProfile: PROFILE, formMode: 'lock' })
     expect(container.querySelector('.ai-composer .ai-form-lock, .ai-form-lock')).not.toBeNull()
     expect(toggle()?.getAttribute('role')).toBe('switch')
     expect(toggle()?.getAttribute('aria-checked')).toBe('true')
-    expect(toggle()?.textContent).toContain('양식 유지')
+    expect(toggle()?.textContent).toContain('서식 고정')
   })
 
   it('turns the lock on and off', async () => {

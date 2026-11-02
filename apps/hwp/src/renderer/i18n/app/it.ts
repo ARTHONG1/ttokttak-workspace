@@ -198,9 +198,9 @@ export const it = {
   aiMemoApprovalTitle: 'Questa modifica elimina {count} commento/i. Continuare?',
   aiMemoApprovalKeep: 'Mantieni i commenti',
   aiMemoApprovalRemove: 'Continua ed elimina',
-  formLock: 'Mantieni layout',
+  formLock: 'Blocca formattazione',
   formLockTip:
-    "Se attivo, l'IA cambia solo il testo e lascia invariati caratteri, tabelle e layout. Se disattivo, l'IA mantiene comunque il layout salvo diversa richiesta.",
+    'Se attivo, caratteri, colori, allineamento e altra formattazione restano invariati; il contenuto viene modificato ed esteso secondo il modello. Righe, colonne ed elementi di elenco si aggiungono con lo stesso aspetto e la numerazione prosegue.',
   formReportAnalyzing: 'Analisi del layout del documento…',
   formReportTitle: 'Layout del documento analizzato',
   formReportSummary: '{pages} pagine · {tables} tabelle · {empty} celle vuote · {fields} campi',
@@ -208,8 +208,11 @@ export const it = {
   formReportNear: 'sotto «{near}»',
   formReportMore: 'altre {count} tabelle',
   formReportKeep:
-    "L'IA mantiene questo layout durante le modifiche. Per cambiare solo il testo, attiva Mantieni layout qui sotto.",
+    "L'IA mantiene questo layout durante le modifiche. Per bloccare la formattazione con certezza, attiva Blocca formattazione qui sotto.",
   formReportLock:
-    "Mantieni layout è attivo. L'IA cambia solo il testo, rifiuta richieste che cambiano formattazione, tabelle o layout e annulla le modifiche che ingrandiscono una tabella.",
+    'Blocca formattazione è attivo. Il contenuto può essere modificato ed esteso secondo il modello (righe e colonne, elementi di elenco, numerazione continua); caratteri, colori e allineamento non cambiano.',
   formReportFailed: "Impossibile analizzare il layout. L'IA mantiene comunque il layout.",
+  formReportLists: 'Numerazione ed elenchi puntati: {lists}',
+  formRenumbered: '{count} righe rinumerate',
+  formUndoLast: "Annulla l'ultima",
 } satisfies Record<keyof typeof zh, string>

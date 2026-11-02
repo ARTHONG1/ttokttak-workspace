@@ -193,9 +193,9 @@ export const id = {
   aiMemoApprovalTitle: 'Edit ini menghapus komentar: {count}. Lanjutkan?',
   aiMemoApprovalKeep: 'Pertahankan komentar',
   aiMemoApprovalRemove: 'Lanjutkan dan hapus',
-  formLock: 'Pertahankan tata letak',
+  formLock: 'Kunci format',
   formLockTip:
-    'Jika aktif, AI hanya mengubah teks dan tidak mengubah font, tabel, atau tata letak. Jika nonaktif, AI tetap mempertahankan tata letak kecuali Anda meminta lain.',
+    'Jika aktif, font, warna, perataan, dan format lain tetap; isi diedit dan ditambah mengikuti formulir. Baris, kolom, dan butir daftar ditambahkan dengan tampilan sama, dan penomoran berlanjut.',
   formReportAnalyzing: 'Menganalisis tata letak dokumen…',
   formReportTitle: 'Tata letak dokumen dianalisis',
   formReportSummary: '{pages} halaman · {tables} tabel · {empty} sel kosong · {fields} kolom isian',
@@ -203,8 +203,11 @@ export const id = {
   formReportNear: 'di bawah "{near}"',
   formReportMore: '{count} tabel lagi',
   formReportKeep:
-    'AI mempertahankan tata letak ini saat mengedit. Agar hanya teks yang berubah, aktifkan Pertahankan tata letak di bawah.',
+    'AI mempertahankan tata letak ini saat mengedit. Untuk mengunci format, aktifkan Kunci format di bawah.',
   formReportLock:
-    'Pertahankan tata letak aktif. AI hanya mengubah teks, menolak permintaan yang mengubah format, tabel, atau tata letak, dan membatalkan suntingan yang membuat tabel membesar.',
+    'Kunci format aktif. Isi dapat diedit dan ditambah mengikuti formulir (baris dan kolom, butir daftar, penomoran berlanjut); font, warna, dan perataan tidak berubah.',
   formReportFailed: 'Tata letak tidak dapat dianalisis. AI tetap mempertahankan tata letak.',
+  formReportLists: 'Penomoran dan poin: {lists}',
+  formRenumbered: '{count} baris dinomori ulang',
+  formUndoLast: 'Batalkan yang terakhir',
 } satisfies Record<keyof typeof zh, string>

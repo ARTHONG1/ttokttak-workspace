@@ -2022,11 +2022,6 @@ function tablesOf(doc) {
   return { tables, partial: lookups <= 0 }
 }
 
-/**
- * Table `number` (as listTables numbers them) when it sits in a body paragraph, with its
- * cells; otherwise a refusal. The engine merges and splits cells by table and cell number,
- * which cannot name a table inside another table's cell.
- */
 /** How many paragraphs each cell of a table holds, cell by cell. */
 function cellParagraphCounts(doc, table) {
   const counts = []
@@ -2044,6 +2039,223 @@ function cellParagraphCounts(doc, table) {
     }
   }
   return counts
+}
+
+/**
+ * The character and paragraph shapes the text of the document uses, in the body and in
+ * table cells. 서식 고정 (the form lock) refuses a change after which a shape shows up that
+ * was not used before: the change brought in formatting the form did not have.
+ */
+function formatIdsOf(doc, tables) {
+  const chars = new Set()
+  const paras = new Set()
+  const addRuns = (json) => {
+    for (const run of parse(json)) {
+      if (Number.isInteger(run.charShapeId)) chars.add(run.charShapeId)
+    }
+  }
+  const sections = doc.getSectionCount()
+  for (let sec = 0; sec < sections; sec++) {
+    const count = doc.getParagraphCount(sec)
+    for (let para = 0; para < count; para++) {
+      try {
+        const props = parse(doc.getParaPropertiesAt(sec, para))
+        if (Number.isInteger(props.paraShapeId)) paras.add(props.paraShapeId)
+        const length = doc.getParagraphLength(sec, para)
+        if (length > 0) addRuns(doc.getCharShapeRuns(sec, para, 0, length))
+      } catch {
+        // a paragraph the engine cannot describe is left out of the comparison
+      }
+    }
+  }
+  for (const table of tables) {
+    for (let cell = 0; cell < table.cells; cell++) {
+      let count
+      try {
+        count = doc.getCellParagraphCountByPath(
+          table.sec,
+          table.para,
+          JSON.stringify(cellAt(table.path, cell, 0)),
+        )
+      } catch {
+        continue
+      }
+      for (let k = 0; k < count; k++) {
+        try {
+          const path = JSON.stringify(cellAt(table.path, cell, k))
+          const length = doc.getCellParagraphLengthByPath(table.sec, table.para, path)
+          if (length > 0) {
+            addRuns(doc.getCharShapeRunsInCellByPath(table.sec, table.para, path, 0, length))
+          }
+          if (table.path.length === 1) {
+            const props = parse(
+              doc.getCellParaPropertiesAt(
+                table.sec,
+                table.para,
+                table.path[0].controlIndex,
+                cell,
+                k,
+              ),
+            )
+            if (Number.isInteger(props.paraShapeId)) paras.add(props.paraShapeId)
+          }
+        } catch {
+          // as above
+        }
+      }
+    }
+  }
+  const sorted = (set) => [...set].sort((a, b) => a - b)
+  return { char: sorted(chars), para: sorted(paras) }
+}
+
+/** Korean letters in the order a Korean list counts with them (가. 나. 다. …). */
+const KOREAN_COUNT = '가나다라마바사아자차카타파하'
+const ROMAN_COUNT = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ', 'Ⅺ', 'Ⅻ']
+
+/**
+ * The number schemes typed at the start of a paragraph, as Korean documents write them.
+ * `at` is where the number itself starts within the match; `value` reads it, `write`
+ * writes the number n (from 1) the same way, or null when the scheme has no such number.
+ */
+const NUMBER_SCHEMES = [
+  {
+    id: '(1)',
+    re: /^(\s*)\((\d{1,3})\)/,
+    at: 1,
+    value: (s) => Number(s),
+    write: (n) => String(n),
+  },
+  {
+    id: '1.',
+    re: /^(\s*)(\d{1,3})\.(?=\s)/,
+    at: 0,
+    value: (s) => Number(s),
+    write: (n) => String(n),
+  },
+  {
+    id: '1)',
+    re: /^(\s*)(\d{1,3})\)(?=\s)/,
+    at: 0,
+    value: (s) => Number(s),
+    write: (n) => String(n),
+  },
+  {
+    id: '(가)',
+    re: new RegExp(`^(\\s*)\\(([${KOREAN_COUNT}])\\)`),
+    at: 1,
+    value: (s) => KOREAN_COUNT.indexOf(s) + 1,
+    write: (n) => KOREAN_COUNT[n - 1] ?? null,
+  },
+  {
+    id: '가.',
+    re: new RegExp(`^(\\s*)([${KOREAN_COUNT}])\\.(?=\\s)`),
+    at: 0,
+    value: (s) => KOREAN_COUNT.indexOf(s) + 1,
+    write: (n) => KOREAN_COUNT[n - 1] ?? null,
+  },
+  {
+    id: '가)',
+    re: new RegExp(`^(\\s*)([${KOREAN_COUNT}])\\)(?=\\s)`),
+    at: 0,
+    value: (s) => KOREAN_COUNT.indexOf(s) + 1,
+    write: (n) => KOREAN_COUNT[n - 1] ?? null,
+  },
+  {
+    id: '①',
+    re: /^(\s*)([\u2460-\u2473])/,
+    at: 0,
+    value: (s) => s.charCodeAt(0) - 0x2460 + 1,
+    write: (n) => (n >= 1 && n <= 20 ? String.fromCharCode(0x2460 + n - 1) : null),
+  },
+  {
+    id: 'Ⅰ.',
+    re: new RegExp(`^(\\s*)(${ROMAN_COUNT.join('|')})\\.`),
+    at: 0,
+    value: (s) => ROMAN_COUNT.indexOf(s) + 1,
+    write: (n) => ROMAN_COUNT[n - 1] ?? null,
+  },
+]
+
+/** The number typed at the start of a line: its scheme, its value and where it is. */
+function typedNumberOf(text) {
+  for (const scheme of NUMBER_SCHEMES) {
+    const match = scheme.re.exec(text)
+    if (!match) continue
+    const lead = match[1].length
+    return {
+      scheme,
+      lead,
+      value: scheme.value(match[2]),
+      start: lead + scheme.at,
+      length: match[2].length,
+    }
+  }
+  return null
+}
+
+/**
+ * The typed numbers to rewrite so that the list around body paragraph `place.para` counts
+ * on without a gap or a repeat. The list is the paragraphs numbered the same way (scheme,
+ * leading spaces, left margin) around that place. Text without a number and items further in
+ * do not end it; a line further out, or a number of another scheme at the same depth or
+ * further out, does. Other lists are left as they are.
+ */
+function numberFixesAround(doc, place) {
+  const sec = place.sec
+  const count = doc.getParagraphCount(sec)
+  const seen = new Map()
+  const lineAt = (k) => {
+    if (!seen.has(k)) {
+      const length = doc.getParagraphLength(sec, k)
+      const text = length > 0 ? doc.getTextRange(sec, k, 0, length) : ''
+      let margin
+      try {
+        margin = Number(parse(doc.getParaPropertiesAt(sec, k)).marginLeft) || 0
+      } catch {
+        margin = 0
+      }
+      seen.set(k, { text, margin, number: typedNumberOf(text) })
+    }
+    return seen.get(k)
+  }
+  const keyOf = (line) => `${line.number.scheme.id}|${line.number.lead}|${line.margin}`
+  let anchor = -1
+  for (const k of [place.para, place.para + 1, place.para - 1]) {
+    if (k >= 0 && k < count && lineAt(k).number) {
+      anchor = k
+      break
+    }
+  }
+  if (anchor < 0) return []
+  const key = keyOf(lineAt(anchor))
+  const margin = lineAt(anchor).margin
+  const belongs = (line) => line.number && keyOf(line) === key
+  const ends = (line) =>
+    line.text.trim() !== '' &&
+    (line.margin < margin || (line.number !== null && line.margin <= margin && keyOf(line) !== key))
+  const items = [anchor]
+  for (let k = anchor - 1; k >= 0; k--) {
+    const line = lineAt(k)
+    if (belongs(line)) items.unshift(k)
+    else if (ends(line)) break
+  }
+  for (let k = anchor + 1; k < count; k++) {
+    const line = lineAt(k)
+    if (belongs(line)) items.push(k)
+    else if (ends(line)) break
+  }
+  const first = lineAt(items[0]).number.value
+  const fixes = []
+  items.forEach((k, index) => {
+    const number = lineAt(k).number
+    const wanted = first + index
+    if (number.value === wanted) return
+    const text = number.scheme.write(wanted)
+    if (text === null) return
+    fixes.push({ sec, para: k, start: number.start, length: number.length, text })
+  })
+  return fixes
 }
 
 /**
@@ -2067,6 +2279,11 @@ function tableBoxOf(doc, table) {
   }
 }
 
+/**
+ * Table `number` (as listTables numbers them) when it sits in a body paragraph, with its
+ * cells; otherwise a refusal. The engine merges and splits cells by table and cell number,
+ * which cannot name a table inside another table's cell.
+ */
 function bodyTable(doc, number) {
   const { tables } = tablesOf(doc)
   const table = Number.isInteger(number) ? tables[number - 1] : undefined
@@ -4236,9 +4453,10 @@ export const agentPlugin = {
       ),
 
       /**
-       * What the form lock (양식 유지) compares before and after an AI change: the pages,
-       * the body paragraphs of each section, the objects, and each table's grid, the
-       * paragraphs of its cells and where it stands on its page. Only reads.
+       * What 서식 고정 (the form lock) compares before and after an AI change: the
+       * formatting the text uses, the objects and the tables. The pages, the paragraphs and
+       * each table's grid and place are reported too, for the model to hear what changed.
+       * Only reads.
        */
       formShape: guarded(() =>
         host.read((doc) => {
@@ -4248,6 +4466,7 @@ export const agentPlugin = {
             paragraphs: paragraphCounts(doc),
             objects: objectsOf(doc).controls,
             partial,
+            formats: formatIdsOf(doc, tables),
             tables: tables.map((table) => ({
               rows: table.rows,
               cols: table.cols,
@@ -4258,6 +4477,67 @@ export const agentPlugin = {
           }
         }),
       ),
+
+      /**
+       * Whether the document as it is now comes back whole from a save and a reopen in the
+       * engine, with as many tables. 서식 고정 asks after changes that add or remove
+       * paragraphs, rows or columns. Only reads.
+       */
+      checkRoundTrip: guarded(() =>
+        host.read((doc) => {
+          let again = null
+          try {
+            again = new doc.constructor(doc.exportHwp())
+            return tablesOf(again).tables.length === tablesOf(doc).tables.length
+              ? { ok: true }
+              : { ok: false, reason: 'changed' }
+          } catch {
+            return { ok: false, reason: 'unreadable' }
+          } finally {
+            again?.free?.()
+          }
+        }),
+      ),
+
+      /**
+       * Put the typed numbers of the list around body paragraph `place.para` in order after an
+       * item was added or removed there (1. 2. 4. → 1. 2. 3.), in one undo step. Each number
+       * is rewritten in place, so it keeps its look. Nothing is changed, and no step is added,
+       * when the list already counts on.
+       */
+      renumberAround: guarded((place) => {
+        if (!place || !Number.isInteger(place.sec) || !Number.isInteger(place.para)) {
+          throw fail('BAD_ARGUMENT', 'place must name a body paragraph')
+        }
+        const fixes = host.read((doc) => numberFixesAround(doc, place))
+        if (fixes.length === 0) return { ok: true, count: 0 }
+        return change('renumber', (doc) => {
+          const now = numberFixesAround(doc, place)
+          for (const fix of now) {
+            // the new number goes in after the old one, taking its look, and the old goes
+            expectOk(
+              doc.insertText(fix.sec, fix.para, fix.start + fix.length, fix.text),
+              'renumber',
+            )
+            expectOk(doc.deleteText(fix.sec, fix.para, fix.start, fix.length), 'renumber')
+          }
+          const first = now[0]
+          return {
+            ok: true,
+            count: now.length,
+            ...(first
+              ? {
+                  place: {
+                    sec: first.sec,
+                    para: first.para,
+                    offset: first.start,
+                    length: first.text.length,
+                  },
+                }
+              : {}),
+          }
+        })
+      }),
 
       /**
        * The cells of table `number` row by row, from row `fromRow` (1-based). A merged cell

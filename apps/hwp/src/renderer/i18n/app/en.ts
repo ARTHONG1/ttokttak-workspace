@@ -190,9 +190,9 @@ export const en = {
   aiMemoApprovalTitle: 'This edit deletes memos: {count}. Continue?',
   aiMemoApprovalKeep: 'Keep the memos',
   aiMemoApprovalRemove: 'Continue and delete them',
-  formLock: 'Keep layout',
+  formLock: 'Lock formatting',
   formLockTip:
-    'When on, the AI changes only text and leaves fonts, tables and layout as they are. When off, the AI still keeps the layout unless you ask otherwise.',
+    'When on, fonts, colours, alignment and other formatting stay as they are, while the content is edited and extended along the form. Table rows and columns and list items are added in the same look, and numbering continues.',
   formReportAnalyzing: 'Analysing the layout of the document…',
   formReportTitle: 'Layout of the document analysed',
   formReportSummary:
@@ -201,9 +201,12 @@ export const en = {
   formReportNear: 'below "{near}"',
   formReportMore: '{count} more table(s)',
   formReportKeep:
-    'The AI keeps this layout while editing. To let it change only text, turn on Keep layout below.',
+    'The AI keeps this layout while editing. To lock the formatting for sure, turn on Lock formatting below.',
   formReportLock:
-    'Keep layout is on. The AI changes only text, refuses requests that change formatting, tables or layout, and takes back edits that make a table grow.',
+    'Lock formatting is on. The content can be edited and extended along the form (table rows and columns, list items, continued numbering); fonts, colours, alignment and other formatting do not change.',
   formReportFailed:
     'The layout could not be analysed. The AI still keeps the layout while editing.',
+  formReportLists: 'Numbering and bullets: {lists}',
+  formRenumbered: 'Renumbered {count} line(s)',
+  formUndoLast: 'Undo the last one',
 } satisfies Record<keyof typeof zh, string>

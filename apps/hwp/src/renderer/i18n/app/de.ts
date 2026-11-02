@@ -200,9 +200,9 @@ export const de = {
   aiMemoApprovalTitle: 'Diese Änderung löscht {count} Kommentar(e). Fortfahren?',
   aiMemoApprovalKeep: 'Kommentare behalten',
   aiMemoApprovalRemove: 'Fortfahren und löschen',
-  formLock: 'Layout beibehalten',
+  formLock: 'Formatierung sperren',
   formLockTip:
-    'Eingeschaltet ändert die KI nur Text und lässt Schriften, Tabellen und Layout unverändert. Ausgeschaltet behält die KI das Layout ebenfalls bei, sofern du nichts anderes verlangst.',
+    'Eingeschaltet bleiben Schriften, Farben, Ausrichtung und andere Formatierung unverändert; der Inhalt wird entlang der Vorlage bearbeitet und erweitert. Tabellenzeilen und -spalten sowie Listenpunkte kommen im gleichen Aussehen hinzu, die Nummerierung läuft weiter.',
   formReportAnalyzing: 'Layout des Dokuments wird analysiert…',
   formReportTitle: 'Layout des Dokuments analysiert',
   formReportSummary:
@@ -211,9 +211,12 @@ export const de = {
   formReportNear: 'unter „{near}“',
   formReportMore: '{count} weitere Tabelle(n)',
   formReportKeep:
-    'Die KI behält dieses Layout beim Bearbeiten bei. Damit sie nur Text ändert, schalte unten „Layout beibehalten“ ein.',
+    'Die KI behält dieses Layout beim Bearbeiten bei. Um die Formatierung sicher zu sperren, schalte unten „Formatierung sperren“ ein.',
   formReportLock:
-    '„Layout beibehalten“ ist an. Die KI ändert nur Text, lehnt Änderungen an Formatierung, Tabellen oder Layout ab und nimmt Änderungen zurück, die eine Tabelle vergrößern.',
+    '„Formatierung sperren“ ist an. Der Inhalt kann entlang der Vorlage bearbeitet und erweitert werden (Tabellenzeilen und -spalten, Listenpunkte, fortlaufende Nummern); Schriften, Farben und Ausrichtung ändern sich nicht.',
   formReportFailed:
     'Das Layout konnte nicht analysiert werden. Die KI behält das Layout trotzdem bei.',
+  formReportLists: 'Nummerierung und Aufzählungszeichen: {lists}',
+  formRenumbered: '{count} Zeile(n) neu nummeriert',
+  formUndoLast: 'Letzte rückgängig',
 } satisfies Record<keyof typeof zh, string>

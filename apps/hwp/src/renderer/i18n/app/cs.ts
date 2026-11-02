@@ -192,9 +192,9 @@ export const cs = {
   aiMemoApprovalTitle: 'Tato úprava smaže komentáře: {count}. Pokračovat?',
   aiMemoApprovalKeep: 'Ponechat komentáře',
   aiMemoApprovalRemove: 'Pokračovat a smazat',
-  formLock: 'Zachovat rozvržení',
+  formLock: 'Zamknout formátování',
   formLockTip:
-    'Je-li zapnuto, AI mění jen text a nemění písma, tabulky ani rozvržení. Je-li vypnuto, AI rozvržení také zachová, pokud nepožádáte jinak.',
+    'Je-li zapnuto, písma, barvy, zarovnání a další formátování zůstávají beze změny a obsah se upravuje a rozšiřuje podle vzoru. Řádky, sloupce a položky seznamu se přidávají ve stejném vzhledu a číslování pokračuje.',
   formReportAnalyzing: 'Analýza rozvržení dokumentu…',
   formReportTitle: 'Rozvržení dokumentu analyzováno',
   formReportSummary: 'stran {pages} · tabulek {tables} · prázdných buněk {empty} · polí {fields}',
@@ -202,8 +202,11 @@ export const cs = {
   formReportNear: 'pod „{near}“',
   formReportMore: 'další tabulky: {count}',
   formReportKeep:
-    'AI při úpravách zachovává toto rozvržení. Aby měnila jen text, zapněte níže „Zachovat rozvržení“.',
+    'AI při úpravách zachovává toto rozvržení. Chcete-li formátování jistě zamknout, zapněte níže „Zamknout formátování“.',
   formReportLock:
-    '„Zachovat rozvržení“ je zapnuto. AI mění jen text, odmítá žádosti o změnu formátu, tabulek či rozvržení a vrací úpravy, které tabulku zvětší.',
+    '„Zamknout formátování“ je zapnuto. Obsah lze upravovat a rozšiřovat podle vzoru (řádky a sloupce, položky seznamu, pokračující číslování); písma, barvy a zarovnání se nemění.',
   formReportFailed: 'Rozvržení se nepodařilo analyzovat. AI rozvržení přesto zachovává.',
+  formReportLists: 'Číslování a odrážky: {lists}',
+  formRenumbered: 'Přečíslováno řádků: {count}',
+  formUndoLast: 'Vrátit poslední',
 } satisfies Record<keyof typeof zh, string>

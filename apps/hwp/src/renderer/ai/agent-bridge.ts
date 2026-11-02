@@ -28,6 +28,8 @@ const METHODS = [
   'formatParagraph',
   'listTables',
   'formShape',
+  'checkRoundTrip',
+  'renumberAround',
   'readTable',
   'fillCells',
   'checkBoxes',

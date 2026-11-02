@@ -194,6 +194,7 @@ const READING_CALLS: ReadonlySet<string> = new Set([
   'findText',
   'listTables',
   'formShape',
+  'checkRoundTrip',
   'readTable',
   'selection',
   'listFields',

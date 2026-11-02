@@ -74,12 +74,19 @@ export function FormReport({
           {more > 0 && <li>{t('formReportMore', { count: more })}</li>}
         </ul>
       )}
+      {profile.lists && profile.lists.length > 0 && (
+        <div className="ai-form-report-lists">
+          {t('formReportLists', {
+            lists: profile.lists.map((list) => `${list.marker} ×${list.count}`).join(', '),
+          })}
+        </div>
+      )}
       <div className={`ai-form-report-rule${mode === 'lock' ? ' on' : ''}`}>{rule}</div>
     </div>
   )
 }
 
-/** The 양식 유지 switch, in the composer next to the model picker. */
+/** The 서식 고정 switch, in the composer next to the model picker. */
 export function FormLockToggle({
   mode,
   onChange,

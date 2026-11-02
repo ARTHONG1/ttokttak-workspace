@@ -190,9 +190,9 @@ export const vi = {
   aiMemoApprovalTitle: 'Chỉnh sửa này sẽ xóa ghi chú: {count}. Tiếp tục?',
   aiMemoApprovalKeep: 'Giữ ghi chú',
   aiMemoApprovalRemove: 'Tiếp tục và xóa',
-  formLock: 'Giữ bố cục',
+  formLock: 'Khóa định dạng',
   formLockTip:
-    'Khi bật, AI chỉ thay đổi chữ và giữ nguyên phông chữ, bảng và bố cục. Khi tắt, AI vẫn giữ bố cục trừ khi bạn yêu cầu khác.',
+    'Khi bật, phông chữ, màu, căn lề và định dạng khác giữ nguyên; nội dung được sửa và mở rộng theo mẫu. Hàng, cột và mục danh sách được thêm cùng kiểu và đánh số tiếp tục.',
   formReportAnalyzing: 'Đang phân tích bố cục tài liệu…',
   formReportTitle: 'Đã phân tích bố cục tài liệu',
   formReportSummary: '{pages} trang · {tables} bảng · {empty} ô trống · {fields} trường',
@@ -200,8 +200,11 @@ export const vi = {
   formReportNear: 'bên dưới "{near}"',
   formReportMore: 'thêm {count} bảng',
   formReportKeep:
-    'AI giữ bố cục này khi chỉnh sửa. Để chỉ thay đổi chữ, hãy bật Giữ bố cục bên dưới.',
+    'AI giữ bố cục này khi chỉnh sửa. Để khóa định dạng chắc chắn, hãy bật Khóa định dạng bên dưới.',
   formReportLock:
-    'Giữ bố cục đang bật. AI chỉ thay đổi chữ, từ chối yêu cầu đổi định dạng, bảng hay bố cục và hoàn tác chỉnh sửa làm bảng to ra.',
+    'Khóa định dạng đang bật. Nội dung có thể sửa và mở rộng theo mẫu (hàng và cột, mục danh sách, đánh số tiếp tục); phông chữ, màu và căn lề không đổi.',
   formReportFailed: 'Không thể phân tích bố cục. AI vẫn giữ bố cục khi chỉnh sửa.',
+  formReportLists: 'Đánh số và dấu đầu dòng: {lists}',
+  formRenumbered: 'Đã đánh số lại {count} dòng',
+  formUndoLast: 'Hoàn tác mục cuối',
 } satisfies Record<keyof typeof zh, string>

@@ -198,9 +198,9 @@ export const nl = {
   aiMemoApprovalTitle: 'Deze bewerking verwijdert {count} opmerking(en). Doorgaan?',
   aiMemoApprovalKeep: 'Opmerkingen behouden',
   aiMemoApprovalRemove: 'Doorgaan en verwijderen',
-  formLock: 'Opmaak behouden',
+  formLock: 'Opmaak vergrendelen',
   formLockTip:
-    'Aan: de AI wijzigt alleen tekst en laat lettertypen, tabellen en opmaak ongemoeid. Uit: de AI behoudt de opmaak ook, tenzij je iets anders vraagt.',
+    'Aan: lettertypen, kleuren, uitlijning en andere opmaak blijven gelijk; de inhoud wordt bewerkt en uitgebreid volgens het sjabloon. Tabelrijen en -kolommen en lijstitems worden in dezelfde opmaak toegevoegd en de nummering loopt door.',
   formReportAnalyzing: 'Opmaak van het document analyseren…',
   formReportTitle: 'Opmaak van het document geanalyseerd',
   formReportSummary:
@@ -209,8 +209,11 @@ export const nl = {
   formReportNear: 'onder "{near}"',
   formReportMore: 'nog {count} tabel(len)',
   formReportKeep:
-    'De AI behoudt deze opmaak bij het bewerken. Zet Opmaak behouden hieronder aan als alleen tekst mag veranderen.',
+    'De AI behoudt deze opmaak bij het bewerken. Zet Opmaak vergrendelen hieronder aan om de opmaak zeker vast te zetten.',
   formReportLock:
-    'Opmaak behouden staat aan. De AI wijzigt alleen tekst, weigert verzoeken die opmaak, tabellen of indeling wijzigen en draait bewerkingen terug die een tabel groter maken.',
+    'Opmaak vergrendelen staat aan. De inhoud kan volgens het sjabloon worden bewerkt en uitgebreid (rijen en kolommen, lijstitems, doorlopende nummering); lettertypen, kleuren en uitlijning veranderen niet.',
   formReportFailed: 'De opmaak kon niet worden geanalyseerd. De AI behoudt de opmaak toch.',
+  formReportLists: 'Nummering en opsommingstekens: {lists}',
+  formRenumbered: '{count} regel(s) hernummerd',
+  formUndoLast: 'Laatste ongedaan maken',
 } satisfies Record<keyof typeof zh, string>
