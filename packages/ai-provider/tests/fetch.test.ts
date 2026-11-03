@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PRODUCT_NAME, UPSTREAM_PRODUCT_NAME } from '@genoffice/i18n'
+import { PRODUCT_NAME, productName, UPSTREAM_PRODUCT_NAME } from '@genoffice/i18n'
 import {
   AI_DEFAULT_USER_AGENT,
   aiFetch,
@@ -41,6 +41,14 @@ describe('aiFetch', () => {
     fetchMock.mockClear()
     await aiFetch('https://x/', { headers: { 'User-Agent': 'custom/9' } })
     expect(sentHeaders(fetchMock).get('user-agent')).toBe('custom/9')
+  })
+
+  it('keeps the user agent a valid header value even when given the Korean name', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('ok'))
+    vi.stubGlobal('fetch', fetchMock)
+    setAiUserAgent(`${productName('ko')}/1.2.3`)
+    await aiFetch('https://x/', {})
+    expect(sentHeaders(fetchMock).get('user-agent')).toBe(`${PRODUCT_NAME}/1.2.3`)
   })
 
   it('passes the same identified request to the rescue fetch', async () => {

@@ -46,10 +46,13 @@ export function useFirstConnectionNotice(
   }, [])
 
   const acknowledge = useCallback(() => {
-    setAcknowledged(true)
     void changeAiSettings((current) => ({ ...current, subscriptionNoticeSeen: true })).then(
       (next) => {
-        if (next) setSettings(next)
+        // A failed settings write must not dismiss the notice or unlock Start.
+        if (next) {
+          setSettings(next)
+          setAcknowledged(true)
+        }
       },
     )
   }, [])
@@ -64,7 +67,9 @@ export function useFirstConnectionNotice(
 /** The notice as a dialog above whatever is open; it closes only by being acknowledged */
 export function FirstConnectionDialog({ onAcknowledge }: { onAcknowledge: () => void }) {
   const { lang } = useI18n()
-  const keys = useModalKeys(onAcknowledge)
+  // Escape must not be interpreted as consent. Keep focus trapping and swallow
+  // Escape without dismissing this required first-transmission disclosure.
+  const keys = useModalKeys(() => {})
   return (
     <div className="modal-overlay first-notice-overlay" ref={keys.ref} onKeyDown={keys.onKeyDown}>
       <div

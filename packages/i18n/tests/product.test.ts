@@ -16,45 +16,51 @@ import {
 } from '../src/index'
 
 describe('productName', () => {
-  it('is the Korean name in the Korean UI and the Latin name everywhere else', () => {
-    expect(productName('ko')).toBe('똑딱작업실')
-    for (const lang of LANGS) {
-      if (lang !== 'ko') expect(productName(lang), lang).toBe('HangulAIWorkbench')
-    }
+  // since 3e8c4631 the desktop shows the web's name in every UI language;
+  // PRODUCT_NAME stays the Latin name for files, folders and HTTP headers
+  it('is the Korean name in every UI language', () => {
+    for (const lang of LANGS) expect(productName(lang), lang).toBe('똑딱작업실')
   })
 
-  it('accepts raw locale tags and falls back to the Latin name', () => {
+  it('accepts raw locale tags and missing languages', () => {
     expect(productName('ko-KR')).toBe('똑딱작업실')
     expect(productName('KO_kr')).toBe('똑딱작업실')
-    expect(productName('en-US')).toBe('HangulAIWorkbench')
-    expect(productName('')).toBe('HangulAIWorkbench')
-    expect(productName(undefined)).toBe('HangulAIWorkbench')
-    expect(productName(null)).toBe('HangulAIWorkbench')
+    expect(productName('en-US')).toBe('똑딱작업실')
+    expect(productName('')).toBe('똑딱작업실')
+    expect(productName(undefined)).toBe('똑딱작업실')
+    expect(productName(null)).toBe('똑딱작업실')
   })
 
-  it('keeps the Latin name as the one PRODUCT_NAME definition', () => {
+  it('keeps the Latin name as PRODUCT_NAME', () => {
     expect(PRODUCT_NAME).toBe('HangulAIWorkbench')
-    expect(productName('en')).toBe(PRODUCT_NAME)
+  })
+
+  // PRODUCT_NAME is sent in HTTP headers (the AI User-Agent, the Codex client
+  // name); fetch rejects any header character above 255, so a Korean value
+  // there fails every AI request ("Cannot convert argument to a ByteString").
+  it('keeps PRODUCT_NAME printable ASCII, because it goes into HTTP headers', () => {
+    expect(PRODUCT_NAME).toMatch(/^[\x20-\x7e]+$/)
   })
 })
 
 describe('brandText', () => {
-  it('swaps the upstream name for the product name of the language', () => {
-    expect(brandText('Welcome to GenOffice', 'en')).toBe('Welcome to HangulAIWorkbench')
+  it('swaps the upstream name for the product name', () => {
+    expect(brandText('Welcome to GenOffice', 'en')).toBe('Welcome to 똑딱작업실')
     expect(brandText('GenOffice에 오신 것을 환영합니다', 'ko')).toBe(
       '똑딱작업실에 오신 것을 환영합니다',
     )
-    expect(brandText('GenOffice のインストール', 'ja')).toBe('HangulAIWorkbench のインストール')
-    expect(brandText('关于 GenOffice', 'zh')).toBe('关于 HangulAIWorkbench')
+    expect(brandText('GenOffice のインストール', 'ja')).toBe('똑딱작업실 のインストール')
+    expect(brandText('关于 GenOffice', 'zh')).toBe('关于 똑딱작업실')
   })
 
   it('replaces every occurrence, including sub-app names and compounds', () => {
     expect(brandText('GenOffice Docs and GenOffice Sheets', 'en')).toBe(
-      'HangulAIWorkbench Docs and HangulAIWorkbench Sheets',
+      '똑딱작업실 Docs and 똑딱작업실 Sheets',
     )
     expect(brandText('GenOffice Markdown', 'ko')).toBe('똑딱작업실 Markdown')
+    // a hyphenated compound reads like a file name, which keeps the Latin name
     expect(brandText('das GenOffice-Fenster', 'de')).toBe('das HangulAIWorkbench-Fenster')
-    expect(brandText("GenOffice's window", 'en')).toBe("HangulAIWorkbench's window")
+    expect(brandText("GenOffice's window", 'en')).toBe("똑딱작업실's window")
   })
 
   it('returns strings without the name untouched', () => {
@@ -75,7 +81,7 @@ describe('brandText', () => {
       'GenOffice를 바탕으로 만들었습니다',
     )
     expect(brandText('GenOffice is based on {{GenOffice}}.', 'en')).toBe(
-      'HangulAIWorkbench is based on GenOffice.',
+      '똑딱작업실 is based on GenOffice.',
     )
     expect(brandText('GenOffice는 {{GenOffice}}를 바탕으로 합니다.', 'ko')).toBe(
       '똑딱작업실은 GenOffice를 바탕으로 합니다.',
@@ -117,9 +123,9 @@ describe('createI18n product name', () => {
   } as unknown as LangDicts<{ about: string; ack: string; open: string }>
   const t = createI18n(dicts)
 
-  it('renders the product name of the requested language', () => {
-    expect(t('en', 'about')).toBe('About HangulAIWorkbench')
-    expect(t('zh', 'about')).toBe('关于 HangulAIWorkbench')
+  it('renders the product name in every language', () => {
+    expect(t('en', 'about')).toBe('About 똑딱작업실')
+    expect(t('zh', 'about')).toBe('关于 똑딱작업실')
     expect(t('ko', 'about')).toBe('똑딱작업실 정보')
   })
 
@@ -131,13 +137,13 @@ describe('createI18n product name', () => {
 
   it('never rewrites interpolated values (a file may be called GenOffice)', () => {
     expect(t('en', 'open', { name: 'GenOffice notes.docx' })).toBe(
-      'Open GenOffice notes.docx in HangulAIWorkbench',
+      'Open GenOffice notes.docx in 똑딱작업실',
     )
     expect(t('ko', 'open', { name: 'GenOffice.docx' })).toBe('똑딱작업실에서 GenOffice.docx 열기')
   })
 
   it('brands the fallback text of a language without its own entry', () => {
-    expect(t('fr', 'about')).toBe('About HangulAIWorkbench')
+    expect(t('fr', 'about')).toBe('About 똑딱작업실')
   })
 })
 

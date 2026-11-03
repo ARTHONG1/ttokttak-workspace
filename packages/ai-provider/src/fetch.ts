@@ -23,13 +23,23 @@ export function setRescueFetch(fn: FetchLike | null): void {
  * for anonymous automation treat as abusive traffic (OpenCode Go requires
  * clients to identify themselves and flags "broad" user agents). Main
  * processes refine the default with the app version.
+ * Header values must be ByteStrings: fetch throws on any character above 255
+ * ("Cannot convert argument to a ByteString"), so PRODUCT_NAME stays Latin and
+ * the Korean display name, productName(), never goes here.
  */
 export const AI_DEFAULT_USER_AGENT = PRODUCT_NAME
 
 let userAgent = AI_DEFAULT_USER_AGENT
 
+/** drops what a header cannot carry; a name lost that way falls back to PRODUCT_NAME */
+function headerSafeUserAgent(ua: string): string {
+  const safe = ua.replace(/[^\x20-\x7e]+/g, '').trim()
+  if (!safe) return AI_DEFAULT_USER_AGENT
+  return safe.startsWith('/') ? `${AI_DEFAULT_USER_AGENT}${safe}` : safe
+}
+
 export function setAiUserAgent(ua: string): void {
-  userAgent = ua || AI_DEFAULT_USER_AGENT
+  userAgent = headerSafeUserAgent(ua || AI_DEFAULT_USER_AGENT)
 }
 
 /** protocols pass plain header records; keep that shape so callers can read the request back */
