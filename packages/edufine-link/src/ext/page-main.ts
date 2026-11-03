@@ -108,7 +108,7 @@ async function fromDesktop(panel: Panel): Promise<void> {
         ? '이 PC에 똑딱작업실이 설치돼 있지 않거나 연결 등록이 안 됐어요. 똑딱작업실을 설치(또는 다시 설치)해 주세요.'
         : r.state === 'off'
           ? '똑딱작업실을 켠 뒤 다시 눌러 주세요.'
-          : r.reason ?? '똑딱작업실과 연결하지 못했어요.'
+          : '똑딱작업실이 답하지 않아요. 처음 연결할 때는 PC 보안 검사 때문에 오래 걸릴 수 있어요. 한 번 더 눌러 주세요.'
     panel.show(h('h2', {}, '품의 가져오기'), h('div', { class: 'err' }, hint), back(panel))
     return
   }
@@ -200,7 +200,8 @@ async function fill(panel: Panel, pkg: PumuiPackage, source: string): Promise<vo
 }
 
 async function connectionStates(): Promise<{ desktop: DesktopState; web: WebState }> {
-  const d = (await call<{ ok: boolean; state?: string }>('desktop:ping', undefined, 10_000)) as { ok: boolean; state?: string }
+  // the first native host start can wait on the PC's security scan
+  const d = (await call<{ ok: boolean; state?: string }>('desktop:ping', undefined, 20_000)) as { ok: boolean; state?: string }
   const w = (await call<{ state: WebState }>('web:state')) as { state?: WebState }
   const desktop: DesktopState = d.ok ? 'ok' : d.state === 'missing' ? 'missing' : d.state === 'off' ? 'off' : 'unknown'
   return { desktop, web: w.state ?? 'unknown' }

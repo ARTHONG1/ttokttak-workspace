@@ -51,6 +51,16 @@ if (dev) {
   })
   await cp(join(HERE, 'tests/fixtures/fake-edufine.html'), join(TEST, 'fake-edufine.html'))
   await cp(join(HERE, 'tests/fixtures/web-sender.html'), join(TEST, 'web-sender.html'))
+  // the native messaging host as Chrome starts it, for e2e/native.spec.ts
+  await build({
+    entryPoints: [join(HERE, 'tests/fixtures/native-host-entry.ts')],
+    outfile: join(TEST, 'native-host.cjs'),
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    target: 'node20',
+    external: ['electron'],
+  })
 }
 console.log('built', dev ? 'dev' : 'release', 'extension', pkg.version, '→', DIST)
 
