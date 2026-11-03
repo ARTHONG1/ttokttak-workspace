@@ -1,9 +1,12 @@
 import { dirname, join } from 'node:path'
-import { app, dialog, shell } from 'electron'
+import { rm } from 'node:fs/promises'
+import { app, dialog, net, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { autoUpdater, CancellationToken } from 'electron-updater'
 import { updatesAllowed } from './update-policy'
 import { installResumeDownload } from './update-resume'
+import { macInstallTarget, prepareMacUpdate, startMacSwap } from './mac-self-update'
+import type { FetchLike, MacFeedFile } from './mac-self-update'
 import {
   clearInstallAttempt,
   installDidNotApply,
@@ -18,7 +21,13 @@ import type { UpdateLogger } from './update-log'
 import { requestUpdateRestart, updateRestartRequested } from './update-restart'
 import type { UpdateInfo } from 'electron-updater'
 import { createI18n, getUiLang, htmlLang } from '@genoffice/i18n'
-import { GITHUB_LATEST_RELEASE_URL, githubReleaseTagUrl } from '@genoffice/electron-utils'
+import {
+  GITHUB_LATEST_RELEASE_URL,
+  GITHUB_RELEASES_URL,
+  GITHUB_REPO_NAME,
+  GITHUB_REPO_OWNER,
+  githubReleaseTagUrl,
+} from '@genoffice/electron-utils'
 import type {
   UpdateChannel,
   UpdatePhase,
@@ -51,8 +60,9 @@ import { normalizeReleaseNotes } from './update-notes'
  *
  * UX is the strong-guidance modal card (update-window.ts), not a native
  * dialog. Windows updates through the NSIS installer (latest.yml); macOS
- * reads the zip target's latest-mac.yml but is only pointed at the release
- * page (see SELF_UPDATES); Linux through the AppImage
+ * through the zip target's latest-mac.yml, downloaded, checked and swapped in
+ * by mac-self-update.ts (Squirrel.Mac refuses the ad hoc signed app); Linux
+ * through the AppImage
  * target (latest-linux.yml). On Linux only AppImage runs self-update
  * (electron-updater replaces the .AppImage file in place, no root needed);
  * deb installs have no updater — users upgrade via `apt install ./<new>.deb`.
@@ -103,7 +113,7 @@ const tUpd = createI18n({
     updNotesOnGitHub: 'View full notes on GitHub',
     updNotesTruncated: 'Only part of the notes is shown.',
     updManualMac:
-      "The Mac version can't update itself. Download the new version from the download page and install it.",
+      "The Mac app can't update itself from where it is installed (for example, opened from the disk image). Download the new version from the download page and install it.",
     updInstallFailed:
       'The last update did not install. This time the installer opens in its own window so you can see its progress.',
     updVisibleInstall:
@@ -181,7 +191,7 @@ const tUpd = createI18n({
     updNotesOnGitHub: 'GitHub에서 전체 보기',
     updNotesTruncated: '일부만 표시했습니다.',
     updManualMac:
-      'Mac용 설치본은 스스로 업데이트하지 못합니다. 다운로드 페이지에서 새 버전을 받아 설치해 주세요.',
+      '지금 설치된 위치에서는 앱이 스스로 업데이트하지 못합니다(예: 디스크 이미지에서 바로 연 경우). 다운로드 페이지에서 새 버전을 받아 설치해 주세요.',
     updInstallFailed:
       '지난번 업데이트가 설치되지 않았습니다. 이번에는 설치 프로그램을 창으로 띄워 진행 상황을 보여 드립니다.',
     updVisibleInstall:
@@ -601,10 +611,12 @@ const tUpd = createI18n({
 // This product's macOS builds are signed ad hoc only (electron-builder.cjs,
 // docs/tracking/decisions/0031-unsigned-mac-beta.md), and Squirrel.Mac only
 // installs an update into an app signed with a Developer ID. A Mac install
-// still checks the feed (latest-mac.yml), but an update it finds goes
-// straight to the window's manual phase: the release page, never a download
-// that is bound to fail.
-const SELF_UPDATES = process.platform !== 'darwin'
+// therefore updates through mac-self-update.ts (download the zip, check its
+// sha512, swap the bundle after quit). Where that cannot work (the app runs
+// from the dmg, a translocated copy, or a folder this user cannot write) an
+// update it finds goes straight to the window's manual phase: the release page.
+// Decided once in initAutoUpdater; false until then on macOS.
+let selfUpdates = process.platform !== 'darwin'
 
 const FIRST_CHECK_DELAY_MS = 15_000
 const RECHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
@@ -685,7 +697,7 @@ function uiStrings(): UpdateUiStrings {
     downloading: tUpd(lang, 'updDownloading'),
     failed: tUpd(lang, 'updFailed'),
     retry: tUpd(lang, 'updRetry'),
-    manualDesc: tUpd(lang, SELF_UPDATES ? 'updManual' : 'updManualMac'),
+    manualDesc: tUpd(lang, selfUpdates ? 'updManual' : 'updManualMac'),
     installFailedDesc: tUpd(lang, 'updInstallFailed'),
     visibleInstallDesc: tUpd(lang, 'updVisibleInstall'),
     openDownload: tUpd(lang, 'updOpenDownload'),
@@ -828,6 +840,21 @@ export function initAutoUpdater(
   updateLog = record
   autoUpdater.logger = record
   log('running', app.getVersion(), 'on the', initialChannel, 'channel')
+  const isMac = process.platform === 'darwin'
+  // where a Mac update is unpacked before the swap; a leftover from a run that
+  // never got to swap is dropped
+  const macWorkDir = join(dataDir, 'mac-update')
+  let macBundle: string | null = null
+  if (isMac) {
+    const target = macInstallTarget(process.execPath)
+    selfUpdates = target.ok
+    if (target.ok) macBundle = target.bundle
+    else log('this Mac install cannot replace itself:', target.reason)
+    void rm(macWorkDir, { recursive: true, force: true }).catch(() => undefined)
+    // named here, not read from resources/app-update.yml: a Mac build is the
+    // zip target's, and a locally packaged one may carry no such file
+    autoUpdater.setFeedURL({ provider: 'github', owner: GITHUB_REPO_OWNER, repo: GITHUB_REPO_NAME })
+  }
   selectChannel(initialChannel)
   autoUpdater.autoDownload = false
   // The window shows what changed before the user starts the download
@@ -848,6 +875,11 @@ export function initAutoUpdater(
   let latestSeenVersion: string | null = null
   // release notes of latestSeenVersion, converted once when the version lands
   let latestSeenNotes: UpdateReleaseNotes | null = null
+  // latest-mac.yml's file list for latestSeenVersion (macOS picks its zip there)
+  let latestSeenFiles: readonly MacFeedFile[] | undefined
+  // macOS: the unpacked .app waiting to be swapped in, and the running download
+  let macStaged: string | null = null
+  let macAbort: AbortController | null = null
   // consecutive failed attempts for latestSeenVersion; a download can fail
   // through the downloadUpdate() rejection OR only through the 'error' event
   // (macOS: Squirrel.Mac reports signature/apply failures natively), so both
@@ -890,6 +922,8 @@ export function initAutoUpdater(
   // instead of out of nowhere after the app has gone. Checked once.
   let installDirOk: boolean | null = null
   const installNeedsWindow = (): boolean => {
+    // the Mac swap has no installer window to show
+    if (isMac) return false
     if (installFailures > 0) return true
     if (process.platform !== 'win32') return false
     installDirOk ??= installDirWritable(
@@ -900,6 +934,30 @@ export function initAutoUpdater(
   }
 
   const startInstaller = (version: string, restart: boolean): void => {
+    if (isMac) {
+      if (macStaged === null || macBundle === null) {
+        log('no unpacked app to swap in for', version)
+        return
+      }
+      // the second try after a swap that left the old version is marked, so a
+      // third launch at the old version points at the download page instead
+      recordInstallAttempt(dataDir, {
+        version,
+        fromVersion: app.getVersion(),
+        visible: installFailures > 0,
+      })
+      log('swapping in', version, restart ? 'to reopen the app' : 'on quit')
+      const started = startMacSwap({
+        pid: process.pid,
+        staged: macStaged,
+        bundle: macBundle,
+        relaunch: restart,
+        workDir: macWorkDir,
+        logFile: join(dataDir, UPDATE_LOG_FILE),
+      })
+      if (!started) log('the swap did not start')
+      return
+    }
     const visible = restart && installNeedsWindow()
     recordInstallAttempt(dataDir, { version, fromVersion: app.getVersion(), visible })
     log(
@@ -921,7 +979,7 @@ export function initAutoUpdater(
   // will-quit comes only once every window has closed and no save prompt was
   // cancelled: the right moment to hand over to the installer
   app.on('will-quit', () => {
-    if (!SELF_UPDATES || phase !== 'downloaded' || latestSeenVersion === null) return
+    if (!selfUpdates || phase !== 'downloaded' || latestSeenVersion === null) return
     const restart = updateRestartRequested()
     // "later" after the download installs on quit, unless installing has
     // already failed here: that retry waits for the user, in a window
@@ -962,9 +1020,13 @@ export function initAutoUpdater(
     log('channel switch: dropping', latestSeenVersion, 'in phase', phase)
     downloadToken?.cancel()
     downloadToken = null
+    macAbort?.abort()
+    macAbort = null
+    macStaged = null
     downloadGen += 1
     latestSeenVersion = null
     latestSeenNotes = null
+    latestSeenFiles = undefined
     failedAttempts = 0
     downloadInFlight = false
     phase = 'available'
@@ -972,16 +1034,62 @@ export function initAutoUpdater(
     clearUpdateState()
   }
 
+  const markDownloaded = (version: string): void => {
+    log('downloaded:', version)
+    downloadInFlight = false
+    failedAttempts = 0
+    setPhase({ phase: 'downloaded', percent: 100, visibleInstall: installNeedsWindow() })
+  }
+
+  const downloadForMac = (gen: number): void => {
+    const version = latestSeenVersion
+    if (version === null) return
+    const controller = new AbortController()
+    macAbort = controller
+    macStaged = null
+    const fetchImpl: FetchLike = (url, init) => net.fetch(url, init) as ReturnType<FetchLike>
+    prepareMacUpdate({
+      version,
+      files: latestSeenFiles,
+      arch: process.arch,
+      releasesUrl: GITHUB_RELEASES_URL,
+      workDir: macWorkDir,
+      fetchImpl,
+      signal: controller.signal,
+      onProgress: (pct) => {
+        if (gen === downloadGen && downloadInFlight)
+          setPhase({ phase: 'downloading', percent: pct })
+      },
+      log: (message) => log(message),
+    })
+      .then((staged) => {
+        if (gen !== downloadGen) return
+        macAbort = null
+        macStaged = staged
+        markDownloaded(version)
+      })
+      .catch((err) => {
+        if (gen !== downloadGen) return
+        macAbort = null
+        log('download failed:', (err as Error)?.message ?? err)
+        failDownload()
+      })
+  }
+
   const actions = {
     onDownload: () => {
       if (phase === 'downloading' || phase === 'downloaded') return
-      if (!SELF_UPDATES) {
+      if (!selfUpdates) {
         void shell.openExternal(manualDownloadUrlFor(latestSeenVersion))
         return
       }
       downloadInFlight = true
       setPhase({ phase: 'downloading', percent: 0 })
       const gen = ++downloadGen
+      if (isMac) {
+        downloadForMac(gen)
+        return
+      }
       downloadToken = new CancellationToken()
       autoUpdater.downloadUpdate(downloadToken).catch((err) => {
         if (gen !== downloadGen) return
@@ -1011,6 +1119,9 @@ export function initAutoUpdater(
     // network failures during background checks are expected; only surface
     // when the user is watching a download
     log('error:', err?.message ?? err)
+    // a Mac download reports its own failure (downloadForMac); an error event
+    // there comes from a check or from Squirrel and says nothing about it
+    if (isMac) return
     failDownload()
   })
 
@@ -1033,18 +1144,20 @@ export function initAutoUpdater(
     if (!sameVersionRecheck) {
       failedAttempts = 0
       phase =
-        !SELF_UPDATES || installFailures >= 2
+        !selfUpdates || installFailures >= 2
           ? 'manual'
-          : installFailures === 1
+          : installFailures === 1 && !isMac
             ? 'install-failed'
             : 'available'
       percent = 0
       latestSeenNotes = normalizeReleaseNotes(info.releaseNotes)
+      latestSeenFiles = info.files
     } else {
       // a repeated event for the same version (periodic recheck) refreshes
       // the notes only when the feed carried some — never wipe already known
       // notes with a notes-less repeat
       latestSeenNotes = normalizeReleaseNotes(info.releaseNotes) ?? latestSeenNotes
+      latestSeenFiles = info.files ?? latestSeenFiles
     }
     latestSeenVersion = info.version
     log('update available:', info.version)
@@ -1062,14 +1175,14 @@ export function initAutoUpdater(
   })
 
   autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+    // macOS downloads through mac-self-update.ts; electron-updater's own
+    // download never runs there
+    if (isMac) return
     if (info.version !== latestSeenVersion) {
       log('downloaded:', info.version, 'ignored (stale after channel switch)')
       return
     }
-    log('downloaded:', info.version)
-    downloadInFlight = false
-    failedAttempts = 0
-    setPhase({ phase: 'downloaded', percent: 100, visibleInstall: installNeedsWindow() })
+    markDownloaded(info.version)
   })
 
   const check = (): void => {

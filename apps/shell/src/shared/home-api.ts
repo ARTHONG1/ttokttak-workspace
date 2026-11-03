@@ -363,6 +363,8 @@ export interface HomeApi {
   getUpdateState(): Promise<UpdateUiState | null>
   /** re-open the (minimized) update dialog; a not-yet-started download also starts */
   openUpdateDialog(): Promise<boolean>
+  /** Settings → About: check the release feed now; the main process shows the outcome */
+  checkForUpdates(): Promise<void>
   onUpdateStateChanged(handler: (state: UpdateUiState) => void): () => void
   /** whether the first-run onboarding has been completed or skipped (persisted in userData/app-settings.json) */
   onboardingSeen(): Promise<boolean>

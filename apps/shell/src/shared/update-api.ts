@@ -13,6 +13,8 @@ export const UPDATE_CHANNELS = {
   stateChanged: 'update:state-changed',
   /** Settings → About "update to vX": re-open the (minimized) dialog and act */
   openForUpdate: 'update:open-for-update',
+  /** Settings → About "Check for updates": the same check as the menu item */
+  checkNow: 'update:check-now',
 } as const
 
 /** 'manual' = automatic updating is not working for this version (repeated

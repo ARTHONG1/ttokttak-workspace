@@ -59,6 +59,9 @@ vi.mock('electron', () => ({
   dialog: {
     showMessageBox: (opts: unknown) => showMessageBox(opts),
   },
+  net: {
+    fetch: () => Promise.reject(new Error('no network in tests')),
+  },
 }))
 
 type Listener = (...args: unknown[]) => unknown
@@ -85,6 +88,7 @@ class FakeCancellationToken {
 }
 const quitAndInstall = vi.fn()
 const install = vi.fn<(isSilent: boolean, isForceRunAfter: boolean) => boolean>(() => true)
+const setFeedURL = vi.fn()
 
 vi.mock('electron-updater', () => ({
   CancellationToken: FakeCancellationToken,
@@ -96,6 +100,7 @@ vi.mock('electron-updater', () => ({
     downloadUpdate: (token?: FakeCancellationToken) => downloadUpdate(token),
     quitAndInstall: (...args: unknown[]) => quitAndInstall(...(args as [boolean, boolean])),
     install: (isSilent: boolean, isForceRunAfter: boolean) => install(isSilent, isForceRunAfter),
+    setFeedURL: (options: unknown) => setFeedURL(options),
     logger: null as unknown,
     set autoDownload(v: boolean) {
       updaterState.autoDownload = v
@@ -160,6 +165,24 @@ vi.mock('../src/main/update-window', () => ({
   isUpdateWindowOpen: () => false,
   setUpdateParentWindow: () => {},
   clearUpdateState: () => closeUpdateWindow(),
+}))
+
+// macOS self-update (mac-self-update.ts has its own tests): where the app is
+// installed, the download that stages the new bundle, and the swap at quit
+const macTarget = vi.hoisted(() => ({
+  value: { ok: false, reason: 'not-writable' } as
+    { ok: true; bundle: string } | { ok: false; reason: string },
+}))
+const prepareMacUpdate = vi.hoisted(() =>
+  vi.fn<(opts: Record<string, unknown>) => Promise<string>>(() =>
+    Promise.resolve('/data/mac-update/app/HangulAIWorkbench.app'),
+  ),
+)
+const startMacSwap = vi.hoisted(() => vi.fn<(opts: Record<string, unknown>) => boolean>(() => true))
+vi.mock('../src/main/mac-self-update', () => ({
+  macInstallTarget: () => macTarget.value,
+  prepareMacUpdate: (opts: Record<string, unknown>) => prepareMacUpdate(opts),
+  startMacSwap: (opts: Record<string, unknown>) => startMacSwap(opts),
 }))
 
 const FIRST_CHECK_DELAY_MS = 15_000
@@ -343,6 +366,14 @@ beforeEach(() => {
   appListeners.clear()
   appQuit.mockClear()
   install.mockClear()
+  setFeedURL.mockClear()
+  macTarget.value = { ok: false, reason: 'not-writable' }
+  prepareMacUpdate.mockReset()
+  prepareMacUpdate.mockImplementation(() =>
+    Promise.resolve('/data/mac-update/app/HangulAIWorkbench.app'),
+  )
+  startMacSwap.mockReset()
+  startMacSwap.mockImplementation(() => true)
   installDir.writable = true
   delete process.env.GENOFFICE_FAKE_UPDATE
   updaterState.listeners.clear()
@@ -934,7 +965,7 @@ describe('manual download fallback', () => {
   })
 })
 
-describe('macOS: no self-update for an ad hoc signed app', () => {
+describe('macOS: an install that cannot replace itself', () => {
   beforeEach(() => {
     platformSpy?.restore()
     setPlatform('darwin')
@@ -982,6 +1013,124 @@ describe('macOS: no self-update for an ad hoc signed app', () => {
     updaterState.listeners.get('update-available')!({ version: '0.2.0' })
     updaterState.listeners.get('update-available')!({ version: '0.2.0' })
     expect(showUpdateWindow.mock.calls.every((call) => call[1].phase === 'manual')).toBe(true)
+  })
+})
+
+describe('macOS: self-update by swapping the app bundle', () => {
+  const BUNDLE = '/Users/me/Applications/HangulAIWorkbench.app'
+  const FILES = [
+    { url: 'HangulAIWorkbench-0.2.0-arm64-mac.zip', sha512: 'a', size: 10 },
+    { url: 'HangulAIWorkbench-0.2.0-mac.zip', sha512: 'b', size: 10 },
+  ]
+
+  beforeEach(() => {
+    platformSpy?.restore()
+    setPlatform('darwin')
+    macTarget.value = { ok: true, bundle: BUNDLE }
+  })
+
+  async function downloaded(): Promise<UpdateActions> {
+    const { initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0', files: FILES })
+    expect(lastShownState().phase).toBe('available')
+    const actions = lastShownActions()
+    actions.onDownload()
+    await flushAsync()
+    return actions
+  }
+
+  it("names the product repository's releases as the feed", async () => {
+    const { initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+    expect(setFeedURL).toHaveBeenCalledWith({
+      provider: 'github',
+      owner: GITHUB_REPO_OWNER,
+      repo: GITHUB_REPO_NAME,
+    })
+  })
+
+  it('downloads the release zip itself, never through Squirrel', async () => {
+    await downloaded()
+    expect(downloadUpdate).not.toHaveBeenCalled()
+    expect(prepareMacUpdate).toHaveBeenCalledTimes(1)
+    const opts = prepareMacUpdate.mock.calls[0][0]
+    expect(opts.version).toBe('0.2.0')
+    expect(opts.files).toEqual(FILES)
+    expect(opts.releasesUrl).toBe('https://github.com/ARTHONG1/ttokttak-workspace/releases')
+    expect(opts.workDir).toBe(join(appState.dataDir, 'mac-update'))
+    expect(pushUpdateState).toHaveBeenCalledWith({ phase: 'downloading', percent: 0 })
+    expect(pushUpdateState).toHaveBeenCalledWith({
+      phase: 'downloaded',
+      percent: 100,
+      visibleInstall: false,
+    })
+  })
+
+  it('"Restart & Install" swaps the bundle once the app has quit, then reopens it', async () => {
+    const actions = await downloaded()
+    actions.onInstall()
+    vi.advanceTimersByTime(0)
+    expect(appQuit).toHaveBeenCalledTimes(1)
+    expect(startMacSwap).not.toHaveBeenCalled()
+    quitCompletes()
+    expect(install).not.toHaveBeenCalled()
+    expect(startMacSwap).toHaveBeenCalledTimes(1)
+    expect(startMacSwap.mock.calls[0][0]).toMatchObject({
+      pid: process.pid,
+      staged: '/data/mac-update/app/HangulAIWorkbench.app',
+      bundle: BUNDLE,
+      relaunch: true,
+      workDir: join(appState.dataDir, 'mac-update'),
+    })
+    const attempt = JSON.parse(
+      readFileSync(join(appState.dataDir, 'update-install-attempt.json'), 'utf8'),
+    )
+    expect(attempt).toEqual({ version: '0.2.0', fromVersion: CURRENT_VERSION, visible: false })
+  })
+
+  it('a quit after the download swaps the bundle without reopening the app', async () => {
+    await downloaded()
+    quitCompletes()
+    expect(startMacSwap).toHaveBeenCalledTimes(1)
+    expect(startMacSwap.mock.calls[0][0]).toMatchObject({ relaunch: false })
+  })
+
+  it('a failed download offers a retry, and the second failure the download page', async () => {
+    prepareMacUpdate.mockImplementation(() => Promise.reject(new Error('sha512 mismatch')))
+    const actions = await downloaded()
+    expect(pushUpdateState).toHaveBeenCalledWith({ phase: 'error' })
+    actions.onDownload()
+    await flushAsync()
+    expect(pushUpdateState).toHaveBeenCalledWith({ phase: 'manual' })
+    quitCompletes()
+    expect(startMacSwap).not.toHaveBeenCalled()
+  })
+
+  it('a swap that left the old version is tried once more, then the download page', async () => {
+    writeFileSync(
+      join(appState.dataDir, 'update-install-attempt.json'),
+      JSON.stringify({ version: '0.2.0', fromVersion: CURRENT_VERSION, visible: false }),
+    )
+    await downloaded()
+    quitCompletes()
+    // "later" after a failed swap waits for the user
+    expect(startMacSwap).not.toHaveBeenCalled()
+    lastShownActions().onInstall()
+    vi.advanceTimersByTime(0)
+    quitCompletes()
+    expect(startMacSwap).toHaveBeenCalledTimes(1)
+    const attempt = JSON.parse(
+      readFileSync(join(appState.dataDir, 'update-install-attempt.json'), 'utf8'),
+    )
+    expect(attempt.visible).toBe(true)
+
+    vi.resetModules()
+    showUpdateWindow.mockClear()
+    const { initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0', files: FILES })
+    expect(lastShownState().phase).toBe('manual')
   })
 })
 

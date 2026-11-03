@@ -563,7 +563,7 @@ import {
 import { applyUpdateChannel, checkForUpdatesNow, initAutoUpdater } from './updater'
 import { cancelUpdateRestart } from './update-restart'
 import { applyDisplayName } from './app-display-name'
-import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
+import { isUpdateChannel, UPDATE_CHANNELS, type UpdateChannel } from '../shared/update-api'
 
 /**
  * GenOffice unified shell: ONE Electron app, ONE BrowserWindow, hosting the
@@ -9072,6 +9072,7 @@ app.whenReady().then(async () => {
   installDocumentLinkMenuItems()
   installDockMenu()
   setUpdateCheckInvoker(() => void checkForUpdatesNow())
+  ipcMain.handle(UPDATE_CHANNELS.checkNow, () => checkForUpdatesNow())
   initAutoUpdater(() => shellWindow, currentUpdateChannel(), autoUpdateCheckEnabled)
   // crash record on this PC (crash-log.jsonl in userData) and, outside
   // headless runs, a prompt when the renderer of an open document dies

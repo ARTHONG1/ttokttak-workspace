@@ -406,6 +406,9 @@ const homeApi: HomeApi = {
     const result: unknown = await ipcRenderer.invoke('update:open-for-update')
     return result === true
   },
+  async checkForUpdates() {
+    await ipcRenderer.invoke('update:check-now')
+  },
   onUpdateStateChanged(handler: (state: UpdateUiState) => void) {
     const listener = (_e: IpcRendererEvent, state: UpdateUiState) => handler(state)
     ipcRenderer.on('update:state-changed', listener)

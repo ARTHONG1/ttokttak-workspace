@@ -1560,6 +1560,7 @@ export function SettingsModal({
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
   const [appVersion, setAppVersion] = useState('')
   const [updateState, setUpdateState] = useState<UpdateUiState | null>(null)
+  const [checkingUpdates, setCheckingUpdates] = useState(false)
   // one live view of the two subscription connections for the whole dialog
   const connection = useSubscriptionConnection()
 
@@ -1984,6 +1985,24 @@ export function SettingsModal({
                         ? `${appVersion} · ${t('betaBadge')}`
                         : appVersion
                       : '—'
+                  }
+                  action={
+                    updateState ? undefined : (
+                      <button
+                        type="button"
+                        className="set-update-btn"
+                        disabled={checkingUpdates}
+                        onClick={() => {
+                          setCheckingUpdates(true)
+                          void window.aiOffice
+                            .checkForUpdates?.()
+                            .catch(() => undefined)
+                            .finally(() => setCheckingUpdates(false))
+                        }}
+                      >
+                        {t('setCheckUpdates')}
+                      </button>
+                    )
                   }
                 />
                 {RELEASE_IS_BETA && <div className="set-field-desc">{t('betaTooltip')}</div>}

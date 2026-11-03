@@ -10,9 +10,12 @@ describe('updatesAllowed', () => {
     expect(updatesAllowed('win32', { HANGUL_WORKBENCH_UPDATE_FEED: '1' }, false)).toBe(false)
   })
 
-  it('leaves the unsigned macOS and Linux builds alone unless asked', () => {
-    expect(updatesAllowed('darwin', {}, true)).toBe(false)
-    expect(updatesAllowed('darwin', { HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true)).toBe(true)
+  it('updates the installed Mac app from the project releases', () => {
+    expect(updatesAllowed('darwin', {}, true)).toBe(true)
+    expect(updatesAllowed('darwin', {}, false)).toBe(false)
+  })
+
+  it('leaves the unsigned Linux builds alone unless asked', () => {
     expect(updatesAllowed('linux', { APPIMAGE: '/a.AppImage' }, true)).toBe(false)
     expect(
       updatesAllowed('linux', { APPIMAGE: '/a.AppImage', HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true),

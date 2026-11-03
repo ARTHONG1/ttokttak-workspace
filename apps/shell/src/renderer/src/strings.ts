@@ -165,6 +165,7 @@ export const strings = {
     setUpdateTo: '更新到 {version}',
     setUpdateDownloading: '正在下载更新（{percent}%）',
     setUpdateRestart: '重启并安装',
+    setCheckUpdates: '检查更新',
     setAutoUpdateCheck: '自动检查更新',
     setAutoUpdateCheckDesc:
       '关闭后，启动时和后台都不再检查新版本；仍可在“帮助 › 检查更新”中手动检查。',
@@ -656,6 +657,7 @@ export const strings = {
     setUpdateTo: 'Update to {version}',
     setUpdateDownloading: 'Downloading update ({percent}%)',
     setUpdateRestart: 'Restart & install',
+    setCheckUpdates: 'Check for updates',
     setAutoUpdateCheck: 'Check for updates automatically',
     setAutoUpdateCheckDesc:
       'When off, GenOffice no longer checks for new versions at launch or in the background. You can still check from Help › Check for Updates.',
@@ -1170,6 +1172,7 @@ export const strings = {
     setUpdateTo: 'Cập nhật lên {version}',
     setUpdateDownloading: 'Đang tải bản cập nhật ({percent}%)',
     setUpdateRestart: 'Khởi động lại và cài đặt',
+    setCheckUpdates: 'Kiểm tra bản cập nhật',
     setAutoUpdateCheck: 'Tự động kiểm tra cập nhật',
     setAutoUpdateCheckDesc:
       'Khi tắt, GenOffice không còn kiểm tra phiên bản mới khi khởi động hoặc chạy nền. Bạn vẫn có thể kiểm tra trong Trợ giúp › Kiểm tra bản cập nhật.',
@@ -1693,6 +1696,7 @@ export const strings = {
     setUpdateTo: '{version} に更新する',
     setUpdateDownloading: '更新をダウンロード中（{percent}%）',
     setUpdateRestart: '再起動してインストール',
+    setCheckUpdates: '更新を確認',
     setAutoUpdateCheck: 'アップデートを自動で確認',
     setAutoUpdateCheckDesc:
       'オフにすると、起動時やバックグラウンドで新しいバージョンを確認しなくなります。「ヘルプ › 更新を確認」から手動で確認できます。',
@@ -2220,6 +2224,7 @@ export const strings = {
     setUpdateTo: '{version}(으)로 업데이트',
     setUpdateDownloading: '업데이트 다운로드 중({percent}%)',
     setUpdateRestart: '재시작 후 설치',
+    setCheckUpdates: '업데이트 확인',
     setAutoUpdateCheck: '자동으로 업데이트 확인',
     setAutoUpdateCheckDesc:
       '끄면 앱을 켤 때와 쓰는 동안 새 버전을 저절로 확인하지 않습니다. 메뉴의 "업데이트 확인…"으로 직접 확인할 수 있습니다.',
@@ -2738,6 +2743,7 @@ export const strings = {
     setUpdateTo: 'Mettre à jour vers {version}',
     setUpdateDownloading: 'Téléchargement ({percent} %)',
     setUpdateRestart: 'Redémarrer et installer',
+    setCheckUpdates: 'Rechercher les mises à jour',
     setAutoUpdateCheck: 'Rechercher automatiquement les mises à jour',
     setAutoUpdateCheckDesc:
       'Désactivé, GenOffice ne recherche plus de nouvelle version au démarrage ni en arrière-plan. Vous pouvez toujours vérifier via Aide › Rechercher des mises à jour.',
@@ -3275,6 +3281,7 @@ export const strings = {
     setUpdateTo: 'Auf {version} aktualisieren',
     setUpdateDownloading: 'Update wird geladen ({percent} %)',
     setUpdateRestart: 'Neustarten & installieren',
+    setCheckUpdates: 'Nach Updates suchen',
     setAutoUpdateCheck: 'Automatisch nach Updates suchen',
     setAutoUpdateCheckDesc:
       'Wenn aus, sucht GenOffice weder beim Start noch im Hintergrund nach neuen Versionen. Über Hilfe › Nach Updates suchen können Sie weiterhin selbst prüfen.',
@@ -3814,6 +3821,7 @@ export const strings = {
     setUpdateTo: 'Actualizar a {version}',
     setUpdateDownloading: 'Descargando actualización ({percent} %)',
     setUpdateRestart: 'Reiniciar e instalar',
+    setCheckUpdates: 'Buscar actualizaciones',
     setAutoUpdateCheck: 'Buscar actualizaciones automáticamente',
     setAutoUpdateCheckDesc:
       'Si está desactivado, GenOffice deja de buscar nuevas versiones al iniciar y en segundo plano. Puede seguir comprobándolo en Ayuda › Buscar actualizaciones.',
@@ -4340,6 +4348,7 @@ export const strings = {
     setUpdateTo: 'อัปเดตเป็น {version}',
     setUpdateDownloading: 'กำลังดาวน์โหลด ({percent}%)',
     setUpdateRestart: 'รีสตาร์ตและติดตั้ง',
+    setCheckUpdates: 'ตรวจหาการอัปเดต',
     setAutoUpdateCheck: 'ตรวจหาอัปเดตโดยอัตโนมัติ',
     setAutoUpdateCheckDesc:
       'เมื่อปิด GenOffice จะไม่ตรวจหาเวอร์ชันใหม่ตอนเปิดโปรแกรมหรือในเบื้องหลัง คุณยังตรวจเองได้จาก วิธีใช้ › ตรวจหาการอัปเดต',
@@ -4858,6 +4867,7 @@ export const strings = {
     setUpdateTo: 'Perbarui ke {version}',
     setUpdateDownloading: 'Mengunduh pembaruan ({percent}%)',
     setUpdateRestart: 'Mulai ulang & instal',
+    setCheckUpdates: 'Periksa pembaruan',
     setAutoUpdateCheck: 'Periksa pembaruan secara otomatis',
     setAutoUpdateCheckDesc:
       'Jika dimatikan, GenOffice tidak lagi memeriksa versi baru saat dijalankan atau di latar belakang. Anda tetap bisa memeriksa dari Bantuan › Periksa Pembaruan.',
@@ -5385,6 +5395,7 @@ export const strings = {
     setUpdateTo: 'Обновить до {version}',
     setUpdateDownloading: 'Загрузка обновления ({percent}%)',
     setUpdateRestart: 'Перезапустить и установить',
+    setCheckUpdates: 'Проверить обновления',
     setAutoUpdateCheck: 'Автоматически проверять обновления',
     setAutoUpdateCheckDesc:
       'Если выключено, GenOffice не проверяет новые версии при запуске и в фоне. Проверить вручную можно через Справка › Проверить обновления.',
@@ -5912,6 +5923,7 @@ export const strings = {
     setUpdateTo: 'تحديث إلى {version}',
     setUpdateDownloading: 'جارٍ تنزيل التحديث ({percent}%)',
     setUpdateRestart: 'إعادة التشغيل والتثبيت',
+    setCheckUpdates: 'التحقق من التحديثات',
     setAutoUpdateCheck: 'التحقق من التحديثات تلقائيًا',
     setAutoUpdateCheckDesc:
       'عند الإيقاف، لن يتحقق GenOffice من الإصدارات الجديدة عند التشغيل أو في الخلفية. يمكنك التحقق يدويًا من تعليمات › التحقق من التحديثات.',
@@ -6425,6 +6437,7 @@ export const strings = {
     setUpdateTo: 'Atualizar para {version}',
     setUpdateDownloading: 'Baixando atualização ({percent}%)',
     setUpdateRestart: 'Reiniciar e instalar',
+    setCheckUpdates: 'Procurar atualizações',
     setAutoUpdateCheck: 'Verificar atualizações automaticamente',
     setAutoUpdateCheckDesc:
       'Desligado, o GenOffice deixa de procurar novas versões ao iniciar e em segundo plano. Você ainda pode verificar em Ajuda › Procurar atualizações.',
@@ -6948,6 +6961,7 @@ export const strings = {
     setUpdateTo: 'Aggiorna alla versione {version}',
     setUpdateDownloading: 'Download aggiornamento ({percent}%)',
     setUpdateRestart: 'Riavvia e installa',
+    setCheckUpdates: 'Controlla aggiornamenti',
     setAutoUpdateCheck: 'Controlla automaticamente gli aggiornamenti',
     setAutoUpdateCheckDesc:
       "Se disattivato, GenOffice non cerca più nuove versioni all'avvio o in background. Puoi comunque controllare da Aiuto › Controlla aggiornamenti.",
@@ -7469,6 +7483,7 @@ export const strings = {
     setUpdateTo: 'Zaktualizuj do {version}',
     setUpdateDownloading: 'Pobieranie aktualizacji ({percent}%)',
     setUpdateRestart: 'Uruchom ponownie i zainstaluj',
+    setCheckUpdates: 'Sprawdź aktualizacje',
     setAutoUpdateCheck: 'Automatycznie sprawdzaj aktualizacje',
     setAutoUpdateCheckDesc:
       'Po wyłączeniu GenOffice nie sprawdza nowych wersji przy uruchomieniu ani w tle. Nadal możesz sprawdzić ręcznie w Pomoc › Sprawdź aktualizacje.',
@@ -7987,6 +8002,7 @@ export const strings = {
     setUpdateTo: 'Aktualizovat na {version}',
     setUpdateDownloading: 'Stahování aktualizace ({percent} %)',
     setUpdateRestart: 'Restartovat a nainstalovat',
+    setCheckUpdates: 'Zkontrolovat aktualizace',
     setAutoUpdateCheck: 'Automaticky kontrolovat aktualizace',
     setAutoUpdateCheckDesc:
       'Po vypnutí GenOffice nekontroluje nové verze při spuštění ani na pozadí. Ručně můžete zkontrolovat v Nápověda › Zkontrolovat aktualizace.',
@@ -8503,6 +8519,7 @@ export const strings = {
     setUpdateTo: 'Bijwerken naar {version}',
     setUpdateDownloading: 'Update downloaden ({percent}%)',
     setUpdateRestart: 'Herstarten en installeren',
+    setCheckUpdates: 'Controleren op updates',
     setAutoUpdateCheck: 'Automatisch controleren op updates',
     setAutoUpdateCheckDesc:
       'Uitgeschakeld controleert GenOffice niet meer op nieuwe versies bij het starten of op de achtergrond. Je kunt nog steeds controleren via Help › Controleren op updates.',
@@ -9023,6 +9040,7 @@ export const strings = {
     setUpdateTo: 'Kemas kini ke {version}',
     setUpdateDownloading: 'Memuat turun kemas kini ({percent}%)',
     setUpdateRestart: 'Mulakan semula dan pasang',
+    setCheckUpdates: 'Semak kemas kini',
     setAutoUpdateCheck: 'Semak kemas kini secara automatik',
     setAutoUpdateCheckDesc:
       'Apabila dimatikan, GenOffice tidak lagi menyemak versi baharu semasa dimulakan atau di latar belakang. Anda masih boleh menyemak melalui Bantuan › Semak Kemas Kini.',
@@ -9542,6 +9560,7 @@ export const strings = {
     setUpdateTo: 'עדכן ל-{version}',
     setUpdateDownloading: 'מוריד עדכון ({percent}%)',
     setUpdateRestart: 'הפעל מחדש והתקן',
+    setCheckUpdates: 'בדוק עדכונים',
     setAutoUpdateCheck: 'בדיקת עדכונים אוטומטית',
     setAutoUpdateCheckDesc:
       'כשהאפשרות כבויה, GenOffice לא בודקת גרסאות חדשות בהפעלה או ברקע. עדיין אפשר לבדוק ידנית דרך עזרה › בדוק עדכונים.',
@@ -10043,6 +10062,7 @@ export const strings = {
     setUpdateTo: '{version} पर अपडेट करें',
     setUpdateDownloading: 'अपडेट डाउनलोड हो रहा है ({percent}%)',
     setUpdateRestart: 'रीस्टार्ट कर इंस्टॉल करें',
+    setCheckUpdates: 'अपडेट जांचें',
     setAutoUpdateCheck: 'अपडेट अपने-आप जाँचें',
     setAutoUpdateCheckDesc:
       'बंद होने पर GenOffice शुरू होते समय या बैकग्राउंड में नए संस्करण नहीं जाँचता। आप फिर भी सहायता › अपडेट जांचें से जाँच सकते हैं।',
@@ -10552,6 +10572,7 @@ export const strings = {
     setUpdateTo: '更新到 {version}',
     setUpdateDownloading: '正在下載更新（{percent}%）',
     setUpdateRestart: '重新啟動並安裝',
+    setCheckUpdates: '檢查更新',
     setAutoUpdateCheck: '自動檢查更新',
     setAutoUpdateCheckDesc:
       '關閉後，啟動時與背景都不再檢查新版本；仍可在「說明 › 檢查更新」中手動檢查。',
