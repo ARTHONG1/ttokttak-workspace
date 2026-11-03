@@ -11,13 +11,15 @@ import { DesktopConnectionPage } from './DesktopConnectionPage'
 import { desktopConnectionState, startDestination, type DesktopPage } from './desktop-start'
 
 export function WorkspaceHome() {
-  const [page, setPage] = useState<DesktopPage>(() => isWebEdition() ? 'workspace' : 'welcome')
+  const [page, setPage] = useState<DesktopPage>(() => (isWebEdition() ? 'workspace' : 'welcome'))
   const [target, setTarget] = useState<SettingsTarget | null>(null)
   const connection = useSubscriptionConnection()
   const notice = useFirstConnectionNotice(connection.statuses)
   const connectionState = desktopConnectionState(notice.settings, connection.statuses)
-  const activeProvider = notice.settings ? selectAiProvider(notice.settings, connection.statuses) : null
-  const start = () => setPage(notice.due ? 'connection' : startDestination(connectionState))
+  const activeProvider = notice.settings
+    ? selectAiProvider(notice.settings, connection.statuses)
+    : null
+  const start = () => setPage(startDestination(connectionState))
   useEffect(
     () =>
       window.aiOffice.onOpenSettings?.((request) =>
@@ -30,7 +32,17 @@ export function WorkspaceHome() {
       <TrialHome />
       {page !== 'workspace' && !isWebEdition() && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#07080b' }}>
-          {page === 'welcome' ? <DesktopWelcome onConnect={() => setPage('connection')} onStart={start} /> : <DesktopConnectionPage connection={connection} state={connectionState} provider={activeProvider?.connected ? activeProvider.provider : undefined} onBack={() => setPage('welcome')} onStart={start} />}
+          {page === 'welcome' ? (
+            <DesktopWelcome onConnect={() => setPage('connection')} onStart={start} />
+          ) : (
+            <DesktopConnectionPage
+              connection={connection}
+              state={connectionState}
+              provider={activeProvider?.connected ? activeProvider.provider : undefined}
+              onBack={() => setPage('welcome')}
+              onStart={start}
+            />
+          )}
         </div>
       )}
       <LaunchRecoveryList />

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { updatesAllowed } from '../src/main/update-policy'
+import { backgroundChecksOn, updatesAllowed } from '../src/main/update-policy'
+
+describe('backgroundChecksOn', () => {
+  it('checks only when the user asks, unless they turned background checks on', () => {
+    expect(backgroundChecksOn(undefined)).toBe(false)
+    expect(backgroundChecksOn(false)).toBe(false)
+    expect(backgroundChecksOn('yes')).toBe(false)
+    expect(backgroundChecksOn(true)).toBe(true)
+  })
+})
 
 describe('updatesAllowed', () => {
   it('updates the installed Windows app from the project releases', () => {

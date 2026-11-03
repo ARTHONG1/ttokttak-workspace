@@ -1,4 +1,14 @@
 /**
+ * Whether the launch and periodic background update checks run. Off unless the
+ * user turned them on in Settings → About: updating is the user's call, made
+ * with "업데이트 확인" (Settings → About, or the menu), never a window that
+ * opens by itself.
+ */
+export function backgroundChecksOn(saved: unknown): boolean {
+  return saved === true
+}
+
+/**
  * Whether this run checks the project's GitHub releases for updates. Windows installs
  * update through NSIS and latest.yml from ARTHONG1/ttokttak-workspace, which is how a
  * fixed 똑딱 에듀파인 연결 host or 품의 screen reaches a school PC without reinstalling.

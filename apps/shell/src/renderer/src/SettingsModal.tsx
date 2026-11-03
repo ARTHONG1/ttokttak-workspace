@@ -1551,7 +1551,7 @@ export function SettingsModal({
   const [docTheme, setDocTheme] = useState<DocTheme>('follow')
   const [saveDir, setSaveDir] = useState('')
   const [autoSaveOn, setAutoSaveOn] = useState(false)
-  const [autoUpdateCheckOn, setAutoUpdateCheckOn] = useState(true)
+  const [autoUpdateCheckOn, setAutoUpdateCheckOn] = useState(false)
   const [defaultApp, setDefaultApp] = useState<DefaultAppStatus | null>(null)
   const [defaultAppBusy, setDefaultAppBusy] = useState(false)
   const [defaultAppFailed, setDefaultAppFailed] = useState(false)

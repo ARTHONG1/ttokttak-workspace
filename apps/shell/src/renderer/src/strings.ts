@@ -660,7 +660,7 @@ export const strings = {
     setCheckUpdates: 'Check for updates',
     setAutoUpdateCheck: 'Check for updates automatically',
     setAutoUpdateCheckDesc:
-      'When off, GenOffice no longer checks for new versions at launch or in the background. You can still check from Help › Check for Updates.',
+      'When on, the app checks for new versions at launch and while it runs. It is off by default: the app checks only when you press Check for updates above or Check for Updates… in the menu.',
     updateChannel: 'Update Channel',
     channelStable: 'Stable',
     channelBeta: 'Beta',
@@ -2227,7 +2227,7 @@ export const strings = {
     setCheckUpdates: '업데이트 확인',
     setAutoUpdateCheck: '자동으로 업데이트 확인',
     setAutoUpdateCheckDesc:
-      '끄면 앱을 켤 때와 쓰는 동안 새 버전을 저절로 확인하지 않습니다. 메뉴의 "업데이트 확인…"으로 직접 확인할 수 있습니다.',
+      '켜면 앱을 켤 때와 쓰는 동안 새 버전을 저절로 확인합니다. 기본은 꺼져 있어서, 위의 "업데이트 확인"이나 메뉴의 "업데이트 확인…"을 눌렀을 때만 확인합니다.',
     updateChannel: '업데이트 채널',
     channelStable: '안정 버전',
     channelBeta: '베타 버전',

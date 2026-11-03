@@ -561,6 +561,7 @@ import {
   takeTornTab,
 } from './detached-windows'
 import { applyUpdateChannel, checkForUpdatesNow, initAutoUpdater } from './updater'
+import { backgroundChecksOn } from './update-policy'
 import { cancelUpdateRestart } from './update-restart'
 import { applyDisplayName } from './app-display-name'
 import { isUpdateChannel, UPDATE_CHANNELS, type UpdateChannel } from '../shared/update-api'
@@ -911,7 +912,7 @@ function currentUpdateChannel(): UpdateChannel {
 let cachedAutoUpdateCheck: boolean | null = null
 
 function autoUpdateCheckEnabled(): boolean {
-  cachedAutoUpdateCheck ??= readAppSettings(APP_SETTINGS_PATH()).autoUpdateCheck !== false
+  cachedAutoUpdateCheck ??= backgroundChecksOn(readAppSettings(APP_SETTINGS_PATH()).autoUpdateCheck)
   return cachedAutoUpdateCheck
 }
 
