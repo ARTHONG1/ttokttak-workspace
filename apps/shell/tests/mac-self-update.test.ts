@@ -199,6 +199,53 @@ describe.runIf(onMac)('prepareMacUpdate and the swap (macOS tools)', () => {
     ).rejects.toThrow(/0\.14\.3/)
   })
 
+  it('tries the second network path when the first one fails', async () => {
+    const zip = zipApp(makeApp(join(work, 'build'), '0.15.0'), join(work, 'release.zip'))
+    const broken: FetchLike = async () => ({
+      ok: false,
+      status: 400,
+      headers: { get: () => null },
+      body: null,
+    })
+    const logged: string[] = []
+    const staged = await prepareMacUpdate({
+      version: '0.15.0',
+      files: [{ url: 'HangulAIWorkbench-0.15.0-arm64-mac.zip', sha512: sha512(zip) }],
+      arch: 'arm64',
+      releasesUrl: RELEASES,
+      workDir: join(work, 'mac-update'),
+      fetchImpl: broken,
+      fallbackFetch: serve(zip).fetchImpl,
+      log: (m) => logged.push(m),
+    })
+    expect(existsSync(staged)).toBe(true)
+    expect(logged.some((m) => m.includes('HTTP 400'))).toBe(true)
+  })
+
+  it('does not try again after the user cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    let fallbackCalls = 0
+    await expect(
+      prepareMacUpdate({
+        version: '0.15.0',
+        files: [{ url: 'HangulAIWorkbench-0.15.0-arm64-mac.zip', sha512: 'x' }],
+        arch: 'arm64',
+        releasesUrl: RELEASES,
+        workDir: join(work, 'mac-update'),
+        fetchImpl: async () => {
+          throw new Error('aborted')
+        },
+        fallbackFetch: async (...args) => {
+          fallbackCalls += 1
+          return serve(Buffer.from('')).fetchImpl(...args)
+        },
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow(/cancelled/)
+    expect(fallbackCalls).toBe(0)
+  })
+
   /** runs the swap script for an already-ended process and waits for it */
   function swap(staged: string, dest: string, stagingDir: string): Promise<string> {
     return new Promise((resolve, reject) => {

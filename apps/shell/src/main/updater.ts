@@ -1048,6 +1048,9 @@ export function initAutoUpdater(
     macAbort = controller
     macStaged = null
     const fetchImpl: FetchLike = (url, init) => net.fetch(url, init) as ReturnType<FetchLike>
+    // Node's own fetch: no system proxy, but it gets the file where
+    // Chromium's network stack stalls on this connection
+    const fallbackFetch: FetchLike = (url, init) => fetch(url, init) as ReturnType<FetchLike>
     prepareMacUpdate({
       version,
       files: latestSeenFiles,
@@ -1055,6 +1058,7 @@ export function initAutoUpdater(
       releasesUrl: GITHUB_RELEASES_URL,
       workDir: macWorkDir,
       fetchImpl,
+      fallbackFetch,
       signal: controller.signal,
       onProgress: (pct) => {
         if (gen === downloadGen && downloadInFlight)

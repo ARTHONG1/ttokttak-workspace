@@ -199,6 +199,13 @@ export interface PrepareMacUpdateOptions {
   /** staging folder; emptied first, so only the latest download is kept */
   workDir: string
   fetchImpl: FetchLike
+  /**
+   * A second network path tried once when the first download fails for any
+   * reason but a cancel. Electron's net.fetch (system proxy settings) can
+   * stall or answer HTTP 400 / ERR_HTTP2_PROTOCOL_ERROR on a GitHub asset
+   * redirect where Node's own fetch gets the file (0.15.2 rehearsal).
+   */
+  fallbackFetch?: FetchLike
   onProgress?: (percent: number) => void
   signal?: AbortSignal
   log?: (message: string) => void
@@ -213,15 +220,23 @@ export async function prepareMacUpdate(opts: PrepareMacUpdateOptions): Promise<s
   await mkdir(opts.workDir, { recursive: true })
   const zip = join(opts.workDir, file.url)
   opts.log?.('downloading ' + url)
-  await downloadVerified({
-    url,
-    sha512: file.sha512,
-    size: file.size,
-    dest: zip,
-    fetchImpl: opts.fetchImpl,
-    onProgress: opts.onProgress,
-    signal: opts.signal,
-  })
+  const download = (fetchImpl: FetchLike) =>
+    downloadVerified({
+      url,
+      sha512: file.sha512,
+      size: file.size,
+      dest: zip,
+      fetchImpl,
+      onProgress: opts.onProgress,
+      signal: opts.signal,
+    })
+  try {
+    await download(opts.fetchImpl)
+  } catch (err) {
+    if (opts.signal?.aborted || !opts.fallbackFetch) throw err
+    opts.log?.('first download failed (' + ((err as Error)?.message ?? err) + '); trying again')
+    await download(opts.fallbackFetch)
+  }
   opts.log?.('sha512 matches; unpacking')
   const app = await unpackMacUpdate(zip, join(opts.workDir, 'app'), opts.version)
   await rm(zip, { force: true })
