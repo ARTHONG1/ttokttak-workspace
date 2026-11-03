@@ -61,7 +61,7 @@ describe('Codex CLI existing local connection', () => {
         codexLocalEndpointFromConfig(`openai_base_url = ${JSON.stringify(url)}`),
       ).toThrow(AiRunError)
     }
-    expect(() => codexLocalEndpointFromConfig('openai_base_url = \"unterminated')).toThrow(
+    expect(() => codexLocalEndpointFromConfig('openai_base_url = "unterminated')).toThrow(
       AiRunError,
     )
   })
