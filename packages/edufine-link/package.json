@@ -7,7 +7,8 @@
   "description": "똑딱 에듀파인 연결: fills the K-에듀파인 품의등록 screen from a 똑딱작업실 품의 (Chrome extension + shared format)",
   "exports": {
     "./package": "./src/pumui-package.ts",
-    "./ids": "./src/ids.ts"
+    "./ids": "./src/ids.ts",
+    "./units": "./src/units.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
