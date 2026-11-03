@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { describe, expect, it } from 'vitest'
 import {
@@ -62,6 +64,20 @@ describe('edufine-host native messaging', () => {
     await runEdufineHost(stdin, stdout, { endpoint: () => endpoint, request: async () => ({}), version: '1' })
     const out = Buffer.concat(chunks)
     expect(JSON.parse(out.subarray(4).toString('utf8'))).toEqual({ ok: true, version: '1' })
+  })
+})
+
+describe('Windows launchers', () => {
+  // cmd.exe reads a batch file in the PC's code page (CP949 on Korean Windows), so UTF-8
+  // Korean bytes can merge or break lines there; the English CI runner (CP437) would not show it
+  it('keeps every .cmd launcher ASCII only', () => {
+    const bin = join(__dirname, '..', 'bin')
+    const launchers = readdirSync(bin).filter((f) => f.endsWith('.cmd'))
+    expect(launchers).toContain('edufine-host.cmd')
+    for (const name of launchers) {
+      const nonAscii = [...readFileSync(join(bin, name))].filter((b) => b > 0x7e || (b < 0x20 && b !== 0x0a && b !== 0x0d && b !== 0x09))
+      expect({ name, nonAscii: nonAscii.length }).toEqual({ name, nonAscii: 0 })
+    }
   })
 })
 
