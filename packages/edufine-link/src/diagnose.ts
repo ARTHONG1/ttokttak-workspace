@@ -8,7 +8,7 @@
  * into a fake screen so the fill is tested against the real structure.
  */
 import type { FakeObject, FakeSpec } from './fake-spec'
-import { isDataset } from './nexacro'
+import { isDataset, type FrameInfo } from './nexacro'
 import { detectScreen, findUnitTable, findWorkForm, type NexacroLike, type ScreenKind } from './screen'
 import type { ScreenMap } from './screen-map'
 import type { UnitTable } from './units'
@@ -104,6 +104,8 @@ export interface DiagnosticFile {
   functionSources: Record<string, string>
   unitTablePath: string | null
   unitTable: UnitTable
+  /** the page's frames (paths only), to see where the app is when the check cannot find it */
+  frames: FrameInfo[]
   log: string[]
 }
 
@@ -142,6 +144,7 @@ export function buildDiagnostic(input: {
   origin: string
   extensionVersion: string
   now: Date
+  frames?: FrameInfo[]
 }): DiagnosticFile {
   const form = findWorkForm(input.nx, input.map)
   const diag: DiagnosticFile = {
@@ -159,6 +162,7 @@ export function buildDiagnostic(input: {
     functionSources: {},
     unitTablePath: null,
     unitTable: [],
+    frames: input.frames ?? [],
     log: input.log.slice(-200),
   }
   if (!form) return diag

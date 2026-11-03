@@ -171,7 +171,34 @@ test('runs the self-check and saves a diagnostic file without values', async () 
   expect(diag.schema).toBe('ttokttak.edufine-diag')
   expect(diag.screen).toEqual({ kind: 'pumui' })
   expect(diag.unitTable.length).toBeGreaterThan(0)
+  expect(diag.frames).toEqual([{ depth: 0, path: '/fake-edufine.html', nexacro: true }])
   expect(JSON.stringify(diag)).not.toContain('300000')
+  await page.close()
+})
+
+test('finds K-에듀파인 inside a same-origin frame of a portal page and fills it there', async () => {
+  await setFill(true)
+  const page = await openEdufine('?frame=1')
+  await expect.poll(() => page.frames().some((f) => f.url().includes('inner=1'))).toBe(true)
+  const inner = page.frames().find((f) => f.url().includes('inner=1'))!
+  await expect.poll(() => inner.evaluate(() => !!(window as any).__fake)).toBe(true)
+  await pastePumui(page, pkgText)
+  await page.getByRole('button', { name: '채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  const state = await inner.evaluate(() => {
+    const f = (window as any).__fake
+    return { items: f.dataset('dsPrdlstDtl').rows.length, title: f.form.divMain.form.edtCnsulSj.value, forbidden: f.forbiddenCalls() }
+  })
+  expect(state).toEqual({ items: 3, title: '과학실 실험 도구 구입', forbidden: 0 })
+
+  await page.getByRole('button', { name: '처음으로' }).click()
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '진단 파일 저장' }).click()])
+  const diag = JSON.parse(await readFile(await download.path(), 'utf8'))
+  expect(diag.frames).toEqual([
+    { depth: 0, path: '/fake-edufine.html', nexacro: false },
+    { depth: 1, path: '/fake-edufine.html', nexacro: true },
+  ])
+  expect(diag.screen).toEqual({ kind: 'pumui' })
   await page.close()
 })
 

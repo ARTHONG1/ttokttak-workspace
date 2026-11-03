@@ -6,6 +6,7 @@
  */
 import { buildDiagnostic, runChecks, type DesktopState, type WebState } from '../diagnose'
 import { applyFill, planFill } from '../fill'
+import { findNexacro, frameSurvey, type FrameWin } from '../nexacro'
 import { parsePumuiPackage, PUMUI_FILE_EXTENSION, type PumuiPackage } from '../pumui-package'
 import { findWorkForm, type NexacroLike } from '../screen'
 import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../screen-map'
@@ -13,8 +14,10 @@ import type { Pending, Settings } from './messages'
 import { call } from './page-channel'
 import { h, mountPanel, won, type Panel } from './page-ui'
 
-type Win = Window & { nexacro?: NexacroLike; __ttokEdufineLoaded?: boolean }
+type Win = Window & { __ttokEdufineLoaded?: boolean }
 const win = window as Win
+/** K-에듀파인's app on this page or in a same-origin frame of it, looked up each time (it loads late) */
+const nexacro = (): NexacroLike | undefined => findNexacro<NexacroLike>(window as unknown as FrameWin)
 
 const log: string[] = []
 const step = (s: string): void => {
@@ -132,7 +135,7 @@ async function preview(panel: Panel, text: string, source: 'direct' | 'desktop' 
   }
   const map = await getMap()
   const settings = await getSettings()
-  const form = findWorkForm(win.nexacro, map)
+  const form = findWorkForm(nexacro(), map)
   if (!form) {
     step('업무 화면 없음')
     panel.show(h('h2', {}, '품의 확인'), h('div', { class: 'err' }, 'K-에듀파인 품의등록 화면을 연 뒤 다시 눌러 주세요.'), back(panel))
@@ -179,7 +182,7 @@ async function preview(panel: Panel, text: string, source: 'direct' | 'desktop' 
 async function fill(panel: Panel, pkg: PumuiPackage, source: string): Promise<void> {
   step('채우기 ' + source)
   const map = await getMap()
-  const form = findWorkForm(win.nexacro, map)
+  const form = findWorkForm(nexacro(), map)
   if (!form) {
     panel.show(h('h2', {}, '채우기'), h('div', { class: 'err' }, 'K-에듀파인 품의등록 화면을 연 뒤 다시 눌러 주세요.'), back(panel))
     return
@@ -211,7 +214,7 @@ async function check(panel: Panel): Promise<void> {
   step('연결 점검')
   const map = await getMap()
   const states = await connectionStates()
-  const checks = runChecks({ hostPermission: true, pageScript: true, nx: win.nexacro, map, ...states })
+  const checks = runChecks({ hostPermission: true, pageScript: true, nx: nexacro(), map, ...states })
   step('점검 ' + checks.map((c) => c.id + ':' + (c.ok === null ? '-' : c.ok ? 'o' : 'x')).join(' '))
   panel.show(
     h('h2', {}, '연결 점검'),
@@ -241,8 +244,18 @@ async function saveDiagnostic(panel: Panel): Promise<void> {
   step('진단 파일 저장')
   const map = await getMap()
   const states = await connectionStates()
-  const checks = runChecks({ hostPermission: true, pageScript: true, nx: win.nexacro, map, ...states })
-  const diag = buildDiagnostic({ nx: win.nexacro, map, checks, log, origin: location.origin, extensionVersion: __VERSION__, now: new Date() })
+  const nx = nexacro()
+  const checks = runChecks({ hostPermission: true, pageScript: true, nx, map, ...states })
+  const diag = buildDiagnostic({
+    nx,
+    map,
+    checks,
+    log,
+    origin: location.origin,
+    extensionVersion: __VERSION__,
+    now: new Date(),
+    frames: frameSurvey(window as unknown as FrameWin),
+  })
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')
   const url = URL.createObjectURL(new Blob([JSON.stringify(diag, null, 1)], { type: 'application/json' }))
   const a = h('a', { href: url, download: '똑딱-에듀파인-진단-' + stamp + '.json' }) as HTMLAnchorElement

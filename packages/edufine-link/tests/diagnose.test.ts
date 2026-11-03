@@ -97,5 +97,17 @@ describe('diagnostic file', () => {
     expect(applyFill(form, map, planFill(form, map, pkg))).toEqual({ ok: true, added: 1, gridTotal: 2000 })
     expect(again.forbiddenCalls()).toBe(0)
   })
+
+  it('records the page frames, also when the app was not found', () => {
+    const frames = [
+      { depth: 0, path: '/portal/main.do', nexacro: false },
+      { depth: 1, path: '(다른 주소)', nexacro: false },
+    ]
+    const diag = buildDiagnostic({ nx: undefined, map, checks: [], log: [], origin: '', extensionVersion: '', now: new Date(), frames })
+    expect(diag.frames).toEqual(frames)
+    expect(diag.objects).toEqual([])
+    const without = buildDiagnostic({ nx: undefined, map, checks: [], log: [], origin: '', extensionVersion: '', now: new Date() })
+    expect(without.frames).toEqual([])
+  })
 })
 
