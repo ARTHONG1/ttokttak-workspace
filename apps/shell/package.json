@@ -1,7 +1,7 @@
 {
   "name": "@genoffice/shell",
   "productName": "HangulAIWorkbench",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "license": "Apache-2.0",
   "homepage": "https://github.com/ARTHONG1/ttokttak-workspace",
   "private": true,
@@ -23,11 +23,12 @@
     "@genoffice/agent-core": "*",
     "@genoffice/ai-provider": "*",
     "@genoffice/ai-search": "*",
+    "@genoffice/cli": "*",
     "@genoffice/docs": "*",
     "@genoffice/docx-engine": "*",
+    "@genoffice/edufine-link": "*",
     "@genoffice/electron-utils": "*",
     "@genoffice/google-drive": "*",
-    "@genoffice/cli": "*",
     "@genoffice/i18n": "*",
     "@genoffice/pipelines": "*",
     "@genoffice/pptx-engine": "*",
@@ -52,8 +53,5 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.11"
   },
-  "author": "ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>",
-  "dependencies": {
-    "@genoffice/edufine-link": "*"
-  }
+  "author": "ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>"
 }
