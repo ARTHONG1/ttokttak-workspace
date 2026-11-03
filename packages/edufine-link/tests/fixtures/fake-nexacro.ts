@@ -5,29 +5,11 @@
  * getColumn, setColumn, deleteRow). Every write is logged; calling a save or approval
  * function is logged as FORBIDDEN.
  */
+import type { FakeObject, FakeRow as Row, FakeSpec } from '../../src/fake-spec'
 import type { ScreenMap } from '../../src/screen-map'
 
+export type { FakeObject, FakeSpec }
 export type Write = { op: string; target: string; args: unknown[] }
-type Row = Record<string, unknown>
-
-export type FakeObject =
-  | { path: string; kind: 'edit' }
-  | { path: string; kind: 'dataset'; columns: string[]; rows?: Row[] }
-  | { path: string; kind: 'grid'; bind: string }
-  | { path: string; kind: 'button' }
-  | { path: string; kind: 'div'; visible?: boolean }
-  | { path: string; kind: 'function'; behavior: 'row-add' | 'forbidden' | 'none' }
-
-export interface FakeSpec {
-  frame: 'active' | 'none'
-  map: ScreenMap
-  objects: FakeObject[]
-  /** the dataset the row-add function grows */
-  rowAddTarget?: string
-  budgetSelected?: boolean
-  /** 1-based call number at which the row-add function silently adds nothing */
-  failAddAt?: number
-}
 
 export class FakeDataset {
   rows: Row[]
@@ -41,6 +23,12 @@ export class FakeDataset {
   }
   get rowcount(): number {
     return this.rows.length
+  }
+  getColCount(): number {
+    return this.columns.length
+  }
+  getColID(index: number): string | undefined {
+    return this.columns[index]
   }
   getColumn(row: number, col: string): unknown {
     return this.rows[row]?.[col]

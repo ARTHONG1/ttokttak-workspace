@@ -45,7 +45,8 @@ export function gridDataset(form: WorkForm, map: ScreenMap): DatasetLike | null 
   }
 }
 
-export function readUnitTable(form: WorkForm, map: ScreenMap): UnitTable {
+/** the first visible unit table with rows, and where it was found */
+export function findUnitTable(form: WorkForm, map: ScreenMap): { path: string; table: UnitTable } | null {
   const p = map.pumui
   for (const path of p.unitTables) {
     const owner = path.includes('.') ? getPath(form, path.split('.')[0]) : null
@@ -58,8 +59,12 @@ export function readUnitTable(form: WorkForm, map: ScreenMap): UnitTable {
       const name = String(ds.getColumn(r, p.unitName) ?? '').trim()
       if (code && name) table.push({ code, name })
     }
-    if (table.length) return table
+    if (table.length) return { path, table }
   }
-  return []
+  return null
+}
+
+export function readUnitTable(form: WorkForm, map: ScreenMap): UnitTable {
+  return findUnitTable(form, map)?.table ?? []
 }
 
