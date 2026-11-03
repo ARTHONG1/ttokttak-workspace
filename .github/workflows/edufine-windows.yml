@@ -1,0 +1,148 @@
+name: K-에듀파인 연결 (Windows)
+
+# The 똑딱 에듀파인 연결 extension and the desktop app's native messaging host, proved on
+# Windows where school PCs run them: the extension against a fake K-에듀파인 page in
+# Chromium (direct, paste, file and native messaging through the registry), and the real
+# installer: a silent install registers the host for Chrome and Edge, the installed
+# launcher answers, and the uninstaller removes the registration again.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/edufine-windows.yml
+      - packages/edufine-link/**
+      - packages/cli/src/edufine-*.ts
+      - packages/cli/bin/edufine-host*
+      - apps/shell/build/installer.nsh
+
+concurrency:
+  group: edufine-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  extension:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run packages/edufine-link packages/cli/tests/edufine-host.test.ts packages/cli/tests/edufine-register.test.ts
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Build the extension (test build)
+        run: node packages/edufine-link/build.mjs --dev
+
+      - name: Browser tests (extension + native messaging through the registry)
+        run: npx playwright test -c packages/edufine-link/playwright.config.ts
+
+  installer:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07
+        with:
+          toolchain: stable
+
+      - name: Cache cargo (xlsx-sidecar)
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: apps/sheets/native/xlsx-engine
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build apps
+        run: npm run build:all
+
+      - name: Place the xlsx sidecar
+        run: |
+          set -euo pipefail
+          engine=apps/sheets/native/xlsx-engine/target
+          mkdir -p "$engine/x86_64-pc-windows-gnu/release"
+          cp "$engine/release/xlsx-sidecar.exe" "$engine/x86_64-pc-windows-gnu/release/"
+
+      - name: Package
+        run: npm run dist:win -w @genoffice/shell -- --publish never
+
+      - name: Silent install
+        shell: pwsh
+        run: |
+          $version = node -p "require('./apps/shell/package.json').version"
+          $installer = "apps/shell/release/HangulAIWorkbench-Setup-$version.exe"
+          Start-Process -FilePath $installer -ArgumentList '/S', '/D=C:\ttokinstall' -Wait
+          if (-not (Test-Path 'C:\ttokinstall\resources\cli\edufine-host.cmd')) { throw 'edufine-host.cmd not installed' }
+
+      - name: The install registered the host for Chrome and Edge
+        shell: pwsh
+        run: |
+          foreach ($key in 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') {
+            $manifestPath = (Get-ItemProperty -Path $key).'(default)'
+            if (-not $manifestPath) { throw "no registration at $key" }
+            $m = Get-Content $manifestPath -Raw | ConvertFrom-Json
+            if ($m.path -ne 'C:\ttokinstall\resources\cli\edufine-host.cmd') { throw "manifest path is $($m.path)" }
+            if ($m.allowed_origins[0] -ne 'chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/') { throw "allowed origin is $($m.allowed_origins)" }
+          }
+
+      - name: The installed host answers (app not running)
+        run: |
+          set -euo pipefail
+          reply=$(node packages/edufine-link/scripts/host-roundtrip.mjs 'C:\ttokinstall\resources\cli\edufine-host.cmd' ping)
+          echo "$reply"
+          echo "$reply" | grep -q '"state":"off"'
+
+      - name: Silent uninstall removes the registration
+        shell: pwsh
+        run: |
+          Start-Process -FilePath 'C:\ttokinstall\Uninstall HangulAIWorkbench.exe' -ArgumentList '/S' -Wait
+          Start-Sleep -Seconds 5
+          if (Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Chrome registration left behind' }
+          if (Test-Path 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Edge registration left behind' }
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hangulaiworkbench-windows-edufine
+          path: |
+            apps/shell/release/HangulAIWorkbench-Setup-*.exe
+            apps/shell/release/latest.yml
+          if-no-files-found: error
+          retention-days: 14
+
