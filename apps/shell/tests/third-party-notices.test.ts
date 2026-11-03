@@ -206,6 +206,9 @@ function packWithNotice(notice: string | null, regenerated: string | null) {
     process: { platform: 'linux', arch: 'x64', env: {}, execPath: '/usr/bin/node' },
     require: (id: string) => {
       if (id === './package.json') return shellPackage
+      // the release guard (scripts/release-guard.cjs) has its own tests; this file is
+      // about the notice gate, run against a stubbed file system
+      if (id.endsWith('release-guard.cjs')) return { assertReleaseTree: () => {} }
       if (id === 'node:child_process') {
         return {
           execFileSync: (_file: string, args: string[], opts: { env?: NodeJS.ProcessEnv }) => {

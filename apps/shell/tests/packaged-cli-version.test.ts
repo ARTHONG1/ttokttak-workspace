@@ -76,6 +76,8 @@ function loadConfig(opts: {
           },
         }
       }
+      // the release guard has its own tests; these exercise the CLI version gate
+      if (id.endsWith('release-guard.cjs')) return { assertReleaseTree: () => {} }
       return require(id)
     },
   })
