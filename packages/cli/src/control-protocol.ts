@@ -27,7 +27,10 @@ export type ControlTarget =
   | { kind: 'page'; page: number }
 
 export type ControlRequest =
-  { cmd: 'open'; path: string; target?: ControlTarget } | { cmd: 'selection'; path: string }
+  | { cmd: 'open'; path: string; target?: ControlTarget }
+  | { cmd: 'selection'; path: string }
+  /** the newest 품의 waiting for the 똑딱 에듀파인 연결 extension (removed once taken) */
+  | { cmd: 'pumui-take' }
 
 export interface ControlEnvelope {
   token: string

@@ -10,7 +10,8 @@
     "./install": "./src/install.ts",
     "./agent-skills": "./src/agent-skills.ts",
     "./mcp-launch": "./src/mcp-launch.ts",
-    "./control-protocol": "./src/control-protocol.ts"
+    "./control-protocol": "./src/control-protocol.ts",
+    "./edufine-register": "./src/edufine-register.ts"
   },
   "bin": {
     "ieumoffice": "./bin/ieumoffice"
@@ -25,6 +26,7 @@
     "@genoffice/ai-provider": "*",
     "@genoffice/ai-search": "*",
     "@genoffice/docx-engine": "*",
+    "@genoffice/edufine-link": "*",
     "@genoffice/file-parse": "*",
     "@genoffice/odt-engine": "*",
     "@genoffice/pdf2docx": "*",

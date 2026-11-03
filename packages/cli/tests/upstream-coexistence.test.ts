@@ -667,7 +667,8 @@ describe('what the CLI prints and tells agents to run', () => {
 
   it('ships launchers named ieumoffice that start only this product', () => {
     const bin = join(REPO, 'packages', 'cli', 'bin')
-    expect(readdirSync(bin).sort()).toEqual(['ieumoffice', 'ieumoffice.cmd'])
+    // edufine-host: the Chrome native messaging host of the 똑딱 에듀파인 연결 extension
+    expect(readdirSync(bin).sort()).toEqual(['edufine-host', 'edufine-host.cmd', 'ieumoffice', 'ieumoffice.cmd'])
     const sh = readFileSync(join(bin, 'ieumoffice'), 'utf-8')
     const cmd = readFileSync(join(bin, 'ieumoffice.cmd'), 'utf-8')
     expect(sh).toContain('MacOS/HangulAIWorkbench')
@@ -677,5 +678,11 @@ describe('what the CLI prints and tells agents to run', () => {
     expect(cmd).toContain('HangulAIWorkbench.exe')
     expect(sh).not.toMatch(/GenOffice/)
     expect(cmd).not.toMatch(/GenOffice/)
+    const hostSh = readFileSync(join(bin, 'edufine-host'), 'utf-8')
+    const hostCmd = readFileSync(join(bin, 'edufine-host.cmd'), 'utf-8')
+    expect(hostSh).toContain('"$here/ieumoffice" edufine-host')
+    expect(hostCmd).toContain('HangulAIWorkbench.exe')
+    expect(hostCmd).toContain('edufine-host')
+    expect(hostSh + hostCmd).not.toMatch(/GenOffice/)
   })
 })
