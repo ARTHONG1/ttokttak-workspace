@@ -16,6 +16,9 @@ const APPS = ['shell', 'docs', 'sheets', 'slides', 'pdf', 'markdown', 'html', 'm
 
 if (process.argv.includes('--rebuild')) execFileSync('npm', ['run', 'build:all'], { cwd: ROOT, stdio: 'inherit' })
 
+// only the committed code, freshly built, with an ASCII PRODUCT_NAME (scripts/release-guard.cjs)
+require('./scripts/release-guard.cjs').assertReleaseTree(ROOT, 'web build', APPS)
+
 await rm(DIST, { recursive: true, force: true })
 await mkdir(APP, { recursive: true })
 const exists = async (p) => !!(await stat(p).catch(() => null))

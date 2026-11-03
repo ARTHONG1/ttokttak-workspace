@@ -860,6 +860,8 @@ const config = {
       : '${productName}-Setup-${version}.${ext}',
   },
   beforePack: async (context) => {
+    // only the committed code, freshly built, with an ASCII PRODUCT_NAME
+    require('../../scripts/release-guard.cjs').assertReleaseTree(join(__dirname, '../..'), 'packaging')
     ensurePlatformHelpers()
     assertExtraResourceSources()
     ensureThirdPartyNotices()
