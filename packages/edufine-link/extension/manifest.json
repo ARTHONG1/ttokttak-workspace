@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "똑딱 에듀파인 연결",
+  "short_name": "똑딱 에듀파인",
+  "description": "똑딱작업실에서 만든 품의를 K-에듀파인 품의등록 화면에 채워 줍니다. 저장과 결재는 선생님이 직접 합니다.",
+  "permissions": ["storage", "scripting", "nativeMessaging"],
+  "optional_host_permissions": ["https://*.go.kr/*"],
+  "host_permissions": ["https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "똑딱 에듀파인 연결" },
+  "externally_connectable": {
+    "matches": ["https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/*", "http://127.0.0.1:5188/*"]
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+}
