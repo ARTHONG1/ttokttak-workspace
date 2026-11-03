@@ -236,4 +236,20 @@
       }
     })
   }
+
+  // 테스트: the dialog with the extension under test
+  var testDialog = document.getElementById('testDialog')
+  var testOpen = document.getElementById('testOpen')
+  if (testDialog && testOpen && testDialog.showModal) {
+    testOpen.addEventListener('click', function () {
+      testDialog.showModal()
+    })
+    document.getElementById('testClose').addEventListener('click', function () {
+      testDialog.close()
+    })
+    // a click on the dimmed backdrop closes it too
+    testDialog.addEventListener('click', function (e) {
+      if (e.target === testDialog) testDialog.close()
+    })
+  }
 })()

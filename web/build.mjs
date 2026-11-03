@@ -60,6 +60,10 @@ await copy('vendor/rhwp-core', (src) => !src.includes('/patches'))
 for (const f of ['Cargo.toml', 'Cargo.lock', 'src'])
   await copy('apps/sheets/native/xlsx-engine/' + f)
 await copy('web/runtime')
+// the 테스트 download on the intro page: the extension built from this commit
+await (
+  await import('./scripts/edufine-extension-zip.mjs')
+).buildExtensionZip(join(APP, 'web', 'runtime', 'client', 'edufine', 'extension.zip'))
 
 // The engines the desktop installer ships under Resources/wasm (apps/shell/electron-builder.cjs
 // extraResources). The bundled main falls back to process.resourcesPath/wasm when node_modules is

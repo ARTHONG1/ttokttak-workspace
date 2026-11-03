@@ -27,6 +27,7 @@ electron-builder.env
 /*.dmg
 /*.exe
 /*.zip
+/web/runtime/client/edufine/extension.zip
 /windows/
 
 # Playwright artifacts

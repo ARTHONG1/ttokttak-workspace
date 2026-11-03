@@ -542,6 +542,20 @@ async function handleHttp(req, res) {
         })
       : send(res, 404, 'not found')
   }
+  // the 똑딱 에듀파인 연결 test build the intro page's 테스트 dialog downloads (web/build.mjs)
+  if (p === '/edufine/extension.zip') {
+    const body = await fsp.readFile(path.join(CLIENT, 'edufine', 'extension.zip')).catch(() => null)
+    return body
+      ? send(res, 200, body, {
+          'Content-Type': 'application/zip',
+          // header values stay ASCII; the Korean name goes in the RFC 5987 form
+          'Content-Disposition':
+            'attachment; filename="ttokttak-edufine-link-test.zip"; filename*=UTF-8\'\'' +
+            encodeURIComponent('똑딱-에듀파인-연결-테스트.zip'),
+          'Cache-Control': 'no-store',
+        })
+      : send(res, 404, 'not found')
+  }
   // the intro page; the trial app itself lives at /app
   if (p === '/' || p === '/index.html') {
     const body = await fsp.readFile(path.join(CLIENT, 'intro.html'))

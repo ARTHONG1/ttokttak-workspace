@@ -219,6 +219,22 @@ html.op .rv { animation-play-state: paused; }
 .maker-text b { display: block; margin-top: 3px; font-size: 18px; font-weight: 750; letter-spacing: -.02em; }
 .maker-text p:last-child { margin: 6px 0 0; max-width: 560px; font-size: 14.5px; line-height: 1.65; color: var(--fg-2); }
 .links .ext { width: 12px; height: 12px; margin-left: 3px; vertical-align: -1px; opacity: .7; }
+
+/* ---- 테스트: the extension under test, downloaded from a dialog ---- */
+.test-open { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.test-open:hover { color: var(--fg); }
+.test-open:focus-visible, .test-dialog :focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+.test-dialog { width: min(520px, calc(100vw - 32px)); padding: 28px; border: 0; border-radius: 22px; background: #0e1015; color: var(--fg); box-shadow: 0 0 0 1px var(--line) inset, 0 30px 80px rgba(0, 0, 0, .6); }
+.test-dialog::backdrop { background: rgba(7, 8, 11, .72); }
+.test-dialog h2 { margin: 14px 0 0; font-size: 22px; font-weight: 780; letter-spacing: -.03em; }
+.test-dialog p, .test-dialog ol { margin: 12px 0 0; font-size: 14.5px; line-height: 1.7; color: var(--fg-2); }
+.test-dialog ol { padding-left: 20px; }
+.test-dialog b { color: var(--fg); font-weight: 650; }
+.test-dialog code { padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, .08); font: 500 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg); }
+.test-dialog .test-warn { padding: 12px 14px; border-radius: 12px; background: rgba(255, 214, 10, .08); box-shadow: 0 0 0 1px rgba(255, 214, 10, .24) inset; color: var(--fg); }
+.test-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 22px; }
+.test-actions .btn { height: 46px; }
+.test-actions .link { height: 46px; border: 0; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
 .foot a { color: var(--fg-2); text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .25); text-underline-offset: 3px; }
 .foot a:hover { color: var(--fg); }
 @media (max-width: 720px) {
