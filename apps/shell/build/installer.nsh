@@ -167,6 +167,9 @@
   !insertmacro GenOfficeRegisterOpenWithMindmap
   !insertmacro GenOfficeRegisterOpenWithEpub
   !insertmacro GenOfficeRegisterApplicationCapabilities
+  ; native messaging host for the 똑딱 에듀파인 연결 Chrome/Edge extension (HKCU, no admin)
+  nsExec::Exec '"$INSTDIR\resources\cli\ieumoffice.cmd" edufine-register'
+  Pop $0
   !insertmacro UPDATEFILEASSOC
 !macroend
 
@@ -183,6 +186,8 @@
   !insertmacro GenOfficeUnregisterOpenWithMindmap
   !insertmacro GenOfficeUnregisterOpenWithEpub
   !insertmacro GenOfficeUnregisterApplicationCapabilities
+  DeleteRegKey HKCU "Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine"
+  DeleteRegKey HKCU "Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine"
   Pop $0
   !insertmacro UPDATEFILEASSOC
 !macroend

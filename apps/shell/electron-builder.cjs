@@ -620,6 +620,16 @@ const config = {
       from: '../../packages/cli/bin/ieumoffice.cmd',
       to: 'cli/ieumoffice.cmd',
     },
+    // Chrome native messaging host for the 똑딱 에듀파인 연결 extension (registered by
+    // build/installer.nsh on Windows and by the app at start; see packages/cli/src/edufine-register.ts)
+    {
+      from: '../../packages/cli/bin/edufine-host',
+      to: 'cli/edufine-host',
+    },
+    {
+      from: '../../packages/cli/bin/edufine-host.cmd',
+      to: 'cli/edufine-host.cmd',
+    },
     // the CLI's version (Settings → Integrations shows it) and the agent skill
     // the same pane installs into Claude Code / Codex / …; bytes identical to the repo file
     {

@@ -244,6 +244,11 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['readCartFile']>
     >
   },
+  async pumuiSend(text) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.pumuiSend, text)) as Awaited<
+      ReturnType<HomeApi['pumuiSend']>
+    >
+  },
   async readQuizFile(kind) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<
       ReturnType<HomeApi['readQuizFile']>

@@ -143,6 +143,8 @@ import {
   isCartFileKind,
   readCartFile,
 } from './cart-file'
+import { pumuiOutbox } from './pumui-outbox'
+import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
 import {
   FEATURE_LINKS,
@@ -5711,6 +5713,14 @@ function registerHomeIpc(): void {
     return readCartFile(result.filePaths[0], kind)
   })
 
+  // 특화 기능 > 품의서 생성 → K-에듀파인: the 품의 waits here until the extension takes it
+  // through native messaging (edufine-host → control 'pumui-take'); checked on the way in
+  ipcMain.handle(HOME_CHANNELS.pumuiSend, (_event, text: unknown) =>
+    typeof text === 'string' && text.length <= 100_000
+      ? pumuiOutbox.enqueue(text)
+      : { ok: false, reason: '품의를 읽지 못했어요.' },
+  )
+
   // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
   // YouTube video's captions fetched by this process
   ipcMain.handle(HOME_CHANNELS.readQuizFile, async (event, kind: unknown) => {
@@ -9171,6 +9181,7 @@ app.whenReady().then(async () => {
         if (!activateDetached(id)) tabManager?.activateTab(id)
       },
       findTab: (path) => tabManager?.findTabByPath(path) ?? findDetachedTabByPath(path),
+      takePumui: () => pumuiOutbox.take(),
     }),
   ).then(
     (server) => {
@@ -9178,6 +9189,19 @@ app.whenReady().then(async () => {
     },
     (err: unknown) => console.warn('[control] not listening:', err),
   )
+
+  // the 똑딱 에듀파인 연결 extension reaches this app through Chrome/Edge native messaging;
+  // the Windows installer registers the host once, this repeats it for a browser
+  // installed later (installed app only: a dev run has no launcher next to the CLI)
+  if (app.isPackaged) {
+    setTimeout(() => {
+      try {
+        registerNativeHost(realRegisterEnv(join(process.resourcesPath, 'cli')))
+      } catch (err) {
+        console.warn('[edufine] native messaging host not registered:', err)
+      }
+    }, 3000)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createShellWindow()

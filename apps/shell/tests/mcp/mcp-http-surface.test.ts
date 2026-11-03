@@ -42,6 +42,8 @@ const DEFAULT_NAMES = [
   'insert_content',
   'open_documents',
   'open_in_genoffice',
+  'pumui_send',
+  'pumui_status',
   'read_deck',
   'read_document',
   'read_docx',

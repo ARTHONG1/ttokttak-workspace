@@ -271,6 +271,8 @@ export interface HomeApi {
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
   /** 특화 기능 > 품의서 생성: pick a file of one kind and read its cart text (null = canceled) */
   readCartFile(kind: CartFileKind): Promise<CartFileResult | null>
+  /** 특화 기능 > 품의서 생성: hold a 품의 (JSON text) for the 똑딱 에듀파인 연결 extension */
+  pumuiSend(text: string): Promise<{ ok: true; title: string } | { ok: false; reason: string }>
   /** 특화 기능 > 퀴즈 생성기: pick a PDF or Hangul file and read its text (null = canceled) */
   readQuizFile(kind: 'pdf' | 'hwp'): Promise<QuizSourceResult | null>
   /** 특화 기능 > 퀴즈 생성기: the captions of a YouTube video */
@@ -559,6 +561,7 @@ export const HOME_CHANNELS = {
   openPath: 'home:open-path',
   browse: 'home:browse',
   readCartFile: 'home:read-cart-file',
+  pumuiSend: 'home:pumui-send',
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
   saveFeatureFile: 'home:save-feature-file',

@@ -958,3 +958,22 @@ button.sf-card:hover .sf-card-go svg {
   line-height: 22px;
   color: var(--sf-ink-3);
 }
+
+/* ---- 품의서 생성 → K-에듀파인 보내기 결과 ---- */
+.sf-send-note {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #1d2a4d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.sf-send-note p {
+  margin: 0 0 8px;
+}
+.sf-send-warn {
+  background: #fff6ed;
+  color: #7a2e0e;
+}
+

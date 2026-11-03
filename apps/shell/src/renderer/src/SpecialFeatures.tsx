@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
 import type { ReactElement } from 'react'
+import { PUMUI_FILE_EXTENSION } from '@genoffice/edufine-link/package'
 import type { CartFileKind } from '../../shared/home-api'
+import { isWebEdition } from './edition'
+import { pumuiPackageFromWork, sendPumui, workProblem } from './pumui-send'
 import {
   Back,
   SaveTools,
@@ -301,9 +304,27 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
   const [toast, say] = useToast()
+  const [sendNote, setSendNote] = useState<{ ok: boolean; text: string; pkgText: string } | null>(null)
   const resultRef = useRef<HTMLElement>(null)
 
   const total = totalOf(rows)
+
+  // 품의서 생성 → K-에듀파인: the desktop app holds it for the extension, the web app hands
+  // it to the extension in this browser; the note below always offers clipboard and file too
+  const sendToEdufine = async () => {
+    const problem = workProblem(title, rows)
+    if (problem) return say(problem, true)
+    const pkgText = JSON.stringify(
+      pumuiPackageFromWork({ title, estimateData: rows, generatedArticle: article }),
+    )
+    const api = window.aiOffice
+    const out = await sendPumui(pkgText, {
+      web: isWebEdition(),
+      pumuiSend: typeof api?.pumuiSend === 'function' ? (t) => api.pumuiSend(t) : undefined,
+      runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
+    })
+    setSendNote({ ok: out.ok, text: out.message, pkgText })
+  }
 
   const appendCart = (piece: string) =>
     setCart((prev) => (prev.trim() ? prev.replace(/\s+$/, '') + '\n\n' + piece : piece))
@@ -546,8 +567,52 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                 >
                   CSV 저장
                 </button>
+                <button
+                  type="button"
+                  className="sf-primary sf-sm"
+                  data-testid="pumui-send"
+                  disabled={rows.length === 0}
+                  onClick={() => void sendToEdufine()}
+                >
+                  K-에듀파인으로 보내기
+                </button>
               </div>
             </div>
+
+            {sendNote && (
+              <div
+                className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
+                role="status"
+                data-testid="pumui-send-note"
+              >
+                <p>{sendNote.text}</p>
+                <div className="sf-btn-row">
+                  <button
+                    type="button"
+                    className="sf-secondary sf-sm"
+                    onClick={() =>
+                      void copyText(sendNote.pkgText).then(() =>
+                        say('품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [똑딱 품의 넣기]에 붙여 넣어 주세요.'),
+                      )
+                    }
+                  >
+                    클립보드로 복사
+                  </button>
+                  <button
+                    type="button"
+                    className="sf-secondary sf-sm"
+                    onClick={() =>
+                      downloadBlob(
+                        new Blob([sendNote.pkgText], { type: 'application/json' }),
+                        (title.trim() || '품의') + PUMUI_FILE_EXTENSION,
+                      )
+                    }
+                  >
+                    품의 파일 저장
+                  </button>
+                </div>
+              </div>
+            )}
 
             <label className="sf-field">
               <span>품의 기안문</span>
