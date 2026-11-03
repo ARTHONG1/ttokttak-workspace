@@ -267,7 +267,7 @@ const isMain =
 if (isMain && (process.argv[2] === 'edufine-register' || process.argv[2] === 'edufine-unregister')) {
   // the Windows installer registers (and the uninstaller removes) the native messaging
   // host for the 똑딱 에듀파인 연결 extension; internal entries, outside the registry
-  const cliDir = require('node:path').dirname(process.argv[1]) as string
+  const cliDir = dirname(process.argv[1] ?? '')
   void import('./edufine-register').then((m) => {
     const env = m.realRegisterEnv(cliDir)
     try {

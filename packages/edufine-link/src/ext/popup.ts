@@ -1,4 +1,5 @@
 /** the toolbar popup: K-에듀파인 address, real fill on/off, connection, 화면 이름표 */
+import { originFrom } from '../origin'
 import type { Settings } from './messages'
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T
@@ -37,12 +38,10 @@ async function init(): Promise<void> {
     say('fill-msg', fill.checked ? '이제 미리보기에서 [채우기]를 누를 수 있어요.' : '미리보기만 보여 줘요.')
   }
   $('allow').onclick = async () => {
-    const raw = $<HTMLInputElement>('origin').value.trim()
-    let origin = ''
-    try {
-      origin = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw).origin
-    } catch {
-      say('origin-msg', 'K-에듀파인 주소를 확인해 주세요.', false)
+    // the same rule the background applies: https and a go.kr host (the extension may ask for nothing else)
+    const origin = originFrom($<HTMLInputElement>('origin').value, __DEV__)
+    if (!origin) {
+      say('origin-msg', 'K-에듀파인 주소를 확인해 주세요. ○○.go.kr로 끝나는 주소만 넣을 수 있어요.', false)
       return
     }
     const granted = await chrome.permissions.request({ origins: [origin + '/*'] }).catch(() => false)
