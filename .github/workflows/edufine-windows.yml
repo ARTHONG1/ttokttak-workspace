@@ -5,6 +5,10 @@ name: K-에듀파인 연결 (Windows)
 # Chromium (direct, paste, file and native messaging through the registry), and the real
 # installer: a silent install registers the host for Chrome and Edge, the installed
 # launcher answers, and the uninstaller removes the registration again.
+#
+# The installer goes into a folder with Korean letters and a space: on a school PC the
+# per-user install sits under C:\Users\<Korean name>\AppData\Local\Programs, and the
+# registry, the host manifest and the .cmd launcher all have to carry that path intact.
 
 on:
   workflow_dispatch:
@@ -107,8 +111,9 @@ jobs:
         run: |
           $version = node -p "require('./apps/shell/package.json').version"
           $installer = "apps/shell/release/HangulAIWorkbench-Setup-$version.exe"
-          Start-Process -FilePath $installer -ArgumentList '/S', '/D=C:\ttokinstall' -Wait
-          if (-not (Test-Path 'C:\ttokinstall\resources\cli\edufine-host.cmd')) { throw 'edufine-host.cmd not installed' }
+          # /D= must be last and unquoted, even with a space in it (NSIS rule)
+          Start-Process -FilePath $installer -ArgumentList '/S', '/D=C:\똑딱 설치' -Wait
+          if (-not (Test-Path -LiteralPath 'C:\똑딱 설치\resources\cli\edufine-host.cmd')) { throw 'edufine-host.cmd not installed' }
 
       - name: The install registered the host for Chrome and Edge
         shell: pwsh
@@ -116,22 +121,22 @@ jobs:
           foreach ($key in 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') {
             $manifestPath = (Get-ItemProperty -Path $key).'(default)'
             if (-not $manifestPath) { throw "no registration at $key" }
-            $m = Get-Content $manifestPath -Raw | ConvertFrom-Json
-            if ($m.path -ne 'C:\ttokinstall\resources\cli\edufine-host.cmd') { throw "manifest path is $($m.path)" }
+            $m = Get-Content -LiteralPath $manifestPath -Raw -Encoding utf8 | ConvertFrom-Json
+            if ($m.path -ne 'C:\똑딱 설치\resources\cli\edufine-host.cmd') { throw "manifest path is $($m.path)" }
             if ($m.allowed_origins[0] -ne 'chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/') { throw "allowed origin is $($m.allowed_origins)" }
           }
 
       - name: The installed host answers (app not running)
         run: |
           set -euo pipefail
-          reply=$(node packages/edufine-link/scripts/host-roundtrip.mjs 'C:\ttokinstall\resources\cli\edufine-host.cmd' ping)
+          reply=$(node packages/edufine-link/scripts/host-roundtrip.mjs 'C:\똑딱 설치\resources\cli\edufine-host.cmd' ping)
           echo "$reply"
           echo "$reply" | grep -q '"state":"off"'
 
       - name: Silent uninstall removes the registration
         shell: pwsh
         run: |
-          Start-Process -FilePath 'C:\ttokinstall\Uninstall HangulAIWorkbench.exe' -ArgumentList '/S' -Wait
+          Start-Process -FilePath 'C:\똑딱 설치\Uninstall HangulAIWorkbench.exe' -ArgumentList '/S' -Wait
           Start-Sleep -Seconds 5
           if (Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Chrome registration left behind' }
           if (Test-Path 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Edge registration left behind' }

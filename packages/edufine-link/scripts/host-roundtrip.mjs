@@ -13,8 +13,11 @@ if (!host) {
 const body = Buffer.from(JSON.stringify({ type }))
 const head = Buffer.alloc(4)
 head.writeUInt32LE(body.length, 0)
-const child = spawn(host, ['chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/'], {
-  shell: process.platform === 'win32',
+const win = process.platform === 'win32'
+// a .cmd needs the shell on Windows, and the shell takes the command line as written:
+// quote the launcher so an install folder with spaces (C:\Users\홍 길동\…) stays one path
+const child = spawn(win ? '"' + host + '"' : host, ['chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/'], {
+  shell: win,
   stdio: ['pipe', 'pipe', 'inherit'],
 })
 const chunks = []
