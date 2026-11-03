@@ -1,0 +1,21 @@
+{
+  "name": "@genoffice/edufine-link",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "description": "똑딱 에듀파인 연결: fills the K-에듀파인 품의등록 screen from a 똑딱작업실 품의 (Chrome extension + shared format)",
+  "exports": {
+    "./package": "./src/pumui-package.ts",
+    "./ids": "./src/ids.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
