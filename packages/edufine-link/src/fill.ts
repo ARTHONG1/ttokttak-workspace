@@ -23,8 +23,7 @@ export interface FillPlan {
 }
 
 export type FillResult =
-  | { ok: true; added: number; gridTotal: number }
-  | { ok: false; reason: string; rolledBack: number }
+  { ok: true; added: number; gridTotal: number } | { ok: false; reason: string; rolledBack: number }
 
 export function planFill(form: WorkForm, map: ScreenMap, pkg: PumuiPackage): FillPlan {
   const plan: FillPlan = {
@@ -100,7 +99,10 @@ export function applyFill(
       add.call(form, button, {})
       if (ds.rowcount !== before + 1) {
         if (added === 0) return fail('예산 내역에서 예산 줄을 먼저 골라 주세요.')
-        return fail(i + 1 + '번째 품목 행을 추가하지 못했어요. 이번에 넣은 행은 되돌렸어요.', undo())
+        return fail(
+          i + 1 + '번째 품목 행을 추가하지 못했어요. 이번에 넣은 행은 되돌렸어요.',
+          undo(),
+        )
       }
       added++
       const r = ds.rowcount - 1
@@ -115,7 +117,10 @@ export function applyFill(
       gridTotal += Math.round(Number(ds.getColumn(r, c.qty)) * Number(ds.getColumn(r, c.price)))
     }
     if (gridTotal !== plan.total) {
-      return fail('화면에 들어간 금액 합계가 품의 합계와 달라요. 이번에 넣은 행은 되돌렸어요.', undo())
+      return fail(
+        '화면에 들어간 금액 합계가 품의 합계와 달라요. 이번에 넣은 행은 되돌렸어요.',
+        undo(),
+      )
     }
     const title = getPath(form, map.pumui.title) as { set_value(v: string): void }
     const summary = getPath(form, map.pumui.summary) as { set_value(v: string): void }
@@ -124,7 +129,11 @@ export function applyFill(
     filled.add(plan.key)
     return { ok: true, added, gridTotal }
   } catch (e) {
-    return fail('채우는 중 오류가 났어요(' + String((e as Error)?.message ?? e) + '). 이번에 넣은 행은 되돌렸어요.', undo())
+    return fail(
+      '채우는 중 오류가 났어요(' +
+        String((e as Error)?.message ?? e) +
+        '). 이번에 넣은 행은 되돌렸어요.',
+      undo(),
+    )
   }
 }
-

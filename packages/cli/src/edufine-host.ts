@@ -57,14 +57,14 @@ export interface HostDeps {
 }
 
 export type HostReply =
-  | { ok: true; version?: string; text?: string | null }
-  | { ok: false; state: 'off'; reason: string }
+  { ok: true; version?: string; text?: string | null } | { ok: false; state: 'off'; reason: string }
 
 const OFF = '똑딱작업실이 켜져 있지 않아요.'
 
 export async function handleHostMessage(message: unknown, deps: HostDeps): Promise<HostReply> {
   const type = (message as { type?: unknown } | null)?.type
-  if (type !== 'ping' && type !== 'take') return { ok: false, state: 'off', reason: '알 수 없는 요청이에요.' }
+  if (type !== 'ping' && type !== 'take')
+    return { ok: false, state: 'off', reason: '알 수 없는 요청이에요.' }
   const endpoint = deps.endpoint()
   if (!endpoint) return { ok: false, state: 'off', reason: OFF }
   if (type === 'ping') return { ok: true, version: deps.version }
@@ -72,7 +72,11 @@ export async function handleHostMessage(message: unknown, deps: HostDeps): Promi
     const result = await deps.request(endpoint, { cmd: 'pumui-take' })
     return { ok: true, text: typeof result.text === 'string' ? result.text : null }
   } catch (err) {
-    return { ok: false, state: 'off', reason: OFF + ' (' + (err instanceof Error ? err.message : String(err)) + ')' }
+    return {
+      ok: false,
+      state: 'off',
+      reason: OFF + ' (' + (err instanceof Error ? err.message : String(err)) + ')',
+    }
   }
 }
 
@@ -93,4 +97,3 @@ export async function runEdufineHost(
   }
   await new Promise<void>((resolve) => stdout.write(encodeNativeMessage(reply), () => resolve()))
 }
-

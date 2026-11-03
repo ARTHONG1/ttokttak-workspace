@@ -20,8 +20,17 @@ const base = { title: '과학실 실험 도구 구입', summary: '1. 관련: \n2
 describe('pumui package', () => {
   it('round-trips through text', () => {
     const now = new Date('2026-11-03T01:00:00Z')
-    const pkg = buildPumuiPackage({ ...base, items: [item(2, 1000), item(1, 3500, '스포이트')], now })
-    expect(pkg).toMatchObject({ kind: 'ttokttak.pumui', version: 1, total: 5500, createdAt: now.toISOString() })
+    const pkg = buildPumuiPackage({
+      ...base,
+      items: [item(2, 1000), item(1, 3500, '스포이트')],
+      now,
+    })
+    expect(pkg).toMatchObject({
+      kind: 'ttokttak.pumui',
+      version: 1,
+      total: 5500,
+      createdAt: now.toISOString(),
+    })
     const back = parsePumuiPackage(JSON.stringify(pkg), new Date('2026-11-03T02:00:00Z'))
     expect(back).toEqual({ ok: true, pkg, ageHours: 1 })
   })
@@ -79,7 +88,10 @@ describe('pumui package', () => {
   })
 
   it('rejects input that is too large', () => {
-    expect(parsePumuiPackage('x'.repeat(100_001))).toEqual({ ok: false, reason: '품의가 너무 커요.' })
+    expect(parsePumuiPackage('x'.repeat(100_001))).toEqual({
+      ok: false,
+      reason: '품의가 너무 커요.',
+    })
   })
 
   it('rejects non-finite numbers and empty item names', () => {
@@ -97,9 +109,12 @@ describe('pumui package', () => {
   })
 
   it('reports the age of an old package', () => {
-    const pkg = buildPumuiPackage({ ...base, items: [item(1, 100)], now: new Date('2026-11-01T00:00:00Z') })
+    const pkg = buildPumuiPackage({
+      ...base,
+      items: [item(1, 100)],
+      now: new Date('2026-11-01T00:00:00Z'),
+    })
     const res = parsePumuiPackage(JSON.stringify(pkg), new Date('2026-11-02T01:00:00Z'))
     expect(res).toMatchObject({ ok: true, ageHours: 25 })
   })
 })
-

@@ -26,11 +26,23 @@ describe('field survey screens', () => {
       const pkg = buildPumuiPackage({
         title: '현장 화면 시험 품의',
         summary: '시험',
-        items: [{ description: '시험 품목', specification: '', unit, quantity: 2, unitPrice: 1000, amount: 2000 }],
+        items: [
+          {
+            description: '시험 품목',
+            specification: '',
+            unit,
+            quantity: 2,
+            unitPrice: 1000,
+            amount: 2000,
+          },
+        ],
       })
-      expect(applyFill(form, DEFAULT_SCREEN_MAP, planFill(form, DEFAULT_SCREEN_MAP, pkg))).toEqual({ ok: true, added: 1, gridTotal: 2000 })
+      expect(applyFill(form, DEFAULT_SCREEN_MAP, planFill(form, DEFAULT_SCREEN_MAP, pkg))).toEqual({
+        ok: true,
+        added: 1,
+        gridTotal: 2000,
+      })
       expect(fake.forbiddenCalls()).toBe(0)
     })
   }
 })
-

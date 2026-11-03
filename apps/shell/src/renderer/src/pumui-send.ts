@@ -48,7 +48,10 @@ export interface SendDeps {
   /** the desktop app's queue (window.aiOffice.pumuiSend) */
   pumuiSend?: (text: string) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
   /** window.chrome.runtime when an extension lets this page talk to it */
-  runtime?: { sendMessage(id: string, msg: unknown, cb: (reply: unknown) => void): void; lastError?: { message?: string } }
+  runtime?: {
+    sendMessage(id: string, msg: unknown, cb: (reply: unknown) => void): void
+    lastError?: { message?: string }
+  }
   timeoutMs?: number
 }
 
@@ -65,11 +68,19 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
   if (!deps.web && deps.pumuiSend) {
     const r = await deps.pumuiSend(text)
     return r.ok
-      ? { ok: true, route: 'desktop', message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + ' → [똑딱작업실에서 받기]를 눌러 주세요.' }
+      ? {
+          ok: true,
+          route: 'desktop',
+          message:
+            '똑딱작업실이 품의를 준비했어요. ' +
+            TAKE_HINT +
+            ' → [똑딱작업실에서 받기]를 눌러 주세요.',
+        }
       : { ok: false, route: 'desktop', message: r.reason }
   }
   const rt = deps.runtime
-  if (!rt || typeof rt.sendMessage !== 'function') return { ok: false, route: 'none', message: NO_EXTENSION }
+  if (!rt || typeof rt.sendMessage !== 'function')
+    return { ok: false, route: 'none', message: NO_EXTENSION }
   const reply = await new Promise<unknown>((resolve) => {
     const timer = setTimeout(() => resolve(null), deps.timeoutMs ?? 4000)
     try {
@@ -83,8 +94,12 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
     }
   })
   const r = reply as { ok?: boolean; reason?: string } | null
-  if (r?.ok) return { ok: true, route: 'extension', message: '확장 프로그램에 품의를 보냈어요. ' + TAKE_HINT + '에서 바로 보여요.' }
+  if (r?.ok)
+    return {
+      ok: true,
+      route: 'extension',
+      message: '확장 프로그램에 품의를 보냈어요. ' + TAKE_HINT + '에서 바로 보여요.',
+    }
   if (r && r.reason) return { ok: false, route: 'none', message: r.reason }
   return { ok: false, route: 'none', message: NO_EXTENSION }
 }
-

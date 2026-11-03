@@ -1,166 +1,152 @@
 {
- "schema": "ttokttak.edufine-diag",
- "version": 1,
- "takenAt": "2026-11-03T12:00:00.000Z",
- "origin": "https://klef.example.go.kr",
- "extensionVersion": "0.1.0",
- "mapRevision": "2026-11-03 기본",
- "checks": [
-  {
-   "id": 1,
-   "label": "K-에듀파인 주소 권한",
-   "ok": true,
-   "hint": ""
+  "schema": "ttokttak.edufine-diag",
+  "version": 1,
+  "takenAt": "2026-11-03T12:00:00.000Z",
+  "origin": "https://klef.example.go.kr",
+  "extensionVersion": "0.1.0",
+  "mapRevision": "2026-11-03 기본",
+  "checks": [
+    {
+      "id": 1,
+      "label": "K-에듀파인 주소 권한",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": 2,
+      "label": "K-에듀파인 화면 안에서 동작",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": 3,
+      "label": "K-에듀파인 화면 틀 찾기",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": 4,
+      "label": "품의등록 화면 인식",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": 5,
+      "label": "단위 목록 읽기",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": 6,
+      "label": "똑딱작업실 프로그램 연결",
+      "ok": null,
+      "hint": "프로그램 연결은 [똑딱작업실에서 받기]를 누를 때 확인해요."
+    },
+    {
+      "id": 7,
+      "label": "똑딱작업실 웹 앱 연결",
+      "ok": null,
+      "hint": "웹 앱 연결은 웹 앱에서 품의를 보낼 때 확인해요."
+    }
+  ],
+  "screen": {
+    "kind": "pumui"
   },
-  {
-   "id": 2,
-   "label": "K-에듀파인 화면 안에서 동작",
-   "ok": true,
-   "hint": ""
-  },
-  {
-   "id": 3,
-   "label": "K-에듀파인 화면 틀 찾기",
-   "ok": true,
-   "hint": ""
-  },
-  {
-   "id": 4,
-   "label": "품의등록 화면 인식",
-   "ok": true,
-   "hint": ""
-  },
-  {
-   "id": 5,
-   "label": "단위 목록 읽기",
-   "ok": true,
-   "hint": ""
-  },
-  {
-   "id": 6,
-   "label": "똑딱작업실 프로그램 연결",
-   "ok": null,
-   "hint": "프로그램 연결은 [똑딱작업실에서 받기]를 누를 때 확인해요."
-  },
-  {
-   "id": 7,
-   "label": "똑딱작업실 웹 앱 연결",
-   "ok": null,
-   "hint": "웹 앱 연결은 웹 앱에서 품의를 보낼 때 확인해요."
-  }
- ],
- "screen": {
-  "kind": "pumui"
- },
- "objects": [
-  {
-   "path": "divThng",
-   "kind": "div",
-   "visible": true
-  },
-  {
-   "path": "divThng.form",
-   "kind": "object"
-  },
-  {
-   "path": "divServc",
-   "kind": "div",
-   "visible": false
-  },
-  {
-   "path": "divMain",
-   "kind": "object"
-  },
-  {
-   "path": "divMain.form",
-   "kind": "div"
-  },
-  {
-   "path": "divMain.form.edtCnsulSj",
-   "kind": "edit"
-  },
-  {
-   "path": "divMain.form.txtareaCnsulSumrCn",
-   "kind": "edit"
-  },
-  {
-   "path": "divAuth2",
-   "kind": "object"
-  },
-  {
-   "path": "divAuth2.form",
-   "kind": "object"
-  },
-  {
-   "path": "divAuth2.form.btnRowAdit",
-   "kind": "object"
-  },
-  {
-   "path": "grdPrdlstDtl",
-   "kind": "grid",
-   "bind": "dsPrdlstDtl"
-  }
- ],
- "datasets": [
-  {
-   "path": "divThng.form.dsEAB0005200",
-   "columns": [
-    "cmmnDetailCd",
-    "cmmnDetailCdNm"
-   ],
-   "rowcount": 5
-  },
-  {
-   "path": "dsPrdlstDtl",
-   "columns": [
-    "prdlstCn",
-    "stndrd",
-    "thngUnitSeCd",
-    "qty",
-    "expectUntpc"
-   ],
-   "rowcount": 0
-  },
-  {
-   "path": "dsBgtDtlList",
-   "columns": [
-    "detlBsnsNm",
-    "detlIem",
-    "cptDtl",
-    "dmndAmt"
-   ],
-   "rowcount": 1
-  }
- ],
- "functions": [
-  "divAuth2_btnRowAdit_onclick",
-  "divAuth0_btnAuthC03_onclick",
-  "fnSave",
-  "gfnTransaction"
- ],
- "unitTablePath": "divThng.form.dsEAB0005200",
- "unitTable": [
-  {
-   "code": "001",
-   "name": "개"
-  },
-  {
-   "code": "002",
-   "name": "명"
-  },
-  {
-   "code": "010",
-   "name": "상자"
-  },
-  {
-   "code": "017",
-   "name": "SET"
-  },
-  {
-   "code": "020",
-   "name": "식"
-  }
- ],
- "functionSources": {},
- "log": []
+  "objects": [
+    {
+      "path": "divThng",
+      "kind": "div",
+      "visible": true
+    },
+    {
+      "path": "divThng.form",
+      "kind": "object"
+    },
+    {
+      "path": "divServc",
+      "kind": "div",
+      "visible": false
+    },
+    {
+      "path": "divMain",
+      "kind": "object"
+    },
+    {
+      "path": "divMain.form",
+      "kind": "div"
+    },
+    {
+      "path": "divMain.form.edtCnsulSj",
+      "kind": "edit"
+    },
+    {
+      "path": "divMain.form.txtareaCnsulSumrCn",
+      "kind": "edit"
+    },
+    {
+      "path": "divAuth2",
+      "kind": "object"
+    },
+    {
+      "path": "divAuth2.form",
+      "kind": "object"
+    },
+    {
+      "path": "divAuth2.form.btnRowAdit",
+      "kind": "object"
+    },
+    {
+      "path": "grdPrdlstDtl",
+      "kind": "grid",
+      "bind": "dsPrdlstDtl"
+    }
+  ],
+  "datasets": [
+    {
+      "path": "divThng.form.dsEAB0005200",
+      "columns": ["cmmnDetailCd", "cmmnDetailCdNm"],
+      "rowcount": 5
+    },
+    {
+      "path": "dsPrdlstDtl",
+      "columns": ["prdlstCn", "stndrd", "thngUnitSeCd", "qty", "expectUntpc"],
+      "rowcount": 0
+    },
+    {
+      "path": "dsBgtDtlList",
+      "columns": ["detlBsnsNm", "detlIem", "cptDtl", "dmndAmt"],
+      "rowcount": 1
+    }
+  ],
+  "functions": [
+    "divAuth2_btnRowAdit_onclick",
+    "divAuth0_btnAuthC03_onclick",
+    "fnSave",
+    "gfnTransaction"
+  ],
+  "unitTablePath": "divThng.form.dsEAB0005200",
+  "unitTable": [
+    {
+      "code": "001",
+      "name": "개"
+    },
+    {
+      "code": "002",
+      "name": "명"
+    },
+    {
+      "code": "010",
+      "name": "상자"
+    },
+    {
+      "code": "017",
+      "name": "SET"
+    },
+    {
+      "code": "020",
+      "name": "식"
+    }
+  ],
+  "functionSources": {},
+  "log": []
 }

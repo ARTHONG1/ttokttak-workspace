@@ -8,4 +8,3 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
 })
-

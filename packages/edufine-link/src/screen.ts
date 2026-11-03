@@ -9,7 +9,9 @@ export type WorkForm = Record<string, unknown>
 export function findWorkForm(nx: NexacroLike | undefined, map: ScreenMap): WorkForm | null {
   try {
     if (!nx || typeof nx.getApplication !== 'function') return null
-    const frame = getPath(nx.getApplication(), map.workFramePath) as { getActiveFrame?: () => unknown }
+    const frame = getPath(nx.getApplication(), map.workFramePath) as {
+      getActiveFrame?: () => unknown
+    }
     if (!frame || typeof frame.getActiveFrame !== 'function') return null
     const form = getPath(frame.getActiveFrame(), map.workFormPath)
     return form && typeof form === 'object' ? (form as WorkForm) : null
@@ -26,7 +28,10 @@ export function detectScreen(form: WorkForm, map: ScreenMap): ScreenKind {
   const checks: [string, (v: unknown) => boolean][] = [
     [p.title, (v) => !!v && typeof (v as { set_value?: unknown }).set_value === 'function'],
     [p.summary, (v) => !!v && typeof (v as { set_value?: unknown }).set_value === 'function'],
-    [p.grid, (v) => !!v && typeof (v as { getBindDataset?: unknown }).getBindDataset === 'function'],
+    [
+      p.grid,
+      (v) => !!v && typeof (v as { getBindDataset?: unknown }).getBindDataset === 'function',
+    ],
     [p.budget, isDataset],
     [p.rowAddButton, (v) => !!v],
     [p.rowAddHandler, (v) => typeof v === 'function'],
@@ -46,7 +51,10 @@ export function gridDataset(form: WorkForm, map: ScreenMap): DatasetLike | null 
 }
 
 /** the first visible unit table with rows, and where it was found */
-export function findUnitTable(form: WorkForm, map: ScreenMap): { path: string; table: UnitTable } | null {
+export function findUnitTable(
+  form: WorkForm,
+  map: ScreenMap,
+): { path: string; table: UnitTable } | null {
   const p = map.pumui
   for (const path of p.unitTables) {
     const owner = path.includes('.') ? getPath(form, path.split('.')[0]) : null
@@ -67,4 +75,3 @@ export function findUnitTable(form: WorkForm, map: ScreenMap): { path: string; t
 export function readUnitTable(form: WorkForm, map: ScreenMap): UnitTable {
   return findUnitTable(form, map)?.table ?? []
 }
-

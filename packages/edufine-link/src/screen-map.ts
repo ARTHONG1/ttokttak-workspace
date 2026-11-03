@@ -45,11 +45,18 @@ export const DEFAULT_SCREEN_MAP: ScreenMap = {
     unitTables: ['divThng.form.dsEAB0005200', 'divServc.form.dsEAB0005200', 'dsEAB0005200'],
     unitCode: 'cmmnDetailCd',
     unitName: 'cmmnDetailCdNm',
-    columns: { name: 'prdlstCn', spec: 'stndrd', unit: 'thngUnitSeCd', qty: 'qty', price: 'expectUntpc' },
+    columns: {
+      name: 'prdlstCn',
+      spec: 'stndrd',
+      unit: 'thngUnitSeCd',
+      qty: 'qty',
+      price: 'expectUntpc',
+    },
   },
 }
 
-const isPath = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/.test(v)
+const isPath = (v: unknown): v is string =>
+  typeof v === 'string' && /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/.test(v)
 
 /** a 화면 이름표 from a file or the web app; null when it is not one this version reads */
 export function parseScreenMap(text: string): ScreenMap | null {
@@ -80,4 +87,3 @@ export function parseScreenMap(text: string): ScreenMap | null {
   if (!paths.every(isPath) || !p.columns || Object.keys(p.columns).length !== 5) return null
   return m
 }
-

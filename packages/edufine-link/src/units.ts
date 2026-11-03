@@ -47,4 +47,3 @@ export function matchUnit(name: string, table: UnitTable): string | null {
   }
   return null
 }
-

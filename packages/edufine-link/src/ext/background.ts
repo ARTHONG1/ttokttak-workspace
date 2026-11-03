@@ -7,7 +7,14 @@ import { NATIVE_HOST_NAME, SCREEN_MAP_URL, WEB_APP_ORIGINS } from '../ids'
 import { originFrom } from '../origin'
 import { parsePumuiPackage } from '../pumui-package'
 import { DEFAULT_SCREEN_MAP, parseScreenMap, type ScreenMap } from '../screen-map'
-import { DEFAULT_SETTINGS, PAGE_REQUESTS, POPUP_REQUESTS, type NativeReply, type Pending, type Settings } from './messages'
+import {
+  DEFAULT_SETTINGS,
+  PAGE_REQUESTS,
+  POPUP_REQUESTS,
+  type NativeReply,
+  type Pending,
+  type Settings,
+} from './messages'
 
 const SCRIPT_IDS = ['ttok-edufine-main', 'ttok-edufine-bridge']
 const DEV_ORIGINS = __DEV__ ? ['http://127.0.0.1'] : []
@@ -33,35 +40,59 @@ async function registerScripts(): Promise<void> {
   }
   if (!matches.length) return
   await chrome.scripting.registerContentScripts([
-    { id: SCRIPT_IDS[0], matches, js: ['page-main.js'], world: 'MAIN', runAt: 'document_idle', persistAcrossSessions: true },
-    { id: SCRIPT_IDS[1], matches, js: ['page-bridge.js'], runAt: 'document_start', persistAcrossSessions: true },
+    {
+      id: SCRIPT_IDS[0],
+      matches,
+      js: ['page-main.js'],
+      world: 'MAIN',
+      runAt: 'document_idle',
+      persistAcrossSessions: true,
+    },
+    {
+      id: SCRIPT_IDS[1],
+      matches,
+      js: ['page-bridge.js'],
+      runAt: 'document_start',
+      persistAcrossSessions: true,
+    },
   ])
 }
 
 function native(message: unknown): Promise<NativeReply> {
   return new Promise((resolve) => {
     try {
-      chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, message, (reply: NativeReply | undefined) => {
-        const err = chrome.runtime.lastError
-        if (err) {
-          const missing = /not found|forbidden|not allowed|specified native messaging host/i.test(String(err.message))
-          resolve({ ok: false, state: missing ? 'missing' : 'off', reason: String(err.message) })
-          return
-        }
-        resolve(reply ?? { ok: false, state: 'off', reason: '응답 없음' })
-      })
+      chrome.runtime.sendNativeMessage(
+        NATIVE_HOST_NAME,
+        message,
+        (reply: NativeReply | undefined) => {
+          const err = chrome.runtime.lastError
+          if (err) {
+            const missing = /not found|forbidden|not allowed|specified native messaging host/i.test(
+              String(err.message),
+            )
+            resolve({ ok: false, state: missing ? 'missing' : 'off', reason: String(err.message) })
+            return
+          }
+          resolve(reply ?? { ok: false, state: 'off', reason: '응답 없음' })
+        },
+      )
     } catch (e) {
       resolve({ ok: false, state: 'missing', reason: String(e) })
     }
   })
 }
 
-const fromPopup = (sender: { url?: string }): boolean => String(sender.url ?? '').startsWith('chrome-extension://' + chrome.runtime.id + '/popup.html')
+const fromPopup = (sender: { url?: string }): boolean =>
+  String(sender.url ?? '').startsWith('chrome-extension://' + chrome.runtime.id + '/popup.html')
 
-async function handle(msg: { type: string; payload?: unknown }, sender: { url?: string; tab?: unknown }): Promise<unknown> {
+async function handle(
+  msg: { type: string; payload?: unknown },
+  sender: { url?: string; tab?: unknown },
+): Promise<unknown> {
   const page = (PAGE_REQUESTS as readonly string[]).includes(msg.type)
   const popup = (POPUP_REQUESTS as readonly string[]).includes(msg.type)
-  if (!page && !(popup && fromPopup(sender))) return { ok: false, reason: '허용되지 않은 요청이에요.' }
+  if (!page && !(popup && fromPopup(sender)))
+    return { ok: false, reason: '허용되지 않은 요청이에요.' }
   switch (msg.type) {
     case 'map:get':
       return getMap()
@@ -127,7 +158,10 @@ async function handle(msg: { type: string; payload?: unknown }, sender: { url?: 
         await chrome.storage.local.set({ screenMap: map })
         return { ok: true, revision: map.revision }
       } catch {
-        return { ok: false, reason: '웹 앱에 연결하지 못했어요. 인터넷이 안 되는 PC라면 [파일 넣기]를 써 주세요.' }
+        return {
+          ok: false,
+          reason: '웹 앱에 연결하지 못했어요. 인터넷이 안 되는 PC라면 [파일 넣기]를 써 주세요.',
+        }
       }
     }
     case 'map:reset':
@@ -137,9 +171,13 @@ async function handle(msg: { type: string; payload?: unknown }, sender: { url?: 
   return { ok: false, reason: '알 수 없는 요청이에요.' }
 }
 
-async function handleExternal(msg: { type?: string; text?: unknown }, sender: { origin?: string; url?: string }): Promise<unknown> {
+async function handleExternal(
+  msg: { type?: string; text?: unknown },
+  sender: { origin?: string; url?: string },
+): Promise<unknown> {
   const origin = sender.origin ?? (sender.url ? new URL(sender.url).origin : '')
-  const allowed = WEB_APP_ORIGINS.includes(origin) || (__DEV__ && origin.startsWith('http://127.0.0.1'))
+  const allowed =
+    WEB_APP_ORIGINS.includes(origin) || (__DEV__ && origin.startsWith('http://127.0.0.1'))
   if (!allowed) return { ok: false, reason: '허용되지 않은 곳에서 온 요청이에요.' }
   await chrome.storage.local.set({ lastWebContact: Date.now() })
   if (msg.type === 'ping') return { ok: true, version: __VERSION__ }
@@ -153,16 +191,31 @@ async function handleExternal(msg: { type?: string; text?: unknown }, sender: { 
   return { ok: false, reason: '알 수 없는 요청이에요.' }
 }
 
-chrome.runtime.onMessage.addListener((msg: { type: string; payload?: unknown }, sender: { url?: string }, sendResponse: (r: unknown) => void) => {
-  void handle(msg, sender).then(sendResponse, (e) => sendResponse({ ok: false, reason: String(e) }))
-  return true
-})
+chrome.runtime.onMessage.addListener(
+  (
+    msg: { type: string; payload?: unknown },
+    sender: { url?: string },
+    sendResponse: (r: unknown) => void,
+  ) => {
+    void handle(msg, sender).then(sendResponse, (e) =>
+      sendResponse({ ok: false, reason: String(e) }),
+    )
+    return true
+  },
+)
 
-chrome.runtime.onMessageExternal.addListener((msg: { type?: string; text?: unknown }, sender: { origin?: string; url?: string }, sendResponse: (r: unknown) => void) => {
-  void handleExternal(msg, sender).then(sendResponse, (e) => sendResponse({ ok: false, reason: String(e) }))
-  return true
-})
+chrome.runtime.onMessageExternal.addListener(
+  (
+    msg: { type?: string; text?: unknown },
+    sender: { origin?: string; url?: string },
+    sendResponse: (r: unknown) => void,
+  ) => {
+    void handleExternal(msg, sender).then(sendResponse, (e) =>
+      sendResponse({ ok: false, reason: String(e) }),
+    )
+    return true
+  },
+)
 
 chrome.runtime.onInstalled.addListener(() => void registerScripts())
 chrome.runtime.onStartup.addListener(() => void registerScripts())
-

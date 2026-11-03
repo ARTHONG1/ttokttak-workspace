@@ -25,7 +25,16 @@ describe('finding the 품의등록 screen', () => {
   it('returns null when no work screen is open or nexacro is absent', () => {
     expect(findWorkForm(makeFakeEdufine({ ...pumuiScreen(map), frame: 'none' }).nx, map)).toBeNull()
     expect(findWorkForm(undefined, map)).toBeNull()
-    expect(findWorkForm({ getApplication: () => { throw new Error('x') } }, map)).toBeNull()
+    expect(
+      findWorkForm(
+        {
+          getApplication: () => {
+            throw new Error('x')
+          },
+        },
+        map,
+      ),
+    ).toBeNull()
   })
 
   it('reports a screen whose one name differs from the table', () => {
@@ -56,8 +65,9 @@ describe('화면 이름표 files', () => {
   it('reads a valid table and refuses other versions or broken paths', () => {
     expect(parseScreenMap(JSON.stringify(map))).toEqual(map)
     expect(parseScreenMap(JSON.stringify({ ...map, version: 2 }))).toBeNull()
-    expect(parseScreenMap(JSON.stringify({ ...map, pumui: { ...map.pumui, title: 'a b; alert(1)' } }))).toBeNull()
+    expect(
+      parseScreenMap(JSON.stringify({ ...map, pumui: { ...map.pumui, title: 'a b; alert(1)' } })),
+    ).toBeNull()
     expect(parseScreenMap('not json')).toBeNull()
   })
 })
-

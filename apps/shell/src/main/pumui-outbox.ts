@@ -12,7 +12,10 @@ export const OUTBOX_TTL_MS = 30 * 60_000
 export class PumuiOutbox {
   private items: { text: string; at: number }[] = []
 
-  enqueue(text: string, now = Date.now()): { ok: true; title: string } | { ok: false; reason: string } {
+  enqueue(
+    text: string,
+    now = Date.now(),
+  ): { ok: true; title: string } | { ok: false; reason: string } {
     const parsed = parsePumuiPackage(text, new Date(now))
     if (!parsed.ok) return { ok: false, reason: parsed.reason }
     this.prune(now)
@@ -39,4 +42,3 @@ export class PumuiOutbox {
 
 /** the app's one queue */
 export const pumuiOutbox = new PumuiOutbox()
-

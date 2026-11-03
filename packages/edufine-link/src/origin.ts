@@ -15,4 +15,3 @@ export function originFrom(input: string, allowLocal = false): string | null {
   if (allowLocal && url.hostname === '127.0.0.1') return url.protocol + '//' + url.hostname
   return null
 }
-

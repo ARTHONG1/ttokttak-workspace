@@ -47,7 +47,11 @@ export function parseEnvelope(line: string): ControlEnvelope | null {
   if (typeof env.token !== 'string' || !env.request || typeof env.request !== 'object') return null
   const req = env.request as Partial<ControlRequest>
   if (req.cmd === 'pumui-take') return { token: env.token, request: { cmd: 'pumui-take' } }
-  if ((req.cmd !== 'open' && req.cmd !== 'selection') || typeof (req as { path?: unknown }).path !== 'string') return null
+  if (
+    (req.cmd !== 'open' && req.cmd !== 'selection') ||
+    typeof (req as { path?: unknown }).path !== 'string'
+  )
+    return null
   return env as ControlEnvelope
 }
 

@@ -4,7 +4,9 @@ import { originFrom } from '../src/origin'
 describe('originFrom', () => {
   it('accepts a K-에듀파인 host typed with or without a scheme or path', () => {
     expect(originFrom('klef.example.go.kr')).toBe('https://klef.example.go.kr')
-    expect(originFrom(' https://klef.example.go.kr/ui/main.do?x=1 ')).toBe('https://klef.example.go.kr')
+    expect(originFrom(' https://klef.example.go.kr/ui/main.do?x=1 ')).toBe(
+      'https://klef.example.go.kr',
+    )
   })
 
   it('refuses other hosts, plain http and empty input', () => {
@@ -19,4 +21,3 @@ describe('originFrom', () => {
     expect(originFrom('http://127.0.0.1:8080', true)).toBe('http://127.0.0.1')
   })
 })
-

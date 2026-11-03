@@ -15,4 +15,3 @@ describe('the 화면 이름표 the web app serves', () => {
     expect(map).toEqual(DEFAULT_SCREEN_MAP)
   })
 })
-

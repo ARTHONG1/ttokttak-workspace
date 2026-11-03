@@ -23,7 +23,16 @@ const pkgText = JSON.stringify(
   buildPumuiPackage({
     title: '체육관 공 구입 품의',
     summary: '1. 관련:\n2. 공을 구입하고자 합니다.',
-    items: [{ description: '배구공', specification: '5호', unit: '개', quantity: 10, unitPrice: 20000, amount: 200000 }],
+    items: [
+      {
+        description: '배구공',
+        specification: '5호',
+        unit: '개',
+        quantity: 10,
+        unitPrice: 20000,
+        amount: 200000,
+      },
+    ],
   }),
 )
 
@@ -35,7 +44,10 @@ let app: ControlServer | null = null
 let waiting: string | null = null
 const userData = mkdtempSync(join(tmpdir(), 'ttok-appdata-'))
 const regKeys = WIN
-  ? ['HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\', 'HKCU\\Software\\Chromium\\NativeMessagingHosts\\'].map((k) => k + NATIVE_HOST_NAME)
+  ? [
+      'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\',
+      'HKCU\\Software\\Chromium\\NativeMessagingHosts\\',
+    ].map((k) => k + NATIVE_HOST_NAME)
   : []
 
 async function startApp(): Promise<void> {
@@ -51,7 +63,11 @@ test.beforeAll(async () => {
     const name = (req.url ?? '/').split('?')[0].replace(/^\//, '') || 'fake-edufine.html'
     try {
       const body = await readFile(join(TEST_DIR, name))
-      res.writeHead(200, { 'content-type': name.endsWith('.html') ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8' })
+      res.writeHead(200, {
+        'content-type': name.endsWith('.html')
+          ? 'text/html; charset=utf-8'
+          : 'text/javascript; charset=utf-8',
+      })
       res.end(body)
     } catch {
       res.writeHead(404).end()
@@ -66,14 +82,19 @@ test.beforeAll(async () => {
   const launcher = join(hostDir, WIN ? 'host.bat' : 'host.sh')
   writeFileSync(
     launcher,
-    WIN ? '@echo off\r\n"' + process.execPath + '" "' + script + '" %*\r\n' : '#!/bin/sh\nexec "' + process.execPath + '" "' + script + '" "$@"\n',
+    WIN
+      ? '@echo off\r\n"' + process.execPath + '" "' + script + '" %*\r\n'
+      : '#!/bin/sh\nexec "' + process.execPath + '" "' + script + '" "$@"\n',
   )
   if (!WIN) chmodSync(launcher, 0o755)
   const manifest = JSON.stringify(nativeHostManifest(launcher))
   if (WIN) {
     const file = join(hostDir, NATIVE_HOST_NAME + '.json')
     writeFileSync(file, manifest)
-    for (const key of regKeys) execFileSync('reg', ['add', key, '/ve', '/t', 'REG_SZ', '/d', file, '/f'], { stdio: 'ignore' })
+    for (const key of regKeys)
+      execFileSync('reg', ['add', key, '/ve', '/t', 'REG_SZ', '/d', file, '/f'], {
+        stdio: 'ignore',
+      })
   } else {
     mkdirSync(join(profile, 'NativeMessagingHosts'), { recursive: true })
     writeFileSync(join(profile, 'NativeMessagingHosts', NATIVE_HOST_NAME + '.json'), manifest)
@@ -115,7 +136,9 @@ async function takeFromDesktop(): Promise<import('@playwright/test').Page> {
 
 test('tells the teacher to start 똑딱작업실 when it is not running', async () => {
   const page = await takeFromDesktop()
-  await expect(page.getByText('똑딱작업실을 켠 뒤 다시 눌러 주세요.')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('똑딱작업실을 켠 뒤 다시 눌러 주세요.')).toBeVisible({
+    timeout: 20_000,
+  })
   await page.close()
 })
 
@@ -123,7 +146,9 @@ test('takes the waiting 품의 from the running app and fills the screen', async
   await startApp()
   waiting = pkgText
   const page = await takeFromDesktop()
-  await expect(page.getByRole('heading', { name: '체육관 공 구입 품의' })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('heading', { name: '체육관 공 구입 품의' })).toBeVisible({
+    timeout: 20_000,
+  })
   await page.getByRole('button', { name: '채우기' }).click()
   await expect(page.getByText('품목 1줄과 제목·개요를 채웠어요')).toBeVisible()
   const rows = await page.evaluate(() => (window as any).__fake.dataset('dsPrdlstDtl').rows)
@@ -140,4 +165,3 @@ test('the self-check shows the app connection', async () => {
   await expect(row).toContainText('✓', { timeout: 20_000 })
   await page.close()
 })
-

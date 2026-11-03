@@ -4,21 +4,73 @@
     <meta charset="utf-8" />
     <title>똑딱 에듀파인 연결</title>
     <style>
-      body { width: 340px; margin: 0; padding: 14px; font: 13px 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #1d2433; }
-      h1 { font-size: 15px; margin: 0 0 2px; }
-      h2 { font-size: 13px; margin: 14px 0 6px; }
-      .sub { color: #667085; margin: 0; }
-      input[type=text] { width: 100%; box-sizing: border-box; padding: 7px; border: 1px solid #d0d5dd; border-radius: 6px; }
-      button { border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-      .primary { background: #2f6bff; color: #fff; border-color: #2f6bff; }
-      ul { padding-left: 16px; margin: 6px 0; }
-      .msg { margin: 6px 0 0; } .ok { color: #067647; } .bad { color: #b42318; }
-      .row { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+      body {
+        width: 340px;
+        margin: 0;
+        padding: 14px;
+        font:
+          13px 'Apple SD Gothic Neo',
+          'Malgun Gothic',
+          sans-serif;
+        color: #1d2433;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 2px;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 14px 0 6px;
+      }
+      .sub {
+        color: #667085;
+        margin: 0;
+      }
+      input[type='text'] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 7px;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+      }
+      button {
+        border: 1px solid #d0d5dd;
+        background: #fff;
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .primary {
+        background: #2f6bff;
+        color: #fff;
+        border-color: #2f6bff;
+      }
+      ul {
+        padding-left: 16px;
+        margin: 6px 0;
+      }
+      .msg {
+        margin: 6px 0 0;
+      }
+      .ok {
+        color: #067647;
+      }
+      .bad {
+        color: #b42318;
+      }
+      .row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
     </style>
   </head>
   <body>
     <h1>똑딱 에듀파인 연결 <span id="version" class="sub"></span></h1>
-    <p class="sub">K-에듀파인 화면 오른쪽 아래 [똑딱] 버튼에서 품의를 넣어요. 저장·결재는 선생님이 직접 해요.</p>
+    <p class="sub">
+      K-에듀파인 화면 오른쪽 아래 [똑딱] 버튼에서 품의를 넣어요. 저장·결재는 선생님이 직접 해요.
+    </p>
 
     <h2>1. K-에듀파인 주소</h2>
     <input id="origin" type="text" placeholder="예: klef.○○○.go.kr" aria-label="K-에듀파인 주소" />
@@ -46,4 +98,3 @@
     <script src="popup.js"></script>
   </body>
 </html>
-

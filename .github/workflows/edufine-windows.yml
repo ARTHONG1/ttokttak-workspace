@@ -150,4 +150,3 @@ jobs:
             apps/shell/release/latest.yml
           if-no-files-found: error
           retention-days: 14
-

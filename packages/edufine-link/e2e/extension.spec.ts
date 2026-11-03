@@ -1,4 +1,11 @@
-import { chromium, expect, test, type BrowserContext, type Page, type Worker } from '@playwright/test'
+import {
+  chromium,
+  expect,
+  test,
+  type BrowserContext,
+  type Page,
+  type Worker,
+} from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import { mkdtempSync } from 'node:fs'
@@ -17,9 +24,30 @@ const pkgText = JSON.stringify(
     title: '과학실 실험 도구 구입',
     summary: '1. 관련:\n2. 실험 도구를 구입하고자 합니다.',
     items: [
-      { description: '비커 500ml', specification: '유리', unit: '개', quantity: 4, unitPrice: 3000, amount: 12000 },
-      { description: '실험 키트', specification: '전기', unit: '세트', quantity: 2, unitPrice: 15000, amount: 30000 },
-      { description: '배송비', specification: '', unit: '식', quantity: 1, unitPrice: 3000, amount: 3000 },
+      {
+        description: '비커 500ml',
+        specification: '유리',
+        unit: '개',
+        quantity: 4,
+        unitPrice: 3000,
+        amount: 12000,
+      },
+      {
+        description: '실험 키트',
+        specification: '전기',
+        unit: '세트',
+        quantity: 2,
+        unitPrice: 15000,
+        amount: 30000,
+      },
+      {
+        description: '배송비',
+        specification: '',
+        unit: '식',
+        quantity: 1,
+        unitPrice: 3000,
+        amount: 3000,
+      },
     ],
   }),
 )
@@ -34,7 +62,11 @@ test.beforeAll(async () => {
     const name = (req.url ?? '/').split('?')[0].replace(/^\//, '') || 'fake-edufine.html'
     try {
       const body = await readFile(join(TEST_DIR, name))
-      res.writeHead(200, { 'content-type': name.endsWith('.html') ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8' })
+      res.writeHead(200, {
+        'content-type': name.endsWith('.html')
+          ? 'text/html; charset=utf-8'
+          : 'text/javascript; charset=utf-8',
+      })
       res.end(body)
     } catch {
       res.writeHead(404).end()
@@ -61,14 +93,18 @@ async function setFill(enabled: boolean): Promise<void> {
   await sw.evaluate(async (v) => {
     const c = (globalThis as any).chrome
     const { settings } = await c.storage.local.get('settings')
-    await c.storage.local.set({ settings: { fillEnabled: false, origins: [], ...(settings ?? {}), fillEnabled: v } })
+    await c.storage.local.set({
+      settings: { fillEnabled: false, origins: [], ...(settings ?? {}), fillEnabled: v },
+    })
   }, enabled)
 }
 
 async function openEdufine(query = ''): Promise<Page> {
   const page = await context.newPage()
   await page.goto(base + '/fake-edufine.html' + query)
-  await expect(page.getByRole('button', { name: '똑딱', exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: '똑딱', exact: true })).toBeVisible({
+    timeout: 15_000,
+  })
   return page
 }
 
@@ -78,7 +114,10 @@ async function pastePumui(page: Page, text: string): Promise<void> {
   await page.getByLabel('품의 붙여 넣기').fill(text)
 }
 
-const writesOf = (page: Page) => page.evaluate(() => (window as any).__fake.writes.filter((w: { op: string }) => w.op !== 'call').length)
+const writesOf = (page: Page) =>
+  page.evaluate(
+    () => (window as any).__fake.writes.filter((w: { op: string }) => w.op !== 'call').length,
+  )
 
 test('keeps the fixed extension id', async () => {
   expect(new URL(sw.url()).host).toBe(EXTENSION_ID)
@@ -110,7 +149,11 @@ test('fills title, summary and items once real fill is on, and never saves', asy
       forbidden: f.forbiddenCalls(),
     }
   })
-  expect(state.rows.map((r: { prdlstCn: string }) => r.prdlstCn)).toEqual(['비커 500ml', '실험 키트', '배송비'])
+  expect(state.rows.map((r: { prdlstCn: string }) => r.prdlstCn)).toEqual([
+    '비커 500ml',
+    '실험 키트',
+    '배송비',
+  ])
   expect(state.rows[1].thngUnitSeCd).toBe('017')
   expect(state.title).toBe('과학실 실험 도구 구입')
   expect(state.forbidden).toBe(0)
@@ -139,7 +182,11 @@ test('reads a 품의 file', async () => {
   const page = await openEdufine()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
   await page.getByRole('button', { name: '똑딱 품의 넣기' }).click()
-  await page.locator('input[type=file]').setInputFiles({ name: '품의.ttokpumui', mimeType: 'application/json', buffer: Buffer.from(pkgText) })
+  await page.locator('input[type=file]').setInputFiles({
+    name: '품의.ttokpumui',
+    mimeType: 'application/json',
+    buffer: Buffer.from(pkgText),
+  })
   await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
   await page.close()
 })
@@ -166,7 +213,10 @@ test('runs the self-check and saves a diagnostic file without values', async () 
   await expect(page.getByRole('heading', { name: '연결 점검' })).toBeVisible()
   await expect(page.getByText('품의등록 화면 인식')).toBeVisible()
   expect(await page.getByText('✓', { exact: true }).count()).toBeGreaterThanOrEqual(5)
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '진단 파일 저장' }).click()])
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: '진단 파일 저장' }).click(),
+  ])
   const diag = JSON.parse(await readFile(await download.path(), 'utf8'))
   expect(diag.schema).toBe('ttokttak.edufine-diag')
   expect(diag.screen).toEqual({ kind: 'pumui' })
@@ -187,12 +237,19 @@ test('finds K-에듀파인 inside a same-origin frame of a portal page and fills
   await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
   const state = await inner.evaluate(() => {
     const f = (window as any).__fake
-    return { items: f.dataset('dsPrdlstDtl').rows.length, title: f.form.divMain.form.edtCnsulSj.value, forbidden: f.forbiddenCalls() }
+    return {
+      items: f.dataset('dsPrdlstDtl').rows.length,
+      title: f.form.divMain.form.edtCnsulSj.value,
+      forbidden: f.forbiddenCalls(),
+    }
   })
   expect(state).toEqual({ items: 3, title: '과학실 실험 도구 구입', forbidden: 0 })
 
   await page.getByRole('button', { name: '처음으로' }).click()
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '진단 파일 저장' }).click()])
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: '진단 파일 저장' }).click(),
+  ])
   const diag = JSON.parse(await readFile(await download.path(), 'utf8'))
   expect(diag.frames).toEqual([
     { depth: 0, path: '/fake-edufine.html', nexacro: false },
@@ -201,4 +258,3 @@ test('finds K-에듀파인 inside a same-origin frame of a portal page and fills
   expect(diag.screen).toEqual({ kind: 'pumui' })
   await page.close()
 })
-

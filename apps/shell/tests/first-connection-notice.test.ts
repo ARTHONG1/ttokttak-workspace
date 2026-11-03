@@ -123,9 +123,13 @@ describe('first-connection notice', () => {
     expect(dialog()).not.toBeNull()
 
     await act(async () => {
-      dialog()!.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'Escape', bubbles: true, cancelable: true,
-      }))
+      dialog()!.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
 

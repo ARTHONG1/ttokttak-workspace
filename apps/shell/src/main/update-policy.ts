@@ -5,7 +5,11 @@
  * macOS (Squirrel needs a signed, notarized app) and Linux AppImage stay off until a
  * signed release exists; HANGUL_WORKBENCH_UPDATE_FEED=1 turns them on for testing.
  */
-export function updatesAllowed(platform: NodeJS.Platform, env: NodeJS.ProcessEnv, isPackaged: boolean): boolean {
+export function updatesAllowed(
+  platform: NodeJS.Platform,
+  env: NodeJS.ProcessEnv,
+  isPackaged: boolean,
+): boolean {
   if (!isPackaged) return false
   if (platform === 'win32') return true
   const asked = env.HANGUL_WORKBENCH_UPDATE_FEED === '1'
@@ -13,4 +17,3 @@ export function updatesAllowed(platform: NodeJS.Platform, env: NodeJS.ProcessEnv
   if (platform === 'linux') return asked && Boolean(env.APPIMAGE)
   return false
 }
-

@@ -10,11 +10,7 @@
     "budget": "dsBgtDtlList",
     "rowAddButton": "divAuth2.form.btnRowAdit",
     "rowAddHandler": "divAuth2_btnRowAdit_onclick",
-    "unitTables": [
-      "divThng.form.dsEAB0005200",
-      "divServc.form.dsEAB0005200",
-      "dsEAB0005200"
-    ],
+    "unitTables": ["divThng.form.dsEAB0005200", "divServc.form.dsEAB0005200", "dsEAB0005200"],
     "unitCode": "cmmnDetailCd",
     "unitName": "cmmnDetailCdNm",
     "columns": {

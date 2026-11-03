@@ -17,7 +17,9 @@ if (!key) throw new Error('EXTENSION_PUBLIC_KEY not found in src/ids.ts')
 await rm(DIST, { recursive: true, force: true })
 await mkdir(DIST, { recursive: true })
 await build({
-  entryPoints: ['page-main', 'page-bridge', 'background', 'popup'].map((n) => join(HERE, 'src/ext', n + '.ts')),
+  entryPoints: ['page-main', 'page-bridge', 'background', 'popup'].map((n) =>
+    join(HERE, 'src/ext', n + '.ts'),
+  ),
   outdir: DIST,
   bundle: true,
   format: 'iife',
@@ -42,7 +44,10 @@ if (dev) {
   const TEST = join(HERE, 'dist-test')
   await rm(TEST, { recursive: true, force: true })
   await build({
-    entryPoints: [join(HERE, 'tests/fixtures/fake-page.ts'), join(HERE, 'tests/fixtures/web-sender.ts')],
+    entryPoints: [
+      join(HERE, 'tests/fixtures/fake-page.ts'),
+      join(HERE, 'tests/fixtures/web-sender.ts'),
+    ],
     outdir: TEST,
     bundle: true,
     format: 'iife',
@@ -63,4 +68,3 @@ if (dev) {
   })
 }
 console.log('built', dev ? 'dev' : 'release', 'extension', pkg.version, '→', DIST)
-

@@ -2,4 +2,3 @@
 import { runEdufineHost } from '../../../cli/src/edufine-host'
 
 void runEdufineHost(process.stdin, process.stdout).then(() => process.exit(0))
-

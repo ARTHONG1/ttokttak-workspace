@@ -70,7 +70,8 @@ export function makeFakeEdufine(spec: FakeSpec) {
   const writes: Write[] = []
   const form: Record<string, unknown> = {}
   const datasets = new Map<string, FakeDataset>()
-  for (const o of spec.objects) if (o.kind === 'div') place(form, o.path, { visible: o.visible ?? true })
+  for (const o of spec.objects)
+    if (o.kind === 'div') place(form, o.path, { visible: o.visible ?? true })
   for (const o of spec.objects) {
     if (o.kind === 'dataset') {
       const ds = new FakeDataset(o.path, o.columns, o.rows ?? [], writes)
@@ -114,7 +115,9 @@ export function makeFakeEdufine(spec: FakeSpec) {
   const activeFrame: Record<string, unknown> = {}
   place(activeFrame, map.workFormPath, form)
   const app: Record<string, unknown> = {}
-  place(app, map.workFramePath, { getActiveFrame: () => (spec.frame === 'active' ? activeFrame : null) })
+  place(app, map.workFramePath, {
+    getActiveFrame: () => (spec.frame === 'active' ? activeFrame : null),
+  })
   const nx = { getApplication: () => app }
   return {
     nx,
@@ -136,7 +139,12 @@ export const UNIT_ROWS: Row[] = [
 /** the 품의등록 screen as the 화면 이름표 describes it, plus save/approval buttons */
 export function pumuiScreen(
   map: ScreenMap,
-  opts: { budgetSelected?: boolean; existingRows?: Row[]; failAddAt?: number; unitDiv?: 'divThng' | 'divServc' } = {},
+  opts: {
+    budgetSelected?: boolean
+    existingRows?: Row[]
+    failAddAt?: number
+    unitDiv?: 'divThng' | 'divServc'
+  } = {},
 ): FakeSpec {
   const p = map.pumui
   const c = p.columns
@@ -150,19 +158,31 @@ export function pumuiScreen(
     objects: [
       { path: p.title, kind: 'edit' },
       { path: p.summary, kind: 'edit' },
-      { path: 'dsPrdlstDtl', kind: 'dataset', columns: Object.values(c), rows: opts.existingRows ?? [] },
+      {
+        path: 'dsPrdlstDtl',
+        kind: 'dataset',
+        columns: Object.values(c),
+        rows: opts.existingRows ?? [],
+      },
       { path: p.grid, kind: 'grid', bind: 'dsPrdlstDtl' },
       {
         path: p.budget,
         kind: 'dataset',
         columns: ['detlBsnsNm', 'detlIem', 'cptDtl', 'dmndAmt'],
-        rows: [{ detlBsnsNm: '과학교육', detlIem: '일반수용비', cptDtl: '실험도구', dmndAmt: 300000 }],
+        rows: [
+          { detlBsnsNm: '과학교육', detlIem: '일반수용비', cptDtl: '실험도구', dmndAmt: 300000 },
+        ],
       },
       { path: p.rowAddButton, kind: 'button' },
       { path: p.rowAddHandler, kind: 'function', behavior: 'row-add' },
       { path: 'divThng', kind: 'div', visible: unitDiv === 'divThng' },
       { path: 'divServc', kind: 'div', visible: unitDiv === 'divServc' },
-      { path: unitDiv + '.form.dsEAB0005200', kind: 'dataset', columns: [p.unitCode, p.unitName], rows: UNIT_ROWS },
+      {
+        path: unitDiv + '.form.dsEAB0005200',
+        kind: 'dataset',
+        columns: [p.unitCode, p.unitName],
+        rows: UNIT_ROWS,
+      },
       { path: 'divAuth0_btnAuthC03_onclick', kind: 'function', behavior: 'forbidden' },
       { path: 'fnSave', kind: 'function', behavior: 'forbidden' },
       { path: 'gfnTransaction', kind: 'function', behavior: 'forbidden' },
@@ -182,4 +202,3 @@ export function causeScreen(map: ScreenMap): FakeSpec {
     ],
   }
 }
-

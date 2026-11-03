@@ -7,14 +7,26 @@ const pkg = (title: string) =>
     buildPumuiPackage({
       title,
       summary: '',
-      items: [{ description: '볼펜', specification: '', unit: '개', quantity: 2, unitPrice: 500, amount: 1000 }],
+      items: [
+        {
+          description: '볼펜',
+          specification: '',
+          unit: '개',
+          quantity: 2,
+          unitPrice: 500,
+          amount: 1000,
+        },
+      ],
     }),
   )
 
 describe('PumuiOutbox', () => {
   it('hands out the newest 품의 once', () => {
     const box = new PumuiOutbox()
-    expect(box.enqueue(pkg('첫 번째 품의 제목'), 0)).toEqual({ ok: true, title: '첫 번째 품의 제목' })
+    expect(box.enqueue(pkg('첫 번째 품의 제목'), 0)).toEqual({
+      ok: true,
+      title: '첫 번째 품의 제목',
+    })
     box.enqueue(pkg('두 번째 품의 제목'), 1)
     expect(JSON.parse(box.take(2)!).title).toBe('두 번째 품의 제목')
     expect(JSON.parse(box.take(3)!).title).toBe('첫 번째 품의 제목')
@@ -23,7 +35,10 @@ describe('PumuiOutbox', () => {
 
   it('refuses anything that is not a valid 품의', () => {
     const box = new PumuiOutbox()
-    expect(box.enqueue('볼펜 주세요', 0)).toEqual({ ok: false, reason: '똑딱작업실에서 만든 품의가 아니에요.' })
+    expect(box.enqueue('볼펜 주세요', 0)).toEqual({
+      ok: false,
+      reason: '똑딱작업실에서 만든 품의가 아니에요.',
+    })
     expect(box.size(0)).toBe(0)
   })
 
@@ -34,4 +49,3 @@ describe('PumuiOutbox', () => {
     expect(box.take(OUTBOX_TTL_MS + 100)).toBeNull()
   })
 })
-

@@ -38,7 +38,7 @@ describe('matchUnit', () => {
   })
 
   it('every alias target is a plain unit name', () => {
-    for (const targets of Object.values(UNIT_ALIASES)) for (const t of targets) expect(t.trim()).toBe(t)
+    for (const targets of Object.values(UNIT_ALIASES))
+      for (const t of targets) expect(t.trim()).toBe(t)
   })
 })
-

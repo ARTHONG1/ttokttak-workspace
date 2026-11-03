@@ -35,11 +35,17 @@ describe('edufine-host native messaging', () => {
     const asked: unknown[] = []
     const deps = {
       endpoint: () => endpoint,
-      request: async (_e: unknown, req: unknown) => (asked.push(req), { text: '{"kind":"ttokttak.pumui"}' }),
+      request: async (_e: unknown, req: unknown) => (
+        asked.push(req),
+        { text: '{"kind":"ttokttak.pumui"}' }
+      ),
       version: '0.15.0',
     }
     expect(await handleHostMessage({ type: 'ping' }, deps)).toEqual({ ok: true, version: '0.15.0' })
-    expect(await handleHostMessage({ type: 'take' }, deps)).toEqual({ ok: true, text: '{"kind":"ttokttak.pumui"}' })
+    expect(await handleHostMessage({ type: 'take' }, deps)).toEqual({
+      ok: true,
+      text: '{"kind":"ttokttak.pumui"}',
+    })
     expect(asked).toEqual([{ cmd: 'pumui-take' }])
   })
 
@@ -50,9 +56,20 @@ describe('edufine-host native messaging', () => {
       state: 'off',
       reason: '똑딱작업실이 켜져 있지 않아요.',
     })
-    const broken = { endpoint: () => endpoint, request: async () => Promise.reject(new Error('pipe')), version: '' }
-    expect(await handleHostMessage({ type: 'take' }, broken)).toMatchObject({ ok: false, state: 'off' })
-    expect(await handleHostMessage({ type: 'rm' }, broken)).toEqual({ ok: false, state: 'off', reason: '알 수 없는 요청이에요.' })
+    const broken = {
+      endpoint: () => endpoint,
+      request: async () => Promise.reject(new Error('pipe')),
+      version: '',
+    }
+    expect(await handleHostMessage({ type: 'take' }, broken)).toMatchObject({
+      ok: false,
+      state: 'off',
+    })
+    expect(await handleHostMessage({ type: 'rm' }, broken)).toEqual({
+      ok: false,
+      state: 'off',
+      reason: '알 수 없는 요청이에요.',
+    })
   })
 
   it('runs one exchange over stdin and stdout', async () => {
@@ -61,7 +78,11 @@ describe('edufine-host native messaging', () => {
     const chunks: Buffer[] = []
     stdout.on('data', (c: Buffer) => chunks.push(c))
     stdin.end(encodeNativeMessage({ type: 'ping' }))
-    await runEdufineHost(stdin, stdout, { endpoint: () => endpoint, request: async () => ({}), version: '1' })
+    await runEdufineHost(stdin, stdout, {
+      endpoint: () => endpoint,
+      request: async () => ({}),
+      version: '1',
+    })
     const out = Buffer.concat(chunks)
     expect(JSON.parse(out.subarray(4).toString('utf8'))).toEqual({ ok: true, version: '1' })
   })
@@ -75,9 +96,10 @@ describe('Windows launchers', () => {
     const launchers = readdirSync(bin).filter((f) => f.endsWith('.cmd'))
     expect(launchers).toContain('edufine-host.cmd')
     for (const name of launchers) {
-      const nonAscii = [...readFileSync(join(bin, name))].filter((b) => b > 0x7e || (b < 0x20 && b !== 0x0a && b !== 0x0d && b !== 0x09))
+      const nonAscii = [...readFileSync(join(bin, name))].filter(
+        (b) => b > 0x7e || (b < 0x20 && b !== 0x0a && b !== 0x0d && b !== 0x09),
+      )
       expect({ name, nonAscii: nonAscii.length }).toEqual({ name, nonAscii: 0 })
     }
   })
 })
-

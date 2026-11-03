@@ -14,7 +14,14 @@ export const PAGE_REQUESTS = [
 export type PageRequest = (typeof PAGE_REQUESTS)[number]
 
 /** requests only the extension popup may make */
-export const POPUP_REQUESTS = ['settings:set', 'origin:add', 'origin:remove', 'map:set', 'map:refresh', 'map:reset'] as const
+export const POPUP_REQUESTS = [
+  'settings:set',
+  'origin:add',
+  'origin:remove',
+  'map:set',
+  'map:refresh',
+  'map:reset',
+] as const
 
 export const PAGE_TAG = '__ttokEdufine'
 
@@ -37,4 +44,3 @@ export interface Pending {
 export type NativeReply =
   | { ok: true; text?: string | null; version?: string }
   | { ok: false; state: 'off' | 'missing'; reason: string }
-

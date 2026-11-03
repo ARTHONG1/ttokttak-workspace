@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { EXTENSION_ID, NATIVE_HOST_NAME } from '@genoffice/edufine-link/ids'
-import { nativeHostManifest, registerNativeHost, unregisterNativeHost, type RegisterEnv } from '../src/edufine-register'
+import {
+  nativeHostManifest,
+  registerNativeHost,
+  unregisterNativeHost,
+  type RegisterEnv,
+} from '../src/edufine-register'
 
 function fakeEnv(platform: NodeJS.Platform, cliDir: string, home: string) {
   const runs: string[][] = []
@@ -37,17 +42,44 @@ describe('native messaging registration', () => {
     const manifestPath = cliDir + '\\kr.ttokttak.edufine.json'
     expect(JSON.parse(f.writes.get(manifestPath)!).path).toBe(cliDir + '\\edufine-host.cmd')
     expect(f.runs).toEqual([
-      ['reg', 'add', 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\kr.ttokttak.edufine', '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f'],
-      ['reg', 'add', 'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\kr.ttokttak.edufine', '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f'],
+      [
+        'reg',
+        'add',
+        'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\kr.ttokttak.edufine',
+        '/ve',
+        '/t',
+        'REG_SZ',
+        '/d',
+        manifestPath,
+        '/f',
+      ],
+      [
+        'reg',
+        'add',
+        'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\kr.ttokttak.edufine',
+        '/ve',
+        '/t',
+        'REG_SZ',
+        '/d',
+        manifestPath,
+        '/f',
+      ],
     ])
     expect(res.manifests).toEqual([manifestPath])
   })
 
   it('puts the manifest in the Chrome, Edge and Chromium folders on macOS', () => {
-    const f = fakeEnv('darwin', '/Applications/HangulAIWorkbench.app/Contents/Resources/cli', '/Users/t')
+    const f = fakeEnv(
+      'darwin',
+      '/Applications/HangulAIWorkbench.app/Contents/Resources/cli',
+      '/Users/t',
+    )
     registerNativeHost(f.env)
-    const chrome = '/Users/t/Library/Application Support/Google/Chrome/NativeMessagingHosts/kr.ttokttak.edufine.json'
-    expect(JSON.parse(f.writes.get(chrome)!).path).toBe('/Applications/HangulAIWorkbench.app/Contents/Resources/cli/edufine-host')
+    const chrome =
+      '/Users/t/Library/Application Support/Google/Chrome/NativeMessagingHosts/kr.ttokttak.edufine.json'
+    expect(JSON.parse(f.writes.get(chrome)!).path).toBe(
+      '/Applications/HangulAIWorkbench.app/Contents/Resources/cli/edufine-host',
+    )
     expect([...f.writes.keys()]).toHaveLength(3)
     expect(f.runs).toEqual([])
   })
@@ -65,4 +97,3 @@ describe('native messaging registration', () => {
     expect(m.removed).toHaveLength(3)
   })
 })
-

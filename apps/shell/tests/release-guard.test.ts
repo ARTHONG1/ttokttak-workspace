@@ -15,7 +15,9 @@ const { nonAsciiProductNames, staleOutputs } = require('../../../scripts/release
 // so every AI request failed with "Cannot convert argument to a ByteString".
 describe('release guard: product name in a built bundle', () => {
   it('flags a Korean PRODUCT_NAME', () => {
-    expect(nonAsciiProductNames('const PRODUCT_NAME = "똑딱작업실";\nlet x = 1')).toEqual(['똑딱작업실'])
+    expect(nonAsciiProductNames('const PRODUCT_NAME = "똑딱작업실";\nlet x = 1')).toEqual([
+      '똑딱작업실',
+    ])
   })
 
   it('accepts the Latin name, also when the bundler renamed the binding', () => {

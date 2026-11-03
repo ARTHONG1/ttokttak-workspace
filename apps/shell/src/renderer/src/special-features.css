@@ -27,6 +27,7 @@
   --sf-class-glow: rgb(16 185 129 / 10%);
   --sf-on-color: #ffffff;
   --sf-danger: #d92d3a;
+  --sf-warn-soft: var(--danger-bg, #fdf3f3);
   --sf-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color: var(--sf-ink);
   word-break: keep-all;
@@ -51,6 +52,7 @@
   --sf-accent-2: #1d4ed8;
   --sf-accent-soft: #eaf0ff;
   --sf-on-accent: #fff;
+  --sf-warn-soft: #fff6ed;
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
   padding: 28px 0 48px;
@@ -964,8 +966,8 @@ button.sf-card:hover .sf-card-go svg {
   margin: 12px 0 4px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #eef4ff;
-  color: #1d2a4d;
+  background: var(--sf-accent-soft);
+  color: var(--sf-ink);
   font-size: 13px;
   line-height: 1.55;
 }
@@ -973,7 +975,5 @@ button.sf-card:hover .sf-card-go svg {
   margin: 0 0 8px;
 }
 .sf-send-warn {
-  background: #fff6ed;
-  color: #7a2e0e;
+  background: var(--sf-warn-soft);
 }
-

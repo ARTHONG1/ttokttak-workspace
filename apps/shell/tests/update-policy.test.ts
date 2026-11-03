@@ -14,8 +14,9 @@ describe('updatesAllowed', () => {
     expect(updatesAllowed('darwin', {}, true)).toBe(false)
     expect(updatesAllowed('darwin', { HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true)).toBe(true)
     expect(updatesAllowed('linux', { APPIMAGE: '/a.AppImage' }, true)).toBe(false)
-    expect(updatesAllowed('linux', { APPIMAGE: '/a.AppImage', HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true)).toBe(true)
+    expect(
+      updatesAllowed('linux', { APPIMAGE: '/a.AppImage', HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true),
+    ).toBe(true)
     expect(updatesAllowed('linux', { HANGUL_WORKBENCH_UPDATE_FEED: '1' }, true)).toBe(false)
   })
 })
-

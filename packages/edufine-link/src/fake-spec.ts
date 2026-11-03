@@ -24,4 +24,3 @@ export interface FakeSpec {
   /** 1-based call number at which the row-add function silently adds nothing */
   failAddAt?: number
 }
-

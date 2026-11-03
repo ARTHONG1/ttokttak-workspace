@@ -32,8 +32,7 @@ export interface PumuiPackage {
 }
 
 export type ParsedPumui =
-  | { ok: true; pkg: PumuiPackage; ageHours: number }
-  | { ok: false; reason: string }
+  { ok: true; pkg: PumuiPackage; ageHours: number } | { ok: false; reason: string }
 
 const sum = (items: PumuiItem[]): number => items.reduce((s, it) => s + it.amount, 0)
 
@@ -122,4 +121,3 @@ export function parsePumuiPackage(text: string, now: Date = new Date()): ParsedP
   }
   return { ok: true, pkg, ageHours: Math.max(0, Math.floor((now.getTime() - made) / 3_600_000)) }
 }
-

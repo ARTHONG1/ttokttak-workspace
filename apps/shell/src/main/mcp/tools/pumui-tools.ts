@@ -8,9 +8,12 @@ import { z } from 'zod'
 import type { McpToolDefinition } from '../mcp-server'
 import type { PumuiOutbox } from '../../pumui-outbox'
 
-const TAKE = 'On the K-에듀파인 품의등록 screen the teacher presses [똑딱] → [똑딱 품의 넣기] → [똑딱작업실에서 받기], checks the preview and fills it; saving and approval stay with the teacher.'
+const TAKE =
+  'On the K-에듀파인 품의등록 screen the teacher presses [똑딱] → [똑딱 품의 넣기] → [똑딱작업실에서 받기], checks the preview and fills it; saving and approval stay with the teacher.'
 
-export function createPumuiTools(outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>): McpToolDefinition[] {
+export function createPumuiTools(
+  outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>,
+): McpToolDefinition[] {
   return [
     {
       name: 'pumui_send',
@@ -35,7 +38,15 @@ export function createPumuiTools(outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>):
           .max(200),
       },
       handler: (args) => {
-        const items = (args.items as { description: string; specification?: string; unit: string; quantity: number; unitPrice: number }[]).map((i) => ({
+        const items = (
+          args.items as {
+            description: string
+            specification?: string
+            unit: string
+            quantity: number
+            unitPrice: number
+          }[]
+        ).map((i) => ({
           description: i.description,
           specification: i.specification ?? '',
           unit: i.unit,
@@ -43,17 +54,27 @@ export function createPumuiTools(outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>):
           unitPrice: i.unitPrice,
           amount: Math.round(i.quantity * i.unitPrice),
         }))
-        const pkg = buildPumuiPackage({ title: String(args.title ?? ''), summary: String(args.summary ?? ''), items })
+        const pkg = buildPumuiPackage({
+          title: String(args.title ?? ''),
+          summary: String(args.summary ?? ''),
+          items,
+        })
         const held = outbox.enqueue(JSON.stringify(pkg))
         if (!held.ok) throw new Error(held.reason)
-        return { held: true, title: pkg.title, items: pkg.items.length, total: pkg.total, next: TAKE }
+        return {
+          held: true,
+          title: pkg.title,
+          items: pkg.items.length,
+          total: pkg.total,
+          next: TAKE,
+        }
       },
     },
     {
       name: 'pumui_status',
-      description: 'How many 품의 GenOffice holds for the K-에듀파인 extension right now (each is held for 30 minutes, at most five).',
+      description:
+        'How many 품의 GenOffice holds for the K-에듀파인 extension right now (each is held for 30 minutes, at most five).',
       handler: () => ({ waiting: outbox.size() }),
     },
   ]
 }
-

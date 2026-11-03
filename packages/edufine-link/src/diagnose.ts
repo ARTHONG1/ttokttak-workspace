@@ -9,7 +9,13 @@
  */
 import type { FakeObject, FakeSpec } from './fake-spec'
 import { isDataset, type FrameInfo } from './nexacro'
-import { detectScreen, findUnitTable, findWorkForm, type NexacroLike, type ScreenKind } from './screen'
+import {
+  detectScreen,
+  findUnitTable,
+  findWorkForm,
+  type NexacroLike,
+  type ScreenKind,
+} from './screen'
 import type { ScreenMap } from './screen-map'
 import type { UnitTable } from './units'
 
@@ -49,17 +55,32 @@ export function runChecks(env: CheckEnv): CheckResult[] {
   const web: Record<WebState, [boolean | null, string]> = {
     ok: [true, ''],
     unknown: [null, '웹 앱 연결은 웹 앱에서 품의를 보낼 때 확인해요.'],
-    none: [false, '웹 앱 품의서 생성에서 [K-에듀파인으로 보내기]를 한 번 눌러 주세요. 프로그램만 쓰신다면 넘어가도 돼요.'],
+    none: [
+      false,
+      '웹 앱 품의서 생성에서 [K-에듀파인으로 보내기]를 한 번 눌러 주세요. 프로그램만 쓰신다면 넘어가도 돼요.',
+    ],
   }
   return [
-    { id: 1, label: 'K-에듀파인 주소 권한', ok: env.hostPermission, hint: env.hostPermission ? '' : '팝업에서 K-에듀파인 주소를 넣고 [허용]을 눌러 주세요.' },
+    {
+      id: 1,
+      label: 'K-에듀파인 주소 권한',
+      ok: env.hostPermission,
+      hint: env.hostPermission ? '' : '팝업에서 K-에듀파인 주소를 넣고 [허용]을 눌러 주세요.',
+    },
     {
       id: 2,
       label: 'K-에듀파인 화면 안에서 동작',
       ok: env.pageScript,
-      hint: env.pageScript ? '' : 'K-에듀파인 화면을 새로 고쳐(F5) 주세요. 그래도 안 되면 ' + SEND_DIAG,
+      hint: env.pageScript
+        ? ''
+        : 'K-에듀파인 화면을 새로 고쳐(F5) 주세요. 그래도 안 되면 ' + SEND_DIAG,
     },
-    { id: 3, label: 'K-에듀파인 화면 틀 찾기', ok: env.pageScript && hasFrame, hint: env.pageScript && hasFrame ? '' : SEND_DIAG },
+    {
+      id: 3,
+      label: 'K-에듀파인 화면 틀 찾기',
+      ok: env.pageScript && hasFrame,
+      hint: env.pageScript && hasFrame ? '' : SEND_DIAG,
+    },
     {
       id: 4,
       label: '품의등록 화면 인식',
@@ -71,15 +92,25 @@ export function runChecks(env: CheckEnv): CheckResult[] {
             ? '업무 화면(품의등록)을 열어 주세요.'
             : 'K-에듀파인 품의등록 화면을 열어 주세요. 열려 있는데도 이 표시가 나오면 ' +
               SEND_DIAG +
-              (screen?.kind === 'other' ? ' (찾지 못한 이름: ' + screen.missing.join(', ') + ')' : ''),
+              (screen?.kind === 'other'
+                ? ' (찾지 못한 이름: ' + screen.missing.join(', ') + ')'
+                : ''),
     },
     {
       id: 5,
       label: '단위 목록 읽기',
       ok: screen?.kind === 'pumui' ? !!units : null,
-      hint: screen?.kind === 'pumui' && !units ? '물품·용역 구분을 먼저 골라 주세요. 그래도 안 되면 ' + SEND_DIAG : '',
+      hint:
+        screen?.kind === 'pumui' && !units
+          ? '물품·용역 구분을 먼저 골라 주세요. 그래도 안 되면 ' + SEND_DIAG
+          : '',
     },
-    { id: 6, label: '똑딱작업실 프로그램 연결', ok: desktop[env.desktop][0], hint: desktop[env.desktop][1] },
+    {
+      id: 6,
+      label: '똑딱작업실 프로그램 연결',
+      ok: desktop[env.desktop][0],
+      hint: desktop[env.desktop][1],
+    },
     { id: 7, label: '똑딱작업실 웹 앱 연결', ok: web[env.web][0], hint: web[env.web][1] },
   ]
 }
@@ -187,7 +218,9 @@ export function buildDiagnostic(input: {
         diag.functions.push(path)
         if (SOURCE_NAMES.test(key) && Object.keys(diag.functionSources).length < MAX_SOURCES) {
           try {
-            diag.functionSources[path] = Function.prototype.toString.call(v).slice(0, MAX_SOURCE_CHARS)
+            diag.functionSources[path] = Function.prototype.toString
+              .call(v)
+              .slice(0, MAX_SOURCE_CHARS)
           } catch {
             /* native or proxied */
           }
@@ -211,7 +244,11 @@ export function buildDiagnostic(input: {
       }
       const children = ownKeys(o).length
       if (typeof o.visible === 'boolean' || children > 1) {
-        diag.objects.push({ path, kind: 'div', ...(typeof o.visible === 'boolean' ? { visible: o.visible } : {}) })
+        diag.objects.push({
+          path,
+          kind: 'div',
+          ...(typeof o.visible === 'boolean' ? { visible: o.visible } : {}),
+        })
       } else {
         diag.objects.push({ path, kind: 'object' })
       }
@@ -248,15 +285,21 @@ export function specFromDiagnostic(diag: DiagnosticFile, map: ScreenMap): FakeSp
   for (const d of diag.datasets) {
     const rows =
       d.path === diag.unitTablePath
-        ? diag.unitTable.map((u) => ({ [map.pumui.unitCode]: u.code, [map.pumui.unitName]: u.name }))
+        ? diag.unitTable.map((u) => ({
+            [map.pumui.unitCode]: u.code,
+            [map.pumui.unitName]: u.name,
+          }))
         : d.path === rowAddTarget
           ? []
           : Array.from({ length: d.rowcount }, () => ({}))
     objects.push({ path: d.path, kind: 'dataset', columns: d.columns, rows })
   }
   for (const f of diag.functions) {
-    objects.push({ path: f, kind: 'function', behavior: f === map.pumui.rowAddHandler ? 'row-add' : 'forbidden' })
+    objects.push({
+      path: f,
+      kind: 'function',
+      behavior: f === map.pumui.rowAddHandler ? 'row-add' : 'forbidden',
+    })
   }
   return { frame: 'active', map, objects, rowAddTarget, budgetSelected: true }
 }
-

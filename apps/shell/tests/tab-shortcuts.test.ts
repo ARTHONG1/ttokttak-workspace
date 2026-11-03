@@ -88,9 +88,10 @@ describe('handling a tab shortcut', () => {
 
   it('closes the active document tab but leaves Home to its window-close menu', () => {
     const document = host()
-    const closeKey = process.platform === 'darwin'
-      ? key({ key: 'w', meta: true })
-      : key({ key: 'w', control: true })
+    const closeKey =
+      process.platform === 'darwin'
+        ? key({ key: 'w', meta: true })
+        : key({ key: 'w', control: true })
     expect(handleTabShortcut(closeKey, 1, document)).toBe(true)
     expect(document.closeActive).toHaveBeenCalledTimes(1)
 

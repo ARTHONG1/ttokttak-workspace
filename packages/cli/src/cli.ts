@@ -264,7 +264,10 @@ function globalHelp(registry: CommandRegistry): string {
 
 const isMain =
   typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module
-if (isMain && (process.argv[2] === 'edufine-register' || process.argv[2] === 'edufine-unregister')) {
+if (
+  isMain &&
+  (process.argv[2] === 'edufine-register' || process.argv[2] === 'edufine-unregister')
+) {
   // the Windows installer registers (and the uninstaller removes) the native messaging
   // host for the 똑딱 에듀파인 연결 extension; internal entries, outside the registry
   const cliDir = dirname(process.argv[1] ?? '')

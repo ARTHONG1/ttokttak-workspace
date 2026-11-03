@@ -2,14 +2,24 @@ import { describe, expect, it } from 'vitest'
 import { findNexacro, frameSurvey, type FrameWin } from '../src/nexacro'
 
 // a window as the page script sees it: its own globals, child frames by index, length
-function win(opts: { nexacro?: unknown; path?: string; children?: FrameWin[]; crossOrigin?: boolean } = {}): FrameWin {
+function win(
+  opts: { nexacro?: unknown; path?: string; children?: FrameWin[]; crossOrigin?: boolean } = {},
+): FrameWin {
   const children = opts.children ?? []
   const w: Record<string | number, unknown> = { length: children.length }
   children.forEach((c, i) => (w[i] = c))
   if (opts.crossOrigin) {
     // another origin: reading its globals or location throws, like a browser does
-    Object.defineProperty(w, 'nexacro', { get: () => { throw new Error('SecurityError') } })
-    Object.defineProperty(w, 'location', { get: () => { throw new Error('SecurityError') } })
+    Object.defineProperty(w, 'nexacro', {
+      get: () => {
+        throw new Error('SecurityError')
+      },
+    })
+    Object.defineProperty(w, 'location', {
+      get: () => {
+        throw new Error('SecurityError')
+      },
+    })
   } else {
     w.nexacro = opts.nexacro
     w.location = { pathname: opts.path ?? '/', search: '?user=secret' }
@@ -26,12 +36,18 @@ describe('finding K-에듀파인 (nexacro) on the page', () => {
 
   it('looks into same-origin frames when a portal page wraps the app', () => {
     const inner = app('inner')
-    const page = win({ path: '/portal', children: [win({ path: '/menu' }), win({ children: [win({ nexacro: inner })] })] })
+    const page = win({
+      path: '/portal',
+      children: [win({ path: '/menu' }), win({ children: [win({ nexacro: inner })] })],
+    })
     expect(findNexacro(page)).toBe(inner)
   })
 
   it('skips frames of other origins and objects without getApplication', () => {
-    const page = win({ nexacro: {}, children: [win({ crossOrigin: true }), win({ nexacro: { getApplication: 1 } })] })
+    const page = win({
+      nexacro: {},
+      children: [win({ crossOrigin: true }), win({ nexacro: { getApplication: 1 } })],
+    })
     expect(findNexacro(page)).toBeUndefined()
   })
 
@@ -44,7 +60,10 @@ describe('finding K-에듀파인 (nexacro) on the page', () => {
 
 describe('frame survey for the diagnostic file', () => {
   it('lists each frame with its path only, marks other origins and where the app is', () => {
-    const page = win({ path: '/klef/index.do', children: [win({ crossOrigin: true }), win({ path: '/nxui/app.html', nexacro: app('x') })] })
+    const page = win({
+      path: '/klef/index.do',
+      children: [win({ crossOrigin: true }), win({ path: '/nxui/app.html', nexacro: app('x') })],
+    })
     const survey = frameSurvey(page)
     expect(survey).toEqual([
       { depth: 0, path: '/klef/index.do', nexacro: false },

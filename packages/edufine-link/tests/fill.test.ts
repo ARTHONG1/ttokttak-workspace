@@ -5,7 +5,12 @@ import { findWorkForm } from '../src/screen'
 import { DEFAULT_SCREEN_MAP as map } from '../src/screen-map'
 import { causeScreen, makeFakeEdufine, pumuiScreen } from './fixtures/fake-nexacro'
 
-const item = (description: string, unit: string, quantity: number, unitPrice: number): PumuiItem => ({
+const item = (
+  description: string,
+  unit: string,
+  quantity: number,
+  unitPrice: number,
+): PumuiItem => ({
   description,
   specification: '규격 ' + description,
   unit,
@@ -16,7 +21,11 @@ const item = (description: string, unit: string, quantity: number, unitPrice: nu
 const pkg = buildPumuiPackage({
   title: '과학실 실험 도구 구입',
   summary: '1. 관련:\n2. 실험 도구를 구입하고자 합니다.',
-  items: [item('비커 500ml', '개', 4, 3000), item('실험 키트', '세트', 2, 15000), item('배송비', '식', 1, 3000)],
+  items: [
+    item('비커 500ml', '개', 4, 3000),
+    item('실험 키트', '세트', 2, 15000),
+    item('배송비', '식', 1, 3000),
+  ],
   now: new Date('2026-11-03T01:00:00Z'),
 })
 
@@ -38,7 +47,11 @@ describe('planFill (preview, writes nothing)', () => {
 
   it('blocks on a unit the table does not know', () => {
     const { form } = setup()
-    const odd = buildPumuiPackage({ title: '체육 용품 구입하기', summary: '', items: [item('양말', '켤레', 2, 1000)] })
+    const odd = buildPumuiPackage({
+      title: '체육 용품 구입하기',
+      summary: '',
+      items: [item('양말', '켤레', 2, 1000)],
+    })
     const plan = planFill(form, map, odd)
     expect(plan.unmatched.map((i) => i.description)).toEqual(['양말'])
     expect(plan.blockers).toEqual(['단위를 찾지 못한 품목이 있어요: 양말(켤레)'])
@@ -57,7 +70,13 @@ describe('applyFill', () => {
     const res = applyFill(form, map, planFill(form, map, pkg))
     expect(res).toEqual({ ok: true, added: 3, gridTotal: 45000 })
     const rows = fake.dataset('dsPrdlstDtl')!.rows
-    expect(rows[1]).toEqual({ prdlstCn: '실험 키트', stndrd: '규격 실험 키트', thngUnitSeCd: '017', qty: 2, expectUntpc: 15000 })
+    expect(rows[1]).toEqual({
+      prdlstCn: '실험 키트',
+      stndrd: '규격 실험 키트',
+      thngUnitSeCd: '017',
+      qty: 2,
+      expectUntpc: 15000,
+    })
     const title = fake.writes.findIndex((w) => w.target === map.pumui.title)
     const lastColumn = fake.writes.map((w) => w.op).lastIndexOf('setColumn')
     expect(title).toBeGreaterThan(lastColumn)
@@ -68,13 +87,23 @@ describe('applyFill', () => {
     const { fake, form } = setup({ existingRows: [{ prdlstCn: '기존1' }, { prdlstCn: '기존2' }] })
     expect(applyFill(form, map, planFill(form, map, pkg))).toMatchObject({ ok: true, added: 3 })
     const rows = fake.dataset('dsPrdlstDtl')!.rows
-    expect(rows.map((r) => r.prdlstCn)).toEqual(['기존1', '기존2', '비커 500ml', '실험 키트', '배송비'])
+    expect(rows.map((r) => r.prdlstCn)).toEqual([
+      '기존1',
+      '기존2',
+      '비커 500ml',
+      '실험 키트',
+      '배송비',
+    ])
   })
 
   it('writes nothing when no budget line is selected', () => {
     const { fake, form } = setup({ budgetSelected: false })
     const res = applyFill(form, map, planFill(form, map, pkg))
-    expect(res).toEqual({ ok: false, reason: '예산 내역에서 예산 줄을 먼저 골라 주세요.', rolledBack: 0 })
+    expect(res).toEqual({
+      ok: false,
+      reason: '예산 내역에서 예산 줄을 먼저 골라 주세요.',
+      rolledBack: 0,
+    })
     expect(fake.writes.filter((w) => w.op !== 'call')).toEqual([])
   })
 
@@ -92,8 +121,15 @@ describe('applyFill', () => {
 
   it('refuses a plan with blockers without writing', () => {
     const { fake, form } = setup()
-    const odd = buildPumuiPackage({ title: '체육 용품 구입하기', summary: '', items: [item('양말', '켤레', 2, 1000)] })
-    expect(applyFill(form, map, planFill(form, map, odd))).toMatchObject({ ok: false, rolledBack: 0 })
+    const odd = buildPumuiPackage({
+      title: '체육 용품 구입하기',
+      summary: '',
+      items: [item('양말', '켤레', 2, 1000)],
+    })
+    expect(applyFill(form, map, planFill(form, map, odd))).toMatchObject({
+      ok: false,
+      rolledBack: 0,
+    })
     expect(fake.writes).toEqual([])
   })
 
@@ -108,4 +144,3 @@ describe('applyFill', () => {
     })
   })
 })
-

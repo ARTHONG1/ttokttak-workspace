@@ -17,7 +17,18 @@ const { execFileSync } = require('node:child_process')
 const { existsSync, statSync } = require('node:fs')
 const { join } = require('node:path')
 
-const APPS = ['shell', 'docs', 'sheets', 'slides', 'pdf', 'markdown', 'html', 'mindmap', 'hwp', 'epub']
+const APPS = [
+  'shell',
+  'docs',
+  'sheets',
+  'slides',
+  'pdf',
+  'markdown',
+  'html',
+  'mindmap',
+  'hwp',
+  'epub',
+]
 
 /** PRODUCT_NAME values in a bundle that cannot go into an HTTP header */
 function nonAsciiProductNames(bundle) {
@@ -76,7 +87,10 @@ function checkReleaseTree(root, apps = APPS) {
     const bad = nonAsciiProductNames(require('node:fs').readFileSync(file, 'utf8'))
     if (bad.length) {
       problems.push(
-        rel + ' sets PRODUCT_NAME to "' + bad[0] + '" (내부 이름에 한글) — it goes into HTTP headers and must be ASCII; see packages/i18n/AGENTS.md',
+        rel +
+          ' sets PRODUCT_NAME to "' +
+          bad[0] +
+          '" (내부 이름에 한글) — it goes into HTTP headers and must be ASCII; see packages/i18n/AGENTS.md',
       )
     }
   }
@@ -116,14 +130,19 @@ function assertReleaseTree(root, what, apps) {
   const problems = checkReleaseTree(root, apps)
   if (!problems.length) return
   const text =
-    '[release-guard] ' + what + ' refused (배포·패키징 중단):\n  - ' + problems.join('\n  - ') +
+    '[release-guard] ' +
+    what +
+    ' refused (배포·패키징 중단):\n  - ' +
+    problems.join('\n  - ') +
     '\nRules: AGENTS.md section 0 of the workspace; build and ship only the committed main.'
   if (process.env.TTOKTTAK_ALLOW_UNSAFE_BUILD === '1') {
-    console.warn(text + '\n[release-guard] TTOKTTAK_ALLOW_UNSAFE_BUILD=1: continuing — NOT for a release or deploy')
+    console.warn(
+      text +
+        '\n[release-guard] TTOKTTAK_ALLOW_UNSAFE_BUILD=1: continuing — NOT for a release or deploy',
+    )
     return
   }
   throw new Error(text)
 }
 
 module.exports = { APPS, nonAsciiProductNames, staleOutputs, checkReleaseTree, assertReleaseTree }
-

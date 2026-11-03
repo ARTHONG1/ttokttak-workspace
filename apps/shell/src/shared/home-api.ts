@@ -283,7 +283,8 @@ export interface HomeApi {
   readFeatureAsset(name: string): Promise<Uint8Array | null>
   /** 특화 기능 · 똑딱수업: open one of the fixed partner or class-tool sites in the browser */
   openFeatureLink(
-    site: 'blooket' | 'quizn' | 'aceCanvas' | 'aceCanvasVideo' | import('./intro-links').IntroLinkKey,
+    site:
+      'blooket' | 'quizn' | 'aceCanvas' | 'aceCanvasVideo' | import('./intro-links').IntroLinkKey,
   ): Promise<void>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>

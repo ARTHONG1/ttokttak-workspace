@@ -16,4 +16,3 @@ export const WEB_APP_ORIGINS = [
 ]
 /** where the web app serves the current 화면 이름표 */
 export const SCREEN_MAP_URL = WEB_APP_ORIGINS[0] + '/edufine/screen-map.json'
-

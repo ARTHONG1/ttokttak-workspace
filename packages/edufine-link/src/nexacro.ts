@@ -41,7 +41,9 @@ const MAX_FRAMES = 30
 function nexacroOf(w: FrameWin): { getApplication(): unknown } | undefined {
   try {
     const nx = w.nexacro as { getApplication?: unknown } | undefined
-    return nx && typeof nx.getApplication === 'function' ? (nx as { getApplication(): unknown }) : undefined
+    return nx && typeof nx.getApplication === 'function'
+      ? (nx as { getApplication(): unknown })
+      : undefined
   } catch {
     return undefined
   }
@@ -49,7 +51,7 @@ function nexacroOf(w: FrameWin): { getApplication(): unknown } | undefined {
 
 function childFrames(w: FrameWin): FrameWin[] {
   const out: FrameWin[] = []
-  let n = 0
+  let n: number
   try {
     n = Math.min(Number(w.length) || 0, MAX_FRAMES)
   } catch {
@@ -109,4 +111,3 @@ export function frameSurvey(top: FrameWin): FrameInfo[] {
   visit(top, 0)
   return out
 }
-

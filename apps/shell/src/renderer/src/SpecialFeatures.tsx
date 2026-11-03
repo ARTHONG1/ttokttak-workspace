@@ -292,7 +292,9 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
   const [toast, say] = useToast()
-  const [sendNote, setSendNote] = useState<{ ok: boolean; text: string; pkgText: string } | null>(null)
+  const [sendNote, setSendNote] = useState<{ ok: boolean; text: string; pkgText: string } | null>(
+    null,
+  )
   const resultRef = useRef<HTMLElement>(null)
 
   const total = totalOf(rows)
@@ -580,7 +582,9 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                     className="sf-secondary sf-sm"
                     onClick={() =>
                       void copyText(sendNote.pkgText).then(() =>
-                        say('품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [똑딱 품의 넣기]에 붙여 넣어 주세요.'),
+                        say(
+                          '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [똑딱 품의 넣기]에 붙여 넣어 주세요.',
+                        ),
                       )
                     }
                   >

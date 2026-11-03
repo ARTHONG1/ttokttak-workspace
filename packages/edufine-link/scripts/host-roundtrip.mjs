@@ -16,10 +16,14 @@ head.writeUInt32LE(body.length, 0)
 const win = process.platform === 'win32'
 // a .cmd needs the shell on Windows, and the shell takes the command line as written:
 // quote the launcher so an install folder with spaces (C:\Users\홍 길동\…) stays one path
-const child = spawn(win ? '"' + host + '"' : host, ['chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/'], {
-  shell: win,
-  stdio: ['pipe', 'pipe', 'inherit'],
-})
+const child = spawn(
+  win ? '"' + host + '"' : host,
+  ['chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/'],
+  {
+    shell: win,
+    stdio: ['pipe', 'pipe', 'inherit'],
+  },
+)
 const chunks = []
 child.stdout.on('data', (c) => chunks.push(c))
 const timer = setTimeout(() => {
@@ -38,4 +42,3 @@ child.on('close', () => {
   console.log(out.subarray(4, 4 + len).toString('utf8'))
 })
 child.stdin.end(Buffer.concat([head, body]))
-

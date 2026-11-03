@@ -23,7 +23,9 @@ describe('pumui MCP tools', () => {
 
   it('refuses a 품의 the extension would refuse', async () => {
     const [send] = createPumuiTools(new PumuiOutbox())
-    expect(() => send.handler({ ...args, title: '짧음' })).toThrow('품의 제목은 5자 이상이어야 해요.')
+    expect(() => send.handler({ ...args, title: '짧음' })).toThrow(
+      '품의 제목은 5자 이상이어야 해요.',
+    )
   })
 
   it('tells the agent it neither sends nor fills anything', () => {
@@ -32,4 +34,3 @@ describe('pumui MCP tools', () => {
     expect(send.description).toContain('saving and approval stay with the teacher')
   })
 })
-

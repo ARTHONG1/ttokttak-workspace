@@ -532,9 +532,14 @@ async function handleHttp(req, res) {
     return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
   // the 화면 이름표 the 똑딱 에듀파인 연결 extension refreshes from (names only, no session)
   if (p === '/edufine/screen-map.json') {
-    const body = await fsp.readFile(path.join(CLIENT, 'edufine', 'screen-map.json')).catch(() => null)
+    const body = await fsp
+      .readFile(path.join(CLIENT, 'edufine', 'screen-map.json'))
+      .catch(() => null)
     return body
-      ? send(res, 200, body, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
+      ? send(res, 200, body, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+        })
       : send(res, 404, 'not found')
   }
   // the intro page; the trial app itself lives at /app

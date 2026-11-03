@@ -4,11 +4,16 @@
  */
 type Child = Node | string | null | undefined | false
 
-export function h(tag: string, props: Record<string, unknown> = {}, ...children: Child[]): HTMLElement {
+export function h(
+  tag: string,
+  props: Record<string, unknown> = {},
+  ...children: Child[]
+): HTMLElement {
   const el = document.createElement(tag)
   for (const [k, v] of Object.entries(props)) {
     if (v === undefined || v === null || v === false) continue
-    if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v as EventListener)
+    if (k.startsWith('on') && typeof v === 'function')
+      el.addEventListener(k.slice(2), v as EventListener)
     else if (k === 'class') el.className = String(v)
     else if (k in el) (el as unknown as Record<string, unknown>)[k] = v
     else el.setAttribute(k, String(v))
@@ -53,14 +58,39 @@ export function mountPanel(onOpen: () => void): Panel {
   const host = h('div', { id: 'ttok-edufine-host' })
   const root = host.attachShadow({ mode: 'open' })
   root.append(h('style', {}, STYLE))
-  const panel = h('div', { class: 'panel', hidden: true, role: 'dialog', 'aria-label': '똑딱 에듀파인 연결' })
-  const fab = h('button', { class: 'fab', type: 'button', onclick: () => (panel.hidden ? onOpen() : (panel.hidden = true)) }, '똑딱')
+  const panel = h('div', {
+    class: 'panel',
+    hidden: true,
+    role: 'dialog',
+    'aria-label': '똑딱 에듀파인 연결',
+  })
+  const fab = h(
+    'button',
+    {
+      class: 'fab',
+      type: 'button',
+      onclick: () => (panel.hidden ? onOpen() : (panel.hidden = true)),
+    },
+    '똑딱',
+  )
   root.append(fab, panel)
   document.documentElement.append(host)
   return {
     root,
     show(...content: Child[]) {
-      panel.replaceChildren(h('button', { class: 'close', type: 'button', 'aria-label': '닫기', onclick: () => (panel.hidden = true) }, '×'), ...content.filter(Boolean) as Node[])
+      panel.replaceChildren(
+        h(
+          'button',
+          {
+            class: 'close',
+            type: 'button',
+            'aria-label': '닫기',
+            onclick: () => (panel.hidden = true),
+          },
+          '×',
+        ),
+        ...(content.filter(Boolean) as Node[]),
+      )
       panel.hidden = false
     },
     hide() {
@@ -70,4 +100,3 @@ export function mountPanel(onOpen: () => void): Panel {
 }
 
 export const won = (n: number): string => n.toLocaleString('ko-KR') + '원'
-

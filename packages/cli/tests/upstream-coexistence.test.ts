@@ -493,7 +493,8 @@ describe('an upstream genoffice launcher on the PATH', () => {
     expect(r.manual).toContain('/usr/local/bin/ieumoffice')
 
     const scripts: string[] = []
-    const win = 'C:\\Users\\u\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources\\cli\\ieumoffice.cmd'
+    const win =
+      'C:\\Users\\u\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources\\cli\\ieumoffice.cmd'
     const out = installCliLink({
       launcher: win,
       platform: 'win32',
@@ -502,7 +503,9 @@ describe('an upstream genoffice launcher on the PATH', () => {
         return { ok: true, stdout: 'linked\n' }
       },
     })
-    expect(out.location).toBe('C:\\Users\\u\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources\\cli')
+    expect(out.location).toBe(
+      'C:\\Users\\u\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources\\cli',
+    )
     // the existing value is kept whole and our directory appended: no entry is dropped
     expect(scripts[0]).toContain("$next = (@($p, $dir) | Where-Object { $_ }) -join ';'")
     expect(scripts[0]).not.toMatch(/GenOffice\\resources/)
@@ -541,7 +544,9 @@ describe('finding the app', () => {
       join('D:\\Apps\\HangulAIWorkbench', 'HangulAIWorkbench.exe'),
     )
     expect(
-      posix(appBinaryForResources('/Volumes/Work/HangulAIWorkbench.app/Contents/Resources', 'darwin')),
+      posix(
+        appBinaryForResources('/Volumes/Work/HangulAIWorkbench.app/Contents/Resources', 'darwin'),
+      ),
     ).toBe('/Volumes/Work/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench')
     expect(posix(appBinaryForResources('/opt/HangulAIWorkbench/resources', 'linux'))).toBe(
       '/opt/HangulAIWorkbench/ieumoffice',
@@ -668,7 +673,12 @@ describe('what the CLI prints and tells agents to run', () => {
   it('ships launchers named ieumoffice that start only this product', () => {
     const bin = join(REPO, 'packages', 'cli', 'bin')
     // edufine-host: the Chrome native messaging host of the 똑딱 에듀파인 연결 extension
-    expect(readdirSync(bin).sort()).toEqual(['edufine-host', 'edufine-host.cmd', 'ieumoffice', 'ieumoffice.cmd'])
+    expect(readdirSync(bin).sort()).toEqual([
+      'edufine-host',
+      'edufine-host.cmd',
+      'ieumoffice',
+      'ieumoffice.cmd',
+    ])
     const sh = readFileSync(join(bin, 'ieumoffice'), 'utf-8')
     const cmd = readFileSync(join(bin, 'ieumoffice.cmd'), 'utf-8')
     expect(sh).toContain('MacOS/HangulAIWorkbench')

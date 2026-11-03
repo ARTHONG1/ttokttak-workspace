@@ -12,9 +12,21 @@ const ROOT = join(WEB, '..')
 const DIST = join(WEB, 'dist')
 const APP = join(DIST, 'app')
 const require = createRequire(join(ROOT, 'package.json'))
-const APPS = ['shell', 'docs', 'sheets', 'slides', 'pdf', 'markdown', 'html', 'mindmap', 'hwp', 'epub']
+const APPS = [
+  'shell',
+  'docs',
+  'sheets',
+  'slides',
+  'pdf',
+  'markdown',
+  'html',
+  'mindmap',
+  'hwp',
+  'epub',
+]
 
-if (process.argv.includes('--rebuild')) execFileSync('npm', ['run', 'build:all'], { cwd: ROOT, stdio: 'inherit' })
+if (process.argv.includes('--rebuild'))
+  execFileSync('npm', ['run', 'build:all'], { cwd: ROOT, stdio: 'inherit' })
 
 // only the committed code, freshly built, with an ASCII PRODUCT_NAME (scripts/release-guard.cjs)
 require('./scripts/release-guard.cjs').assertReleaseTree(ROOT, 'web build', APPS)
@@ -30,7 +42,8 @@ const copy = async (rel, filter) => {
 const noMaps = (src) => !src.endsWith('.map')
 
 for (const app of APPS) {
-  if (!(await exists(join(ROOT, 'apps', app, 'out')))) throw new Error('missing build output: apps/' + app + '/out (run with --rebuild)')
+  if (!(await exists(join(ROOT, 'apps', app, 'out'))))
+    throw new Error('missing build output: apps/' + app + '/out (run with --rebuild)')
   await copy('apps/' + app + '/out', noMaps)
   await copy('apps/' + app + '/resources')
   await copy('apps/' + app + '/package.json')
@@ -44,7 +57,8 @@ await copy('packages/cli/bin')
 await copy('skills')
 await copy('vendor/rhwp-core', (src) => !src.includes('/patches'))
 // the XLSX engine is compiled for Linux in the image build
-for (const f of ['Cargo.toml', 'Cargo.lock', 'src']) await copy('apps/sheets/native/xlsx-engine/' + f)
+for (const f of ['Cargo.toml', 'Cargo.lock', 'src'])
+  await copy('apps/sheets/native/xlsx-engine/' + f)
 await copy('web/runtime')
 
 // The engines the desktop installer ships under Resources/wasm (apps/shell/electron-builder.cjs
@@ -87,4 +101,3 @@ await cp(join(WEB, 'Dockerfile'), join(DIST, 'Dockerfile'))
 await cp(join(WEB, 'cloudbuild.yaml'), join(DIST, 'cloudbuild.yaml'))
 await writeFile(join(DIST, '.gcloudignore'), '.gcloudignore\n**/node_modules/\n')
 console.log('web build context ready:', DIST)
-
