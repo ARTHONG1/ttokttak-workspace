@@ -2,6 +2,7 @@ import { dirname, join } from 'node:path'
 import { app, dialog, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { autoUpdater, CancellationToken } from 'electron-updater'
+import { updatesAllowed } from './update-policy'
 import { installResumeDownload } from './update-resume'
 import {
   clearInstallAttempt,
@@ -818,12 +819,8 @@ export function initAutoUpdater(
   // latest-linux.yml. On Linux the updater only works for AppImage runs
   // (electron-updater's AppImageUpdater needs the APPIMAGE env var the
   // AppImage runtime sets); deb installs update manually via apt.
-  if (!app.isPackaged) return
-  // This local derivative has no release feed of its own; the inherited feed
-  // would offer the upstream IeumOffice build as an "update".
-  if (process.env.HANGUL_WORKBENCH_UPDATE_FEED !== '1') return
-  const isLinuxAppImage = process.platform === 'linux' && Boolean(process.env.APPIMAGE)
-  if (process.platform !== 'win32' && process.platform !== 'darwin' && !isLinuxAppImage) return
+  // the feed is this project's own releases (electron-builder publish: ARTHONG1/ttokttak-workspace)
+  if (!updatesAllowed(process.platform, process.env, app.isPackaged)) return
 
   updaterActive = true
   const dataDir = app.getPath('userData')
