@@ -82,7 +82,16 @@ function checkReleaseTree(root, apps = APPS) {
   }
 
   if (inGit && outputs.length) {
-    const tracked = git(root, ['ls-files', '-z', '--', 'apps/*/src', 'packages/*/src', 'apps/*/package.json', 'packages/*/package.json'])
+    // :(glob) — a plain 'apps/*/src' pathspec matches no file under the folder
+    const tracked = git(root, [
+      'ls-files',
+      '-z',
+      '--',
+      ':(glob)apps/*/src/**',
+      ':(glob)packages/*/src/**',
+      ':(glob)apps/*/package.json',
+      ':(glob)packages/*/package.json',
+    ])
       .split('\0')
       .filter(Boolean)
     const sources = []
