@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "revision": "2026-11-03 기본",
+  "workFramePath": "mainframe.MainVFrameSet.SubHFrameSet.WorkVFrameSet.WorkFrame",
+  "workFormPath": "form.divWork.form",
+  "pumui": {
+    "title": "divMain.form.edtCnsulSj",
+    "summary": "divMain.form.txtareaCnsulSumrCn",
+    "grid": "grdPrdlstDtl",
+    "budget": "dsBgtDtlList",
+    "rowAddButton": "divAuth2.form.btnRowAdit",
+    "rowAddHandler": "divAuth2_btnRowAdit_onclick",
+    "unitTables": [
+      "divThng.form.dsEAB0005200",
+      "divServc.form.dsEAB0005200",
+      "dsEAB0005200"
+    ],
+    "unitCode": "cmmnDetailCd",
+    "unitName": "cmmnDetailCdNm",
+    "columns": {
+      "name": "prdlstCn",
+      "spec": "stndrd",
+      "unit": "thngUnitSeCd",
+      "qty": "qty",
+      "price": "expectUntpc"
+    }
+  }
+}
