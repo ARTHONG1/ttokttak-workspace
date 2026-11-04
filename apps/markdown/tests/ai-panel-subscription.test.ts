@@ -7,6 +7,7 @@ import {
   type AiSubscriptionState,
   type SubscriptionStatusMap,
 } from '@genoffice/ai-provider/browser'
+import { productName } from '@genoffice/i18n'
 import { AiPanel, type MarkdownAiDeps } from '../src/renderer/ai/AiPanel'
 
 // The panel under the subscription contract, mounted against a fake preload
@@ -512,7 +513,7 @@ describe('AiPanel under the subscription contract', () => {
     })
     const container = await mountPanel()
     await sendMessage(container, 'hello')
-    expect(bridge.requests[0]!.system).toContain('HangulAIWorkbench Markdown')
+    expect(bridge.requests[0]!.system).toContain(`${productName('en')} Markdown`)
     expect(bridge.requests[0]!.system).not.toContain('GenOffice')
   })
 })

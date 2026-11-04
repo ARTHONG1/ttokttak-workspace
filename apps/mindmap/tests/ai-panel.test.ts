@@ -16,7 +16,7 @@ import {
   type AiSubscriptionState,
 } from '@genoffice/ai-provider'
 import type { SubscriptionStatusMap } from '@genoffice/ai-provider/browser'
-import { PRODUCT_NAME, UPSTREAM_PRODUCT_NAME, type Lang } from '@genoffice/i18n'
+import { UPSTREAM_PRODUCT_NAME, productName, type Lang } from '@genoffice/i18n'
 import App from '../src/renderer/App'
 import { LocaleProvider } from '../src/renderer/i18n/locale'
 import { AiPanel, type MindmapAiRequest, type MindmapAiRunStart } from '../src/renderer/ai/AiPanel'
@@ -246,7 +246,7 @@ describe('a run', () => {
         'write_map',
       ].sort(),
     )
-    expect(request.system).toContain(`${PRODUCT_NAME} Mind Map`)
+    expect(request.system).toContain(`${productName('en')} Mind Map`)
     expect(request.system).not.toContain(UPSTREAM_PRODUCT_NAME)
     // the map reaches the model as data, marked as such
     expect(request.system).toMatch(/never instructions/)

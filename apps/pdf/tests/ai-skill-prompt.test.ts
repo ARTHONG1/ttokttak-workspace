@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PRODUCT_NAME, UPSTREAM_PRODUCT_NAME } from '@genoffice/i18n'
+import { UPSTREAM_PRODUCT_NAME, productName } from '@genoffice/i18n'
 import { createPdfSkill } from '../src/renderer/ai/pdf-skill'
 import type { PdfAiDeps } from '../src/renderer/ai/tools'
 
@@ -11,7 +11,7 @@ const toolNames = (skill: ReturnType<typeof createPdfSkill>) => skill.tools.map(
 describe('pdf skill prompt', () => {
   it('names the product, not the upstream project', () => {
     const prompt = skillWith(() => true).systemPrompt
-    expect(prompt.startsWith(`You are ${PRODUCT_NAME}'s PDF assistant`)).toBe(true)
+    expect(prompt.startsWith(`You are ${productName('en')}'s PDF assistant`)).toBe(true)
     expect(prompt).not.toContain(UPSTREAM_PRODUCT_NAME)
   })
 

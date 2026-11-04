@@ -373,8 +373,9 @@ describe('edit_text', () => {
     expect(result.mutated).toBe(true)
     expect(deps.editText).toHaveBeenCalledWith({
       pageIndex: 1,
-      // 'bar' is chars 4-7 of the 11-char item spanning x 0-110
-      rect: [40, 700, 70, 712],
+      // 'bar' is chars 4-7 of the 11-char item spanning x 0-110; the box reaches a
+      // quarter of the 12 pt height below the baseline so descenders are covered
+      rect: [40, 697, 70, 712],
       oldText: 'bar',
       newText: 'baz',
       fontSize: 12,
@@ -422,7 +423,7 @@ describe('edit_text', () => {
     )
     expect(deps.editText).toHaveBeenCalledWith(
       expect.objectContaining({
-        rect: [80, 700, 110, 712],
+        rect: [80, 697, 110, 712],
         oldText: 'foo', // verbatim page text, not the model's casing
         newFontSize: 9,
         newColor: [255, 128, 0],
@@ -1526,7 +1527,7 @@ describe('insert_image', () => {
 
   it('places the image below anchor text and honors the layer parameter', async () => {
     const deps = makeDeps()
-    // Page 1 anchor "Hello World" occupies [0,700,110,712] → below = y 108 from the top
+    // Page 1 anchor "Hello World" occupies [0,697,110,712] (descenders included) → below = y 111 from the top
     const result = await executePdfTool(
       deps,
       call('insert_image', {
@@ -1537,7 +1538,7 @@ describe('insert_image', () => {
       }),
     )
     expect(result.mutated).toBe(true)
-    expect(deps.insertImage).toHaveBeenCalledWith(0, 'PNGB64', [0, 467, 300, 692], 'aboveText')
+    expect(deps.insertImage).toHaveBeenCalledWith(0, 'PNGB64', [0, 464, 300, 689], 'aboveText')
   })
 
   it('rejects unknown url schemes and reports download failures', async () => {
@@ -2338,8 +2339,9 @@ describe('add_form_mark', () => {
     expect(result.isError).toBeUndefined()
     expect(result.mutated).toBe(true)
     expect(result.output).toContain('unsaved')
-    // anchor box is [0,700,110,712]: mark (12 pt) starts 4 pt right of it, centered on its middle
-    expect(deps.addFormMark).toHaveBeenCalledWith(0, 'check', [114, 700, 126, 712])
+    // anchor box is [0,697,110,712] (descenders included): mark (12 pt) starts 4 pt right of it,
+    // centered on its middle
+    expect(deps.addFormMark).toHaveBeenCalledWith(0, 'check', [114, 698.5, 126, 710.5])
     expect(deps.gotoPage).toHaveBeenCalledWith(1)
   })
 
