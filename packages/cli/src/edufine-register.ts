@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { posix, win32 } from 'node:path'
-import { EXTENSION_ID, NATIVE_HOST_NAME } from '@genoffice/edufine-link/ids'
+import { EXTENSION_ID, NATIVE_HOST_NAME } from '@genoffice/ttokttak-extension/ids'
 
 export interface RegisterEnv {
   platform: NodeJS.Platform

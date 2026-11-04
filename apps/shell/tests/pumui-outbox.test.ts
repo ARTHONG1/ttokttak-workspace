@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPumuiPackage } from '@genoffice/edufine-link/package'
+import { buildPumuiPackage } from '@genoffice/ttokttak-extension/package'
 import { OUTBOX_MAX, OUTBOX_TTL_MS, PumuiOutbox } from '../src/main/pumui-outbox'
 
 const pkg = (title: string) =>

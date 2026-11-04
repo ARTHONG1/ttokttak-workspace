@@ -5,8 +5,8 @@
  * works the page offers the clipboard and a .ttokpumui file, which also cover schools whose
  * K-에듀파인 PC has no internet.
  */
-import { EXTENSION_ID } from '@genoffice/edufine-link/ids'
-import { buildPumuiPackage, type PumuiPackage } from '@genoffice/edufine-link/package'
+import { EXTENSION_ID } from '@genoffice/ttokttak-extension/ids'
+import { buildPumuiPackage, type PumuiPackage } from '@genoffice/ttokttak-extension/package'
 
 export interface WorkRow {
   description: string

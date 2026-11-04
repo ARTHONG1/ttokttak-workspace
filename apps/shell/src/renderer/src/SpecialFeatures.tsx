@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { PUMUI_FILE_EXTENSION } from '@genoffice/edufine-link/package'
+import { PUMUI_FILE_EXTENSION } from '@genoffice/ttokttak-extension/package'
 import type { CartFileKind } from '../../shared/home-api'
 import { isWebEdition } from './edition'
 import { PARSE_SYSTEM } from './proposal-prompts'

@@ -8,7 +8,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const EXT = join(ROOT, 'packages', 'edufine-link')
+const EXT = join(ROOT, 'packages', 'ttokttak-extension')
 
 export async function buildExtensionZip(out) {
   // the release build: no test-only host permissions (build.mjs --dev adds those)

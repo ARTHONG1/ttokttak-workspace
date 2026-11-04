@@ -3,7 +3,7 @@
  * the 똑딱 에듀파인 연결 extension. Nothing leaves this PC here and nothing is filled in by
  * the agent: the teacher takes the 품의 on the K-에듀파인 품의등록 screen and saves it.
  */
-import { buildPumuiPackage } from '@genoffice/edufine-link/package'
+import { buildPumuiPackage } from '@genoffice/ttokttak-extension/package'
 import { z } from 'zod'
 import type { McpToolDefinition } from '../mcp-server'
 import type { PumuiOutbox } from '../../pumui-outbox'

@@ -144,7 +144,7 @@ import {
   readCartFile,
 } from './cart-file'
 import { pumuiOutbox } from './pumui-outbox'
-import { EDUFINE_GO_URL } from '@genoffice/edufine-link/ids'
+import { EDUFINE_GO_URL } from '@genoffice/ttokttak-extension/ids'
 import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
 import {

@@ -4,7 +4,7 @@
  * (edufine-host → control channel 'pumui-take'). Kept in memory only: at most five,
  * each for thirty minutes, so nothing lingers after the teacher is done.
  */
-import { parsePumuiPackage } from '@genoffice/edufine-link/package'
+import { parsePumuiPackage } from '@genoffice/ttokttak-extension/package'
 
 export const OUTBOX_MAX = 5
 export const OUTBOX_TTL_MS = 30 * 60_000

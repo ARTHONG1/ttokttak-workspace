@@ -16,7 +16,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/edufine-windows.yml
-      - packages/edufine-link/**
+      - packages/ttokttak-extension/**
       - packages/cli/src/edufine-*.ts
       - packages/cli/bin/edufine-host*
       - apps/shell/build/installer.nsh
@@ -50,16 +50,16 @@ jobs:
         run: npm ci
 
       - name: Unit tests
-        run: npx vitest run packages/edufine-link packages/cli/tests/edufine-host.test.ts packages/cli/tests/edufine-register.test.ts
+        run: npx vitest run packages/ttokttak-extension packages/cli/tests/edufine-host.test.ts packages/cli/tests/edufine-register.test.ts
 
       - name: Install Chromium
         run: npx playwright install chromium
 
       - name: Build the extension (test build)
-        run: node packages/edufine-link/build.mjs --dev
+        run: node packages/ttokttak-extension/build.mjs --dev
 
       - name: Browser tests (extension + native messaging through the registry)
-        run: npx playwright test -c packages/edufine-link/playwright.config.ts
+        run: npx playwright test -c packages/ttokttak-extension/playwright.config.ts
 
   installer:
     runs-on: windows-2025
@@ -129,7 +129,7 @@ jobs:
       - name: The installed host answers (app not running)
         run: |
           set -euo pipefail
-          reply=$(node packages/edufine-link/scripts/host-roundtrip.mjs 'C:\똑딱 설치\resources\cli\edufine-host.cmd' ping)
+          reply=$(node packages/ttokttak-extension/scripts/host-roundtrip.mjs 'C:\똑딱 설치\resources\cli\edufine-host.cmd' ping)
           echo "$reply"
           echo "$reply" | grep -q '"state":"off"'
 

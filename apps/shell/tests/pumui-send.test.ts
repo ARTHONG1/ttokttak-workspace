@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { EXTENSION_ID } from '@genoffice/edufine-link/ids'
-import { parsePumuiPackage } from '@genoffice/edufine-link/package'
+import { EXTENSION_ID } from '@genoffice/ttokttak-extension/ids'
+import { parsePumuiPackage } from '@genoffice/ttokttak-extension/package'
 import {
   NO_EXTENSION,
   pumuiPackageFromWork,

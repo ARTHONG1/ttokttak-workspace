@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EXTENSION_ID, NATIVE_HOST_NAME } from '@genoffice/edufine-link/ids'
+import { EXTENSION_ID, NATIVE_HOST_NAME } from '@genoffice/ttokttak-extension/ids'
 import {
   nativeHostManifest,
   registerNativeHost,
