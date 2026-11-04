@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PRODUCT_NAME } from '@genoffice/i18n'
+import { productName } from '@genoffice/i18n'
 import { listSlideTemplates, stylePalette } from '@genoffice/pipelines/slides'
 import { defaultRegistry } from '../src/cli'
 import { loadCatalog } from '../src/commands/guide'
@@ -63,7 +63,8 @@ describe('guide slides templates', () => {
     expect(r.stdout.startsWith(t.styleSheet)).toBe(true)
     const extra = r.stdout.slice(t.styleSheet.length).trim()
     expect(extra.split('\n')).toHaveLength(1)
-    expect(extra).toContain(PRODUCT_NAME)
+    // the shown name (똑딱작업실), not the ASCII PRODUCT_NAME used in headers
+    expect(extra).toContain(productName('en'))
     for (const font of fontNames(t)) expect(extra).toContain(font)
     expect(r.stdout).not.toContain('GenOffice')
     // saved as is, the file names exactly the template's colors
