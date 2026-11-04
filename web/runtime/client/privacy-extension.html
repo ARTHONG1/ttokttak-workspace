@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>똑딱작업실 크롬 확장 개인정보 처리 안내</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f4f6fb;
+        color: #1d2433;
+        font:
+          15px/1.7 'Pretendard',
+          'Apple SD Gothic Neo',
+          'Malgun Gothic',
+          sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 32px auto;
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px 36px;
+        box-shadow: 0 10px 30px rgba(20, 30, 60, 0.08);
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 17px;
+        margin: 28px 0 6px;
+      }
+      .sub {
+        color: #667085;
+        font-size: 13px;
+      }
+      td,
+      th {
+        border-bottom: 1px solid #eaecf0;
+        padding: 8px 6px;
+        text-align: left;
+        vertical-align: top;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>똑딱작업실 크롬 확장 개인정보 처리 안내</h1>
+      <p class="sub">시행일 2026년 11월 4일</p>
+
+      <p>
+        똑딱작업실 크롬 확장(이하 확장)은 똑딱작업실 웹 앱이나 똑딱작업실 프로그램에서 선생님이 만든
+        작업을 학교 업무 사이트 화면에 채워 주는 도구입니다. 지금 할 수 있는 업무는 「에듀파인
+        품의」(품의서 생성에서 만든 품의를 K-에듀파인 품의등록 화면에 채우기)입니다.
+      </p>
+
+      <h2>모으는 개인정보</h2>
+      <p>
+        확장은 개인정보를 모으지 않으며, 어떤 정보도 똑딱작업실 서버나 다른 곳으로 보내지 않습니다.
+        광고·분석 도구를 쓰지 않습니다.
+      </p>
+
+      <h2>이 브라우저 안에만 보관하는 것</h2>
+      <table>
+        <tr>
+          <th>보관하는 것</th>
+          <th>왜</th>
+          <th>얼마나</th>
+        </tr>
+        <tr>
+          <td>선생님이 [K-에듀파인으로 보내기]로 보낸 작업(품의 제목·개요·품목)</td>
+          <td>업무 사이트 화면에서 [똑딱]을 눌렀을 때 보여 주고 채우려고</td>
+          <td>채우면 바로 지움, 채우지 않아도 24시간 뒤 버림</td>
+        </tr>
+        <tr>
+          <td>업무 사이트를 마지막으로 연 주소(경로까지, 검색어·세션 값 제외)와 탭 번호</td>
+          <td>다음에 보낼 때 그 화면으로 바로 옮기려고</td>
+          <td>확장을 지울 때까지</td>
+        </tr>
+        <tr>
+          <td>화면 이름표(업무 사이트 화면의 입력칸 이름 목록)</td>
+          <td>사이트 화면이 바뀌어도 확장 업데이트 없이 채우려고</td>
+          <td>12시간마다 새로 받음</td>
+        </tr>
+      </table>
+      <p>
+        이 정보는 크롬의 확장 저장소(<code>chrome.storage.local</code>)에만 있고 이 PC 밖으로 나가지
+        않습니다.
+      </p>
+
+      <h2>주고받는 곳</h2>
+      <ul>
+        <li>
+          <b>똑딱작업실 웹 앱</b>(hangul-ai-workbench-545101783843.asia-northeast3.run.app):
+          선생님이 보낸 작업을 받고, 화면 이름표를 내려받습니다. 확장이 웹 앱으로 보내는 것은
+          없습니다.
+        </li>
+        <li>
+          <b>똑딱작업실 프로그램</b>(이 PC에 설치한 경우): 크롬의 네이티브 메시징으로 같은 PC
+          안에서만 작업을 받습니다.
+        </li>
+        <li>
+          <b>업무 사이트</b>(<code>https://*.go.kr</code>, 예: K-에듀파인): 선생님이 [K-에듀파인에
+          채우기]를 누르면 그 화면의 입력칸을 채웁니다. 화면 내용을 읽어 다른 곳으로 보내지
+          않습니다. 저장·결재·제출은 누르지 않으며 선생님이 직접 합니다.
+        </li>
+      </ul>
+
+      <h2>권한</h2>
+      <table>
+        <tr>
+          <th>권한</th>
+          <th>쓰는 곳</th>
+        </tr>
+        <tr>
+          <td><code>https://*.go.kr/*</code></td>
+          <td>학교 업무 사이트 화면에 [똑딱] 버튼을 띄우고 채우기</td>
+        </tr>
+        <tr>
+          <td><code>storage</code></td>
+          <td>위 표의 정보를 이 브라우저에 보관</td>
+        </tr>
+        <tr>
+          <td><code>nativeMessaging</code></td>
+          <td>이 PC의 똑딱작업실 프로그램에서 작업 받기</td>
+        </tr>
+        <tr>
+          <td><code>scripting</code></td>
+          <td>예전 시험판이 등록한 페이지 스크립트를 업데이트 때 지우기</td>
+        </tr>
+      </table>
+
+      <h2>진단 파일</h2>
+      <p>
+        문제가 있을 때 선생님이 [진단 파일 저장]을 누르면 화면 구조(입력칸 이름, 표의 줄 수)만 담긴
+        파일을 다운로드 폴더에 저장합니다. 금액·이름·품명은 담지 않으며, 선생님이 직접 보낼 때만
+        전달됩니다.
+      </p>
+
+      <h2>문의</h2>
+      <p>photo011235@gmail.com</p>
+    </main>
+  </body>
+</html>

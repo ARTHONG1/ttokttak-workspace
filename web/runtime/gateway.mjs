@@ -530,6 +530,11 @@ async function handleHttp(req, res) {
   const p = url.pathname
   if (p === '/api/health')
     return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
+  // what the 똑딱작업실 extension keeps and sends (linked from its Chrome Web Store listing)
+  if (p === '/privacy/extension') {
+    const body = await fsp.readFile(path.join(CLIENT, 'privacy-extension.html'))
+    return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8' })
+  }
   // the 화면 이름표 the 똑딱작업실 extension refreshes from (names only, no session)
   if (p === '/edufine/screen-map.json') {
     const body = await fsp

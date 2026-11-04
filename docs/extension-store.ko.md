@@ -1,0 +1,64 @@
+# 똑딱작업실 확장을 크롬 웹 스토어에 올리기
+
+지금 확장은 소개 페이지 [테스트]에서 zip을 받아 개발자 모드로 설치합니다. 이 방식은 버전이 바뀔 때마다 다시 설치해야 합니다. 스토어에 올리면 크롬이 알아서 업데이트하고, 개발자 모드도 켤 필요가 없습니다. 확장 ID(`ebjaejdjilpnbcbcejmeeneahkngcmnm`)는 그대로라서 프로그램 연결(네이티브 메시징)과 웹 앱 연결이 바뀌지 않습니다.
+
+## 1. 개발자 계정 (한 번)
+
+1. https://chrome.google.com/webstore/devconsole 에 Google 계정으로 들어갑니다.
+2. 등록비 5달러를 한 번 냅니다.
+3. 게시자 이름은 `똑딱작업실`, 연락 이메일은 확인 메일을 받을 수 있는 주소로 둡니다.
+
+## 2. 올릴 zip 만들기
+
+`program/`에서 (커밋된 `main`에서만 만듭니다):
+
+```sh
+# 첫 업로드: 개인 키를 zip 맨 위 key.pem으로 넣어 확장 ID를 지금과 같게 고정
+node packages/ttokttak-extension/scripts/store-zip.mjs --key <개인 키 파일 경로>
+# 두 번째부터: 키 없이
+node packages/ttokttak-extension/scripts/store-zip.mjs
+```
+
+결과는 `packages/ttokttak-extension/dist-store/ttokttak-extension-<버전>.zip`입니다. 스토어는 manifest의 `key` 항목을 받지 않으므로 스크립트가 뺍니다. 개인 키 파일은 저장소에 넣지 않습니다.
+
+## 3. 스토어 등록 정보
+
+| 항목                 | 넣을 값                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------- |
+| 이름                 | 똑딱작업실 (manifest에서 자동)                                                                     |
+| 요약                 | manifest `description` (자동)                                                                      |
+| 카테고리             | 생산성(Productivity) → 도구                                                                        |
+| 언어                 | 한국어                                                                                             |
+| 자세한 설명          | 아래 "자세한 설명"                                                                                 |
+| 스크린샷             | `packages/ttokttak-extension/store/`의 PNG 3장 (1280×800)                                          |
+| 아이콘               | `packages/ttokttak-extension/extension/icons/128.png`                                              |
+| 개인정보처리방침 URL | https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/privacy/extension                 |
+| 공개 범위            | 처음에는 **비공개(링크가 있는 사람만)**로 올려 선생님 몇 분이 써 본 뒤 공개로 바꾸는 것을 권합니다 |
+
+스크린샷을 다시 찍으려면: `node packages/ttokttak-extension/build.mjs --dev` 뒤 `packages/ttokttak-extension`에서 `STORE_SHOTS=1 npx playwright test -g "store screenshots"`.
+
+### 자세한 설명
+
+> 똑딱작업실 웹 앱·프로그램에서 만든 작업을 학교 업무 사이트 화면에 채워 주는 확장 프로그램입니다.
+>
+> 지금 할 수 있는 업무: **에듀파인 품의** — 똑딱작업실 품의서 생성에서 [K-에듀파인으로 보내기]를 누르면 K-에듀파인 화면으로 옮겨 가 품의가 바로 보이고, [K-에듀파인에 채우기] 한 번으로 품의등록 화면의 제목·개요·품목이 채워집니다. 예산 줄을 고르라고 하면 고르는 즉시 이어서 채웁니다.
+>
+> 따로 설정할 것은 없습니다. 저장·결재·제출은 확장이 누르지 않으며 선생님이 직접 합니다. 받은 작업은 이 브라우저 안에만 24시간까지 보관하고, 어떤 정보도 외부 서버로 보내지 않습니다.
+
+## 4. 개인정보 탭 (Privacy practices)
+
+- **단일 목적(Single purpose):** 똑딱작업실에서 만든 학교 업무 작업(지금은 K-에듀파인 품의)을 그 업무 사이트 화면에 채우기.
+- **권한 사유:**
+  - `https://*.go.kr/*` — 학교 업무 사이트(K-에듀파인 등) 화면에 [똑딱] 버튼을 띄우고 선생님이 누를 때 입력칸을 채움.
+  - `storage` — 받은 작업(24시간)과 마지막으로 연 업무 사이트 주소를 이 브라우저에 보관.
+  - `nativeMessaging` — 같은 PC의 똑딱작업실 프로그램에서 작업을 받음.
+  - `scripting` — 예전 시험판이 등록한 페이지 스크립트를 업데이트 때 지움.
+  - 웹 앱 주소 — 웹 앱이 보낸 작업을 받고 화면 이름표를 내려받음.
+- **원격 코드:** 사용하지 않음(화면 이름표는 코드가 아닌 이름 목록).
+- **데이터 사용:** 수집하는 데이터 없음. "개인 식별 정보", "웹 사이트 콘텐츠" 등 모든 항목을 체크하지 않음. 세 가지 확인 문항(판매하지 않음, 목적 외 사용 안 함, 신용 평가에 쓰지 않음)에 체크.
+
+## 5. 심사 뒤
+
+1. 승인되면 스토어 주소(`https://chromewebstore.google.com/detail/<이름>/ebjaejdjilpnbcbcejmeeneahkngcmnm`)를 `src/core/ids.ts`의 `STORE_URL`로 넣고, 웹 소개 페이지 [테스트] 창의 버튼을 스토어 주소로 바꾼 뒤(zip은 "개발용"으로) 웹 앱을 다시 배포합니다.
+2. 개발자 모드로 설치한 선생님께는 `chrome://extensions`에서 예전 「똑딱작업실(또는 똑딱 에듀파인 연결)」을 **삭제**한 뒤 스토어에서 설치하라고 안내합니다. ID가 같아 프로그램 연결은 그대로 됩니다.
+3. 이후 버전은 `store-zip.mjs`(키 없이)로 만든 zip을 "새 패키지 업로드"로 올립니다. 버전 번호는 매번 올라가야 합니다.

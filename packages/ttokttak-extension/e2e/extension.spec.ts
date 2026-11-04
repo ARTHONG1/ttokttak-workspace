@@ -467,3 +467,44 @@ test('finds K-에듀파인 inside a same-origin frame of a portal page and fills
   expect(diag.screen).toEqual({ kind: 'pumui' })
   await page.close()
 })
+
+// Chrome Web Store screenshots (1280×800) into store/: STORE_SHOTS=1 npx playwright test -g "store screenshots"
+test('store screenshots', async () => {
+  test.skip(!process.env.STORE_SHOTS, 'only when STORE_SHOTS=1')
+  const out = join(HERE, 'store')
+  const backdrop = `
+    body { margin: 0; min-height: 100vh; background: #eef2f8;
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #1d2433; }
+    h1 { margin: 0; padding: 18px 28px; font-size: 0; background: #26457d; color: #fff; }
+    h1::before { content: '학교 업무 사이트 화면 (예시)'; font-size: 17px; }
+    body::after { content: ''; position: absolute; left: 28px; top: 84px; width: 700px; height: 560px;
+      background: repeating-linear-gradient(#fff 0 44px, #f3f5fa 44px 46px); border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(20, 30, 60, .08); }`
+  const shoot = async (page: Page, name: string) => {
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: join(out, name) })
+  }
+  const page = await context.newPage()
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto(base + '/fake-edufine.html')
+  await page.addStyleTag({ content: backdrop })
+  expect(await sendFromWebApp()).toEqual({ ok: true, moved: 'focused' })
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  await shoot(page, '1-품의-미리보기.png')
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  await shoot(page, '2-채우기-완료.png')
+  await page.close()
+
+  const popup = await context.newPage()
+  await popup.setViewportSize({ width: 1280, height: 800 })
+  await popup.goto('chrome-extension://' + EXTENSION_ID + '/popup.html')
+  await popup.addStyleTag({
+    content:
+      'html { background: #eef2f8; } body { margin: 70px auto; zoom: 1.45; background: #fff;' +
+      ' border-radius: 12px; box-shadow: 0 10px 30px rgba(20, 30, 60, .15); } #place { display: none; }',
+  })
+  await expect(popup.getByRole('heading', { name: '에듀파인 품의' })).toBeVisible()
+  await shoot(popup, '3-팝업-업무-목록.png')
+  await popup.close()
+})
