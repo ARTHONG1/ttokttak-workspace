@@ -4,12 +4,13 @@
  * work waiting, the site's only task straight away, or the list of the site's tasks. No
  * task ever saves, approves or submits anything on the site.
  */
-import type { Feature, FeatureContext, SiteId } from '../core/feature'
+import type { DesktopTake, Feature, FeatureContext, SiteId } from '../core/feature'
 import { homeChoice } from '../core/home'
+import type { InboxEntry } from '../core/inbox'
 import { featuresOf } from '../core/registry'
 import { edufinePumui } from '../features/edufine-pumui/index'
 import { nexacro } from './edufine'
-import { PAGE_TAG, type Pending } from './messages'
+import { PAGE_TAG } from './messages'
 import { call } from './page-channel'
 import { h, mountPanel, type Panel } from './page-ui'
 import { troubleTools } from './trouble'
@@ -44,8 +45,8 @@ function start(): void {
     if (site) {
       step('시작 ' + __VERSION__ + ' ' + site.id)
       const panel = mountPanel(() => void home(panel, site.id))
-      // remember this K-에듀파인 so [K-에듀파인으로 보내기] can bring it forward next time
-      void call('edufine:seen')
+      // remember this site so [K-에듀파인으로 보내기] can bring it forward next time
+      void call('site:seen', { site: site.id })
       window.addEventListener('message', (e) => {
         const d = e.data
         if (e.source === window && d && d[PAGE_TAG] === 'cmd' && d.type === 'open')
@@ -62,10 +63,9 @@ function start(): void {
   watch()
 }
 
-/** the work waiting for a task, from the web app or the desktop app */
-async function waitingWork(id: string): Promise<Pending | null> {
-  if (id !== edufinePumui.id) return null
-  const p = (await call<Pending | null>('pumui:peek-direct')) as Pending | null
+/** the work waiting for a task in its 받은 작업함, from the web app or the desktop app */
+async function waitingWork(id: string): Promise<InboxEntry | null> {
+  const p = (await call<InboxEntry | null>('inbox:peek', { feature: id })) as InboxEntry | null
   return p && typeof p.text === 'string' && p.text ? p : null
 }
 
@@ -76,16 +76,10 @@ function contextFor(panel: Panel, site: SiteId, id: string): FeatureContext {
     step,
     peek: async () => (await waitingWork(id))?.text ?? null,
     clear: async () => {
-      if (id === edufinePumui.id) await call('pumui:clear-direct')
+      await call('inbox:clear', { feature: id })
     },
     takeDesktop: async () =>
-      id === edufinePumui.id
-        ? ((await call('pumui:take-desktop', undefined, 25_000)) as {
-            ok: boolean
-            text?: string | null
-            state?: string
-          })
-        : { ok: false, state: 'off' },
+      (await call<DesktopTake>('work:take-desktop', { feature: id }, 25_000)) as DesktopTake,
     home: toHome,
     trouble: () => troubleTools({ panel, log, step, home: toHome }),
   }

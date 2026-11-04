@@ -92,7 +92,11 @@ test.afterAll(async () => {
 // a 품의 the web app handed over stays until it is filled; each test starts without one
 test.beforeEach(async () => {
   await sw.evaluate(async () => {
-    await (globalThis as any).chrome.storage.local.remove(['pending', 'autoOpenUntil'])
+    await (globalThis as any).chrome.storage.local.remove([
+      'inbox:edufine-pumui',
+      'pending',
+      'autoOpenUntil',
+    ])
   })
 })
 
@@ -249,7 +253,7 @@ const sendFromWebApp = async (): Promise<{ ok?: boolean; moved?: string }> => {
 
 const forgetEdufine = () =>
   sw.evaluate(async () => {
-    await (globalThis as any).chrome.storage.local.remove('edufinePlace')
+    await (globalThis as any).chrome.storage.local.remove(['place:edufine', 'edufinePlace'])
   })
 
 test('before K-에듀파인 was ever opened, a send waits for the 똑딱 button', async () => {
@@ -276,6 +280,52 @@ test('a send brings the open K-에듀파인 tab forward with the 품의 already 
   expect(await page.evaluate(() => document.visibilityState)).toBe('visible')
   await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
   await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  await page.close()
+})
+
+test('a send that names the task (work:send) lands the same way', async () => {
+  const page = await openEdufine()
+  const sender = await context.newPage()
+  await sender.goto(base + '/web-sender.html')
+  const reply = await sender.evaluate((t) => (window as any).sendWork('edufine-pumui', t), pkgText)
+  const unknown = await sender.evaluate((t) => (window as any).sendWork('neis-x', t), pkgText)
+  await sender.close()
+  expect(reply).toEqual({ ok: true, moved: 'focused' })
+  expect(unknown).toEqual({
+    ok: false,
+    reason: '이 확장이 모르는 업무예요. 확장을 업데이트해 주세요.',
+  })
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  await page.close()
+})
+
+test('after an update from 0.4.0, the waiting 품의 and the remembered K-에듀파인 carry over', async () => {
+  for (const p of context.pages()) if (p.url().includes('fake-edufine')) await p.close()
+  // what a 0.4.0 extension had stored
+  await sw.evaluate(
+    async ({ text, origin }) => {
+      const s = (globalThis as any).chrome.storage.local
+      await s.remove(['place:edufine', 'inbox:edufine-pumui'])
+      await s.set({
+        pending: { text, from: 'web', receivedAt: Date.now() },
+        edufinePlace: { origin, path: '/fake-edufine.html' },
+        edufineTabId: 999_999,
+      })
+    },
+    { text: pkgText, origin: base },
+  )
+  // the desktop app's /edufine/go page: the remembered address opens with the 품의 shown
+  const opened = context.waitForEvent('page', (p) => p.url().includes('fake-edufine'))
+  const go = await context.newPage()
+  await go.goto(base + '/edufine/go.html').catch(() => undefined)
+  const page = await opened
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible({
+    timeout: 15_000,
+  })
+  const old = await sw.evaluate(() =>
+    (globalThis as any).chrome.storage.local.get(['pending', 'edufinePlace', 'edufineTabId']),
+  )
+  expect(old).toEqual({})
   await page.close()
 })
 

@@ -1,42 +1,32 @@
 /**
- * What crosses between the K-에듀파인 page, the bridge and the extension background.
- * The bridge forwards only these types; everything else is dropped. Nothing is set by
- * the teacher: the K-에듀파인 addresses (https://*.go.kr) are granted at install, filling
- * is always offered after the preview, and the 화면 이름표 updates itself.
+ * What crosses between a site page, the bridge and the extension background. The bridge
+ * forwards only these types; everything else is dropped. The page and the background ship
+ * together, so these names change freely; what the web app and the desktop app send keeps
+ * its old names too (see background.ts). Nothing is set by the teacher.
  */
 export const PAGE_REQUESTS = [
   'map:get',
-  'pumui:peek-direct',
-  'pumui:clear-direct',
-  'pumui:take-desktop',
+  /** { feature }: the task's waiting work (InboxEntry) or null */
+  'inbox:peek',
+  /** { feature }: the task is done with its waiting work */
+  'inbox:clear',
+  /** { feature }: ask 똑딱작업실 (the desktop app) for the task's work (NativeReply) */
+  'work:take-desktop',
   'desktop:ping',
   'web:state',
-  'edufine:seen',
+  /** { site }: the page found that site running; remember the address and tab */
+  'site:seen',
   'panel:auto',
 ] as const
 export type PageRequest = (typeof PAGE_REQUESTS)[number]
 
-/** requests only the extension popup may make */
+/** requests only the extension popup may make ({ site }: the remembered address or null) */
 export const POPUP_REQUESTS = ['place:get'] as const
 
 export const PAGE_TAG = '__ttokEdufine'
 
-/** where the teacher's K-에듀파인 ran last; learned from the page, never typed */
-export interface EdufinePlace {
-  origin: string
-  /** path only: a query can carry session values */
-  path: string
-}
-
 /** what [K-에듀파인으로 보내기] did with the browser */
 export type Moved = 'focused' | 'opened' | 'unknown'
-
-/** a package handed over by the web app or the desktop app, waiting for the page */
-export interface Pending {
-  text: string
-  from: 'web' | 'desktop'
-  receivedAt: number
-}
 
 export type NativeReply =
   | { ok: true; text?: string | null; version?: string }

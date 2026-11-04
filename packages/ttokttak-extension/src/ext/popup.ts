@@ -1,10 +1,13 @@
 /** the toolbar popup: nothing to set; the tasks of 똑딱작업실, any waiting work and the K-에듀파인 it knows */
+import type { InboxEntry } from '../core/inbox'
+import type { Place } from '../core/places'
 import { FEATURES } from '../core/registry'
-import type { EdufinePlace, Pending } from './messages'
 import { h } from './page-ui'
 
-const send = (type: string): Promise<unknown> =>
-  new Promise((resolve) => chrome.runtime.sendMessage({ type }, (r: unknown) => resolve(r ?? null)))
+const send = (type: string, payload?: unknown): Promise<unknown> =>
+  new Promise((resolve) =>
+    chrome.runtime.sendMessage({ type, payload }, (r: unknown) => resolve(r ?? null)),
+  )
 
 /** a step with its [buttons] drawn bold */
 const stepLine = (s: string): HTMLElement =>
@@ -14,9 +17,8 @@ const stepLine = (s: string): HTMLElement =>
     ...s.split(/(\[[^\]]+\])/).map((part) => (part.startsWith('[') ? h('b', {}, part) : part)),
   )
 
-async function waiting(id: string): Promise<Pending | null> {
-  if (id !== 'edufine-pumui') return null
-  const p = (await send('pumui:peek-direct')) as Pending | null
+async function waiting(id: string): Promise<InboxEntry | null> {
+  const p = (await send('inbox:peek', { feature: id })) as InboxEntry | null
   return p && p.text ? p : null
 }
 
@@ -53,7 +55,7 @@ async function init(): Promise<void> {
       ),
     )
   }
-  const place = (await send('place:get')) as EdufinePlace | null
+  const place = (await send('place:get', { site: 'edufine' })) as Place | null
   ;(document.getElementById('place') as HTMLElement).textContent =
     place && place.origin
       ? 'K-에듀파인(' +
