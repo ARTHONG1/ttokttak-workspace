@@ -5,13 +5,22 @@
  * A paste, a file, the self-check and the diagnostic file stay folded away. It never
  * saves or submits anything in K-에듀파인.
  */
-import { buildDiagnostic, runChecks, type DesktopState, type WebState } from '../diagnose'
-import { applyFill, budgetMark, planFill } from '../fill'
-import { findNexacro, frameSurvey, type FrameWin } from '../nexacro'
-import { parsePumuiPackage, PUMUI_FILE_EXTENSION, type PumuiPackage } from '../pumui-package'
-import { openPumuiMenu } from '../menu'
-import { detectScreen, findWorkForm, type NexacroLike } from '../screen'
-import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../screen-map'
+import {
+  buildDiagnostic,
+  runChecks,
+  type DesktopState,
+  type WebState,
+} from '../sites/edufine/diagnose'
+import { applyFill, budgetMark, planFill } from '../features/edufine-pumui/fill'
+import { findNexacro, frameSurvey, type FrameWin } from '../sites/edufine/nexacro'
+import {
+  parsePumuiPackage,
+  PUMUI_FILE_EXTENSION,
+  type PumuiPackage,
+} from '../features/edufine-pumui/package'
+import { openPumuiMenu } from '../sites/edufine/menu'
+import { detectScreen, findWorkForm, type NexacroLike } from '../sites/edufine/screen'
+import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../sites/edufine/screen-map'
 import { PAGE_TAG, type Pending } from './messages'
 import { call } from './page-channel'
 import { h, mountPanel, won, type Panel } from './page-ui'

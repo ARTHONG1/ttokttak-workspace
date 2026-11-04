@@ -4,9 +4,9 @@
  * answers the page scripts the manifest puts on every https://*.go.kr page (the page
  * script itself shows the 똑딱 button only where K-에듀파인 is running).
  */
-import { NATIVE_HOST_NAME, SCREEN_MAP_URL, WEB_APP_ORIGINS } from '../ids'
-import { parsePumuiPackage } from '../pumui-package'
-import { DEFAULT_SCREEN_MAP, parseScreenMap, type ScreenMap } from '../screen-map'
+import { NATIVE_HOST_NAME, SCREEN_MAP_URL, WEB_APP_ORIGINS } from '../core/ids'
+import { parsePumuiPackage } from '../features/edufine-pumui/package'
+import { DEFAULT_SCREEN_MAP, parseScreenMap, type ScreenMap } from '../sites/edufine/screen-map'
 import {
   PAGE_REQUESTS,
   POPUP_REQUESTS,

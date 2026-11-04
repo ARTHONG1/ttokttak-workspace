@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { applyFill, budgetMark, planFill } from '../src/fill'
-import { buildPumuiPackage, type PumuiItem } from '../src/pumui-package'
-import { findWorkForm } from '../src/screen'
-import { DEFAULT_SCREEN_MAP as map } from '../src/screen-map'
-import { causeScreen, makeFakeEdufine, pumuiScreen } from './fixtures/fake-nexacro'
+import { applyFill, budgetMark, planFill } from '../../../src/features/edufine-pumui/fill'
+import { buildPumuiPackage, type PumuiItem } from '../../../src/features/edufine-pumui/package'
+import { findWorkForm } from '../../../src/sites/edufine/screen'
+import { DEFAULT_SCREEN_MAP as map } from '../../../src/sites/edufine/screen-map'
+import { causeScreen, makeFakeEdufine, pumuiScreen } from '../../fixtures/fake-nexacro'
 
 const item = (
   description: string,

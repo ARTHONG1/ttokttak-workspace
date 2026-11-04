@@ -1,7 +1,7 @@
 // Browser test page: puts the fake K-에듀파인 objects where the real page has nexacro.
 // ?frame=1 wraps the screen in a same-origin frame the way a portal page can; the objects
 // then live in that frame (?inner=1) and the top page has none.
-import { DEFAULT_SCREEN_MAP } from '../../src/screen-map'
+import { DEFAULT_SCREEN_MAP } from '../../src/sites/edufine/screen-map'
 import { makeFakeEdufine, pumuiScreen } from './fake-nexacro'
 
 const q = new URLSearchParams(location.search)

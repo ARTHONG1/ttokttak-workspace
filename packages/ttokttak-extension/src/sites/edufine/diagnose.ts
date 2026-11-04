@@ -17,7 +17,7 @@ import {
   type ScreenKind,
 } from './screen'
 import type { ScreenMap } from './screen-map'
-import type { UnitTable } from './units'
+import type { UnitTable } from './screen'
 
 export type DesktopState = 'ok' | 'off' | 'missing' | 'unknown'
 export type WebState = 'ok' | 'none' | 'unknown'

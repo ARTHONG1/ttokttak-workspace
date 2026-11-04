@@ -5,8 +5,8 @@
  * getColumn, setColumn, deleteRow). Every write is logged; calling a save or approval
  * function is logged as FORBIDDEN.
  */
-import type { FakeObject, FakeRow as Row, FakeSpec } from '../../src/fake-spec'
-import type { ScreenMap } from '../../src/screen-map'
+import type { FakeObject, FakeRow as Row, FakeSpec } from '../../src/sites/edufine/fake-spec'
+import type { ScreenMap } from '../../src/sites/edufine/screen-map'
 
 export type { FakeObject, FakeSpec }
 export type Write = { op: string; target: string; args: unknown[] }

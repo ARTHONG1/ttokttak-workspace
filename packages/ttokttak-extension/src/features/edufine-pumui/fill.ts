@@ -5,10 +5,10 @@
  * on the item dataset, and set_value on the title and summary. Nothing saves, submits or
  * talks to the server; saving stays with the teacher.
  */
-import { getPath, isDataset } from './nexacro'
-import type { PumuiItem, PumuiPackage } from './pumui-package'
-import { detectScreen, gridDataset, readUnitTable, type WorkForm } from './screen'
-import type { ScreenMap } from './screen-map'
+import { getPath, isDataset } from '../../sites/edufine/nexacro'
+import type { PumuiItem, PumuiPackage } from './package'
+import { detectScreen, gridDataset, readUnitTable, type WorkForm } from '../../sites/edufine/screen'
+import type { ScreenMap } from '../../sites/edufine/screen-map'
 import { matchUnit } from './units'
 
 export interface FillPlan {

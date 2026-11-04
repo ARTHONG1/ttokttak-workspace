@@ -8,8 +8,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { nativeHostManifest } from '../../cli/src/edufine-register'
 import { startControlServer, type ControlServer } from '../../../apps/shell/src/main/control-server'
-import { NATIVE_HOST_NAME } from '../src/ids'
-import { buildPumuiPackage } from '../src/pumui-package'
+import { NATIVE_HOST_NAME } from '../src/core/ids'
+import { buildPumuiPackage } from '../src/features/edufine-pumui/package'
 
 // The desktop route end to end in a real Chromium: the extension asks for a 품의 over
 // native messaging, Chromium starts the host, the host asks a running "app" (a control

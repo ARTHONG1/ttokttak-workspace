@@ -1,17 +1,17 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { specFromDiagnostic, type DiagnosticFile } from '../src/diagnose'
-import { applyFill, planFill } from '../src/fill'
-import { buildPumuiPackage } from '../src/pumui-package'
-import { findWorkForm } from '../src/screen'
-import { DEFAULT_SCREEN_MAP } from '../src/screen-map'
-import { makeFakeEdufine } from './fixtures/fake-nexacro'
+import { specFromDiagnostic, type DiagnosticFile } from '../../../src/sites/edufine/diagnose'
+import { applyFill, planFill } from '../../../src/features/edufine-pumui/fill'
+import { buildPumuiPackage } from '../../../src/features/edufine-pumui/package'
+import { findWorkForm } from '../../../src/sites/edufine/screen'
+import { DEFAULT_SCREEN_MAP } from '../../../src/sites/edufine/screen-map'
+import { makeFakeEdufine } from '../../fixtures/fake-nexacro'
 
 // Field survey files: structure-only copies of diagnostic files from real K-에듀파인
 // screens (tools/rea-edufine/diag.mjs in the workspace writes them here). Every 품의등록
 // screen recorded in the field must fill with the current code and 화면 이름표.
-const DIR = join(__dirname, 'fixtures/surveys')
+const DIR = join(__dirname, '../../fixtures/surveys')
 const files = existsSync(DIR) ? readdirSync(DIR).filter((f) => f.endsWith('.json')) : []
 
 describe('field survey screens', () => {

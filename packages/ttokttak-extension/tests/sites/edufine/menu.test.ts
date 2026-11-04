@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { openPumuiMenu } from '../src/menu'
-import { DEFAULT_SCREEN_MAP, parseScreenMap } from '../src/screen-map'
+import { openPumuiMenu } from '../../../src/sites/edufine/menu'
+import { DEFAULT_SCREEN_MAP, parseScreenMap } from '../../../src/sites/edufine/screen-map'
 
 const map = DEFAULT_SCREEN_MAP
 

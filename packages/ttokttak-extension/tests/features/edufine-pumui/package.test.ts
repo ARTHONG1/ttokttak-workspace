@@ -4,7 +4,7 @@ import {
   parsePumuiPackage,
   PUMUI_FILE_EXTENSION,
   type PumuiItem,
-} from '../src/pumui-package'
+} from '../../../src/features/edufine-pumui/package'
 
 const item = (quantity: number, unitPrice: number, description = '비커 500ml'): PumuiItem => ({
   description,

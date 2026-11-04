@@ -5,7 +5,9 @@
  * stops the fill instead of guessing.
  */
 
-export type UnitTable = { code: string; name: string }[]
+import type { UnitTable } from '../../sites/edufine/screen'
+
+export type { UnitTable }
 
 /** our name → K-에듀파인 names to try, in order (normalized: no spaces, upper case) */
 export const UNIT_ALIASES: Readonly<Record<string, readonly string[]>> = {

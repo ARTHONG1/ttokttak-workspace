@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchUnit, UNIT_ALIASES, type UnitTable } from '../src/units'
+import { matchUnit, UNIT_ALIASES, type UnitTable } from '../../../src/features/edufine-pumui/units'
 
 const table: UnitTable = [
   { code: '001', name: '개' },

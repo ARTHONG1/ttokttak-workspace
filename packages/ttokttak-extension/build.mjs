@@ -10,9 +10,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const DIST = join(HERE, 'dist')
 const dev = process.argv.includes('--dev')
 const pkg = JSON.parse(await readFile(join(HERE, 'package.json'), 'utf8'))
-const ids = await readFile(join(HERE, 'src/ids.ts'), 'utf8')
+const ids = await readFile(join(HERE, 'src/core/ids.ts'), 'utf8')
 const key = /EXTENSION_PUBLIC_KEY =\s*'([^']+)'/.exec(ids)?.[1]
-if (!key) throw new Error('EXTENSION_PUBLIC_KEY not found in src/ids.ts')
+if (!key) throw new Error('EXTENSION_PUBLIC_KEY not found in src/core/ids.ts')
 
 await rm(DIST, { recursive: true, force: true })
 await mkdir(DIST, { recursive: true })

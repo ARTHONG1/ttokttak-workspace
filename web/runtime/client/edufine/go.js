@@ -1,7 +1,7 @@
 // /edufine/go: 똑딱작업실 (the desktop app) opens this page after [K-에듀파인으로 보내기].
 // It asks the 똑딱 에듀파인 연결 extension to bring the K-에듀파인 tab forward; the extension
 // closes this tab when it did. The page only speaks when there is nowhere to go.
-// EXTENSION_ID must equal packages/ttokttak-extension/src/ids.ts (a test keeps them in step).
+// EXTENSION_ID must equal packages/ttokttak-extension/src/core/ids.ts (a test keeps them in step).
 ;(function () {
   var EXTENSION_ID = 'ebjaejdjilpnbcbcejmeeneahkngcmnm'
   function say(title, text, hint) {

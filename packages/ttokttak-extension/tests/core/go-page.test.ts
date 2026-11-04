@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { EDUFINE_GO_URL, EXTENSION_ID, WEB_APP_ORIGINS } from '../src/ids'
+import { EDUFINE_GO_URL, EXTENSION_ID, WEB_APP_ORIGINS } from '../../src/core/ids'
 
-const GO = join(dirname(fileURLToPath(import.meta.url)), '../../../web/runtime/client/edufine')
+const GO = join(dirname(fileURLToPath(import.meta.url)), '../../../../web/runtime/client/edufine')
 
 describe('the /edufine/go page the desktop app opens', () => {
   it('talks to this extension (its id is written into the plain script)', () => {

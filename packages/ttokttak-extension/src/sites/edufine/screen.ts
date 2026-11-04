@@ -1,8 +1,9 @@
 import { getPath, isDataset, type DatasetLike } from './nexacro'
 import type { ScreenMap } from './screen-map'
-import type { UnitTable } from './units'
 
 export type NexacroLike = { getApplication(): unknown }
+/** K-에듀파인's unit table (dsEAB0005200) as code and name pairs */
+export type UnitTable = { code: string; name: string }[]
 /** the work screen form: an opaque page object read through ScreenMap paths */
 export type WorkForm = Record<string, unknown>
 

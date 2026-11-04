@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findNexacro, frameSurvey, type FrameWin } from '../src/nexacro'
+import { findNexacro, frameSurvey, type FrameWin } from '../../../src/sites/edufine/nexacro'
 
 // a window as the page script sees it: its own globals, child frames by index, length
 function win(

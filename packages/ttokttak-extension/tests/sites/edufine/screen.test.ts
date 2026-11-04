@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { detectScreen, findWorkForm, gridDataset, readUnitTable } from '../src/screen'
-import { DEFAULT_SCREEN_MAP, parseScreenMap, type ScreenMap } from '../src/screen-map'
-import { causeScreen, makeFakeEdufine, pumuiScreen } from './fixtures/fake-nexacro'
+import {
+  detectScreen,
+  findWorkForm,
+  gridDataset,
+  readUnitTable,
+} from '../../../src/sites/edufine/screen'
+import {
+  DEFAULT_SCREEN_MAP,
+  parseScreenMap,
+  type ScreenMap,
+} from '../../../src/sites/edufine/screen-map'
+import { causeScreen, makeFakeEdufine, pumuiScreen } from '../../fixtures/fake-nexacro'
 
 const map = DEFAULT_SCREEN_MAP
 

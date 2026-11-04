@@ -12,8 +12,8 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { EXTENSION_ID } from '../src/ids'
-import { buildPumuiPackage } from '../src/pumui-package'
+import { EXTENSION_ID } from '../src/core/ids'
+import { buildPumuiPackage } from '../src/features/edufine-pumui/package'
 
 const HERE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(HERE, 'dist')

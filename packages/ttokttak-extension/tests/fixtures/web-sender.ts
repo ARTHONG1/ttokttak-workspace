@@ -1,5 +1,5 @@
 // Browser test page standing in for the 똑딱작업실 web app: hands a 품의 to the extension.
-import { EXTENSION_ID } from '../../src/ids'
+import { EXTENSION_ID } from '../../src/core/ids'
 
 Object.assign(window, {
   sendToExtension: (text: string) =>
