@@ -14,7 +14,7 @@
  */
 
 /** Editor module that owns a given input extension. */
-export type HeadlessExportModule = 'docs' | 'sheets' | 'slides' | 'markdown' | 'html'
+export type HeadlessExportModule = 'docs' | 'sheets' | 'slides' | 'markdown' | 'html' | 'hwp'
 
 /** Conversion targets the headless entry accepts; see HEADLESS_TARGETS for which module renders which. */
 export type HeadlessExportFormat = 'pdf' | 'docx' | 'html' | 'md'
@@ -26,6 +26,7 @@ export const HEADLESS_TARGETS: Record<HeadlessExportModule, readonly HeadlessExp
   slides: ['pdf'],
   markdown: ['pdf'],
   html: ['pdf', 'docx'],
+  hwp: ['pdf'],
 }
 
 const ALL_TARGETS: readonly HeadlessExportFormat[] = ['pdf', 'docx', 'html', 'md']
@@ -77,6 +78,7 @@ const MODULE_BY_EXTENSION: ReadonlyArray<readonly [RegExp, HeadlessExportModule]
   [/\.pptx$/i, 'slides'],
   [/\.(md|markdown)$/i, 'markdown'],
   [/\.(html|htm)$/i, 'html'],
+  [/\.(hwp|hwpx)$/i, 'hwp'],
 ]
 
 /** Which editor module can render this input, or null when the extension is unsupported. */
@@ -87,7 +89,7 @@ export function headlessModuleFor(inputPath: string): HeadlessExportModule | nul
 
 /** Extensions the headless entry accepts, for error messages. */
 export const HEADLESS_SUPPORTED_EXTENSIONS =
-  '.docx, .xlsx, .xlsm, .xls, .csv, .pptx, .md, .markdown, .html, .htm'
+  '.docx, .xlsx, .xlsm, .xls, .csv, .pptx, .md, .markdown, .html, .htm, .hwp, .hwpx'
 
 /** `--flag value` and `--flag=value` both read the same. */
 function readOption(argv: readonly string[], index: number, flag: string): string | null {

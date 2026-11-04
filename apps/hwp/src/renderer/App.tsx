@@ -652,6 +652,36 @@ export default function App() {
     [phase, agentBridge],
   )
 
+  // a hidden export view (--headless-export, 똑딱서명): once the document is open, its print
+  // pages go to the main process, which writes the PDF to the path it was given
+  const [headlessExport, setHeadlessExport] = useState(false)
+  const headlessSentRef = useRef(false)
+  useEffect(() => {
+    void window.hwpApi
+      .consumeHeadlessExport?.()
+      .then((yes) => setHeadlessExport(yes))
+      .catch(() => {})
+  }, [])
+  useEffect(() => {
+    if (!headlessExport || headlessSentRef.current) return
+    if (phase !== 'ready' && phase !== 'failed') return
+    headlessSentRef.current = true
+    const done = window.hwpApi.headlessExportDone
+    if (!done) return
+    if (phase === 'failed') {
+      void done({ ok: false, error: 'the document did not open' })
+      return
+    }
+    void (async () => {
+      try {
+        const job = await gatherPrintJob(agentBridge, 'pdf', () => {})
+        await done({ ok: true, job })
+      } catch (error) {
+        await done({ ok: false, error: detailOf(error) || 'the pages could not be drawn' })
+      }
+    })()
+  }, [headlessExport, phase, agentBridge])
+
   // autosave to the document's own file: 30 s and window blur, after the user has
   // paused (exporting a whole HWP document costs more than the other editors' saves)
   useEffect(() => {

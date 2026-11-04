@@ -17,6 +17,10 @@ export const HWP_CHANNELS = {
   printRequest: 'hwp:print-request',
   fileCommand: 'hwp:file-command',
   printPages: 'hwp:print-pages',
+  /** invoke → boolean: this view is a hidden export view (--headless-export, 똑딱서명) */
+  headlessExport: 'hwp:headless-export',
+  /** invoke(HeadlessHwpResult): a hidden export view hands over its print pages, or its failure */
+  headlessExportDone: 'hwp:headless-export-done',
   dirtyChanged: 'hwp:dirty-changed',
   closeSaveRequest: 'hwp:close-save-request',
   closeSaveResult: 'hwp:close-save-result',
@@ -106,6 +110,9 @@ export type PrintResult =
   | { ok: true; canceled: true }
   | { ok: true; canceled?: false; path?: string }
   | { ok: false; error: string }
+
+/** What a hidden export view reports: its document's pages as a PDF job, or its failure. */
+export type HeadlessHwpResult = { ok: true; job: PrintJob } | { ok: false; error: string }
 
 /** Most pages one job takes; past it the job is refused rather than run out of memory. */
 export const MAX_PRINT_PAGES = 5000
@@ -305,6 +312,10 @@ export interface HwpApi {
   onPrintRequest(handler: (mode: PrintMode) => void): () => void
   /** make the PDF (asking where) or open the print dialog for these pages */
   printPages(job: PrintJob): Promise<PrintResult>
+  /** this view lives in a hidden window whose only job is a PDF of the opened document */
+  consumeHeadlessExport?(): Promise<boolean>
+  /** the hidden export view's pages (a 'pdf' job), or why it could not draw them */
+  headlessExportDone?(result: HeadlessHwpResult): Promise<void>
   onCloseSaveRequest(handler: () => void): () => void
   sendCloseSaveResult(ok: boolean): void
   /** the memo editor opened or closed in this tab: main holds back save, close and quit */

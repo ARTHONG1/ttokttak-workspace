@@ -316,6 +316,12 @@ export function requestHwpPrint(contents: WebContents, mode: PrintMode): void {
 const printWindow = (): BrowserWindow =>
   new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } })
 
+/** hidden export views (exportHwpPdfHeadless): webContents id → where the PDF goes, who waits */
+const headlessExports = new Map<
+  number,
+  { outPath: string; settle: (error: Error | null) => void }
+>()
+
 /** The name an exported PDF is offered under: the document's, or the untitled one. */
 function pdfName(wcId: number): string {
   const current = savePathByWc.get(wcId)
@@ -550,6 +556,34 @@ function registerHwpIpc(): void {
   })
 
   ipcMain.handle(HWP_CHANNELS.trackingDropped, (e) => trackingDroppedByWc.has(e.sender.id))
+
+  // ---- hidden export views (exportHwpPdfHeadless): the pages come here, the PDF goes to
+  // the path the caller chose, without a dialog ----
+  ipcMain.handle(HWP_CHANNELS.headlessExport, (e) => headlessExports.has(e.sender.id))
+  ipcMain.handle(HWP_CHANNELS.headlessExportDone, async (e, raw: unknown) => {
+    const pending = headlessExports.get(e.sender.id)
+    if (!pending) return
+    headlessExports.delete(e.sender.id)
+    const result = (raw ?? {}) as { ok?: unknown; job?: unknown; error?: unknown }
+    if (result.ok !== true) {
+      const reason = typeof result.error === 'string' && result.error ? result.error : ''
+      pending.settle(new Error(reason || 'the document did not open'))
+      return
+    }
+    const bad =
+      badJob(result.job) ?? ((result.job as PrintJob).mode !== 'pdf' ? 'not a PDF job' : null)
+    if (bad) {
+      pending.settle(new Error(`hwp: ${bad}`))
+      return
+    }
+    try {
+      const pdf = await printJobToPdf(result.job as PrintJob, printWindow)
+      await atomicWriteFile(pending.outPath, pdf)
+      pending.settle(null)
+    } catch (err) {
+      pending.settle(err instanceof Error ? err : new Error(String(err)))
+    }
+  })
 
   /** one print or PDF at a time per view */
   const printing = new Set<number>()
@@ -963,8 +997,9 @@ function grantAndTrack(
 ): void {
   const wcId = wc.id
   hwpViews.add(wcId)
-  // first: its close settles the recovery copy while the view's state is still here
-  trackHwpRecovery(wc)
+  // first: its close settles the recovery copy while the view's state is still here (a
+  // hidden export view only reads its file, so it keeps no copy)
+  if (!options.headless) trackHwpRecovery(wc)
   if (openPath && existsSync(openPath)) {
     openPathByWc.set(wcId, openPath)
     allowedByWc.set(wcId, new Set([openPath]))
@@ -977,7 +1012,7 @@ function grantAndTrack(
       savePathByWc.set(wcId, openPath)
     }
   }
-  installFileShortcuts(wc)
+  if (!options.headless) installFileShortcuts(wc)
   // the embedded editor vetoes unload while it holds unsaved edits; closing is decided by
   // requestHwpClose, which has already asked the user by the time the page unloads
   wc.on('will-prevent-unload', (event) => event.preventDefault())
@@ -1021,6 +1056,8 @@ export interface HwpViewOptions {
    * template's, spec 5.7): it is read like a file, saved like a new document.
    */
   untitledCopy?: boolean | undefined
+  /** a hidden export view (exportHwpPdfHeadless): no recovery copy, no file shortcuts */
+  headless?: boolean | undefined
 }
 
 export function createHwpView(
@@ -1039,6 +1076,54 @@ export function createHwpView(
   grantAndTrack(view.webContents, openPath, options)
   void view.webContents.loadURL(rendererUrl(runtime.rendererUrl, 'hwp'))
   return view
+}
+
+/**
+ * A PDF of `input` at `outPath` with no visible window (--headless-export, 똑딱서명): a
+ * hidden HWP view opens the file the usual way and hands over its print pages, which
+ * become the PDF the File menu's export makes.
+ */
+export async function exportHwpPdfHeadless(
+  input: string,
+  outPath: string,
+  timeoutMs = 180_000,
+): Promise<void> {
+  registerHwpIpc()
+  const win = new BrowserWindow({
+    show: false,
+    width: 1200,
+    height: 900,
+    webPreferences: {
+      preload: runtime.preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      backgroundThrottling: false,
+    },
+  })
+  const wcId = win.webContents.id
+  grantAndTrack(win.webContents, input, { headless: true })
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await new Promise<void>((resolve, reject) => {
+      headlessExports.set(wcId, {
+        outPath,
+        settle: (error) => (error ? reject(error) : resolve()),
+      })
+      win.webContents.on('render-process-gone', (_event, details) =>
+        reject(new Error(`hwp renderer stopped (${details.reason})`)),
+      )
+      timer = setTimeout(
+        () => reject(new Error(`hwp export timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      )
+      void win.webContents.loadURL(rendererUrl(runtime.rendererUrl, 'hwp'))
+    })
+  } finally {
+    if (timer) clearTimeout(timer)
+    headlessExports.delete(wcId)
+    if (!win.isDestroyed()) win.destroy()
+  }
 }
 
 /** Standalone window mode: `npm run dev -w @genoffice/hwp`, document path passed via argv */
