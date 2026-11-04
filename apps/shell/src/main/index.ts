@@ -144,6 +144,7 @@ import {
   readCartFile,
 } from './cart-file'
 import { pumuiOutbox } from './pumui-outbox'
+import { EDUFINE_GO_URL } from '@genoffice/edufine-link/ids'
 import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
 import {
@@ -5721,6 +5722,11 @@ function registerHomeIpc(): void {
       ? pumuiOutbox.enqueue(text)
       : { ok: false, reason: '품의를 읽지 못했어요.' },
   )
+  // then the browser: the web app's /edufine/go page asks the 똑딱 에듀파인 연결 extension
+  // to bring the K-에듀파인 tab forward (this process cannot reach the browser's tabs)
+  ipcMain.handle(HOME_CHANNELS.openEdufine, async () => {
+    await shell.openExternal(EDUFINE_GO_URL).catch(() => undefined)
+  })
 
   // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
   // YouTube video's captions fetched by this process

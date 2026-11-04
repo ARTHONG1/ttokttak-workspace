@@ -249,6 +249,9 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['pumuiSend']>
     >
   },
+  async openEdufine() {
+    await ipcRenderer.invoke(HOME_CHANNELS.openEdufine)
+  },
   async readQuizFile(kind) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<
       ReturnType<HomeApi['readQuizFile']>

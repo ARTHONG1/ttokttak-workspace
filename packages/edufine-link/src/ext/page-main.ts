@@ -11,7 +11,7 @@ import { findNexacro, frameSurvey, type FrameWin } from '../nexacro'
 import { parsePumuiPackage, PUMUI_FILE_EXTENSION, type PumuiPackage } from '../pumui-package'
 import { findWorkForm, type NexacroLike } from '../screen'
 import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../screen-map'
-import type { Pending } from './messages'
+import { PAGE_TAG, type Pending } from './messages'
 import { call } from './page-channel'
 import { h, mountPanel, won, type Panel } from './page-ui'
 
@@ -45,6 +45,16 @@ function start(): void {
     if (nexacro()) {
       step('시작 ' + __VERSION__)
       const panel = mountPanel(() => void open(panel))
+      // remember this K-에듀파인 so [K-에듀파인으로 보내기] can bring it forward next time
+      void call('edufine:seen')
+      window.addEventListener('message', (e) => {
+        const d = e.data
+        if (e.source === window && d && d[PAGE_TAG] === 'cmd' && d.type === 'open') void open(panel)
+      })
+      // a send opened this tab (or brought it up while it was loading): show the 품의 now
+      void call<boolean>('panel:auto').then((auto) => {
+        if (auto === true) void open(panel)
+      })
       return
     }
     if (Date.now() - began < WATCH_MS) setTimeout(watch, WATCH_EVERY_MS)

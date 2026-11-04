@@ -311,6 +311,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     const out = await sendPumui(pkgText, {
       web: isWebEdition(),
       pumuiSend: typeof api?.pumuiSend === 'function' ? (t) => api.pumuiSend(t) : undefined,
+      openEdufine: typeof api?.openEdufine === 'function' ? () => api.openEdufine() : undefined,
       runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
     })
     setSendNote({ ok: out.ok, text: out.message, pkgText })

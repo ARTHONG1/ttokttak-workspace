@@ -58,15 +58,42 @@ describe('sendPumui', () => {
 
   it('holds the 품의 in the desktop app', async () => {
     const sent: string[] = []
+    let opened = 0
     const out = await sendPumui(text, {
       web: false,
       pumuiSend: async (t) => (sent.push(t), { ok: true, title: 'x' }),
+      openEdufine: async () => void (opened += 1),
     })
     expect(out).toMatchObject({ ok: true, route: 'desktop' })
-    // one button on the K-에듀파인 screen, nothing else to find
-    expect(out.message).toContain('[똑딱]을 누르면 바로 보여요')
-    expect(out.message).not.toContain('받기')
+    // then the browser is brought to K-에듀파인, and only one button is left to press there
+    expect(opened).toBe(1)
+    expect(out.message).toContain('K-에듀파인으로 옮겼어요')
+    expect(out.message).toContain('[K-에듀파인에 채우기]')
     expect(sent).toEqual([text])
+  })
+
+  it('does not open the browser when the app could not hold the 품의', async () => {
+    let opened = 0
+    const out = await sendPumui(text, {
+      web: false,
+      pumuiSend: async () => ({ ok: false, reason: '품의를 읽지 못했어요.' }),
+      openEdufine: async () => void (opened += 1),
+    })
+    expect(out).toEqual({ ok: false, route: 'desktop', message: '품의를 읽지 못했어요.' })
+    expect(opened).toBe(0)
+  })
+
+  it('tells the web app user where the extension took them', async () => {
+    const answer = (reply: unknown) => ({
+      sendMessage: (_i: string, _m: unknown, cb: (r: unknown) => void) => cb(reply),
+    })
+    const said = async (reply: unknown) =>
+      (await sendPumui(text, { web: true, runtime: answer(reply) })).message
+    expect(await said({ ok: true, moved: 'focused' })).toContain('K-에듀파인 화면으로 옮겼어요')
+    expect(await said({ ok: true, moved: 'opened' })).toContain('새 탭으로 열었어요')
+    expect(await said({ ok: true, moved: 'unknown' })).toContain('한 번 열어 두면')
+    // an extension older than the move says nothing about it
+    expect(await said({ ok: true })).toContain('[똑딱]을 누르면 바로 보여요')
   })
 
   it('gives the 품의 to the extension from the web app, never to the server queue', async () => {

@@ -1,10 +1,16 @@
 /**
  * Isolated-world bridge: the page script cannot use chrome.*, so its requests come here
- * by postMessage and go on to the background. Only PAGE_REQUESTS pass.
+ * by postMessage and go on to the background. Only PAGE_REQUESTS pass. The one thing the
+ * background sends the other way is "open the 똑딱 panel" after a send brought this tab up.
  */
 import { PAGE_REQUESTS, PAGE_TAG } from './messages'
 
 const allowed = new Set<string>(PAGE_REQUESTS)
+
+chrome.runtime.onMessage.addListener((msg: { type?: string }) => {
+  if (msg?.type === 'panel:open')
+    window.postMessage({ [PAGE_TAG]: 'cmd', type: 'open' }, location.origin)
+})
 
 window.addEventListener('message', (e) => {
   const d = e.data

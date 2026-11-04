@@ -92,7 +92,7 @@ test.afterAll(async () => {
 // a 품의 the web app handed over stays until it is filled; each test starts without one
 test.beforeEach(async () => {
   await sw.evaluate(async () => {
-    await (globalThis as any).chrome.storage.local.remove('pending')
+    await (globalThis as any).chrome.storage.local.remove(['pending', 'autoOpenUntil'])
   })
 })
 
@@ -197,12 +197,22 @@ test('reads a 품의 file', async () => {
   await page.close()
 })
 
-test('shows the 품의 the web app sent as soon as 똑딱 is pressed', async () => {
+const sendFromWebApp = async (): Promise<{ ok?: boolean; moved?: string }> => {
   const sender = await context.newPage()
   await sender.goto(base + '/web-sender.html')
   const reply = await sender.evaluate((t) => (window as any).sendToExtension(t), pkgText)
-  expect(reply).toEqual({ ok: true })
   await sender.close()
+  return reply as { ok?: boolean; moved?: string }
+}
+
+const forgetEdufine = () =>
+  sw.evaluate(async () => {
+    await (globalThis as any).chrome.storage.local.remove('edufinePlace')
+  })
+
+test('before K-에듀파인 was ever opened, a send waits for the 똑딱 button', async () => {
+  await forgetEdufine()
+  expect(await sendFromWebApp()).toEqual({ ok: true, moved: 'unknown' })
   const page = await openEdufine()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
   await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
@@ -215,6 +225,51 @@ test('shows the 품의 the web app sent as soon as 똑딱 is pressed', async () 
     timeout: 20_000,
   })
   await page.close()
+})
+
+test('a send brings the open K-에듀파인 tab forward with the 품의 already shown', async () => {
+  const page = await openEdufine()
+  expect(await sendFromWebApp()).toEqual({ ok: true, moved: 'focused' })
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  expect(await page.evaluate(() => document.visibilityState)).toBe('visible')
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  await page.close()
+})
+
+test('with no K-에듀파인 tab open, a send opens the remembered one and shows the 품의 when ready', async () => {
+  for (const p of context.pages()) if (p.url().includes('fake-edufine')) await p.close()
+  const opened = context.waitForEvent('page', (p) => p.url().includes('fake-edufine'))
+  expect(await sendFromWebApp()).toEqual({ ok: true, moved: 'opened' })
+  const page = await opened
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible({
+    timeout: 15_000,
+  })
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  await page.close()
+})
+
+test("the desktop app's /edufine/go page brings K-에듀파인 forward and closes itself", async () => {
+  const page = await openEdufine()
+  const go = await context.newPage()
+  const closed = go.waitForEvent('close')
+  // the extension closes the page as soon as it moved, often before it finished loading
+  await go.goto(base + '/edufine/go.html').catch(() => undefined)
+  await closed
+  // no 똑딱작업실 in this test: the panel opens and says there is nothing yet
+  await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
+  await page.close()
+})
+
+test('the /edufine/go page says what to do while K-에듀파인 is unknown', async () => {
+  await forgetEdufine()
+  const go = await context.newPage()
+  await go.goto(base + '/edufine/go.html')
+  await expect(go.getByRole('heading', { name: 'K-에듀파인을 한 번 열어 주세요' })).toBeVisible()
+  await go.close()
 })
 
 test('runs the self-check and saves a diagnostic file without values', async () => {

@@ -11,10 +11,25 @@ export const PAGE_REQUESTS = [
   'pumui:take-desktop',
   'desktop:ping',
   'web:state',
+  'edufine:seen',
+  'panel:auto',
 ] as const
 export type PageRequest = (typeof PAGE_REQUESTS)[number]
 
+/** requests only the extension popup may make */
+export const POPUP_REQUESTS = ['place:get'] as const
+
 export const PAGE_TAG = '__ttokEdufine'
+
+/** where the teacher's K-에듀파인 ran last; learned from the page, never typed */
+export interface EdufinePlace {
+  origin: string
+  /** path only: a query can carry session values */
+  path: string
+}
+
+/** what [K-에듀파인으로 보내기] did with the browser */
+export type Moved = 'focused' | 'opened' | 'unknown'
 
 /** a package handed over by the web app or the desktop app, waiting for the page */
 export interface Pending {

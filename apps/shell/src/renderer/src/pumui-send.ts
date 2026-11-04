@@ -47,6 +47,8 @@ export interface SendDeps {
   web: boolean
   /** the desktop app's queue (window.aiOffice.pumuiSend) */
   pumuiSend?: (text: string) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
+  /** the desktop app opens the browser on K-에듀파인 (window.aiOffice.openEdufine) */
+  openEdufine?: () => Promise<unknown>
   /** window.chrome.runtime when an extension lets this page talk to it */
   runtime?: {
     sendMessage(id: string, msg: unknown, cb: (reply: unknown) => void): void
@@ -60,6 +62,19 @@ export type SendOutcome =
   | { ok: false; route: 'desktop' | 'none'; message: string }
 
 const TAKE_HINT = 'K-에듀파인 품의등록 화면 오른쪽 아래 [똑딱]을 누르면 바로 보여요'
+const CHECK_AND_FILL = '[똑딱] 창에서 확인한 뒤 [K-에듀파인에 채우기]를 누르세요.'
+
+/** what the extension did with the browser after it took the 품의 (0.3.0+; older ones say nothing) */
+function movedMessage(moved: unknown): string {
+  if (moved === 'focused') return 'K-에듀파인 화면으로 옮겼어요. ' + CHECK_AND_FILL
+  if (moved === 'opened')
+    return 'K-에듀파인을 새 탭으로 열었어요. 로그인하고 품의등록 화면을 열면 품의가 바로 떠요.'
+  return (
+    '확장 프로그램에 품의를 보냈어요. ' +
+    TAKE_HINT +
+    '. K-에듀파인을 한 번 열어 두면 다음부터는 이 버튼이 그 화면으로 바로 옮겨 줘요.'
+  )
+}
 
 export const NO_EXTENSION =
   '이 브라우저에 「똑딱 에듀파인 연결」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
@@ -67,13 +82,19 @@ export const NO_EXTENSION =
 export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutcome> {
   if (!deps.web && deps.pumuiSend) {
     const r = await deps.pumuiSend(text)
-    return r.ok
-      ? {
-          ok: true,
-          route: 'desktop',
-          message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + '.',
-        }
-      : { ok: false, route: 'desktop', message: r.reason }
+    if (!r.ok) return { ok: false, route: 'desktop', message: r.reason }
+    if (!deps.openEdufine)
+      return {
+        ok: true,
+        route: 'desktop',
+        message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + '.',
+      }
+    await deps.openEdufine().catch(() => undefined)
+    return {
+      ok: true,
+      route: 'desktop',
+      message: '품의를 준비하고 브라우저에서 K-에듀파인으로 옮겼어요. ' + CHECK_AND_FILL,
+    }
   }
   const rt = deps.runtime
   if (!rt || typeof rt.sendMessage !== 'function')
@@ -90,12 +111,12 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
       resolve(null)
     }
   })
-  const r = reply as { ok?: boolean; reason?: string } | null
+  const r = reply as { ok?: boolean; reason?: string; moved?: unknown } | null
   if (r?.ok)
     return {
       ok: true,
       route: 'extension',
-      message: '확장 프로그램에 품의를 보냈어요. ' + TAKE_HINT + '.',
+      message: movedMessage(r.moved),
     }
   if (r && r.reason) return { ok: false, route: 'none', message: r.reason }
   return { ok: false, route: 'none', message: NO_EXTENSION }

@@ -556,6 +556,20 @@ async function handleHttp(req, res) {
         })
       : send(res, 404, 'not found')
   }
+  // the page 똑딱작업실 opens after [K-에듀파인으로 보내기]: it asks the extension to bring the
+  // K-에듀파인 tab forward (no session, no 품의: the extension takes that from the app)
+  if (p === '/edufine/go' || p === '/edufine/go.js') {
+    const js = p.endsWith('.js')
+    const body = await fsp
+      .readFile(path.join(CLIENT, 'edufine', js ? 'go.js' : 'go.html'))
+      .catch(() => null)
+    return body
+      ? send(res, 200, body, {
+          'Content-Type': js ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+        })
+      : send(res, 404, 'not found')
+  }
   // the intro page; the trial app itself lives at /app
   if (p === '/' || p === '/index.html') {
     const body = await fsp.readFile(path.join(CLIENT, 'intro.html'))
