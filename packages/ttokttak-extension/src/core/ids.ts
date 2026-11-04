@@ -18,6 +18,9 @@ export const WEB_APP_ORIGINS = [
 export const SCREEN_MAP_URL = WEB_APP_ORIGINS[0] + '/edufine/screen-map.json'
 /**
  * The page 똑딱작업실 (the desktop app) opens in the browser after [K-에듀파인으로 보내기]:
- * it asks the extension to bring the remembered K-에듀파인 tab forward, then goes away.
+ * it asks the extension to bring the remembered tab of the task's site forward, then goes
+ * away. 0.15.5 and earlier open /edufine/go, which the web app keeps serving.
  */
+export const GO_URL = WEB_APP_ORIGINS[0] + '/go'
+export const goUrl = (feature: string): string => GO_URL + '?feature=' + encodeURIComponent(feature)
 export const EDUFINE_GO_URL = WEB_APP_ORIGINS[0] + '/edufine/go'

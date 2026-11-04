@@ -57,27 +57,27 @@ describe('sendPumui', () => {
   const text = JSON.stringify(pumuiPackageFromWork(work))
 
   it('holds the 품의 in the desktop app', async () => {
-    const sent: string[] = []
-    let opened = 0
+    const sent: string[][] = []
+    const opened: string[] = []
     const out = await sendPumui(text, {
       web: false,
-      pumuiSend: async (t) => (sent.push(t), { ok: true, title: 'x' }),
-      openEdufine: async () => void (opened += 1),
+      workSend: async (f, t) => (sent.push([f, t]), { ok: true, title: 'x' }),
+      openWorkSite: async (f) => void opened.push(f),
     })
     expect(out).toMatchObject({ ok: true, route: 'desktop' })
     // then the browser is brought to K-에듀파인, and only one button is left to press there
-    expect(opened).toBe(1)
+    expect(opened).toEqual(['edufine-pumui'])
     expect(out.message).toContain('K-에듀파인으로 옮겼어요')
     expect(out.message).toContain('[K-에듀파인에 채우기]')
-    expect(sent).toEqual([text])
+    expect(sent).toEqual([['edufine-pumui', text]])
   })
 
   it('does not open the browser when the app could not hold the 품의', async () => {
     let opened = 0
     const out = await sendPumui(text, {
       web: false,
-      pumuiSend: async () => ({ ok: false, reason: '품의를 읽지 못했어요.' }),
-      openEdufine: async () => void (opened += 1),
+      workSend: async () => ({ ok: false, reason: '품의를 읽지 못했어요.' }),
+      openWorkSite: async () => void (opened += 1),
     })
     expect(out).toEqual({ ok: false, route: 'desktop', message: '품의를 읽지 못했어요.' })
     expect(opened).toBe(0)
@@ -108,11 +108,32 @@ describe('sendPumui', () => {
     const out = await sendPumui(text, {
       web: true,
       runtime,
-      pumuiSend: async () => ((queued = true), { ok: true, title: '' }),
+      workSend: async () => ((queued = true), { ok: true, title: '' }),
     })
     expect(out).toMatchObject({ ok: true, route: 'extension' })
-    expect(calls).toEqual([[EXTENSION_ID, { type: 'pumui:send', text }]])
+    expect(calls).toEqual([[EXTENSION_ID, { type: 'work:send', feature: 'edufine-pumui', text }]])
     expect(queued).toBe(false)
+  })
+
+  it('sends again under the old name to an extension from before task names (0.4.0)', async () => {
+    const calls: unknown[] = []
+    const runtime = {
+      sendMessage: (_id: string, msg: { type: string }, cb: (r: unknown) => void) => (
+        calls.push(msg),
+        cb(
+          msg.type === 'pumui:send'
+            ? { ok: true, moved: 'focused' }
+            : { ok: false, reason: '알 수 없는 요청이에요.' },
+        )
+      ),
+    }
+    const out = await sendPumui(text, { web: true, runtime })
+    expect(out).toMatchObject({ ok: true, route: 'extension' })
+    expect(out.message).toContain('K-에듀파인 화면으로 옮겼어요')
+    expect(calls).toEqual([
+      { type: 'work:send', feature: 'edufine-pumui', text },
+      { type: 'pumui:send', text },
+    ])
   })
 
   it('says the extension is missing when the browser has none or it does not answer', async () => {

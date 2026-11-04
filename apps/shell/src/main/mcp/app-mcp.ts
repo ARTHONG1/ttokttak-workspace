@@ -6,7 +6,7 @@ import { createDocumentTools, documentDriver, type DocsControl } from './tools/d
 import { createPdfTools } from './tools/pdf-tools'
 import { createHwpTools } from './tools/hwp-tools'
 import { createPumuiTools } from './tools/pumui-tools'
-import { pumuiOutbox } from '../pumui-outbox'
+import { workOutbox } from '../work-outbox'
 import { createSlidesTools, slidesDriver, type SlidesControl } from './tools/slides-tools'
 import { createSheetsTools, sheetsDriver, type SheetsControl } from './tools/sheets-tools'
 import {
@@ -188,7 +188,7 @@ function buildTools(): McpToolDefinition[] {
     ...createPdfTools(),
     // the same for Hangul documents (read_hwp)
     ...createHwpTools(),
-    ...createPumuiTools(pumuiOutbox),
+    ...createPumuiTools(workOutbox.of('edufine-pumui')),
     // documents the user has open, independent of the session above
     ...createOpenDocumentTools({
       defaultSaveDir: deps.defaultSaveDir,

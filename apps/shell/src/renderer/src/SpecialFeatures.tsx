@@ -310,8 +310,9 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     const api = window.aiOffice
     const out = await sendPumui(pkgText, {
       web: isWebEdition(),
-      pumuiSend: typeof api?.pumuiSend === 'function' ? (t) => api.pumuiSend(t) : undefined,
-      openEdufine: typeof api?.openEdufine === 'function' ? () => api.openEdufine() : undefined,
+      workSend: typeof api?.workSend === 'function' ? (f, t) => api.workSend(f, t) : undefined,
+      openWorkSite:
+        typeof api?.openWorkSite === 'function' ? (f) => api.openWorkSite(f) : undefined,
       runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
     })
     setSendNote({ ok: out.ok, text: out.message, pkgText })

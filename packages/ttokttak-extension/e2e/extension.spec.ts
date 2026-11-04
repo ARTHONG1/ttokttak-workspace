@@ -364,6 +364,26 @@ test('the /edufine/go page says what to do while K-에듀파인 is unknown', asy
   await go.close()
 })
 
+test('the /go page brings the named task site forward and closes itself', async () => {
+  const page = await openEdufine()
+  const go = await context.newPage()
+  const closed = go.waitForEvent('close')
+  await go.goto(base + '/go.html?feature=edufine-pumui').catch(() => undefined)
+  await closed
+  await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
+  await page.close()
+})
+
+test('the /go page asks for an extension update for a task it does not know', async () => {
+  const go = await context.newPage()
+  await go.goto(base + '/go.html?feature=neis-x')
+  await expect(go.getByRole('heading', { name: '확장 프로그램을 업데이트해 주세요' })).toBeVisible()
+  await expect(go.getByText('이 확장이 모르는 업무예요.')).toBeVisible()
+  await go.close()
+})
+
 test('from another K-에듀파인 screen, 똑딱 opens 품의등록 by itself and shows the 품의', async () => {
   const page = await openEdufine('?screen=other')
   await page.getByRole('button', { name: '똑딱', exact: true }).click()

@@ -3,6 +3,9 @@
  * different 교육청 or a new K-에듀파인 version is fixed by a new table (fetched from the
  * web app or loaded from a file) instead of a new extension release. Paths are
  * dot-separated and start at the work screen form (see workFormPath).
+ * A new task on K-에듀파인 adds its names as a new optional block (and its menu ID); the
+ * format stays 1, so extensions already installed keep reading the tables the web app
+ * serves and ignore the block they do not know.
  * Source: docs/KEDUFINE_INTERFACE_NOTES.md (K-에듀파인's own names).
  */
 

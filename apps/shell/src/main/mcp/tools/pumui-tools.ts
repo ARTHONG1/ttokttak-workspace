@@ -6,14 +6,12 @@
 import { buildPumuiPackage } from '@genoffice/ttokttak-extension/package'
 import { z } from 'zod'
 import type { McpToolDefinition } from '../mcp-server'
-import type { PumuiOutbox } from '../../pumui-outbox'
+import type { TaskQueue } from '../../work-outbox'
 
 const TAKE =
   'On the K-에듀파인 품의등록 screen the teacher presses [똑딱], sees the waiting 품의 at once and fills it with [K-에듀파인에 채우기]; saving and approval stay with the teacher.'
 
-export function createPumuiTools(
-  outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>,
-): McpToolDefinition[] {
+export function createPumuiTools(outbox: Pick<TaskQueue, 'enqueue' | 'size'>): McpToolDefinition[] {
   return [
     {
       name: 'pumui_send',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PumuiOutbox } from '../../src/main/pumui-outbox'
+import { WorkOutbox } from '../../src/main/work-outbox'
 import { createPumuiTools } from '../../src/main/mcp/tools/pumui-tools'
 
 const args = {
@@ -13,23 +13,23 @@ const args = {
 
 describe('pumui MCP tools', () => {
   it('checks the 품의 and holds it for the extension', async () => {
-    const box = new PumuiOutbox()
-    const [send, status] = createPumuiTools(box)
+    const box = new WorkOutbox()
+    const [send, status] = createPumuiTools(box.of('edufine-pumui'))
     expect(await send.handler(args)).toMatchObject({ held: true, items: 2, total: 15000 })
     expect(await status.handler({})).toEqual({ waiting: 1 })
-    const pkg = JSON.parse(box.take()!)
+    const pkg = JSON.parse(box.take('edufine-pumui')!)
     expect(pkg.items[0]).toMatchObject({ description: '비커 500ml', amount: 12000 })
   })
 
   it('refuses a 품의 the extension would refuse', async () => {
-    const [send] = createPumuiTools(new PumuiOutbox())
+    const [send] = createPumuiTools(new WorkOutbox().of('edufine-pumui'))
     expect(() => send.handler({ ...args, title: '짧음' })).toThrow(
       '품의 제목은 5자 이상이어야 해요.',
     )
   })
 
   it('tells the agent it neither sends nor fills anything', () => {
-    const [send] = createPumuiTools(new PumuiOutbox())
+    const [send] = createPumuiTools(new WorkOutbox().of('edufine-pumui'))
     expect(send.description).toContain('nothing is sent anywhere')
     expect(send.description).toContain('saving and approval stay with the teacher')
   })

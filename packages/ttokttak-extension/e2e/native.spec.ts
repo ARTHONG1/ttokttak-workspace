@@ -51,7 +51,7 @@ const regKeys = WIN
 
 async function startApp(): Promise<void> {
   app = await startControlServer(userData, async (req) => {
-    if (req.cmd !== 'pumui-take')
+    if (req.cmd !== 'work-take' || req.feature !== 'edufine-pumui')
       return { ok: false, error: { reason: 'unsupported', message: 'x' } }
     // like the app's queue: a 품의 is handed over once
     const text = waiting

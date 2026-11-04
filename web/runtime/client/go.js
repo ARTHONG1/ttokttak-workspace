@@ -1,0 +1,62 @@
+// /go?feature=<task>: 똑딱작업실 (the desktop app) opens this page after it holds a task's
+// work ([K-에듀파인으로 보내기]). It asks the 똑딱작업실 extension to bring the task's site
+// forward; the extension closes this tab when it did. The page only speaks when there is
+// nowhere to go. /edufine/go (what 0.15.5 and earlier open) is the same page for 에듀파인 품의,
+// and an extension from before task names (0.4.0) is asked again under its old message name.
+// EXTENSION_ID must equal packages/ttokttak-extension/src/core/ids.ts (a test keeps them in step).
+;(function () {
+  var EXTENSION_ID = 'ebjaejdjilpnbcbcejmeeneahkngcmnm'
+  var UNKNOWN_REQUEST = '알 수 없는 요청이에요.'
+  var feature = new URLSearchParams(location.search).get('feature') || 'edufine-pumui'
+  function say(title, text, hint) {
+    document.getElementById('title').textContent = title
+    document.getElementById('text').textContent = text
+    document.getElementById('hint').textContent = hint || ''
+  }
+  var noExtension = function () {
+    say(
+      '확장 프로그램이 필요해요',
+      '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. K-에듀파인을 여는 크롬에 설치한 뒤 [K-에듀파인으로 보내기]를 다시 눌러 주세요.',
+      '똑딱작업실 소개 페이지 위쪽 [테스트]에서 받을 수 있어요.',
+    )
+  }
+  if (!/^[a-z0-9-]{1,40}$/.test(feature))
+    return say('주소가 올바르지 않아요', '똑딱작업실에서 보내기 버튼을 다시 눌러 주세요.')
+  var rt = window.chrome && window.chrome.runtime
+  if (!rt || typeof rt.sendMessage !== 'function') return noExtension()
+  var answered = false
+  setTimeout(function () {
+    if (!answered) noExtension()
+  }, 4000)
+  function ask(message, then) {
+    try {
+      rt.sendMessage(EXTENSION_ID, message, function (reply) {
+        answered = true
+        then(rt.lastError ? null : reply)
+      })
+    } catch (e) {
+      noExtension()
+    }
+  }
+  function done(reply) {
+    if (!reply) return noExtension()
+    if (!reply.ok)
+      return say(
+        '확장 프로그램을 업데이트해 주세요',
+        reply.reason || '확장 프로그램이 이 요청을 모르는 것 같아요.',
+        '똑딱작업실 소개 페이지 위쪽 [테스트]에서 새로 받을 수 있어요.',
+      )
+    if (reply.moved === 'unknown')
+      return say(
+        'K-에듀파인을 한 번 열어 주세요',
+        '똑딱작업실이 품의를 준비했어요. 업무포털에서 K-에듀파인 품의등록 화면을 열고 오른쪽 아래 [똑딱]을 누르면 품의가 보여요.',
+        '한 번 열고 나면 주소를 기억해서, 다음부터는 이 버튼이 K-에듀파인으로 바로 옮겨 줘요.',
+      )
+    say('K-에듀파인으로 옮겼어요', '이 탭은 닫아도 돼요.')
+  }
+  ask({ type: 'go', feature: feature }, function (reply) {
+    if (reply && !reply.ok && reply.reason === UNKNOWN_REQUEST && feature === 'edufine-pumui')
+      return ask({ type: 'edufine:go' }, done)
+    done(reply)
+  })
+})()

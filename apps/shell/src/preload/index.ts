@@ -244,13 +244,13 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['readCartFile']>
     >
   },
-  async pumuiSend(text) {
-    return (await ipcRenderer.invoke(HOME_CHANNELS.pumuiSend, text)) as Awaited<
-      ReturnType<HomeApi['pumuiSend']>
+  async workSend(feature, text) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.workSend, feature, text)) as Awaited<
+      ReturnType<HomeApi['workSend']>
     >
   },
-  async openEdufine() {
-    await ipcRenderer.invoke(HOME_CHANNELS.openEdufine)
+  async openWorkSite(feature) {
+    await ipcRenderer.invoke(HOME_CHANNELS.openWorkSite, feature)
   },
   async readQuizFile(kind) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<

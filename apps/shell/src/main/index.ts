@@ -143,8 +143,8 @@ import {
   isCartFileKind,
   readCartFile,
 } from './cart-file'
-import { pumuiOutbox } from './pumui-outbox'
-import { EDUFINE_GO_URL } from '@genoffice/ttokttak-extension/ids'
+import { workOutbox } from './work-outbox'
+import { goUrl } from '@genoffice/ttokttak-extension/ids'
 import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
 import {
@@ -5715,17 +5715,19 @@ function registerHomeIpc(): void {
     return readCartFile(result.filePaths[0], kind)
   })
 
-  // 특화 기능 > 품의서 생성 → K-에듀파인: the 품의 waits here until the extension takes it
-  // through native messaging (edufine-host → control 'pumui-take'); checked on the way in
-  ipcMain.handle(HOME_CHANNELS.pumuiSend, (_event, text: unknown) =>
-    typeof text === 'string' && text.length <= 100_000
-      ? pumuiOutbox.enqueue(text)
-      : { ok: false, reason: '품의를 읽지 못했어요.' },
+  // 특화 기능 → a work site (품의서 생성 → K-에듀파인): the work waits here, per task, until the
+  // extension takes it through native messaging (edufine-host → control 'work-take');
+  // checked on the way in
+  ipcMain.handle(HOME_CHANNELS.workSend, (_event, feature: unknown, text: unknown) =>
+    typeof feature === 'string' && typeof text === 'string' && text.length <= 100_000
+      ? workOutbox.enqueue(feature, text)
+      : { ok: false, reason: '보낼 내용을 읽지 못했어요.' },
   )
-  // then the browser: the web app's /edufine/go page asks the 똑딱작업실 extension
-  // to bring the K-에듀파인 tab forward (this process cannot reach the browser's tabs)
-  ipcMain.handle(HOME_CHANNELS.openEdufine, async () => {
-    await shell.openExternal(EDUFINE_GO_URL).catch(() => undefined)
+  // then the browser: the web app's /go page asks the 똑딱작업실 extension to bring the
+  // task's site forward (this process cannot reach the browser's tabs)
+  ipcMain.handle(HOME_CHANNELS.openWorkSite, async (_event, feature: unknown) => {
+    if (typeof feature !== 'string' || !/^[a-z0-9-]{1,40}$/.test(feature)) return
+    await shell.openExternal(goUrl(feature)).catch(() => undefined)
   })
 
   // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
@@ -9189,7 +9191,7 @@ app.whenReady().then(async () => {
         if (!activateDetached(id)) tabManager?.activateTab(id)
       },
       findTab: (path) => tabManager?.findTabByPath(path) ?? findDetachedTabByPath(path),
-      takePumui: () => pumuiOutbox.take(),
+      takeWork: (feature) => workOutbox.take(feature),
     }),
   ).then(
     (server) => {

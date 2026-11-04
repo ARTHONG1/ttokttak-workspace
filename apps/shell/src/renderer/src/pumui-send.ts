@@ -5,8 +5,11 @@
  * works the page offers the clipboard and a .ttokpumui file, which also cover schools whose
  * K-에듀파인 PC has no internet.
  */
-import { EXTENSION_ID } from '@genoffice/ttokttak-extension/ids'
 import { buildPumuiPackage, type PumuiPackage } from '@genoffice/ttokttak-extension/package'
+import { sendWorkToExtension, type ExtensionRuntime } from './work-send'
+
+/** this task's id in the 똑딱작업실 extension */
+const PUMUI = 'edufine-pumui'
 
 export interface WorkRow {
   description: string
@@ -45,15 +48,15 @@ export function pumuiPackageFromWork(
 export interface SendDeps {
   /** true in the web edition: the extension in this browser is the only route */
   web: boolean
-  /** the desktop app's queue (window.aiOffice.pumuiSend) */
-  pumuiSend?: (text: string) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
-  /** the desktop app opens the browser on K-에듀파인 (window.aiOffice.openEdufine) */
-  openEdufine?: () => Promise<unknown>
+  /** the desktop app's queue (window.aiOffice.workSend) */
+  workSend?: (
+    feature: string,
+    text: string,
+  ) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
+  /** the desktop app opens the browser on the task's site (window.aiOffice.openWorkSite) */
+  openWorkSite?: (feature: string) => Promise<unknown>
   /** window.chrome.runtime when an extension lets this page talk to it */
-  runtime?: {
-    sendMessage(id: string, msg: unknown, cb: (reply: unknown) => void): void
-    lastError?: { message?: string }
-  }
+  runtime?: ExtensionRuntime
   timeoutMs?: number
 }
 
@@ -80,16 +83,16 @@ export const NO_EXTENSION =
   '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
 
 export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutcome> {
-  if (!deps.web && deps.pumuiSend) {
-    const r = await deps.pumuiSend(text)
+  if (!deps.web && deps.workSend) {
+    const r = await deps.workSend(PUMUI, text)
     if (!r.ok) return { ok: false, route: 'desktop', message: r.reason }
-    if (!deps.openEdufine)
+    if (!deps.openWorkSite)
       return {
         ok: true,
         route: 'desktop',
         message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + '.',
       }
-    await deps.openEdufine().catch(() => undefined)
+    await deps.openWorkSite(PUMUI).catch(() => undefined)
     return {
       ok: true,
       route: 'desktop',
@@ -99,19 +102,7 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
   const rt = deps.runtime
   if (!rt || typeof rt.sendMessage !== 'function')
     return { ok: false, route: 'none', message: NO_EXTENSION }
-  const reply = await new Promise<unknown>((resolve) => {
-    const timer = setTimeout(() => resolve(null), deps.timeoutMs ?? 4000)
-    try {
-      rt.sendMessage(EXTENSION_ID, { type: 'pumui:send', text }, (r: unknown) => {
-        clearTimeout(timer)
-        resolve(rt.lastError ? null : r)
-      })
-    } catch {
-      clearTimeout(timer)
-      resolve(null)
-    }
-  })
-  const r = reply as { ok?: boolean; reason?: string; moved?: unknown } | null
+  const r = await sendWorkToExtension(PUMUI, text, rt, deps.timeoutMs)
   if (r?.ok)
     return {
       ok: true,

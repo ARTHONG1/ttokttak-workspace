@@ -46,7 +46,27 @@ describe('edufine-host native messaging', () => {
       ok: true,
       text: '{"kind":"ttokttak.pumui"}',
     })
-    expect(asked).toEqual([{ cmd: 'pumui-take' }])
+    // an extension from before task names asks for the 품의
+    expect(asked).toEqual([{ cmd: 'work-take', feature: 'edufine-pumui' }])
+  })
+
+  it('takes the work of the task the extension names, and refuses a malformed name', async () => {
+    const asked: unknown[] = []
+    const deps = {
+      endpoint: () => endpoint,
+      request: async (_e: unknown, req: unknown) => (asked.push(req), { text: null }),
+      version: '0.15.6',
+    }
+    expect(await handleHostMessage({ type: 'take', feature: 'edufine-pumui' }, deps)).toEqual({
+      ok: true,
+      text: null,
+    })
+    expect(await handleHostMessage({ type: 'take', feature: '../x' }, deps)).toEqual({
+      ok: false,
+      state: 'off',
+      reason: '알 수 없는 업무예요.',
+    })
+    expect(asked).toEqual([{ cmd: 'work-take', feature: 'edufine-pumui' }])
   })
 
   it('says the app is off when it is not running or does not answer', async () => {

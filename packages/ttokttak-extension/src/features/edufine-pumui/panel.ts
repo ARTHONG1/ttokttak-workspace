@@ -7,7 +7,7 @@
 import type { FeatureContext } from '../../core/feature'
 import { edufineMap, nexacro } from '../../ext/edufine'
 import { h, won, type Panel } from '../../ext/page-ui'
-import { openPumuiMenu } from '../../sites/edufine/menu'
+import { openMenu } from '../../sites/edufine/menu'
 import { detectScreen, findWorkForm } from '../../sites/edufine/screen'
 import type { ScreenMap } from '../../sites/edufine/screen-map'
 import { applyFill, budgetMark, planFill } from './fill'
@@ -58,7 +58,7 @@ async function onPumuiScreen(ctx: FeatureContext, map: ScreenMap): Promise<boole
   let opened = false
   while (Date.now() < until) {
     if (!opened) {
-      const r = openPumuiMenu(nexacro(), map)
+      const r = openMenu(nexacro(), map, map.menu?.pumuiMenuId)
       if (r === 'unavailable') break
       opened = r === 'opened'
       if (opened) ctx.step('품의등록 메뉴 열기')

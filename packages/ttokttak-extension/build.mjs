@@ -57,11 +57,12 @@ if (dev) {
   })
   await cp(join(HERE, 'tests/fixtures/fake-edufine.html'), join(TEST, 'fake-edufine.html'))
   await cp(join(HERE, 'tests/fixtures/web-sender.html'), join(TEST, 'web-sender.html'))
-  // the web app's /edufine/go page, served from the test server like the web app does
-  const GO = join(HERE, '../../web/runtime/client/edufine')
+  // the web app's /go page (also at /edufine/go), served from the test server like the web app
+  const GO = join(HERE, '../../web/runtime/client')
   await mkdir(join(TEST, 'edufine'), { recursive: true })
+  await cp(join(GO, 'go.html'), join(TEST, 'go.html'))
   await cp(join(GO, 'go.html'), join(TEST, 'edufine', 'go.html'))
-  await cp(join(GO, 'go.js'), join(TEST, 'edufine', 'go.js'))
+  await cp(join(GO, 'go.js'), join(TEST, 'go.js'))
   // the native messaging host as Chrome starts it, for e2e/native.spec.ts
   await build({
     entryPoints: [join(HERE, 'tests/fixtures/native-host-entry.ts')],
