@@ -54,6 +54,8 @@ details textarea { margin-top: 8px; }
 export interface Panel {
   show(...content: Child[]): void
   hide(): void
+  /** true while the panel is on screen */
+  isOpen(): boolean
   root: ShadowRoot
 }
 
@@ -72,7 +74,8 @@ export function mountPanel(onOpen: () => void): Panel {
     {
       class: 'fab',
       type: 'button',
-      onclick: () => (panel.hidden ? onOpen() : (panel.hidden = true)),
+      // always (re)open and look again: a press after picking a budget line must not close it
+      onclick: () => onOpen(),
     },
     '똑딱',
   )
@@ -98,6 +101,9 @@ export function mountPanel(onOpen: () => void): Panel {
     },
     hide() {
       panel.hidden = true
+    },
+    isOpen() {
+      return !panel.hidden
     },
   }
 }

@@ -175,12 +175,28 @@ test('refuses pasted text that is not a 똑딱 품의', async () => {
   await page.close()
 })
 
-test('asks for a budget line when none is selected and writes nothing', async () => {
+test('without a budget line it waits, then fills by itself once one is picked', async () => {
   const page = await openEdufine('?budget=0')
   await pastePumui(page, pkgText)
   await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
-  await expect(page.getByText('예산 내역에서 예산 줄을 먼저 골라 주세요.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '예산 줄을 골라 주세요' })).toBeVisible()
   expect(await writesOf(page)).toBe(0)
+  // the teacher picks a budget line on the K-에듀파인 screen; no further press
+  await page.evaluate(() => (window as any).__fake.selectBudget())
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible({ timeout: 5_000 })
+  expect(await page.evaluate(() => (window as any).__fake.forbiddenCalls())).toBe(0)
+  await page.close()
+})
+
+test('pressing 똑딱 while the panel is open looks again instead of closing it', async () => {
+  const page = await openEdufine()
+  await pastePumui(page, pkgText)
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '똑딱 에듀파인 연결' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
   await page.close()
 })
 
@@ -270,6 +286,35 @@ test('the /edufine/go page says what to do while K-에듀파인 is unknown', asy
   await go.goto(base + '/edufine/go.html')
   await expect(go.getByRole('heading', { name: 'K-에듀파인을 한 번 열어 주세요' })).toBeVisible()
   await go.close()
+})
+
+test('from another K-에듀파인 screen, 똑딱 opens 품의등록 by itself and shows the 품의', async () => {
+  const page = await openEdufine('?screen=other')
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await page.getByText('복사했거나 파일로 받은 품의 넣기').click()
+  await page.getByLabel('품의 붙여 넣기').fill(pkgText)
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  const opened = await page.evaluate(() =>
+    (window as any).__fake.writes
+      .filter((w: { op: string }) => w.op === 'openMenu')
+      .map((w: { target: string }) => w.target),
+  )
+  expect(opened).toEqual(['A00FAA0104001001'])
+  await page.close()
+})
+
+test('a send from the web app lands on 품의등록 even when another screen was in front', async () => {
+  for (const p of context.pages()) if (p.url().includes('fake-edufine')) await p.close()
+  const page = await openEdufine('?screen=other')
+  expect(await sendFromWebApp()).toEqual({ ok: true, moved: 'focused' })
+  await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible({
+    timeout: 15_000,
+  })
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  await page.close()
 })
 
 test('runs the self-check and saves a diagnostic file without values', async () => {

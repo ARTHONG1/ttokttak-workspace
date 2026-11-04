@@ -6,10 +6,11 @@
  * saves or submits anything in K-에듀파인.
  */
 import { buildDiagnostic, runChecks, type DesktopState, type WebState } from '../diagnose'
-import { applyFill, planFill } from '../fill'
+import { applyFill, budgetMark, planFill } from '../fill'
 import { findNexacro, frameSurvey, type FrameWin } from '../nexacro'
 import { parsePumuiPackage, PUMUI_FILE_EXTENSION, type PumuiPackage } from '../pumui-package'
-import { findWorkForm, type NexacroLike } from '../screen'
+import { openPumuiMenu } from '../menu'
+import { detectScreen, findWorkForm, type NexacroLike } from '../screen'
 import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../screen-map'
 import { PAGE_TAG, type Pending } from './messages'
 import { call } from './page-channel'
@@ -35,6 +36,24 @@ const WATCH_EVERY_MS = 1_000
 async function getMap(): Promise<ScreenMap> {
   const m = (await call<ScreenMap>('map:get')) as ScreenMap | { ok: false }
   return m && (m as ScreenMap).version === 1 ? (m as ScreenMap) : DEFAULT_SCREEN_MAP
+}
+
+// While the panel waits on the teacher (a budget line to pick, a budget to load), it looks
+// at the screen once a second and moves on by itself when that part of the screen changes.
+let watcher: ReturnType<typeof setInterval> | undefined
+const stopWatch = (): void => {
+  if (watcher !== undefined) clearInterval(watcher)
+  watcher = undefined
+}
+function watchFor(panel: Panel, mark: () => string, then: () => void): void {
+  stopWatch()
+  const first = mark()
+  watcher = setInterval(() => {
+    if (!panel.isOpen()) return stopWatch()
+    if (mark() === first) return
+    stopWatch()
+    then()
+  }, 1_000)
 }
 
 function start(): void {
@@ -65,19 +84,46 @@ function start(): void {
 const SEND_FIRST =
   '똑딱작업실 품의서 생성에서 [K-에듀파인으로 보내기]를 누른 뒤, 이 화면의 [똑딱]을 다시 눌러 주세요.'
 
+const isPumuiScreen = (map: ScreenMap): boolean => {
+  const form = findWorkForm(nexacro(), map)
+  return !!form && detectScreen(form, map).kind === 'pumui'
+}
+
+/**
+ * On another K-에듀파인 screen (or right after login), open the 품의등록 menu with
+ * K-에듀파인's own menu function and wait for the screen; false when it does not come.
+ */
+async function onPumuiScreen(panel: Panel, map: ScreenMap): Promise<boolean> {
+  if (isPumuiScreen(map)) return true
+  panel.show(
+    h('h2', {}, '품의등록 화면을 여는 중…'),
+    h('p', { class: 'sub' }, 'K-에듀파인 메뉴에서 품의등록을 열고 있어요.'),
+  )
+  const until = Date.now() + 20_000
+  let opened = false
+  while (Date.now() < until) {
+    if (!opened) {
+      const r = openPumuiMenu(nexacro(), map)
+      if (r === 'unavailable') break
+      opened = r === 'opened'
+      if (opened) step('품의등록 메뉴 열기')
+    }
+    await new Promise((r) => setTimeout(r, 500))
+    if (isPumuiScreen(map)) return true
+  }
+  return isPumuiScreen(map)
+}
+
 /** the 똑딱 button: find the waiting 품의 and show it, or say what to do first */
 async function open(panel: Panel): Promise<void> {
+  stopWatch()
   step('열기')
   const map = await getMap()
-  if (!findWorkForm(nexacro(), map)) {
+  if (!(await onPumuiScreen(panel, map))) {
     step('업무 화면 없음')
     panel.show(
       h('h2', {}, '품의등록 화면을 열어 주세요'),
-      h(
-        'p',
-        { class: 'sub' },
-        'K-에듀파인에서 품의등록 화면을 연 뒤 [똑딱]을 다시 눌러 주세요. 예산 줄도 먼저 골라 두세요.',
-      ),
+      h('p', { class: 'sub' }, 'K-에듀파인에서 품의등록 화면을 연 뒤 [똑딱]을 다시 눌러 주세요.'),
       more(panel),
     )
     return
@@ -188,6 +234,7 @@ async function preview(
   text: string,
   source: 'direct' | 'desktop' | 'paste' | 'file',
 ): Promise<void> {
+  stopWatch()
   step('미리보기 ' + source)
   const parsed = parsePumuiPackage(text)
   if (!parsed.ok) {
@@ -275,9 +322,20 @@ async function preview(
       '채운 뒤 화면을 확인하고 K-에듀파인 [저장]은 선생님이 직접 눌러 주세요.',
     ),
   )
+  // a budget not loaded yet (or units not shown): show the 품의 again once the screen has it
+  if (plan.blockers.length)
+    watchFor(
+      panel,
+      () => {
+        const now = findWorkForm(nexacro(), map)
+        return now ? planFill(now, map, pkg).blockers.join('|') : '-'
+      },
+      () => void preview(panel, text, source),
+    )
 }
 
 async function fill(panel: Panel, pkg: PumuiPackage, source: string): Promise<void> {
+  stopWatch()
   step('채우기 ' + source)
   const map = await getMap()
   const form = findWorkForm(nexacro(), map)
@@ -290,6 +348,35 @@ async function fill(panel: Panel, pkg: PumuiPackage, source: string): Promise<vo
     return
   }
   const res = applyFill(form, map, planFill(form, map, pkg), filled)
+  if (!res.ok && res.needsBudget) {
+    // K-에듀파인 adds a 품목 row only under a chosen budget line: wait for the choice, then
+    // fill without another press (the teacher already pressed 채우기 once)
+    step('예산 줄 기다림')
+    panel.show(
+      h('h2', {}, '예산 줄을 골라 주세요'),
+      h(
+        'div',
+        { class: 'note' },
+        '화면의 예산 내역에서 쓸 예산 줄을 고르면 바로 이어서 채워요. 이 창은 그대로 두세요.',
+      ),
+      h(
+        'div',
+        { class: 'row' },
+        h(
+          'button',
+          { class: 'btn primary', type: 'button', onclick: () => void fill(panel, pkg, source) },
+          'K-에듀파인에 채우기',
+        ),
+        h('button', { class: 'btn', type: 'button', onclick: () => panel.hide() }, '취소'),
+      ),
+    )
+    watchFor(
+      panel,
+      () => budgetMark(findWorkForm(nexacro(), map) ?? form, map),
+      () => void fill(panel, pkg, source),
+    )
+    return
+  }
   if (!res.ok) {
     step('채우기 실패 되돌림 ' + res.rolledBack)
     panel.show(h('h2', {}, '채우지 못했어요'), h('div', { class: 'err' }, res.reason), back(panel))
@@ -334,6 +421,7 @@ async function connectionStates(): Promise<{ desktop: DesktopState; web: WebStat
 }
 
 async function check(panel: Panel): Promise<void> {
+  stopWatch()
   step('연결 점검')
   const map = await getMap()
   const states = await connectionStates()
@@ -378,6 +466,7 @@ async function check(panel: Panel): Promise<void> {
 }
 
 async function saveDiagnostic(panel: Panel): Promise<void> {
+  stopWatch()
   step('진단 파일 저장')
   const map = await getMap()
   const states = await connectionStates()

@@ -25,7 +25,11 @@ const AUTO_OPEN_MS = 15 * 60_000
 
 async function getMap(): Promise<ScreenMap> {
   const { screenMap } = await chrome.storage.local.get('screenMap')
-  return (screenMap && parseScreenMap(JSON.stringify(screenMap))) || DEFAULT_SCREEN_MAP
+  const stored = screenMap && parseScreenMap(JSON.stringify(screenMap))
+  if (!stored) return DEFAULT_SCREEN_MAP
+  // a table from before the menu part (stored, or served by an older web app) keeps the
+  // built-in menu names, so the 품의등록 screen still opens by itself
+  return stored.menu ? stored : { ...stored, menu: DEFAULT_SCREEN_MAP.menu }
 }
 
 /** fetches the 화면 이름표 the web app serves; keeps the one it has when that fails */

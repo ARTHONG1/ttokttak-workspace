@@ -23,4 +23,6 @@ export interface FakeSpec {
   budgetSelected?: boolean
   /** 1-based call number at which the row-add function silently adds nothing */
   failAddAt?: number
+  /** the screen in front at the start; 'other' until the 품의등록 menu is opened */
+  startOn?: 'pumui' | 'other'
 }

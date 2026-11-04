@@ -23,7 +23,30 @@ export interface FillPlan {
 }
 
 export type FillResult =
-  { ok: true; added: number; gridTotal: number } | { ok: false; reason: string; rolledBack: number }
+  | { ok: true; added: number; gridTotal: number }
+  | { ok: false; reason: string; rolledBack: number; needsBudget?: boolean }
+
+/**
+ * What the teacher's budget choice looks like right now: the budget dataset's current row
+ * and any check-style columns. The panel waits for this to change after K-에듀파인 refused
+ * a row for want of a chosen budget line, then fills again on its own (never on a timer).
+ */
+export function budgetMark(form: WorkForm, map: ScreenMap): string {
+  const ds = getPath(form, map.pumui.budget)
+  if (!isDataset(ds)) return ''
+  const pos = String((ds as { rowposition?: unknown }).rowposition ?? '')
+  const listing = ds as { getColCount?: () => number; getColID?: (i: number) => unknown }
+  const cols: string[] = []
+  const count = typeof listing.getColCount === 'function' ? listing.getColCount() : 0
+  for (let i = 0; i < count; i++) {
+    const id = String(listing.getColID?.(i) ?? '')
+    if (/chk|check|sel/i.test(id)) cols.push(id)
+  }
+  const marks: string[] = []
+  for (let r = 0; r < ds.rowcount; r++)
+    marks.push(cols.map((c) => String(ds.getColumn(r, c))).join(','))
+  return pos + '|' + ds.rowcount + '|' + marks.join(';')
+}
 
 export function planFill(form: WorkForm, map: ScreenMap, pkg: PumuiPackage): FillPlan {
   const plan: FillPlan = {
@@ -98,7 +121,13 @@ export function applyFill(
       const before = ds.rowcount
       add.call(form, button, {})
       if (ds.rowcount !== before + 1) {
-        if (added === 0) return fail('예산 내역에서 예산 줄을 먼저 골라 주세요.')
+        if (added === 0)
+          return {
+            ok: false,
+            reason: '예산 내역에서 예산 줄을 먼저 골라 주세요.',
+            rolledBack: 0,
+            needsBudget: true,
+          }
         return fail(
           i + 1 + '번째 품목 행을 추가하지 못했어요. 이번에 넣은 행은 되돌렸어요.',
           undo(),

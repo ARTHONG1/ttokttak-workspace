@@ -13,6 +13,8 @@ export type Write = { op: string; target: string; args: unknown[] }
 
 export class FakeDataset {
   rows: Row[]
+  /** the current row, as a Nexacro grid bound to the dataset moves it */
+  rowposition = 0
   constructor(
     readonly name: string,
     readonly columns: string[],
@@ -80,6 +82,9 @@ export function makeFakeEdufine(spec: FakeSpec) {
     }
   }
   let addCalls = 0
+  // K-에듀파인 adds a 품목 row only under a chosen budget line
+  const budget = datasets.get(spec.map.pumui.budget)
+  if (budget) budget.rowposition = spec.budgetSelected === false ? -1 : 0
   for (const o of spec.objects) {
     if (o.kind === 'edit') {
       const edit = {
@@ -114,10 +119,28 @@ export function makeFakeEdufine(spec: FakeSpec) {
   const map = spec.map
   const activeFrame: Record<string, unknown> = {}
   place(activeFrame, map.workFormPath, form)
+  // another screen in front (결재 대기 and the like) until the 품의등록 menu opens
+  const otherFrame: Record<string, unknown> = {}
+  place(otherFrame, map.workFormPath, {})
+  let current = spec.startOn === 'other' ? otherFrame : activeFrame
   const app: Record<string, unknown> = {}
   place(app, map.workFramePath, {
-    getActiveFrame: () => (spec.frame === 'active' ? activeFrame : null),
+    getActiveFrame: () => (spec.frame === 'active' ? current : null),
   })
+  if (map.menu) {
+    const menu = map.menu
+    place(app, menu.openerPath, {
+      [menu.openFn]: (id: string) => {
+        writes.push({ op: 'openMenu', target: id, args: [] })
+        if (id === menu.pumuiMenuId) setTimeout(() => (current = activeFrame), 300)
+      },
+    })
+    place(
+      app,
+      menu.menuList,
+      new FakeDataset(menu.menuList, ['menuId'], [{ menuId: menu.pumuiMenuId }], writes),
+    )
+  }
   const nx = { getApplication: () => app }
   return {
     nx,
@@ -125,6 +148,11 @@ export function makeFakeEdufine(spec: FakeSpec) {
     writes,
     dataset: (path: string) => datasets.get(path),
     forbiddenCalls: () => writes.filter((w) => w.op === 'FORBIDDEN').length,
+    /** the teacher picks the first budget line */
+    selectBudget: () => {
+      spec.budgetSelected = true
+      if (budget) budget.rowposition = 0
+    },
   }
 }
 
@@ -144,6 +172,7 @@ export function pumuiScreen(
     existingRows?: Row[]
     failAddAt?: number
     unitDiv?: 'divThng' | 'divServc'
+    startOn?: 'pumui' | 'other'
   } = {},
 ): FakeSpec {
   const p = map.pumui
@@ -154,6 +183,7 @@ export function pumuiScreen(
     map,
     budgetSelected: opts.budgetSelected ?? true,
     failAddAt: opts.failAddAt,
+    startOn: opts.startOn,
     rowAddTarget: 'dsPrdlstDtl',
     objects: [
       { path: p.title, kind: 'edit' },

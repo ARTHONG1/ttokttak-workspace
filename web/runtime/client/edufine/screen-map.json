@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "2026-11-03 기본",
+  "revision": "2026-11-04 기본",
   "workFramePath": "mainframe.MainVFrameSet.SubHFrameSet.WorkVFrameSet.WorkFrame",
   "workFormPath": "form.divWork.form",
   "pumui": {
@@ -20,5 +20,11 @@
       "qty": "qty",
       "price": "expectUntpc"
     }
+  },
+  "menu": {
+    "openerPath": "mainframe.MainVFrameSet.SubHFrameSet.LeftFrame.form",
+    "openFn": "gfnOpenMenu",
+    "menuList": "gdsMenu",
+    "pumuiMenuId": "A00FAA0104001001"
   }
 }

@@ -28,11 +28,25 @@ export interface ScreenMap {
     unitName: string
     columns: { name: string; spec: string; unit: string; qty: string; price: string }
   }
+  /**
+   * How K-에듀파인 opens a menu, so the 똑딱 button can bring up the 품의등록 screen from any
+   * other screen. Optional: a table without it only asks the teacher to open the screen.
+   * Paths start at nexacro.getApplication().
+   */
+  menu?: {
+    /** the form that has the menu-opening function */
+    openerPath: string
+    openFn: string
+    /** K-에듀파인's menu list; opening waits until it has rows */
+    menuList: string
+    /** the 품의등록 menu */
+    pumuiMenuId: string
+  }
 }
 
 export const DEFAULT_SCREEN_MAP: ScreenMap = {
   version: 1,
-  revision: '2026-11-03 기본',
+  revision: '2026-11-04 기본',
   workFramePath: 'mainframe.MainVFrameSet.SubHFrameSet.WorkVFrameSet.WorkFrame',
   workFormPath: 'form.divWork.form',
   pumui: {
@@ -52,6 +66,12 @@ export const DEFAULT_SCREEN_MAP: ScreenMap = {
       qty: 'qty',
       price: 'expectUntpc',
     },
+  },
+  menu: {
+    openerPath: 'mainframe.MainVFrameSet.SubHFrameSet.LeftFrame.form',
+    openFn: 'gfnOpenMenu',
+    menuList: 'gdsMenu',
+    pumuiMenuId: 'A00FAA0104001001',
   },
 }
 
@@ -85,5 +105,9 @@ export function parseScreenMap(text: string): ScreenMap | null {
     ...(p.columns ? Object.values(p.columns) : [null]),
   ]
   if (!paths.every(isPath) || !p.columns || Object.keys(p.columns).length !== 5) return null
+  if (m.menu !== undefined) {
+    const u = m.menu
+    if (!u || ![u.openerPath, u.openFn, u.menuList, u.pumuiMenuId].every(isPath)) return null
+  }
   return m
 }

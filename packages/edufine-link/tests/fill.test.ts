@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFill, planFill } from '../src/fill'
+import { applyFill, budgetMark, planFill } from '../src/fill'
 import { buildPumuiPackage, type PumuiItem } from '../src/pumui-package'
 import { findWorkForm } from '../src/screen'
 import { DEFAULT_SCREEN_MAP as map } from '../src/screen-map'
@@ -103,8 +103,17 @@ describe('applyFill', () => {
       ok: false,
       reason: '예산 내역에서 예산 줄을 먼저 골라 주세요.',
       rolledBack: 0,
+      needsBudget: true,
     })
     expect(fake.writes.filter((w) => w.op !== 'call')).toEqual([])
+  })
+
+  it('notices a budget line being picked', () => {
+    const { fake, form } = setup({ budgetSelected: false })
+    const before = budgetMark(form, map)
+    fake.selectBudget()
+    expect(budgetMark(form, map)).not.toBe(before)
+    expect(applyFill(form, map, planFill(form, map, pkg))).toMatchObject({ ok: true, added: 3 })
   })
 
   it('undoes its own rows when adding the third row fails', () => {

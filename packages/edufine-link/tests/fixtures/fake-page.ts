@@ -15,7 +15,10 @@ if (q.get('frame') === '1') {
   })
 } else {
   const fake = makeFakeEdufine(
-    pumuiScreen(DEFAULT_SCREEN_MAP, { budgetSelected: q.get('budget') !== '0' }),
+    pumuiScreen(DEFAULT_SCREEN_MAP, {
+      budgetSelected: q.get('budget') !== '0',
+      startOn: q.get('screen') === 'other' ? 'other' : 'pumui',
+    }),
   )
   Object.assign(window, { nexacro: fake.nx, __fake: fake })
 }
