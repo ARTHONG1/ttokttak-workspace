@@ -1,6 +1,6 @@
 /**
  * The 품의서 생성 instruction for reading a shopping cart into 품의 목록 rows. Units come
- * from PUMUI_UNITS, names the 똑딱 에듀파인 연결 extension matches to K-에듀파인's unit
+ * from PUMUI_UNITS, names the 똑딱작업실 extension matches to K-에듀파인's unit
  * codes, so a 품의 sent to K-에듀파인 does not stop on an unknown unit; 배송비 is one 식.
  */
 export const PUMUI_UNITS = [

@@ -1,4 +1,4 @@
-// Builds the 똑딱 에듀파인 연결 extension into dist/ (and the test page into dist-test/).
+// Builds the 똑딱작업실 extension into dist/ (and the test page into dist-test/).
 // node build.mjs [--dev]   --dev adds http://127.0.0.1 to the host permissions and
 //                          the web app matches, for the browser tests on this machine.
 import { build } from 'esbuild'

@@ -269,7 +269,7 @@ if (
   (process.argv[2] === 'edufine-register' || process.argv[2] === 'edufine-unregister')
 ) {
   // the Windows installer registers (and the uninstaller removes) the native messaging
-  // host for the 똑딱 에듀파인 연결 extension; internal entries, outside the registry
+  // host for the 똑딱작업실 extension; internal entries, outside the registry
   const cliDir = dirname(process.argv[1] ?? '')
   void import('./edufine-register').then((m) => {
     const env = m.realRegisterEnv(cliDir)
@@ -283,7 +283,7 @@ if (
     }
   })
 } else if (isMain && process.argv[2] === 'edufine-host') {
-  // Chrome native messaging for the 똑딱 에듀파인 연결 extension: an internal entry the
+  // Chrome native messaging for the 똑딱작업실 extension: an internal entry the
   // edufine-host launcher uses, kept out of the registry (no help, no README, no MCP tool)
   void import('./edufine-host').then(({ runEdufineHost }) =>
     runEdufineHost(process.stdin, process.stdout).then(() => process.exit(0)),

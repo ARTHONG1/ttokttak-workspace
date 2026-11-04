@@ -672,7 +672,7 @@ describe('what the CLI prints and tells agents to run', () => {
 
   it('ships launchers named ieumoffice that start only this product', () => {
     const bin = join(REPO, 'packages', 'cli', 'bin')
-    // edufine-host: the Chrome native messaging host of the 똑딱 에듀파인 연결 extension
+    // edufine-host: the Chrome native messaging host of the 똑딱작업실 extension
     expect(readdirSync(bin).sort()).toEqual([
       'edufine-host',
       'edufine-host.cmd',

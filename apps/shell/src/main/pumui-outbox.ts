@@ -1,5 +1,5 @@
 /**
- * 품의 waiting for the 똑딱 에듀파인 연결 extension. The 품의서 생성 screen and the AI
+ * 품의 waiting for the 똑딱작업실 extension. The 품의서 생성 screen and the AI
  * agent tool put a checked 품의 here; the extension takes it through native messaging
  * (edufine-host → control channel 'pumui-take'). Kept in memory only: at most five,
  * each for thirty minutes, so nothing lingers after the teacher is done.

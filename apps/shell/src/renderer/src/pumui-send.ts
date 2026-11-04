@@ -1,6 +1,6 @@
 /**
  * 품의서 생성 → K-에듀파인: turns the 품의 목록 into a 품의 패키지 and hands it on. The
- * desktop app holds it for the 똑딱 에듀파인 연결 extension (which takes it through native
+ * desktop app holds it for the 똑딱작업실 extension (which takes it through native
  * messaging); the web app gives it straight to the extension in this browser. When neither
  * works the page offers the clipboard and a .ttokpumui file, which also cover schools whose
  * K-에듀파인 PC has no internet.
@@ -77,7 +77,7 @@ function movedMessage(moved: unknown): string {
 }
 
 export const NO_EXTENSION =
-  '이 브라우저에 「똑딱 에듀파인 연결」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
+  '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
 
 export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutcome> {
   if (!deps.web && deps.pumuiSend) {

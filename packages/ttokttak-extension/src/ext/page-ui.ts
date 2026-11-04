@@ -1,6 +1,6 @@
 /**
- * The panel drawn over the K-에듀파인 page: a small 똑딱 button at the bottom right and
- * a panel in a shadow root, so neither side's styles leak into the other.
+ * The 똑딱작업실 panel drawn over a work site page: a small 똑딱 button at the bottom right
+ * and a panel in a shadow root, so neither side's styles leak into the other.
  */
 type Child = Node | string | null | undefined | false
 
@@ -46,6 +46,10 @@ td.num, th.num { text-align: right; }
 .err { background: #fef3f2; color: #b42318; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
 .done { background: #ecfdf3; color: #067647; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
 .close { float: right; border: 0; background: none; font-size: 18px; cursor: pointer; color: #667085; }
+.crumb { margin: 0 0 6px; color: #2f6bff; font-size: 12px; font-weight: 700; }
+.task { margin: 10px 0; }
+.task .btn { width: 100%; text-align: left; font-size: 14px; padding: 10px 12px; }
+.task .sub { margin: 4px 2px 0; font-size: 12px; }
 details { margin-top: 12px; border-top: 1px solid #eaecf0; padding-top: 8px; }
 summary { cursor: pointer; color: #667085; font-size: 12px; }
 details textarea { margin-top: 8px; }
@@ -56,6 +60,10 @@ export interface Panel {
   hide(): void
   /** true while the panel is on screen */
   isOpen(): boolean
+  /** how many times show() ran: something waiting on one screen stops once another is shown */
+  readonly shown: number
+  /** the small line at the top: 똑딱작업실, or 똑딱작업실 · the open task */
+  setLabel(label: string): void
   root: ShadowRoot
 }
 
@@ -67,7 +75,7 @@ export function mountPanel(onOpen: () => void): Panel {
     class: 'panel',
     hidden: true,
     role: 'dialog',
-    'aria-label': '똑딱 에듀파인 연결',
+    'aria-label': '똑딱작업실',
   })
   const fab = h(
     'button',
@@ -81,9 +89,18 @@ export function mountPanel(onOpen: () => void): Panel {
   )
   root.append(fab, panel)
   document.documentElement.append(host)
+  let shown = 0
+  let label = '똑딱작업실'
   return {
     root,
+    get shown() {
+      return shown
+    },
+    setLabel(l: string) {
+      label = l
+    },
     show(...content: Child[]) {
+      shown++
       panel.replaceChildren(
         h(
           'button',
@@ -95,6 +112,7 @@ export function mountPanel(onOpen: () => void): Panel {
           },
           '×',
         ),
+        h('div', { class: 'crumb' }, label),
         ...(content.filter(Boolean) as Node[]),
       )
       panel.hidden = false

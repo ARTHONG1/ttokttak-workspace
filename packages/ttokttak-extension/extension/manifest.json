@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "똑딱 에듀파인 연결",
-  "short_name": "똑딱 에듀파인",
-  "description": "똑딱작업실에서 만든 품의를 K-에듀파인 품의등록 화면에 채워 줍니다. 저장과 결재는 선생님이 직접 합니다.",
+  "name": "똑딱작업실",
+  "short_name": "똑딱작업실",
+  "description": "똑딱작업실에서 만든 작업을 학교 업무 사이트에 채워 줍니다. 첫 업무: K-에듀파인 품의. 저장과 결재는 선생님이 직접 합니다.",
   "permissions": ["storage", "scripting", "nativeMessaging"],
   "host_permissions": [
     "https://*.go.kr/*",
@@ -22,7 +22,7 @@
     }
   ],
   "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "똑딱 에듀파인 연결" },
+  "action": { "default_popup": "popup.html", "default_title": "똑딱작업실" },
   "externally_connectable": {
     "matches": [
       "https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/*",

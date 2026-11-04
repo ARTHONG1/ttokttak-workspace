@@ -1,5 +1,5 @@
 /**
- * Fixed identities of the 똑딱 에듀파인 연결 extension. The extension id comes from the
+ * Fixed identities of the 똑딱작업실 extension. The extension id comes from the
  * public key below (manifest "key"); the matching private key is kept off the repository
  * and goes into the first Chrome Web Store upload so the store keeps this id. Native
  * messaging (allowed_origins) and the web app's direct connection are bound to it.

@@ -1,6 +1,6 @@
 /**
  * Registers the edufine-host native messaging host with Chrome and Edge for this user:
- * a manifest naming the launcher next to the CLI and allowing only the 똑딱 에듀파인 연결
+ * a manifest naming the launcher next to the CLI and allowing only the 똑딱작업실 extension
  * extension, plus (on Windows) the HKCU registry value that points at it. No admin
  * rights. The Windows installer runs it once (ieumoffice edufine-register) and the app
  * repeats it at start, which covers a browser installed later; uninstall removes it.
@@ -39,7 +39,7 @@ export function realRegisterEnv(cliDir: string): RegisterEnv {
 export function nativeHostManifest(hostPath: string) {
   return {
     name: NATIVE_HOST_NAME,
-    description: '똑딱작업실 ↔ 똑딱 에듀파인 연결',
+    description: '똑딱작업실 프로그램 ↔ 똑딱작업실 확장',
     path: hostPath,
     type: 'stdio',
     allowed_origins: ['chrome-extension://' + EXTENSION_ID + '/'],

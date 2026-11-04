@@ -5722,7 +5722,7 @@ function registerHomeIpc(): void {
       ? pumuiOutbox.enqueue(text)
       : { ok: false, reason: '품의를 읽지 못했어요.' },
   )
-  // then the browser: the web app's /edufine/go page asks the 똑딱 에듀파인 연결 extension
+  // then the browser: the web app's /edufine/go page asks the 똑딱작업실 extension
   // to bring the K-에듀파인 tab forward (this process cannot reach the browser's tabs)
   ipcMain.handle(HOME_CHANNELS.openEdufine, async () => {
     await shell.openExternal(EDUFINE_GO_URL).catch(() => undefined)
@@ -9198,7 +9198,7 @@ app.whenReady().then(async () => {
     (err: unknown) => console.warn('[control] not listening:', err),
   )
 
-  // the 똑딱 에듀파인 연결 extension reaches this app through Chrome/Edge native messaging;
+  // the 똑딱작업실 extension reaches this app through Chrome/Edge native messaging;
   // the Windows installer registers the host once, this repeats it for a browser
   // installed later (installed app only: a dev run has no launcher next to the CLI)
   if (app.isPackaged) {

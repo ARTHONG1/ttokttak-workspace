@@ -1,6 +1,6 @@
 /**
  * AI agent tools for K-에듀파인 품의: the agent prepares a 품의 and 똑딱작업실 holds it for
- * the 똑딱 에듀파인 연결 extension. Nothing leaves this PC here and nothing is filled in by
+ * the 똑딱작업실 extension. Nothing leaves this PC here and nothing is filled in by
  * the agent: the teacher takes the 품의 on the K-에듀파인 품의등록 screen and saves it.
  */
 import { buildPumuiPackage } from '@genoffice/ttokttak-extension/package'

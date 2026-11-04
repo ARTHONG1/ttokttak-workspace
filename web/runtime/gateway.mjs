@@ -530,7 +530,7 @@ async function handleHttp(req, res) {
   const p = url.pathname
   if (p === '/api/health')
     return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
-  // the 화면 이름표 the 똑딱 에듀파인 연결 extension refreshes from (names only, no session)
+  // the 화면 이름표 the 똑딱작업실 extension refreshes from (names only, no session)
   if (p === '/edufine/screen-map.json') {
     const body = await fsp
       .readFile(path.join(CLIENT, 'edufine', 'screen-map.json'))
@@ -542,7 +542,7 @@ async function handleHttp(req, res) {
         })
       : send(res, 404, 'not found')
   }
-  // the 똑딱 에듀파인 연결 test build the intro page's 테스트 dialog downloads (web/build.mjs)
+  // the 똑딱작업실 extension test build the intro page's 테스트 dialog downloads (web/build.mjs)
   if (p === '/edufine/extension.zip') {
     const body = await fsp.readFile(path.join(CLIENT, 'edufine', 'extension.zip')).catch(() => null)
     return body
@@ -550,8 +550,8 @@ async function handleHttp(req, res) {
           'Content-Type': 'application/zip',
           // header values stay ASCII; the Korean name goes in the RFC 5987 form
           'Content-Disposition':
-            'attachment; filename="ttokttak-edufine-link-test.zip"; filename*=UTF-8\'\'' +
-            encodeURIComponent('똑딱-에듀파인-연결-테스트.zip'),
+            'attachment; filename="ttokttak-extension-test.zip"; filename*=UTF-8\'\'' +
+            encodeURIComponent('똑딱작업실-확장-테스트.zip'),
           'Cache-Control': 'no-store',
         })
       : send(res, 404, 'not found')

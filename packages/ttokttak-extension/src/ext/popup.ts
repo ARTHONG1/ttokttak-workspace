@@ -1,25 +1,57 @@
-/** the toolbar popup: nothing to set, only how to use it, a waiting 품의 and the K-에듀파인 it knows */
+/** the toolbar popup: nothing to set; the tasks of 똑딱작업실, any waiting work and the K-에듀파인 it knows */
+import { FEATURES } from '../core/registry'
 import type { EdufinePlace, Pending } from './messages'
+import { h } from './page-ui'
 
 const send = (type: string): Promise<unknown> =>
   new Promise((resolve) => chrome.runtime.sendMessage({ type }, (r: unknown) => resolve(r ?? null)))
 
+/** a step with its [buttons] drawn bold */
+const stepLine = (s: string): HTMLElement =>
+  h(
+    'li',
+    {},
+    ...s.split(/(\[[^\]]+\])/).map((part) => (part.startsWith('[') ? h('b', {}, part) : part)),
+  )
+
+async function waiting(id: string): Promise<Pending | null> {
+  if (id !== 'edufine-pumui') return null
+  const p = (await send('pumui:peek-direct')) as Pending | null
+  return p && p.text ? p : null
+}
+
+const titleOf = (text: string): string => {
+  try {
+    return String(JSON.parse(text).title ?? '')
+  } catch {
+    return ''
+  }
+}
+
 async function init(): Promise<void> {
   ;(document.getElementById('version') as HTMLElement).textContent = 'v' + __VERSION__
-  const pending = (await send('pumui:peek-direct')) as Pending | null
-  const waiting = document.getElementById('waiting') as HTMLElement
-  if (pending && pending.text) {
-    let title = ''
-    try {
-      title = String(JSON.parse(pending.text).title ?? '')
-    } catch {
-      /* shown without its title */
-    }
-    waiting.textContent =
-      '웹 앱에서 보낸 품의' +
-      (title ? ' 「' + title + '」' : '') +
-      '가 기다리고 있어요. K-에듀파인 품의등록 화면에서 [똑딱]을 누르세요.'
-    waiting.hidden = false
+  const list = document.getElementById('features') as HTMLElement
+  for (const f of FEATURES) {
+    const w = await waiting(f.id)
+    const title = w ? titleOf(w.text) : ''
+    list.append(
+      h(
+        'section',
+        { class: 'task' },
+        h('h2', {}, f.title),
+        h('ol', {}, ...f.steps.map(stepLine)),
+        w
+          ? h(
+              'p',
+              { class: 'waiting' },
+              (w.from === 'desktop' ? '프로그램' : '웹 앱') +
+                '에서 보낸 작업이 기다리고 있어요' +
+                (title ? ': 「' + title + '」' : '') +
+                '. K-에듀파인 화면에서 [똑딱]을 누르세요.',
+            )
+          : null,
+      ),
+    )
   }
   const place = (await send('place:get')) as EdufinePlace | null
   ;(document.getElementById('place') as HTMLElement).textContent =

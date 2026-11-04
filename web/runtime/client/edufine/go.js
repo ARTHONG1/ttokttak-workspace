@@ -1,5 +1,5 @@
 // /edufine/go: 똑딱작업실 (the desktop app) opens this page after [K-에듀파인으로 보내기].
-// It asks the 똑딱 에듀파인 연결 extension to bring the K-에듀파인 tab forward; the extension
+// It asks the 똑딱작업실 extension to bring the K-에듀파인 tab forward; the extension
 // closes this tab when it did. The page only speaks when there is nowhere to go.
 // EXTENSION_ID must equal packages/ttokttak-extension/src/core/ids.ts (a test keeps them in step).
 ;(function () {
@@ -12,7 +12,7 @@
   var noExtension = function () {
     say(
       '확장 프로그램이 필요해요',
-      '이 브라우저에 「똑딱 에듀파인 연결」이 없어요. K-에듀파인을 여는 크롬에 설치한 뒤 [K-에듀파인으로 보내기]를 다시 눌러 주세요.',
+      '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. K-에듀파인을 여는 크롬에 설치한 뒤 [K-에듀파인으로 보내기]를 다시 눌러 주세요.',
       '똑딱작업실 소개 페이지 위쪽 [테스트]에서 받을 수 있어요.',
     )
   }

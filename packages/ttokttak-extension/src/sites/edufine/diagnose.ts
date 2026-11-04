@@ -65,7 +65,7 @@ export function runChecks(env: CheckEnv): CheckResult[] {
       id: 1,
       label: 'K-에듀파인 주소 권한',
       ok: env.hostPermission,
-      hint: env.hostPermission ? '' : '「똑딱 에듀파인 연결」 확장 프로그램을 다시 설치해 주세요.',
+      hint: env.hostPermission ? '' : '「똑딱작업실」 확장 프로그램을 다시 설치해 주세요.',
     },
     {
       id: 2,

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Chrome native messaging host for the 똑딱 에듀파인 연결 extension (macOS, Linux):
+# Chrome native messaging host for the 똑딱작업실 extension (macOS, Linux):
 # runs the ieumoffice launcher next to this file with the internal edufine-host entry.
 here=$(cd "$(dirname "$0")" && pwd)
 exec "$here/ieumoffice" edufine-host "$@"

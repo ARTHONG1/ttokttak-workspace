@@ -28,7 +28,7 @@ describe('native messaging registration', () => {
   it('describes the host for the fixed extension only', () => {
     expect(nativeHostManifest('/x/edufine-host')).toEqual({
       name: NATIVE_HOST_NAME,
-      description: '똑딱작업실 ↔ 똑딱 에듀파인 연결',
+      description: '똑딱작업실 프로그램 ↔ 똑딱작업실 확장',
       path: '/x/edufine-host',
       type: 'stdio',
       allowed_origins: ['chrome-extension://' + EXTENSION_ID + '/'],

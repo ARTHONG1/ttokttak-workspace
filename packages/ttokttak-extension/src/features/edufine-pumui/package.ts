@@ -1,6 +1,6 @@
 /**
  * 품의 패키지: one 품의 that 똑딱작업실 (web app, desktop app, AI agent tools) hands to the
- * 똑딱 에듀파인 연결 extension, which fills the K-에듀파인 품의등록 screen from it.
+ * 똑딱작업실 extension, which fills the K-에듀파인 품의등록 screen from it.
  * The same JSON travels over every route: direct connection, native messaging, clipboard
  * and a .ttokpumui file. parsePumuiPackage is the only way in, and it checks everything
  * the screen fill relies on (kind, version, title, item numbers, the total).

@@ -29,7 +29,7 @@ export type ControlTarget =
 export type ControlRequest =
   | { cmd: 'open'; path: string; target?: ControlTarget }
   | { cmd: 'selection'; path: string }
-  /** the newest 품의 waiting for the 똑딱 에듀파인 연결 extension (removed once taken) */
+  /** the newest 품의 waiting for the 똑딱작업실 extension (removed once taken) */
   | { cmd: 'pumui-take' }
 
 export interface ControlEnvelope {

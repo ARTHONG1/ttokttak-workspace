@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>똑딱 에듀파인 연결</title>
+    <title>똑딱작업실</title>
     <style>
       body {
         width: 320px;
@@ -18,6 +18,10 @@
       h1 {
         margin: 0 0 10px;
         font-size: 15px;
+      }
+      h2 {
+        margin: 14px 0 0;
+        font-size: 14px;
       }
       .sub {
         color: #667085;
@@ -41,7 +45,7 @@
       b {
         color: #2f6bff;
       }
-      #waiting {
+      .waiting {
         margin-top: 12px;
         background: #f5f8ff;
         border-radius: 8px;
@@ -53,16 +57,11 @@
     </style>
   </head>
   <body>
-    <h1>똑딱 에듀파인 연결 <span id="version" class="sub"></span></h1>
+    <h1>똑딱작업실 <span id="version" class="sub"></span></h1>
     <p class="ready">✓ 준비됐어요. 따로 설정할 것은 없어요.</p>
-    <ol>
-      <li>똑딱작업실 <b>품의서 생성</b>에서 <b>[K-에듀파인으로 보내기]</b>를 눌러요.</li>
-      <li>K-에듀파인에서 <b>품의등록</b> 화면을 열고 예산 줄을 골라요.</li>
-      <li>화면 오른쪽 아래 <b>[똑딱]</b> → 내용 확인 → <b>[K-에듀파인에 채우기]</b>.</li>
-    </ol>
-    <p id="waiting" hidden></p>
+    <div id="features"></div>
     <p id="place" class="sub"></p>
-    <p class="sub foot">저장과 결재는 채운 뒤 선생님이 직접 눌러요.</p>
+    <p class="sub foot">저장·결재·제출은 채운 뒤 선생님이 직접 눌러요.</p>
     <script src="popup.js"></script>
   </body>
 </html>

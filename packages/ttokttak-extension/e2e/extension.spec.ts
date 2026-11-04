@@ -123,6 +123,32 @@ test('keeps the fixed extension id', async () => {
   expect(new URL(sw.url()).host).toBe(EXTENSION_ID)
 })
 
+test('is called 똑딱작업실', async () => {
+  const m = await sw.evaluate(() => (globalThis as any).chrome.runtime.getManifest())
+  expect(m.name).toBe('똑딱작업실 (개발)')
+  expect(m.short_name).toBe('똑딱작업실')
+  expect(m.action.default_title).toBe('똑딱작업실')
+})
+
+test('the toolbar popup lists the 에듀파인 품의 task', async () => {
+  const page = await context.newPage()
+  await page.goto('chrome-extension://' + EXTENSION_ID + '/popup.html')
+  await expect(page.getByRole('heading', { name: /똑딱작업실/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '에듀파인 품의' })).toBeVisible()
+  await page.close()
+})
+
+test('똑딱 opens 똑딱작업실 straight into its only task, 에듀파인 품의', async () => {
+  const page = await openEdufine()
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  const panel = page.getByRole('dialog', { name: '똑딱작업실' })
+  await expect(panel).toBeVisible()
+  await expect(panel.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
+  await page.close()
+})
+
 test('needs no setting: the 똑딱 button appears on K-에듀파인 and nowhere else', async () => {
   const page = await openEdufine()
   await page.close()
@@ -193,7 +219,7 @@ test('pressing 똑딱 while the panel is open looks again instead of closing it'
   await pastePumui(page, pkgText)
   await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
-  await expect(page.getByRole('dialog', { name: '똑딱 에듀파인 연결' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: '똑딱작업실' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
     timeout: 20_000,
   })

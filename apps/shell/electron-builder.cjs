@@ -620,7 +620,7 @@ const config = {
       from: '../../packages/cli/bin/ieumoffice.cmd',
       to: 'cli/ieumoffice.cmd',
     },
-    // Chrome native messaging host for the 똑딱 에듀파인 연결 extension (registered by
+    // Chrome native messaging host for the 똑딱작업실 extension (registered by
     // build/installer.nsh on Windows and by the app at start; see packages/cli/src/edufine-register.ts)
     {
       from: '../../packages/cli/bin/edufine-host',

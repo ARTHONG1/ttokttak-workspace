@@ -1,5 +1,5 @@
 /**
- * Chrome native messaging host for the 똑딱 에듀파인 연결 extension. Chrome starts it
+ * Chrome native messaging host for the 똑딱작업실 extension. Chrome starts it
  * (through the edufine-host launcher next to the CLI) for each message: a 4-byte
  * little-endian length and a JSON body on stdin, one reply in the same framing on stdout.
  * It asks the running app over the control channel for the newest waiting 품의

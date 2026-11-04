@@ -1,4 +1,4 @@
-// Builds the 똑딱 에듀파인 연결 extension from source and zips it for the intro page's 테스트 download.
+// Builds the 똑딱작업실 extension from source and zips it for the intro page's 테스트 download.
 // Usage (from program/): node web/scripts/edufine-extension-zip.mjs [out.zip]
 // The default out is web/runtime/client/edufine/extension.zip (git-ignored), which the gateway
 // serves at /edufine/extension.zip. web/build.mjs writes it into the web bundle on every build.

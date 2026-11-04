@@ -3,7 +3,7 @@ import { matchUnit, type UnitTable } from '@genoffice/ttokttak-extension/units'
 import { PARSE_SYSTEM, PUMUI_UNITS } from '../src/renderer/src/proposal-prompts'
 
 // K-에듀파인 takes units from its own table; 품의서 생성 asks the AI for names that the
-// 똑딱 에듀파인 연결 extension can match, so a fill does not stop on an unknown unit.
+// 똑딱작업실 extension can match, so a fill does not stop on an unknown unit.
 const edufineNames: UnitTable = [
   '개',
   '명',

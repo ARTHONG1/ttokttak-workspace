@@ -167,7 +167,7 @@
   !insertmacro GenOfficeRegisterOpenWithMindmap
   !insertmacro GenOfficeRegisterOpenWithEpub
   !insertmacro GenOfficeRegisterApplicationCapabilities
-  ; native messaging host for the 똑딱 에듀파인 연결 Chrome/Edge extension (HKCU, no admin)
+  ; native messaging host for the 똑딱작업실 Chrome/Edge extension (HKCU, no admin)
   nsExec::Exec '"$INSTDIR\resources\cli\ieumoffice.cmd" edufine-register'
   Pop $0
   !insertmacro UPDATEFILEASSOC
