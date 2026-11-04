@@ -105,8 +105,7 @@ export type QuizSourceResult =
  * without its extension; `converted` says the PDF was made from another format.
  */
 export type SignDocumentResult =
-  | { ok: true; name: string; bytes: Uint8Array; converted: boolean }
-  | { ok: false; error: string }
+  { ok: true; name: string; bytes: Uint8Array; converted: boolean } | { ok: false; error: string }
 
 /** what a quiz is saved as: the bytes the page made, under the name it suggests */
 export interface QuizSaveRequest {
