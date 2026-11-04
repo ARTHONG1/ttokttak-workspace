@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactElement } from 'react'
 import { createPortal } from 'react-dom'
-import { PRODUCT_NAME, type Params } from '@genoffice/i18n'
+import { productName, type Params } from '@genoffice/i18n'
 import type { AgentMemo, AgentMemoAnchor } from '../../studio-plugin/agent-plugin.mjs'
 import { MEMO_NOT_COPIED_EVENT, MEMO_REMOVED_EVENT } from '../../studio-plugin/agent-plugin.mjs'
 import type { AgentBridge } from './ai/agent-bridge'
@@ -34,9 +34,10 @@ export const MEMO_INSERT_EVENT = 'ieum:memo-insert'
 export const MEMO_DOC_CHANGE_DEBOUNCE_MS = 350
 /**
  * What a new memo's author is when no name is set anywhere (spec 3.6). It is written into
- * the document, where Hangul shows it: the product's own name, the same in every language.
+ * the document, where Hangul shows it: the product's shown name, the same in every language
+ * (PRODUCT_NAME is the ASCII name for headers and file names, not for text a person reads).
  */
-export const MEMO_FALLBACK_AUTHOR = PRODUCT_NAME
+export const MEMO_FALLBACK_AUTHOR = productName(null)
 /** The longest author a memo field takes (spec 3.6). */
 export const MAX_MEMO_AUTHOR = 64
 
