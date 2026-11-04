@@ -63,7 +63,9 @@ describe('sendPumui', () => {
       pumuiSend: async (t) => (sent.push(t), { ok: true, title: 'x' }),
     })
     expect(out).toMatchObject({ ok: true, route: 'desktop' })
-    expect(out.message).toContain('[똑딱작업실에서 받기]')
+    // one button on the K-에듀파인 screen, nothing else to find
+    expect(out.message).toContain('[똑딱]을 누르면 바로 보여요')
+    expect(out.message).not.toContain('받기')
     expect(sent).toEqual([text])
   })
 

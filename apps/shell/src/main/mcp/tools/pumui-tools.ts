@@ -9,7 +9,7 @@ import type { McpToolDefinition } from '../mcp-server'
 import type { PumuiOutbox } from '../../pumui-outbox'
 
 const TAKE =
-  'On the K-에듀파인 품의등록 screen the teacher presses [똑딱] → [똑딱 품의 넣기] → [똑딱작업실에서 받기], checks the preview and fills it; saving and approval stay with the teacher.'
+  'On the K-에듀파인 품의등록 screen the teacher presses [똑딱], sees the waiting 품의 at once and fills it with [K-에듀파인에 채우기]; saving and approval stay with the teacher.'
 
 export function createPumuiTools(
   outbox: Pick<PumuiOutbox, 'enqueue' | 'size'>,

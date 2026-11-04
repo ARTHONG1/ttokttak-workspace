@@ -35,6 +35,7 @@ if (dev) {
   manifest.name += ' (개발)'
   manifest.host_permissions.push('http://127.0.0.1/*')
   manifest.externally_connectable.matches.push('http://127.0.0.1/*')
+  for (const script of manifest.content_scripts) script.matches.push('http://127.0.0.1/*')
 }
 await writeFile(join(DIST, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
 await cp(join(HERE, 'extension/popup.html'), join(DIST, 'popup.html'))

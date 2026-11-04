@@ -1,8 +1,9 @@
 /**
- * Runs inside the K-에듀파인 page (MAIN world) on the origins the teacher allowed. It
- * shows the 똑딱 button; from there the teacher takes a 품의 (from 똑딱작업실, the web app,
- * a paste or a file), sees the preview and fills the 품의등록 screen, runs the self-check
- * or saves a diagnostic file. It never saves or submits anything in K-에듀파인.
+ * Runs inside every https://*.go.kr page (MAIN world). It shows the 똑딱 button only where
+ * K-에듀파인 is running. Pressing it takes the 품의 waiting from the web app or 똑딱작업실
+ * by itself and shows it; one press of [K-에듀파인에 채우기] fills the 품의등록 screen.
+ * A paste, a file, the self-check and the diagnostic file stay folded away. It never
+ * saves or submits anything in K-에듀파인.
  */
 import { buildDiagnostic, runChecks, type DesktopState, type WebState } from '../diagnose'
 import { applyFill, planFill } from '../fill'
@@ -10,7 +11,7 @@ import { findNexacro, frameSurvey, type FrameWin } from '../nexacro'
 import { parsePumuiPackage, PUMUI_FILE_EXTENSION, type PumuiPackage } from '../pumui-package'
 import { findWorkForm, type NexacroLike } from '../screen'
 import { DEFAULT_SCREEN_MAP, type ScreenMap } from '../screen-map'
-import type { Pending, Settings } from './messages'
+import type { Pending } from './messages'
 import { call } from './page-channel'
 import { h, mountPanel, won, type Panel } from './page-ui'
 
@@ -27,53 +28,90 @@ const step = (s: string): void => {
 }
 const filled = new Set<string>()
 
+/** how long a go.kr page is watched for K-에듀파인 (it starts after login, sometimes late) */
+const WATCH_MS = 30 * 60_000
+const WATCH_EVERY_MS = 1_000
+
 async function getMap(): Promise<ScreenMap> {
   const m = (await call<ScreenMap>('map:get')) as ScreenMap | { ok: false }
   return m && (m as ScreenMap).version === 1 ? (m as ScreenMap) : DEFAULT_SCREEN_MAP
 }
 
-async function getSettings(): Promise<Settings> {
-  const s = (await call<Settings>('settings:get')) as Settings
-  return s && typeof s.fillEnabled === 'boolean' ? s : { fillEnabled: false, origins: [] }
-}
-
 function start(): void {
   if (window.top !== window || win.__ttokEdufineLoaded) return
   win.__ttokEdufineLoaded = true
-  step('시작 ' + __VERSION__)
-  const panel = mountPanel(() => home(panel))
+  const began = Date.now()
+  const watch = (): void => {
+    if (nexacro()) {
+      step('시작 ' + __VERSION__)
+      const panel = mountPanel(() => void open(panel))
+      return
+    }
+    if (Date.now() - began < WATCH_MS) setTimeout(watch, WATCH_EVERY_MS)
+  }
+  watch()
 }
 
-function home(panel: Panel): void {
-  step('메뉴 열기')
+const SEND_FIRST =
+  '똑딱작업실 품의서 생성에서 [K-에듀파인으로 보내기]를 누른 뒤, 이 화면의 [똑딱]을 다시 눌러 주세요.'
+
+/** the 똑딱 button: find the waiting 품의 and show it, or say what to do first */
+async function open(panel: Panel): Promise<void> {
+  step('열기')
+  const map = await getMap()
+  if (!findWorkForm(nexacro(), map)) {
+    step('업무 화면 없음')
+    panel.show(
+      h('h2', {}, '품의등록 화면을 열어 주세요'),
+      h(
+        'p',
+        { class: 'sub' },
+        'K-에듀파인에서 품의등록 화면을 연 뒤 [똑딱]을 다시 눌러 주세요. 예산 줄도 먼저 골라 두세요.',
+      ),
+      more(panel),
+    )
+    return
+  }
+  const direct = (await call<Pending | null>('pumui:peek-direct')) as Pending | null
+  if (direct && direct.text) return preview(panel, direct.text, 'direct')
   panel.show(
-    h('h2', {}, '똑딱 에듀파인 연결'),
-    h(
-      'p',
-      { class: 'sub' },
-      '똑딱작업실에서 만든 품의를 이 품의등록 화면에 채워요. 저장과 결재는 선생님이 직접 해요.',
-    ),
+    h('h2', {}, '품의를 찾는 중…'),
+    h('p', { class: 'sub' }, '똑딱작업실에 물어보는 중이에요.'),
+  )
+  const r = (await call<{ ok: boolean; text?: string | null; state?: string }>(
+    'pumui:take-desktop',
+    undefined,
+    25_000,
+  )) as { ok: boolean; text?: string | null; state?: string }
+  // the background keeps what it took, so it is shown and cleared like a waiting one
+  if (r.ok && r.text) return preview(panel, r.text, 'direct')
+  step('보낸 품의 없음 ' + (r.ok ? 'empty' : (r.state ?? '')))
+  panel.show(
+    h('h2', {}, '아직 받은 품의가 없어요'),
+    h('div', { class: 'note' }, SEND_FIRST),
+    !r.ok && r.state === 'off'
+      ? h(
+          'p',
+          { class: 'sub' },
+          '프로그램으로 만들었다면 똑딱작업실이 켜져 있어야 가져올 수 있어요.',
+        )
+      : null,
     h(
       'div',
       { class: 'row' },
       h(
         'button',
-        { class: 'btn primary', type: 'button', onclick: () => void choose(panel) },
-        '똑딱 품의 넣기',
-      ),
-      h('button', { class: 'btn', type: 'button', onclick: () => void check(panel) }, '연결 점검'),
-      h(
-        'button',
-        { class: 'btn', type: 'button', onclick: () => void saveDiagnostic(panel) },
-        '진단 파일 저장',
+        { class: 'btn primary', type: 'button', onclick: () => void open(panel) },
+        '다시 확인',
       ),
     ),
+    other(panel),
+    more(panel),
   )
 }
 
-async function choose(panel: Panel): Promise<void> {
-  step('품의 고르기')
-  const direct = (await call<Pending | null>('pumui:peek-direct')) as Pending | null
+/** folded: paste or file, for a 품의 that came another way (a K-에듀파인 PC without internet) */
+function other(panel: Panel): HTMLElement {
   const area = h('textarea', {
     placeholder: '똑딱작업실에서 복사한 품의를 여기에 붙여 넣어 주세요 (Ctrl+V)',
     'aria-label': '품의 붙여 넣기',
@@ -91,83 +129,48 @@ async function choose(panel: Panel): Promise<void> {
     if (!f) return
     void f.text().then((t) => preview(panel, t, 'file'))
   })
-  panel.show(
-    h('h2', {}, '품의 가져오기'),
-    direct && direct.text
-      ? h(
-          'div',
-          { class: 'note' },
-          (direct.from === 'web' ? '웹 앱' : '똑딱작업실') + '에서 보낸 품의가 기다리고 있어요. ',
-          h(
-            'button',
-            {
-              class: 'btn primary',
-              type: 'button',
-              onclick: () => void preview(panel, direct.text, 'direct'),
-            },
-            '이 품의 보기',
-          ),
-        )
-      : null,
+  return h(
+    'details',
+    {},
+    h('summary', {}, '복사했거나 파일로 받은 품의 넣기'),
+    area,
     h(
       'div',
       { class: 'row' },
       h(
         'button',
-        { class: 'btn', type: 'button', onclick: () => void fromDesktop(panel) },
-        '똑딱작업실에서 받기',
+        { class: 'btn', type: 'button', onclick: () => file.click() },
+        '품의 파일 고르기',
       ),
-      h('button', { class: 'btn', type: 'button', onclick: () => file.click() }, '파일에서 넣기'),
     ),
-    area,
     file,
   )
-  area.focus()
 }
 
-async function fromDesktop(panel: Panel): Promise<void> {
-  step('프로그램에서 받기')
-  const r = (await call<{ ok: boolean; text?: string | null; reason?: string; state?: string }>(
-    'pumui:take-desktop',
-    undefined,
-    25_000,
-  )) as {
-    ok: boolean
-    text?: string | null
-    reason?: string
-    state?: string
-  }
-  if (!r.ok) {
-    step('프로그램 연결 실패 ' + (r.state ?? ''))
-    const hint =
-      r.state === 'missing'
-        ? '이 PC에 똑딱작업실이 설치돼 있지 않거나 연결 등록이 안 됐어요. 똑딱작업실을 설치(또는 다시 설치)해 주세요.'
-        : r.state === 'off'
-          ? '똑딱작업실을 켠 뒤 다시 눌러 주세요.'
-          : '똑딱작업실이 답하지 않아요. 처음 연결할 때는 PC 보안 검사 때문에 오래 걸릴 수 있어요. 한 번 더 눌러 주세요.'
-    panel.show(h('h2', {}, '품의 가져오기'), h('div', { class: 'err' }, hint), back(panel))
-    return
-  }
-  if (!r.text) {
-    panel.show(
-      h('h2', {}, '품의 가져오기'),
+/** folded: the self-check and the diagnostic file, for when something does not work */
+function more(panel: Panel): HTMLElement {
+  return h(
+    'details',
+    {},
+    h('summary', {}, '문제가 있을 때'),
+    h(
+      'div',
+      { class: 'row' },
+      h('button', { class: 'btn', type: 'button', onclick: () => void check(panel) }, '연결 점검'),
       h(
-        'div',
-        { class: 'note' },
-        '똑딱작업실에 보낼 품의가 없어요. 똑딱작업실에서 [K-에듀파인으로 보내기]를 먼저 눌러 주세요.',
+        'button',
+        { class: 'btn', type: 'button', onclick: () => void saveDiagnostic(panel) },
+        '진단 파일 저장',
       ),
-      back(panel),
-    )
-    return
-  }
-  await preview(panel, r.text, 'desktop')
+    ),
+  )
 }
 
 const back = (panel: Panel): HTMLElement =>
   h(
     'div',
     { class: 'row' },
-    h('button', { class: 'btn', type: 'button', onclick: () => home(panel) }, '처음으로'),
+    h('button', { class: 'btn', type: 'button', onclick: () => void open(panel) }, '처음으로'),
   )
 
 async function preview(
@@ -183,7 +186,6 @@ async function preview(
     return
   }
   const map = await getMap()
-  const settings = await getSettings()
   const form = findWorkForm(nexacro(), map)
   if (!form) {
     step('업무 화면 없음')
@@ -220,7 +222,6 @@ async function preview(
       ),
     ),
   )
-  const canFill = plan.blockers.length === 0 && settings.fillEnabled
   panel.show(
     h('h2', {}, pkg.title),
     h(
@@ -243,13 +244,6 @@ async function preview(
       : null,
     table,
     ...plan.blockers.map((b) => h('div', { class: 'err' }, b)),
-    !settings.fillEnabled
-      ? h(
-          'div',
-          { class: 'note' },
-          '지금은 미리보기 모드예요. 내용을 확인하셨다면 크롬 오른쪽 위 확장 프로그램 아이콘 → 똑딱 에듀파인 연결 → [실제로 채우기]를 켜 주세요.',
-        )
-      : null,
     h(
       'div',
       { class: 'row' },
@@ -258,12 +252,17 @@ async function preview(
         {
           class: 'btn primary',
           type: 'button',
-          disabled: !canFill,
+          disabled: plan.blockers.length > 0,
           onclick: () => void fill(panel, pkg, source),
         },
-        '채우기',
+        'K-에듀파인에 채우기',
       ),
-      h('button', { class: 'btn', type: 'button', onclick: () => home(panel) }, '취소'),
+      h('button', { class: 'btn', type: 'button', onclick: () => panel.hide() }, '취소'),
+    ),
+    h(
+      'p',
+      { class: 'sub' },
+      '채운 뒤 화면을 확인하고 K-에듀파인 [저장]은 선생님이 직접 눌러 주세요.',
     ),
   )
 }
@@ -299,7 +298,11 @@ async function fill(panel: Panel, pkg: PumuiPackage, source: string): Promise<vo
         won(res.gridTotal) +
         '). 화면에서 확인한 뒤 K-에듀파인 [저장]을 눌러 주세요.',
     ),
-    back(panel),
+    h(
+      'div',
+      { class: 'row' },
+      h('button', { class: 'btn primary', type: 'button', onclick: () => panel.hide() }, '확인'),
+    ),
   )
 }
 
@@ -359,7 +362,7 @@ async function check(panel: Panel): Promise<void> {
         { class: 'btn', type: 'button', onclick: () => void saveDiagnostic(panel) },
         '진단 파일 저장',
       ),
-      h('button', { class: 'btn', type: 'button', onclick: () => home(panel) }, '처음으로'),
+      h('button', { class: 'btn', type: 'button', onclick: () => void open(panel) }, '처음으로'),
     ),
   )
 }

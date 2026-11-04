@@ -48,7 +48,7 @@ export function runChecks(env: CheckEnv): CheckResult[] {
   const hasFrame = !!env.nx && typeof env.nx.getApplication === 'function'
   const desktop: Record<DesktopState, [boolean | null, string]> = {
     ok: [true, ''],
-    unknown: [null, '프로그램 연결은 [똑딱작업실에서 받기]를 누를 때 확인해요.'],
+    unknown: [null, '프로그램 연결은 [똑딱]을 누를 때 확인해요.'],
     off: [false, '똑딱작업실을 켜 주세요.'],
     missing: [false, '똑딱작업실을 설치(또는 다시 설치)해 주세요. 웹 앱만 쓰신다면 넘어가도 돼요.'],
   }
@@ -65,7 +65,7 @@ export function runChecks(env: CheckEnv): CheckResult[] {
       id: 1,
       label: 'K-에듀파인 주소 권한',
       ok: env.hostPermission,
-      hint: env.hostPermission ? '' : '팝업에서 K-에듀파인 주소를 넣고 [허용]을 눌러 주세요.',
+      hint: env.hostPermission ? '' : '「똑딱 에듀파인 연결」 확장 프로그램을 다시 설치해 주세요.',
     },
     {
       id: 2,

@@ -1,4 +1,4 @@
-import { chromium, expect, test, type BrowserContext, type Worker } from '@playwright/test'
+import { chromium, expect, test, type BrowserContext } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -39,7 +39,6 @@ const pkgText = JSON.stringify(
 let server: Server
 let base = ''
 let context: BrowserContext
-let sw: Worker
 let app: ControlServer | null = null
 let waiting: string | null = null
 const userData = mkdtempSync(join(tmpdir(), 'ttok-appdata-'))
@@ -51,11 +50,14 @@ const regKeys = WIN
   : []
 
 async function startApp(): Promise<void> {
-  app = await startControlServer(userData, async (req) =>
-    req.cmd === 'pumui-take'
-      ? { ok: true, result: { text: waiting } }
-      : { ok: false, error: { reason: 'unsupported', message: 'x' } },
-  )
+  app = await startControlServer(userData, async (req) => {
+    if (req.cmd !== 'pumui-take')
+      return { ok: false, error: { reason: 'unsupported', message: 'x' } }
+    // like the app's queue: a 품의 is handed over once
+    const text = waiting
+    waiting = null
+    return { ok: true, result: { text } }
+  })
 }
 
 test.beforeAll(async () => {
@@ -105,11 +107,8 @@ test.beforeAll(async () => {
     args: ['--disable-extensions-except=' + DIST, '--load-extension=' + DIST],
     env: { ...process.env, GENOFFICE_USER_DATA: userData } as Record<string, string>,
   })
-  sw = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'))
-  await sw.evaluate(async () => {
-    const c = (globalThis as any).chrome
-    await c.storage.local.set({ settings: { fillEnabled: true, origins: [] } })
-  })
+  // the extension is ready once its background worker runs
+  if (!context.serviceWorkers().length) await context.waitForEvent('serviceworker')
 })
 
 test.afterAll(async () => {
@@ -129,14 +128,12 @@ async function takeFromDesktop(): Promise<import('@playwright/test').Page> {
   const page = await context.newPage()
   await page.goto(base + '/fake-edufine.html')
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
-  await page.getByRole('button', { name: '똑딱 품의 넣기' }).click()
-  await page.getByRole('button', { name: '똑딱작업실에서 받기' }).click()
   return page
 }
 
 test('tells the teacher to start 똑딱작업실 when it is not running', async () => {
   const page = await takeFromDesktop()
-  await expect(page.getByText('똑딱작업실을 켠 뒤 다시 눌러 주세요.')).toBeVisible({
+  await expect(page.getByText('똑딱작업실이 켜져 있어야 가져올 수 있어요')).toBeVisible({
     timeout: 20_000,
   })
   await page.close()
@@ -149,10 +146,25 @@ test('takes the waiting 품의 from the running app and fills the screen', async
   await expect(page.getByRole('heading', { name: '체육관 공 구입 품의' })).toBeVisible({
     timeout: 20_000,
   })
-  await page.getByRole('button', { name: '채우기' }).click()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
   await expect(page.getByText('품목 1줄과 제목·개요를 채웠어요')).toBeVisible()
   const rows = await page.evaluate(() => (window as any).__fake.dataset('dsPrdlstDtl').rows)
   expect(rows[0]).toMatchObject({ prdlstCn: '배구공', qty: 10, expectUntpc: 20000 })
+  await page.close()
+})
+
+test('a 품의 taken from the app is still there after a look and [취소]', async () => {
+  waiting = pkgText
+  const page = await takeFromDesktop()
+  await expect(page.getByRole('heading', { name: '체육관 공 구입 품의' })).toBeVisible({
+    timeout: 20_000,
+  })
+  await page.getByRole('button', { name: '취소' }).click()
+  expect(waiting).toBeNull()
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '체육관 공 구입 품의' })).toBeVisible()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 1줄과 제목·개요를 채웠어요')).toBeVisible()
   await page.close()
 })
 
@@ -160,6 +172,7 @@ test('the self-check shows the app connection', async () => {
   const page = await context.newPage()
   await page.goto(base + '/fake-edufine.html')
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await page.getByText('문제가 있을 때').click()
   await page.getByRole('button', { name: '연결 점검' }).click()
   const row = page.locator('tr', { hasText: '똑딱작업실 프로그램 연결' })
   await expect(row).toContainText('✓', { timeout: 20_000 })

@@ -59,7 +59,7 @@ export type SendOutcome =
   | { ok: true; route: 'desktop' | 'extension'; message: string }
   | { ok: false; route: 'desktop' | 'none'; message: string }
 
-const TAKE_HINT = 'K-에듀파인 품의등록 화면 오른쪽 아래 [똑딱] → [똑딱 품의 넣기]'
+const TAKE_HINT = 'K-에듀파인 품의등록 화면 오른쪽 아래 [똑딱]을 누르면 바로 보여요'
 
 export const NO_EXTENSION =
   '이 브라우저에 「똑딱 에듀파인 연결」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
@@ -71,10 +71,7 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
       ? {
           ok: true,
           route: 'desktop',
-          message:
-            '똑딱작업실이 품의를 준비했어요. ' +
-            TAKE_HINT +
-            ' → [똑딱작업실에서 받기]를 눌러 주세요.',
+          message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + '.',
         }
       : { ok: false, route: 'desktop', message: r.reason }
   }
@@ -98,7 +95,7 @@ export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutco
     return {
       ok: true,
       route: 'extension',
-      message: '확장 프로그램에 품의를 보냈어요. ' + TAKE_HINT + '에서 바로 보여요.',
+      message: '확장 프로그램에 품의를 보냈어요. ' + TAKE_HINT + '.',
     }
   if (r && r.reason) return { ok: false, route: 'none', message: r.reason }
   return { ok: false, route: 'none', message: NO_EXTENSION }

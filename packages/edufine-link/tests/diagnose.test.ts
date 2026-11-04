@@ -38,7 +38,7 @@ describe('self-check', () => {
     const byId = Object.fromEntries(checks.map((c) => [c.id, c]))
     expect(byId[1]).toMatchObject({
       ok: false,
-      hint: '팝업에서 K-에듀파인 주소를 넣고 [허용]을 눌러 주세요.',
+      hint: '「똑딱 에듀파인 연결」 확장 프로그램을 다시 설치해 주세요.',
     })
     expect(byId[4].ok).toBe(false)
     expect(byId[4].hint).toContain('품의등록 화면을 열어 주세요')

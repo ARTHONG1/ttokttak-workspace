@@ -583,7 +583,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                     onClick={() =>
                       void copyText(sendNote.pkgText).then(() =>
                         say(
-                          '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [똑딱 품의 넣기]에 붙여 넣어 주세요.',
+                          '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [복사했거나 파일로 받은 품의 넣기]에 붙여 넣어 주세요.',
                         ),
                       )
                     }

@@ -89,15 +89,12 @@ test.afterAll(async () => {
   server?.close()
 })
 
-async function setFill(enabled: boolean): Promise<void> {
-  await sw.evaluate(async (v) => {
-    const c = (globalThis as any).chrome
-    const { settings } = await c.storage.local.get('settings')
-    await c.storage.local.set({
-      settings: { fillEnabled: false, origins: [], ...(settings ?? {}), fillEnabled: v },
-    })
-  }, enabled)
-}
+// a 품의 the web app handed over stays until it is filled; each test starts without one
+test.beforeEach(async () => {
+  await sw.evaluate(async () => {
+    await (globalThis as any).chrome.storage.local.remove('pending')
+  })
+})
 
 async function openEdufine(query = ''): Promise<Page> {
   const page = await context.newPage()
@@ -110,7 +107,10 @@ async function openEdufine(query = ''): Promise<Page> {
 
 async function pastePumui(page: Page, text: string): Promise<void> {
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
-  await page.getByRole('button', { name: '똑딱 품의 넣기' }).click()
+  await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
+  await page.getByText('복사했거나 파일로 받은 품의 넣기').click()
   await page.getByLabel('품의 붙여 넣기').fill(text)
 }
 
@@ -123,23 +123,30 @@ test('keeps the fixed extension id', async () => {
   expect(new URL(sw.url()).host).toBe(EXTENSION_ID)
 })
 
-test('previews only until real fill is turned on', async () => {
-  await setFill(false)
+test('needs no setting: the 똑딱 button appears on K-에듀파인 and nowhere else', async () => {
+  const page = await openEdufine()
+  await page.close()
+  const other = await context.newPage()
+  await other.goto(base + '/web-sender.html')
+  await other.waitForTimeout(3_000)
+  await expect(other.getByRole('button', { name: '똑딱', exact: true })).toHaveCount(0)
+  await other.close()
+})
+
+test('shows the 품의 first and writes nothing until 채우기 is pressed', async () => {
   const page = await openEdufine()
   await pastePumui(page, pkgText)
   await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
   await expect(page.getByText('합계 45,000원')).toBeVisible()
-  await expect(page.getByRole('button', { name: '채우기' })).toBeDisabled()
-  await expect(page.getByText('지금은 미리보기 모드예요')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'K-에듀파인에 채우기' })).toBeEnabled()
   expect(await writesOf(page)).toBe(0)
   await page.close()
 })
 
-test('fills title, summary and items once real fill is on, and never saves', async () => {
-  await setFill(true)
+test('fills title, summary and items with one press, and never saves', async () => {
   const page = await openEdufine()
   await pastePumui(page, pkgText)
-  await page.getByRole('button', { name: '채우기' }).click()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
   await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
   const state = await page.evaluate(() => {
     const f = (window as any).__fake
@@ -169,10 +176,9 @@ test('refuses pasted text that is not a 똑딱 품의', async () => {
 })
 
 test('asks for a budget line when none is selected and writes nothing', async () => {
-  await setFill(true)
   const page = await openEdufine('?budget=0')
   await pastePumui(page, pkgText)
-  await page.getByRole('button', { name: '채우기' }).click()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
   await expect(page.getByText('예산 내역에서 예산 줄을 먼저 골라 주세요.')).toBeVisible()
   expect(await writesOf(page)).toBe(0)
   await page.close()
@@ -181,7 +187,7 @@ test('asks for a budget line when none is selected and writes nothing', async ()
 test('reads a 품의 file', async () => {
   const page = await openEdufine()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
-  await page.getByRole('button', { name: '똑딱 품의 넣기' }).click()
+  await page.getByText('복사했거나 파일로 받은 품의 넣기').click()
   await page.locator('input[type=file]').setInputFiles({
     name: '품의.ttokpumui',
     mimeType: 'application/json',
@@ -191,7 +197,7 @@ test('reads a 품의 file', async () => {
   await page.close()
 })
 
-test('takes a 품의 the web app sent directly', async () => {
+test('shows the 품의 the web app sent as soon as 똑딱 is pressed', async () => {
   const sender = await context.newPage()
   await sender.goto(base + '/web-sender.html')
   const reply = await sender.evaluate((t) => (window as any).sendToExtension(t), pkgText)
@@ -199,16 +205,22 @@ test('takes a 품의 the web app sent directly', async () => {
   await sender.close()
   const page = await openEdufine()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
-  await page.getByRole('button', { name: '똑딱 품의 넣기' }).click()
-  await expect(page.getByText('웹 앱에서 보낸 품의가 기다리고 있어요.')).toBeVisible()
-  await page.getByRole('button', { name: '이 품의 보기' }).click()
   await expect(page.getByRole('heading', { name: '과학실 실험 도구 구입' })).toBeVisible()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
+  await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
+  // filled once: the next press does not offer the same 품의 again
+  await page.getByRole('button', { name: '확인', exact: true }).click()
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '아직 받은 품의가 없어요' })).toBeVisible({
+    timeout: 20_000,
+  })
   await page.close()
 })
 
 test('runs the self-check and saves a diagnostic file without values', async () => {
   const page = await openEdufine()
   await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await page.getByText('문제가 있을 때').click()
   await page.getByRole('button', { name: '연결 점검' }).click()
   await expect(page.getByRole('heading', { name: '연결 점검' })).toBeVisible()
   await expect(page.getByText('품의등록 화면 인식')).toBeVisible()
@@ -227,13 +239,12 @@ test('runs the self-check and saves a diagnostic file without values', async () 
 })
 
 test('finds K-에듀파인 inside a same-origin frame of a portal page and fills it there', async () => {
-  await setFill(true)
   const page = await openEdufine('?frame=1')
   await expect.poll(() => page.frames().some((f) => f.url().includes('inner=1'))).toBe(true)
   const inner = page.frames().find((f) => f.url().includes('inner=1'))!
   await expect.poll(() => inner.evaluate(() => !!(window as any).__fake)).toBe(true)
   await pastePumui(page, pkgText)
-  await page.getByRole('button', { name: '채우기' }).click()
+  await page.getByRole('button', { name: 'K-에듀파인에 채우기' }).click()
   await expect(page.getByText('품목 3줄과 제목·개요를 채웠어요')).toBeVisible()
   const state = await inner.evaluate(() => {
     const f = (window as any).__fake
@@ -245,7 +256,9 @@ test('finds K-에듀파인 inside a same-origin frame of a portal page and fills
   })
   expect(state).toEqual({ items: 3, title: '과학실 실험 도구 구입', forbidden: 0 })
 
-  await page.getByRole('button', { name: '처음으로' }).click()
+  await page.getByRole('button', { name: '확인', exact: true }).click()
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  await page.getByText('문제가 있을 때').click()
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: '진단 파일 저장' }).click(),

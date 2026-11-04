@@ -46,6 +46,9 @@ td.num, th.num { text-align: right; }
 .err { background: #fef3f2; color: #b42318; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
 .done { background: #ecfdf3; color: #067647; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
 .close { float: right; border: 0; background: none; font-size: 18px; cursor: pointer; color: #667085; }
+details { margin-top: 12px; border-top: 1px solid #eaecf0; padding-top: 8px; }
+summary { cursor: pointer; color: #667085; font-size: 12px; }
+details textarea { margin-top: 8px; }
 `
 
 export interface Panel {
