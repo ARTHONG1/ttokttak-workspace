@@ -1,6 +1,16 @@
-import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join, resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'electron-vite'
+import { normalizePath } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
+
+// 똑딱서명 draws pages with pdf.js: CJK CMaps, standard fonts and its wasm decoders ship
+// with the renderer output (as in apps/pdf), under pdfjs/
+const require = createRequire(import.meta.url)
+const pdfjsRoot = dirname(dirname(require.resolve('pdfjs-dist/package.json')))
+// vite-plugin-static-copy globs require POSIX separators; join() breaks on Windows
+const pdfjsDir = (sub: string) => normalizePath(join(pdfjsRoot, 'pdfjs-dist', sub))
 
 export default defineConfig({
   // Bundle everything into the shell main (same policy as apps/docs): the
@@ -44,7 +54,16 @@ export default defineConfig({
     },
   },
   renderer: {
-    plugins: [react()],
+    plugins: [
+      react(),
+      viteStaticCopy({
+        targets: [
+          { src: pdfjsDir('cmaps'), dest: 'pdfjs' },
+          { src: pdfjsDir('standard_fonts'), dest: 'pdfjs' },
+          { src: pdfjsDir('wasm'), dest: 'pdfjs' },
+        ],
+      }),
+    ],
     build: {
       rollupOptions: {
         input: {

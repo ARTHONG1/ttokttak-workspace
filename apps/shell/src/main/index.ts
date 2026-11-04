@@ -147,6 +147,8 @@ import { workOutbox } from './work-outbox'
 import { goUrl } from '@genoffice/ttokttak-extension/ids'
 import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
+import { SIGN_DOCUMENT_EXTENSIONS, documentToPdf, nodeSignDeps } from './sign-document'
+import { imagesToPdfBytes } from '../../../pdf/src/main/images-to-pdf'
 import {
   FEATURE_LINKS,
   checkSaveRequest,
@@ -298,6 +300,7 @@ import {
 import {
   configureHwpRuntime,
   editorTakes,
+  exportHwpPdfHeadless,
   hwpFileRenamed,
   hwpReadText,
   requestHwpPrint,
@@ -5752,6 +5755,45 @@ function registerHomeIpc(): void {
       : { ok: false, error: '유튜브 주소를 확인해 주세요.' },
   )
 
+  // 똑딱업무 > 똑딱서명: the document comes from a file the user picks here and goes back as a
+  // PDF; other formats pass through the dialog-free PDF export, one document at a time
+  let signConverting = false
+  ipcMain.handle(HOME_CHANNELS.openSignDocument, async (event) => {
+    if (signConverting)
+      return { ok: false, error: '문서를 PDF로 바꾸는 중이에요. 잠시만 기다려 주세요.' }
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const picked = await showOpenDialogWithMemory(dialog, win, {
+      title: '서명할 문서 고르기',
+      filters: [{ name: '서명할 문서', extensions: [...SIGN_DOCUMENT_EXTENSIONS] }],
+      properties: ['openFile'],
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+    signConverting = true
+    try {
+      return await documentToPdf(
+        picked.filePaths[0],
+        nodeSignDeps({
+          convertToPdf: async (input, outPath) => {
+            const outcome = await runHeadlessExport(
+              { input, outPath, targetFormat: 'pdf', json: false },
+              headlessExporters,
+            )
+            if (!outcome.ok) throw new Error(outcome.message)
+          },
+          // a photographed page lands on A4 (landscape for a wide photo), edge to edge
+          imagesToPdf: (images) =>
+            imagesToPdfBytes(images, { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
+          // the web edition runs this process per session (WEB_SESSION_DIR) and its browser
+          // frames cannot print a page to PDF, so only PDFs and photos are taken there
+          canConvert: !process.env.WEB_SESSION_DIR,
+        }),
+      )
+    } finally {
+      signConverting = false
+    }
+  })
+
   // 특화 기능's exports: the page makes the bytes, the user picks where they go
   ipcMain.handle(HOME_CHANNELS.saveFeatureFile, async (event, raw: unknown) => {
     const request = checkSaveRequest(raw)
@@ -8609,6 +8651,7 @@ const headlessExporters: HeadlessExporters = {
   slides: (input, outPath) => exportSlidesPdfHeadless(input, outPath),
   markdown: (input, outPath) => exportMarkdownPdfHeadless(input, outPath),
   html: exportHtmlHeadless,
+  hwp: (input, outPath) => exportHwpPdfHeadless(input, outPath),
 }
 
 /**

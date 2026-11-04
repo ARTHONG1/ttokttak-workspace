@@ -100,6 +100,14 @@ export type CartFileResult =
 export type QuizSourceResult =
   { ok: true; name: string; text: string; truncated: boolean } | { ok: false; error: string }
 
+/**
+ * 똑딱업무 > 똑딱서명: the picked document as a PDF to sign. `name` is the file's name
+ * without its extension; `converted` says the PDF was made from another format.
+ */
+export type SignDocumentResult =
+  | { ok: true; name: string; bytes: Uint8Array; converted: boolean }
+  | { ok: false; error: string }
+
 /** what a quiz is saved as: the bytes the page made, under the name it suggests */
 export interface QuizSaveRequest {
   name: string
@@ -282,6 +290,8 @@ export interface HomeApi {
   readQuizFile(kind: 'pdf' | 'hwp'): Promise<QuizSourceResult | null>
   /** 특화 기능 > 퀴즈 생성기: the captions of a YouTube video */
   readYoutubeTranscript(url: string): Promise<QuizSourceResult>
+  /** 똑딱서명: pick a document and get it as a PDF (null = canceled) */
+  openSignDocument(): Promise<SignDocumentResult | null>
   /** 특화 기능: save bytes the page made where the user picks; resolves to the path (null = canceled) */
   saveFeatureFile(request: QuizSaveRequest): Promise<string | null>
   /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
@@ -573,6 +583,7 @@ export const HOME_CHANNELS = {
   openWorkSite: 'home:open-work-site',
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
+  openSignDocument: 'home:open-sign-document',
   saveFeatureFile: 'home:save-feature-file',
   readFeatureAsset: 'home:read-feature-asset',
   openFeatureLink: 'home:open-feature-link',

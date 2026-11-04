@@ -167,8 +167,8 @@ export function HubTiles({
           icon={<WorkIcon />}
           title="똑딱업무"
           badge="NEW"
-          sub="품의서, 퀴즈처럼 학교 업무 문서를 양식에 맞춰 만들어요."
-          chips={['품의서 생성', '똑딱퀴즈']}
+          sub="품의서, 퀴즈, 서명처럼 학교 업무를 양식에 맞춰 빠르게 끝내요."
+          chips={['품의서 생성', '똑딱퀴즈', '똑딱서명']}
           go="업무 도구 열기"
           onClick={() => onOpen('work')}
           testId={testIds.work}

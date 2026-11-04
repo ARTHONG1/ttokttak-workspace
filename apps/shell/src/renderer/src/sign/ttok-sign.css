@@ -1,0 +1,339 @@
+/* 똑딱서명 (sign/TtokSign.tsx). Inside .sf, so the 특화 기능 palette applies. Motion is
+   transform/opacity only (AGENTS.md: keep the Mac light). */
+.sf-page.ts-root {
+  width: min(1240px, 100%);
+}
+.ts-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--sf-ink-3);
+}
+.ts-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.ts-step-no {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--sf-line-2);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ts-steps li.is-now {
+  color: var(--sf-ink);
+  font-weight: 700;
+}
+.ts-steps li.is-now .ts-step-no {
+  border-color: var(--sf-work);
+  background: var(--sf-work);
+  color: var(--sf-on-color);
+}
+.ts-steps li.is-done .ts-step-no {
+  border-color: var(--sf-work);
+  color: var(--sf-work);
+}
+.ts-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .ts-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ts-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 18px 0 28px;
+  border-radius: 14px;
+  background: var(--sf-soft);
+}
+.ts-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(460px, calc(100% - 32px));
+  margin: 48px 0;
+  padding: 36px 24px;
+  border: 1.5px dashed var(--sf-line-2);
+  border-radius: 16px;
+  background: var(--sf-card);
+  text-align: center;
+  color: var(--sf-work);
+}
+.ts-empty h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--sf-ink);
+}
+.ts-empty p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--sf-ink-2);
+}
+.ts-page {
+  position: relative;
+  flex: none;
+  background: var(--sf-paper);
+  box-shadow: var(--sf-shadow);
+  touch-action: none;
+}
+.ts-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ts-page-no {
+  position: absolute;
+  right: 8px;
+  bottom: -20px;
+  font-size: 12px;
+  color: var(--sf-ink-3);
+}
+.ts-sign {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed transparent;
+  transform-origin: center;
+  cursor: move;
+  user-select: none;
+  outline: none;
+}
+.ts-sign:hover {
+  border-color: rgb(115 87 246 / 45%);
+}
+.ts-sign.is-selected {
+  border-color: var(--sf-work);
+}
+.ts-sign:focus-visible {
+  box-shadow: 0 0 0 3px var(--sf-work-soft);
+}
+.ts-sign img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.ts-knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--sf-work);
+  border-radius: 3px;
+  background: #fff;
+  touch-action: none;
+}
+.ts-knob-nw {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+.ts-knob-ne {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+.ts-knob-se {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+.ts-knob-sw {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+.ts-turn-stem {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  width: 0;
+  height: 20px;
+  border-left: 1.5px solid var(--sf-work);
+}
+.ts-knob-turn {
+  top: -36px;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: grab;
+}
+.ts-knob-turn:active {
+  cursor: grabbing;
+}
+.ts-remove {
+  position: absolute;
+  top: -12px;
+  right: -34px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sf-danger);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  cursor: pointer;
+}
+.ts-side {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ts-box {
+  padding: 16px;
+}
+.ts-box h2 {
+  margin-bottom: 4px;
+}
+.ts-doc-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 10px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.ts-doc-name span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--sf-ink-3);
+}
+.ts-pictures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.ts-picture {
+  position: relative;
+}
+.ts-picture-use {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  padding: 6px;
+  border: 1px solid var(--sf-line);
+  border-radius: 10px;
+  /* a light check pattern shows the picture's see-through paper */
+  background: repeating-conic-gradient(#f1f3f5 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+  cursor: pointer;
+}
+.ts-picture-use:hover {
+  border-color: var(--sf-work);
+}
+.ts-picture-use img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.ts-picture-forget {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--sf-line);
+  border-radius: 50%;
+  background: var(--sf-card);
+  color: var(--sf-ink-2);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.ts-full {
+  width: 100%;
+  margin-top: 6px;
+}
+.ts-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--sf-ink-2);
+}
+/* the 특화 기능 text-field rule (.sf input) does not apply to a check box */
+.sf .ts-check input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--sf-work);
+}
+.ts-angle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 13.5px;
+}
+.sf .ts-angle input {
+  width: 64px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--sf-line);
+  border-radius: 8px;
+  background: var(--sf-card);
+  color: var(--sf-ink);
+  font: inherit;
+}
+.ts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ts-hint {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--sf-ink-3);
+}
+.ts-saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--sf-work-soft);
+  font-size: 13px;
+}
+.ts-saved span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ts-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sf-ink-3);
+}

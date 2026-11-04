@@ -244,6 +244,11 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['readCartFile']>
     >
   },
+  async openSignDocument() {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.openSignDocument)) as Awaited<
+      ReturnType<HomeApi['openSignDocument']>
+    >
+  },
   async workSend(feature, text) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.workSend, feature, text)) as Awaited<
       ReturnType<HomeApi['workSend']>

@@ -15,6 +15,7 @@ import {
   useToast,
 } from './special-common'
 import { QuizGenerator, QuizIcon } from './QuizGenerator'
+import { SignIcon, TtokSign } from './sign/TtokSign'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -29,7 +30,7 @@ import './quiz-generator.css'
  * always the table's total.
  */
 
-type FeatureId = 'proposal' | 'quiz'
+type FeatureId = 'proposal' | 'quiz' | 'sign'
 
 interface Feature {
   id: FeatureId
@@ -51,6 +52,12 @@ const FEATURES: Feature[] = [
     summary:
       '학습 자료나 유튜브 영상으로 다섯 가지 유형의 퀴즈를 만들고, 바로 풀거나 학습지로 뽑아요.',
     tags: ['5가지 유형', '단어 찾기', '학습지 PDF', '블루킷·퀴즈앤'],
+  },
+  {
+    id: 'sign',
+    title: '똑딱서명',
+    summary: '문서를 올리고 서명 그림을 놓으면, 크기와 방향을 맞춰 서명이 들어간 PDF로 저장해요.',
+    tags: ['한글·워드·PDF', '배경 자동 지우기', '자유 회전', '서명 기억'],
   },
 ]
 
@@ -243,7 +250,7 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
           >
             <span className="sf-card-top">
               <span className="sf-card-icon">
-                {f.id === 'quiz' ? <QuizIcon /> : <ProposalIcon />}
+                {f.id === 'quiz' ? <QuizIcon /> : f.id === 'sign' ? <SignIcon /> : <ProposalIcon />}
               </span>
             </span>
             <span className="sf-card-title">{f.title}</span>
@@ -753,6 +760,8 @@ export function SpecialFeatures({
         <ProposalGenerator onBack={() => setOpen(null)} />
       ) : open === 'quiz' ? (
         <QuizGenerator onBack={() => setOpen(null)} />
+      ) : open === 'sign' ? (
+        <TtokSign onBack={() => setOpen(null)} />
       ) : (
         <FeatureList onOpen={setOpen} />
       )}
