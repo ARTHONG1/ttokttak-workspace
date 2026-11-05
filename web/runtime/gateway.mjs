@@ -13,6 +13,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 import { REFUSALS, clientIp, createSessionGuard } from './abuse-guard.mjs'
+import { createPopupRoutes, popupDevEnabled, popupLocalRequest } from './popup-routes.mjs'
 import {
   aiUsageOf,
   authRequired,
@@ -32,6 +33,19 @@ const SESSIONS_ROOT = process.env.WEB_SESSIONS_ROOT || '/tmp/hs'
 const PORT = Number(process.env.PORT || 8080)
 // local preview binds to 127.0.0.1 (WEB_HOST); Cloud Run leaves it unset
 const HOST = process.env.WEB_HOST || undefined
+const popupRoutes = createPopupRoutes({
+  clientDir: CLIENT,
+  devDir: path.join(HERE, '..', 'dev', 'popups'),
+})
+function withPopupEditor(body, req) {
+  if (!popupDevEnabled() || !popupLocalRequest(req)) return body
+  return body
+    .toString()
+    .replace(
+      '</body>',
+      '<a href="/__dev/popups/" class="pp-dev-entry">팝업 등록 · 미리보기 전용</a></body>',
+    )
+}
 const IDLE_MS = Number(process.env.WEB_SESSION_IDLE_MS || 15 * 60 * 1000)
 const MAX_UPLOAD = 200 * 1024 * 1024
 const DOC_EXT =
@@ -534,6 +548,7 @@ function allowedAppFile(file) {
 async function handleHttp(req, res) {
   const url = new URL(req.url, 'http://localhost')
   const p = url.pathname
+  if (await popupRoutes(req, res, p)) return
   if (p === '/api/health')
     return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
   // what the 똑딱작업실 extension keeps and sends (linked from its Chrome Web Store listing)
@@ -583,7 +598,9 @@ async function handleHttp(req, res) {
   // the intro page; the trial app itself lives at /app
   if (p === '/' || p === '/index.html') {
     const body = await fsp.readFile(path.join(CLIENT, 'intro.html'))
-    return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8' })
+    return send(res, 200, withPopupEditor(body, req), {
+      'Content-Type': 'text/html; charset=utf-8',
+    })
   }
   if (p === '/app' || p === '/app/') {
     // an address blocked for opening too many work spaces is told so at the door
@@ -609,7 +626,10 @@ async function handleHttp(req, res) {
     // the trial opens only for a signed-in Google account: the gate page signs in first
     const page = accountOf(sid) ? 'index.html' : 'login.html'
     const body = await fsp.readFile(path.join(CLIENT, page))
-    return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', ...headers })
+    return send(res, 200, withPopupEditor(body, req), {
+      'Content-Type': 'text/html; charset=utf-8',
+      ...headers,
+    })
   }
   if (p === '/__auth/config') {
     return send(

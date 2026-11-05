@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-popup-placement="app">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,6 +7,7 @@
     <title>똑딱작업실</title>
     <link rel="icon" href="/__web/icon.png" />
     <link rel="stylesheet" href="/__web/host.css" />
+    <link rel="stylesheet" href="/__web/announcements.css" />
   </head>
   <body>
     <div id="desktop"></div>
@@ -18,12 +19,18 @@
     </div>
     <div id="toasts" aria-live="polite"></div>
     <div id="ended" hidden>
-      <div class="ended-card" role="alertdialog" aria-labelledby="ended-title" aria-describedby="ended-detail">
+      <div
+        class="ended-card"
+        role="alertdialog"
+        aria-labelledby="ended-title"
+        aria-describedby="ended-detail"
+      >
         <div id="ended-title" class="ended-title"></div>
         <p id="ended-detail" class="ended-detail"></p>
         <button id="restart" type="button">다시 시작</button>
       </div>
     </div>
     <script src="/__web/host.js"></script>
+    <script type="module" src="/__web/announcements.js"></script>
   </body>
 </html>

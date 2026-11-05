@@ -12,6 +12,8 @@ if (!process.env.GOOGLE_CLOUD_PROJECT) {
 }
 process.env.PORT ||= '5188'
 process.env.WEB_HOST ||= '127.0.0.1'
+// Only the local preview can edit the announcement files shipped by the next build.
+process.env.WEB_POPUP_EDITOR = '1'
 process.env.VERTEX_LOCATION ||= 'global'
 process.env.WEB_SESSIONS_ROOT ||= '/tmp/hs-preview'
 // the preview on this Mac opens without the Google sign-in the public service asks for

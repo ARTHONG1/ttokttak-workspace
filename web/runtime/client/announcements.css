@@ -1,0 +1,232 @@
+.pp-dialog {
+  --pp-surface: #fff;
+  --pp-text: #172b4d;
+  --pp-muted: #536782;
+  --pp-accent: #245bd8;
+  --pp-accent-hover: #1947b0;
+  --pp-soft: #f1f5fc;
+  --pp-border: #dce5f1;
+  --pp-overlay: rgb(12 27 51 / 52%);
+  --pp-shadow: rgb(13 37 76 / 24%);
+  --pp-clear: transparent;
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 28px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: var(--pp-text);
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 24px;
+  box-shadow: 0 24px 80px var(--pp-shadow);
+  font:
+    15px/1.65 -apple-system,
+    BlinkMacSystemFont,
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
+    sans-serif;
+  text-align: left;
+  color-scheme: light;
+}
+.pp-dialog[open] {
+  animation: pp-enter 180ms ease-out;
+}
+.pp-dialog::backdrop {
+  --pp-backdrop: rgb(12 27 51 / 52%);
+  background: var(--pp-backdrop);
+}
+.pp-dialog * {
+  box-sizing: border-box;
+}
+.pp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 0;
+}
+.pp-eyebrow {
+  color: var(--pp-accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+.pp-dialog button,
+.pp-dialog a {
+  font: inherit;
+}
+.pp-icon-close {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pp-soft);
+  color: var(--pp-muted);
+  font-size: 28px !important;
+  cursor: pointer;
+}
+.pp-content {
+  padding: 10px 28px 28px;
+  overflow-wrap: anywhere;
+}
+.pp-title {
+  margin: 0 0 14px;
+  color: var(--pp-text);
+  font-size: clamp(22px, 5vw, 28px);
+  line-height: 1.4;
+  letter-spacing: -0.04em;
+}
+.pp-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--pp-muted);
+  line-height: 1.8;
+}
+.pp-media {
+  margin-top: 22px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--pp-soft);
+}
+.pp-media img,
+.pp-media video {
+  display: block;
+  width: 100%;
+  max-height: 48vh;
+  max-height: 48dvh;
+  object-fit: contain;
+}
+.pp-media iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+.pp-media-error {
+  padding: 20px;
+  margin: 0;
+  color: var(--pp-muted);
+  font-size: 13px;
+}
+.pp-link {
+  display: block;
+  margin-top: 24px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--pp-accent);
+  color: var(--pp-surface);
+  font-weight: 650 !important;
+  text-align: center;
+  text-decoration: none;
+}
+.pp-link:hover {
+  background: var(--pp-accent-hover);
+}
+.pp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--pp-border);
+  background: var(--pp-soft);
+}
+.pp-hide {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--pp-muted);
+}
+.pp-hide input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pp-accent);
+}
+.pp-close {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 1px solid var(--pp-border);
+  border-radius: 10px;
+  color: var(--pp-text);
+  background: var(--pp-surface);
+  cursor: pointer;
+}
+.pp-preview-note {
+  color: var(--pp-muted);
+  font-size: 12px;
+}
+.pp-dialog :focus-visible {
+  outline: 3px solid var(--pp-accent);
+  outline-offset: 3px;
+}
+@keyframes pp-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 420px) {
+  .pp-content {
+    padding: 10px 20px 22px;
+  }
+  .pp-header {
+    padding: 12px 16px 0;
+  }
+  .pp-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-dialog[open] {
+    animation: none;
+  }
+}
+
+.pp-dev-entry {
+  --pp-entry-bg: #172b4d;
+  --pp-entry-bg-hover: #245bd8;
+  --pp-entry-text: #fff;
+  --pp-entry-border: rgb(255 255 255 / 22%);
+  --pp-entry-shadow: rgb(13 37 76 / 28%);
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--pp-entry-border);
+  border-radius: 999px;
+  background: var(--pp-entry-bg);
+  color: var(--pp-entry-text);
+  box-shadow: 0 12px 32px var(--pp-entry-shadow);
+  font:
+    650 13px/1.2 -apple-system,
+    BlinkMacSystemFont,
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
+    sans-serif;
+  text-decoration: none;
+}
+.pp-dev-entry:hover {
+  background: var(--pp-entry-bg-hover);
+}
+.pp-dev-entry:focus-visible {
+  outline: 3px solid var(--pp-entry-bg-hover);
+  outline-offset: 2px;
+}
