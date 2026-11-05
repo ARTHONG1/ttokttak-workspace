@@ -1,6 +1,18 @@
 /* 똑딱서명 (sign/TtokSign.tsx). Inside .sf, so the 특화 기능 palette applies. Motion is
    transform/opacity only (AGENTS.md: keep the Mac light). */
 .sf-page.ts-root {
+  /* 똑딱서명's own colours, defined once (the pad and the page paper stay white in dark
+     themes: a signature is drawn on paper) */
+  --ts-paper: #fff;
+  --ts-on-danger: #fff;
+  --ts-hover-line: rgb(115 87 246 / 45%);
+  --ts-check-a: #f1f3f5;
+  --ts-check-b: #fff;
+  --ts-dim: rgb(15 23 42 / 45%);
+  --ts-pad-shadow: 0 24px 60px -24px rgb(15 23 42 / 45%);
+  --ts-seg-shadow: 0 1px 2px rgb(15 23 42 / 12%);
+  --ts-pad-line: #d6dae1;
+  --ts-pad-faint: #b4bac4;
   width: min(1240px, 100%);
 }
 .ts-steps {
@@ -116,7 +128,7 @@
   outline: none;
 }
 .ts-sign:hover {
-  border-color: rgb(115 87 246 / 45%);
+  border-color: var(--ts-hover-line);
 }
 .ts-sign.is-selected {
   border-color: var(--sf-work);
@@ -136,7 +148,7 @@
   height: 12px;
   border: 2px solid var(--sf-work);
   border-radius: 3px;
-  background: #fff;
+  background: var(--ts-paper);
   touch-action: none;
 }
 .ts-knob-nw {
@@ -188,7 +200,7 @@
   border: 0;
   border-radius: 50%;
   background: var(--sf-danger);
-  color: #fff;
+  color: var(--ts-on-danger);
   font: inherit;
   font-size: 15px;
   line-height: 22px;
@@ -238,7 +250,8 @@
   border: 1px solid var(--sf-line);
   border-radius: 10px;
   /* a light check pattern shows the picture's see-through paper */
-  background: repeating-conic-gradient(#f1f3f5 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+  background: repeating-conic-gradient(var(--ts-check-a) 0 25%, var(--ts-check-b) 0 50%) 0 0 / 12px
+    12px;
   cursor: pointer;
 }
 .ts-picture-use:hover {
@@ -336,4 +349,153 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--sf-ink-3);
+}
+
+/* the pictures' own buttons: forget (top right), download (bottom right) */
+.ts-picture-download {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--sf-line);
+  border-radius: 50%;
+  background: var(--sf-card);
+  color: var(--sf-ink-2);
+  cursor: pointer;
+}
+.ts-picture-download:hover,
+.ts-picture-forget:hover {
+  border-color: var(--sf-work);
+  color: var(--sf-work);
+}
+.ts-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+.sf .ts-angle input.ts-size {
+  flex: 1;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  accent-color: var(--sf-work);
+}
+/* the signature pad: a plain dim over the page (no blur), the dialog in front */
+.ts-pad-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ts-dim);
+}
+.ts-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(860px, 100%);
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: var(--sf-card);
+  box-shadow: var(--ts-pad-shadow);
+}
+.ts-pad-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.ts-pad-head p {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--sf-ink-2);
+}
+.ts-pad-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ts-pad-gap {
+  flex: 1;
+}
+.ts-seg {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--sf-line);
+  border-radius: 9px;
+  background: var(--sf-soft);
+}
+.ts-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--sf-ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ts-seg button.is-on {
+  background: var(--sf-card);
+  color: var(--sf-ink);
+  font-weight: 650;
+  box-shadow: var(--ts-seg-shadow);
+}
+.ts-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.ts-pad-area {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--sf-line-2);
+  border-radius: 12px;
+  background: var(--ts-paper);
+  overflow: hidden;
+}
+.ts-pad-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: crosshair;
+}
+.ts-pad-line {
+  position: absolute;
+  right: 8%;
+  bottom: 28%;
+  left: 8%;
+  border-bottom: 1.5px solid var(--ts-pad-line);
+  pointer-events: none;
+}
+.ts-pad-line span {
+  position: absolute;
+  bottom: 2px;
+  left: -2px;
+  font-size: 18px;
+  color: var(--ts-pad-faint);
+}
+.ts-pad-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 15px;
+  color: var(--ts-pad-faint);
+  pointer-events: none;
+}
+.ts-pad-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

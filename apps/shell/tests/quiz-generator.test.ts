@@ -297,5 +297,10 @@ describe('what a feature page may save and read', () => {
       }),
     ).toBeNull()
     expect(withSaveExtension('/tmp/문제지', ['pdf'])).toBe('/tmp/문제지.pdf')
+    // 똑딱서명 saves a signature picture
+    expect(
+      checkSaveRequest({ name: '서명.png', filterName: 'PNG 그림', extensions: ['png'], bytes })
+        ?.name,
+    ).toBe('서명.png')
   })
 })

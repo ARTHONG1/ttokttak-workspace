@@ -10,6 +10,7 @@ import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { Back, ToastView, useToast } from '../special-common'
 import { isWebEdition } from '../edition'
 import { cleanSignature } from './sign-image'
+import { SignPad, type PadPicture } from './SignPad'
 import {
   angleFromPointer,
   clampToPage,
@@ -405,6 +406,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
   const [error, setError] = useState<string | null>(null)
   const [savedPath, setSavedPath] = useState<string | null>(null)
   const [dropPaper, setDropPaper] = useState(true)
+  const [padOpen, setPadOpen] = useState(false)
   const [width, setWidth] = useState(720)
   const [toast, say] = useToast()
   const pagesRef = useRef<HTMLDivElement>(null)
@@ -530,6 +532,28 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     setItems((list) => list.filter((i) => i.sig !== id))
   }
 
+  /** a signature drawn on the pad joins the pictures like an upload */
+  const addDrawn = (drawn: PadPicture) => {
+    setPadOpen(false)
+    const picture: SignPicture = { id: crypto.randomUUID(), ...drawn }
+    const next = [picture, ...pictures]
+    setPictures(next)
+    keepPictures(next)
+    if (doc) place(picture)
+    else say('서명을 만들었어요. 문서를 올리면 바로 넣을 수 있어요.')
+  }
+
+  /** a signature picture as a PNG file of its own (transparent, cropped to the ink) */
+  const downloadPicture = async (picture: SignPicture) => {
+    const path = await window.aiOffice.saveFeatureFile({
+      name: '서명.png',
+      filterName: 'PNG 그림',
+      extensions: ['png'],
+      bytes: pngBytes(picture.url),
+    })
+    if (path) say((path.split(/[\\/]/).pop() ?? '서명.png') + '을(를) 저장했어요.')
+  }
+
   const change = (next: PlacedSign) => {
     setItems((list) => list.map((i) => (i.id === next.id ? next : i)))
     setSavedPath(null)
@@ -600,7 +624,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       </header>
 
       <ol className="ts-steps" aria-label="진행 순서">
-        {['문서 올리기', '서명 그림 올리기', '놓고 맞추기', '저장하기'].map((label, i) => (
+        {['문서 올리기', '서명 만들기', '놓고 맞추기', '저장하기'].map((label, i) => (
           <li key={label} className={step === i + 1 ? 'is-now' : step > i + 1 ? 'is-done' : ''}>
             <span className="ts-step-no">{i + 1}</span>
             {label}
@@ -695,7 +719,9 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
 
           <section className="sf-box ts-box">
             <h2>서명 그림</h2>
-            <p className="sf-box-sub">누르면 보고 있는 쪽 가운데에 놓여요.</p>
+            <p className="sf-box-sub">
+              직접 그리거나 사진을 올려요. 만든 서명을 누르면 보고 있는 쪽 가운데에 놓여요.
+            </p>
             {pictures.length > 0 && (
               <div className="ts-pictures">
                 {pictures.map((p) => (
@@ -717,6 +743,30 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
                     >
                       ×
                     </button>
+                    <button
+                      type="button"
+                      className="ts-picture-download"
+                      aria-label="이 서명 그림 내려받기 (PNG)"
+                      title="PNG로 내려받기"
+                      data-testid="ts-picture-download"
+                      onClick={() => void downloadPicture(p)}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -733,14 +783,25 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
                 if (file) void addPicture(file)
               }}
             />
-            <button
-              type="button"
-              className={(pictures.length ? 'sf-secondary' : 'sf-primary') + ' sf-sm ts-full'}
-              disabled={busy !== null}
-              onClick={() => fileRef.current?.click()}
-            >
-              {busy === 'picture' ? '배경 지우는 중…' : '서명 그림 올리기'}
-            </button>
+            <div className="ts-two">
+              <button
+                type="button"
+                className={(pictures.length ? 'sf-secondary' : 'sf-primary') + ' sf-sm'}
+                data-testid="ts-draw"
+                disabled={busy !== null}
+                onClick={() => setPadOpen(true)}
+              >
+                서명 그리기
+              </button>
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                disabled={busy !== null}
+                onClick={() => fileRef.current?.click()}
+              >
+                {busy === 'picture' ? '배경 지우는 중…' : '그림 올리기'}
+              </button>
+            </div>
             <label className="ts-check">
               <input
                 type="checkbox"
@@ -774,6 +835,27 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
                   바로 세우기
                 </button>
               </label>
+              <label className="ts-angle">
+                크기
+                <input
+                  type="range"
+                  className="ts-size"
+                  data-testid="ts-size"
+                  min={20}
+                  max={Math.round(Math.max(doc.sizes[selected.page]?.width ?? 595, 60))}
+                  step={1}
+                  value={Math.round(selected.width)}
+                  onChange={(e) => {
+                    const width = Number(e.target.value)
+                    if (Number.isFinite(width) && width > 0)
+                      change({
+                        ...selected,
+                        width,
+                        height: (selected.height * width) / selected.width,
+                      })
+                  }}
+                />
+              </label>
               <p className="ts-hint">
                 끌어서 옮기고, 모서리로 크기를, 위의 동그라미로 방향을 바꿔요. 화살표 키로 조금씩
                 옮길 수 있어요.
@@ -791,6 +873,15 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
                 >
                   지우기
                 </button>
+                {pictureOf(selected.sig) && (
+                  <button
+                    type="button"
+                    className="sf-secondary sf-sm"
+                    onClick={() => void downloadPicture(pictureOf(selected.sig)!)}
+                  >
+                    서명 그림 내려받기
+                  </button>
+                )}
               </div>
             </section>
           )}
@@ -826,6 +917,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
         </aside>
       </div>
       <ToastView toast={toast} />
+      {padOpen && <SignPad onDone={addDrawn} onClose={() => setPadOpen(false)} />}
     </div>
   )
 }

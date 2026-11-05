@@ -119,7 +119,7 @@ test('똑딱서명 signs a Hangul document: converted, placed, turned, saved int
     await page.mouse.down()
     await page.mouse.move(centre.x + centre.width, knob.y + 10, { steps: 6 })
     await page.mouse.up()
-    const angle = Number(await page.locator('.ts-angle input').inputValue())
+    const angle = Number(await page.locator('.ts-angle input[type=number]').inputValue())
     expect(Math.abs(angle)).toBeGreaterThan(5)
     await page.screenshot({ path: screenshotPath('ttok-sign-placed') })
 
@@ -145,5 +145,113 @@ test('똑딱서명 signs a Hangul document: converted, placed, turned, saved int
     }
   } finally {
     await closeAndSaveVideo(launched, 'ttok-sign')
+  }
+})
+
+test('똑딱서명 draws a signature on the pad, sizes and turns it, saves the PDF and the PNG', async () => {
+  test.setTimeout(180_000)
+  const dir = await mkdtemp(join(tmpdir(), 'ttok-sign-pad-e2e-'))
+  const docPath = join(dir, '안내문.hwpx')
+  await copyFile(
+    join(__dirname, '..', 'web', 'runtime', 'samples', '현장체험학습 운영계획(안).hwpx'),
+    docPath,
+  )
+  const launched = await launchShell({
+    videoDir: 'ttok-sign-pad',
+    onboardingSeen: true,
+    lang: 'ko',
+  })
+  const { app, page } = launched
+  try {
+    await app.evaluate(
+      ({ dialog }, files) => {
+        dialog.showOpenDialog = (async () => ({ canceled: false, filePaths: [files.doc] })) as never
+        // each save goes where its name says: the signed PDF, then the picture
+        dialog.showSaveDialog = (async (_w: unknown, o: { defaultPath?: string }) => ({
+          canceled: false,
+          filePath:
+            files.dir +
+            '/' +
+            String(o?.defaultPath ?? 'x')
+              .split('/')
+              .pop(),
+        })) as never
+      },
+      { doc: docPath, dir },
+    )
+    await page.setViewportSize({ width: 1400, height: 900 })
+    const start = page
+      .frameLocator('iframe[title="똑딱작업실 소개"]')
+      .locator('.cta [data-action="start"]')
+    if (
+      await start
+        .waitFor({ state: 'visible', timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      await start.click()
+      await expect(page.locator('iframe[title="똑딱작업실 소개"]')).toBeHidden()
+    }
+    await page
+      .getByRole('button', { name: /똑딱업무/ })
+      .first()
+      .click()
+    await page.getByTestId('special-feature-sign').click()
+    await page.getByTestId('ts-open').click()
+    await expect(page.locator('.ts-page')).toHaveCount(1, { timeout: 90_000 })
+
+    // a signature by mouse: a loop and a long tail
+    await page.getByTestId('ts-draw').click()
+    const pad = page.getByTestId('ts-pad-canvas')
+    const b = (await pad.boundingBox())!
+    const at = (fx: number, fy: number) => [b.x + b.width * fx, b.y + b.height * fy] as const
+    await page.mouse.move(...at(0.15, 0.6))
+    await page.mouse.down()
+    for (let i = 0; i <= 60; i++) {
+      const t = i / 60
+      await page.mouse.move(...at(0.15 + t * 0.7, 0.55 + Math.sin(t * 12) * 0.18 - t * 0.1))
+    }
+    await page.mouse.up()
+    await page.mouse.move(...at(0.3, 0.3))
+    await page.mouse.down()
+    await page.mouse.move(...at(0.34, 0.75), { steps: 12 })
+    await page.mouse.up()
+    await page.screenshot({ path: screenshotPath('ttok-sign-pad') })
+    await page.getByTestId('ts-pad-done').click()
+
+    const sign = page.getByTestId('ts-sign')
+    await expect(sign).toHaveCount(1)
+    const before = (await sign.boundingBox())!.width
+    await page.getByTestId('ts-size').fill('220')
+    expect((await sign.boundingBox())!.width).toBeGreaterThan(before)
+    await page.locator('.ts-angle input[type=number]').fill('-12')
+    await page.screenshot({ path: screenshotPath('ttok-sign-pad-placed') })
+
+    await page.getByTestId('ts-save').click()
+    await expect(page.locator('.ts-saved')).toContainText('안내문_서명.pdf')
+    const { OPS, getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const pdf = await getDocument({
+      data: new Uint8Array(await readFile(join(dir, '안내문_서명.pdf'))),
+    }).promise
+    try {
+      const ops = await (await pdf.getPage(1)).getOperatorList()
+      expect(
+        ops.fnArray.filter(
+          (fn) => fn === OPS.paintImageXObject || fn === OPS.paintInlineImageXObject,
+        ),
+      ).toHaveLength(1)
+    } finally {
+      await pdf.loadingTask.destroy()
+    }
+
+    // the drawn picture on its own, as a transparent PNG
+    await page.getByTestId('ts-picture-download').first().click()
+    await expect(page.locator('.sf-toast')).toContainText('서명.png')
+    const png = await readFile(join(dir, '서명.png'))
+    expect(png.subarray(1, 4).toString('ascii')).toBe('PNG')
+    // colour type 6: RGBA, so the paper around the ink is see-through
+    expect(png[25]).toBe(6)
+  } finally {
+    await closeAndSaveVideo(launched, 'ttok-sign-pad')
   }
 })

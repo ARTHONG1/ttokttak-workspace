@@ -51,8 +51,8 @@ export async function readFeatureAsset(
   }
 }
 
-/** what a page may save: a named file of one of a few kinds, at most 100MB */
-const SAVE_EXTENSIONS = new Set(['pdf', 'xlsx', 'csv', 'webm', 'mp4', 'txt'])
+/** what a page may save: a named file of one of a few kinds, at most 100MB (png: 똑딱서명's pictures) */
+const SAVE_EXTENSIONS = new Set(['pdf', 'xlsx', 'csv', 'webm', 'mp4', 'txt', 'png'])
 export const SAVE_MAX_BYTES = 100 * 1024 * 1024
 
 export function checkSaveRequest(raw: unknown): QuizSaveRequest | null {
