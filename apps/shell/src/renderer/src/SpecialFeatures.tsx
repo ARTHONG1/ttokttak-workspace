@@ -15,8 +15,8 @@ import {
   useToast,
 } from './special-common'
 import { QuizGenerator, QuizIcon } from './QuizGenerator'
-import { SignIcon, TtokSign } from './sign/TtokSign'
-import { SignVideoButton } from './sign/sign-video'
+import { TtokSign } from './sign/TtokSign'
+import { SignVideoPreview } from './sign/sign-video'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -234,33 +234,44 @@ function ProposalIcon(): ReactElement {
 
 function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElement {
   return (
-    <div className="sf-list">
+    <div className="sf-list sf-work-list">
       <header className="sf-head">
         <span className="sf-eyebrow sf-eyebrow-work">똑딱업무</span>
         <h1>학교 업무 문서, AI와 함께 빠르게</h1>
         <p>필요한 도구를 골라 내용만 넣으면 양식에 맞춰 만들어 드려요. 도구는 계속 늘어나요.</p>
       </header>
-      <div className="sf-grid">
+      <div className="sf-grid sf-work-grid">
         {FEATURES.map((f) => (
-          // the wrap carries what sits on a card without being part of its button (a video)
-          <div key={f.id} className="sf-card-wrap">
+          <article key={f.id} className={'sf-work-card sf-work-card-' + f.id}>
+            {f.id === 'sign' ? (
+              <SignVideoPreview />
+            ) : (
+              <button
+                type="button"
+                className="sf-work-visual"
+                aria-label={f.title + ' 열기'}
+                onClick={() => onOpen(f.id)}
+              >
+                <span className="sf-work-kicker">
+                  {f.id === 'proposal' ? '문서 작성' : '학습 자료'}
+                </span>
+                <span className="sf-work-paper" aria-hidden="true">
+                  {f.id === 'quiz' ? <QuizIcon /> : <ProposalIcon />}
+                  <span className="sf-work-paper-line" />
+                  <span className="sf-work-paper-line" />
+                  <span className="sf-work-paper-stamp">{f.id === 'quiz' ? 'Q & A' : 'AI'}</span>
+                </span>
+                <span className="sf-work-caption">
+                  {f.id === 'proposal' ? '장바구니에서 기안문까지' : '자료 하나로 다채로운 퀴즈'}
+                </span>
+              </button>
+            )}
             <button
               type="button"
-              className="sf-card"
+              className="sf-work-body"
               data-testid={'special-feature-' + f.id}
               onClick={() => onOpen(f.id)}
             >
-              <span className="sf-card-top">
-                <span className="sf-card-icon">
-                  {f.id === 'quiz' ? (
-                    <QuizIcon />
-                  ) : f.id === 'sign' ? (
-                    <SignIcon />
-                  ) : (
-                    <ProposalIcon />
-                  )}
-                </span>
-              </span>
               <span className="sf-card-title">{f.title}</span>
               <span className="sf-card-sum">{f.summary}</span>
               <span className="sf-tags">
@@ -283,10 +294,9 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
                 </svg>
               </span>
             </button>
-            {f.id === 'sign' && <SignVideoButton variant="card" />}
-          </div>
+          </article>
         ))}
-        <div className="sf-card sf-card-soon" aria-label="다음 기능 준비 중">
+        <div className="sf-card sf-card-soon sf-work-soon" aria-label="다음 기능 준비 중">
           <span className="sf-soon-mark" aria-hidden="true">
             +
           </span>

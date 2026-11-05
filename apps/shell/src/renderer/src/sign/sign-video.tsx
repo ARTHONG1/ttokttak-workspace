@@ -24,6 +24,50 @@ function PlayIcon(): ReactElement {
   )
 }
 
+/** Load the player only after a deliberate click, keeping the card preview lightweight. */
+export function SignVideoPreview(): ReactElement {
+  const [playing, setPlaying] = useState(false)
+  return (
+    <div className="sf-work-video">
+      {playing ? (
+        <div className="sf-work-player" data-testid="sign-video-player">
+          <iframe
+            src={TTOK_SIGN_EMBED_URL + '&autoplay=1'}
+            title="똑딱서명 소개 영상"
+            onLoad={(event) => event.currentTarget.focus()}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="sf-work-video-preview"
+          data-testid="sign-video-card"
+          aria-label="똑딱서명 소개 영상 재생"
+          onClick={() => setPlaying(true)}
+        >
+          <img src="https://i.ytimg.com/vi/tLxKYB8qInY/hqdefault.jpg" alt="" loading="lazy" />
+          <span className="sf-work-play">
+            <PlayIcon />
+          </span>
+          <span className="sf-work-video-label">똑딱서명 소개 영상</span>
+        </button>
+      )}
+      <a
+        href={TTOK_SIGN_VIDEO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="sf-work-youtube"
+        onClick={openOnYouTube}
+      >
+        유튜브에서 보기 ↗
+      </a>
+    </div>
+  )
+}
+
 /** a 소개 영상 button; pressing it plays the video in a dialog over the page */
 export function SignVideoButton({ variant }: { variant: 'card' | 'page' }): ReactElement {
   const [open, setOpen] = useState(false)
