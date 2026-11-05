@@ -3,6 +3,8 @@ import { IconEnter, IconSend, IconStop } from './icons'
 import { useAiPanelPrefs } from './ai-panel-prefs-store'
 import type { AiComposerSkills } from './use-composer-skills'
 import { useComposerPickers, type AiComposerDocs } from './use-doc-mention'
+import { useSendCooldown } from './send-cooldown'
+import { SendCooldownBar, SendCooldownRing, cooldownSeconds } from './SendCooldown'
 
 // Keep in sync with the CSS `max-height` on `.ai-input-box textarea` (7 lines à 24px)
 const MAX_TEXTAREA_HEIGHT = 168
@@ -88,7 +90,16 @@ export function AiComposer({
 }): React.JSX.Element {
   const innerRef = useRef<HTMLTextAreaElement | null>(null)
   const ref = textareaRef ?? innerRef
-  const canSend = value.trim().length > 0 && !busy
+  // the web edition paces sends: twenty seconds after one, the box waits (send-cooldown.ts)
+  const cooldown = useSendCooldown()
+  const waiting = cooldown.leftMs > 0 && !busy
+  const waitText = cooldownSeconds(cooldown.leftMs) + '초 뒤에 다시 보낼 수 있어요'
+  const canSend = value.trim().length > 0 && !busy && !waiting
+  const send = () => {
+    if (!canSend) return
+    cooldown.start()
+    onSend()
+  }
   const { spellcheck } = useAiPanelPrefs()
   const picker = useComposerPickers({ skills, docs, value, onChange, textareaRef: ref })
 
@@ -114,7 +125,9 @@ export function AiComposer({
       <textarea
         ref={ref}
         value={value}
-        placeholder={busy && onQueue && queuePlaceholder ? queuePlaceholder : placeholder}
+        placeholder={
+          busy && onQueue && queuePlaceholder ? queuePlaceholder : waiting ? waitText : placeholder
+        }
         aria-label={ariaLabel}
         rows={1}
         dir="auto"
@@ -133,7 +146,7 @@ export function AiComposer({
           if (picker.onKeyDown(e)) return
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault()
-            if (canSend) onSend()
+            if (canSend) send()
             else if (busy && onQueue) onQueue()
           } else if (e.key === 'Escape' && busy) {
             e.preventDefault()
@@ -152,11 +165,15 @@ export function AiComposer({
           if (text && onPasteText?.(text)) e.preventDefault()
         }}
       />
+      {waiting && <SendCooldownBar leftMs={cooldown.leftMs} totalMs={cooldown.totalMs} />}
       <div className="ai-input-footer">
         {footerStart}
         {!iconOnly && (
-          <span className="ai-input-hint" title={busy ? undefined : hintIdleTitle}>
-            {busy ? hintBusy : hintIdle}
+          <span
+            className={'ai-input-hint' + (waiting ? ' ai-cooldown-hint' : '')}
+            title={busy || waiting ? undefined : hintIdleTitle}
+          >
+            {busy ? hintBusy : waiting ? waitText : hintIdle}
           </span>
         )}
         {busy ? (
@@ -169,10 +186,20 @@ export function AiComposer({
             {iconOnly ? (stopIcon ?? <IconStop size={16} />) : <IconStop size={16} />}
             {!iconOnly && stopLabel}
           </button>
+        ) : waiting ? (
+          <button
+            className="ai-send-btn is-cooling"
+            disabled
+            title={waitText}
+            aria-label={waitText}
+            data-testid="ai-send-cooldown"
+          >
+            <SendCooldownRing leftMs={cooldown.leftMs} totalMs={cooldown.totalMs} />
+          </button>
         ) : (
           <button
             className="ai-send-btn"
-            onClick={onSend}
+            onClick={send}
             disabled={!canSend}
             title={sendLabel}
             aria-label={sendLabel}

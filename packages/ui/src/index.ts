@@ -48,6 +48,8 @@ export {
   type DocMentionStringKey,
 } from './strings-doc-mention'
 export { AiComposer } from './AiComposer'
+export { SEND_COOLDOWN_MS, noteAiSend, sendCooldownLeft, useSendCooldown } from './send-cooldown'
+export { SendCooldownBar, SendCooldownRing, cooldownSeconds } from './SendCooldown'
 export {
   SKILL_CHIPS_MAX,
   aiSkillsBridge,

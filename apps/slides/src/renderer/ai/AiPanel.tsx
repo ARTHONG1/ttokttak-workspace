@@ -29,6 +29,10 @@ import {
   type TemplateDocument,
   type SkillChipRef,
   type SkillUse,
+  SendCooldownBar,
+  SendCooldownRing,
+  cooldownSeconds,
+  useSendCooldown,
 } from '@genoffice/ui'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import {
@@ -1769,9 +1773,15 @@ export function AiPanel({
     // `open` dep: re-measure after expand restores a draft
   }, [input, open])
 
+  // the web edition paces sends like the shared composer: twenty seconds after one
+  const cooldown = useSendCooldown()
+  const waiting = cooldown.leftMs > 0 && !busy
+  const waitText = cooldownSeconds(cooldown.leftMs) + '초 뒤에 다시 보낼 수 있어요'
+
   const run = () => {
     const text = input.trim()
-    if (!text) return
+    if (!text || waiting) return
+    cooldown.start()
     skills.withSkills(text, (skillUse) => runWith(text, undefined, undefined, skillUse))
   }
 
@@ -2792,7 +2802,9 @@ export function AiPanel({
               placeholder={
                 busy
                   ? AI_QUEUE_LABELS[lang].queuePlaceholder
-                  : t(deckEmpty ? 'aiInputPlaceholderGen' : 'aiInputPlaceholder')
+                  : waiting
+                    ? waitText
+                    : t(deckEmpty ? 'aiInputPlaceholderGen' : 'aiInputPlaceholder')
               }
               onChange={(e) => {
                 inputEditedSinceRunRef.current = true
@@ -2822,6 +2834,7 @@ export function AiPanel({
               }}
               rows={1}
             />
+            {waiting && <SendCooldownBar leftMs={cooldown.leftMs} totalMs={cooldown.totalMs} />}
             <div className="ai-input-footer">
               <AiModelPicker
                 bridge={MODEL_BRIDGE}
@@ -2848,6 +2861,15 @@ export function AiPanel({
                   aria-label={t('aiStop')}
                 >
                   <img src={sendStop} alt="" aria-hidden />
+                </button>
+              ) : waiting ? (
+                <button
+                  className="ai-send-btn is-cooling"
+                  disabled
+                  data-tip={waitText}
+                  aria-label={waitText}
+                >
+                  <SendCooldownRing leftMs={cooldown.leftMs} totalMs={cooldown.totalMs} />
                 </button>
               ) : (
                 <button

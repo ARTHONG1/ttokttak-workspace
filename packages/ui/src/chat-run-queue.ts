@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { noteAiSend, sendCooldownLeft } from './send-cooldown'
 
 /**
  * The chat message queue behind "Enter queues while a reply is running"
@@ -72,9 +73,14 @@ export function useChatRunQueue<M>(args: {
 
   const tryPump = () => {
     if (busyRef.current || pausedRef.current) return
+    // the web edition's send wait holds queued messages too; the idle timer below retries
+    if (sendCooldownLeft() > 0) return
     const next = queuedRef.current[0]
     if (!next) return
-    if (submitRef.current(next.text, next.meta)) setAll(queuedRef.current.slice(1))
+    if (submitRef.current(next.text, next.meta)) {
+      noteAiSend()
+      setAll(queuedRef.current.slice(1))
+    }
   }
   const tryPumpRef = useRef(tryPump)
 
