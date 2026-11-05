@@ -151,6 +151,9 @@
   }
   function setShown(rec, shown) {
     rec.el.hidden = !shown
+    rec.el.inert = !shown
+    if (shown) rec.el.removeAttribute('aria-hidden')
+    else rec.el.setAttribute('aria-hidden', 'true')
     if (rec.backdrop) rec.backdrop.hidden = !shown
   }
   function dragWindow(bar, el) {
@@ -887,7 +890,9 @@
       }
       case 'wc-focus': {
         var rf = wcs.get(msg.wc)
-        if (rf && rf.iframe.contentWindow) rf.iframe.contentWindow.focus()
+        var owner = rf && windows.get(rf.win)
+        if (rf && (!owner || !owner.el.hidden) && rf.iframe.contentWindow)
+          rf.iframe.contentWindow.focus()
         return
       }
       case 'wc-zoom': {
