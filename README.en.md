@@ -15,6 +15,20 @@ Try it in the browser, or install it and connect your own AI agent.
 
 <p align="center"><a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="ttokttak-workspace intro film preview" /></a></p>
 
+## New: 똑딱서명 (sign a document)
+
+Put a signature into a document without printing, signing and scanning it again. Open **똑딱업무 → 똑딱서명**.
+
+1. **Upload a document**: a PDF, Hangul (HWP/HWPX), Word, Excel or PowerPoint file, or a photo, shown as a PDF. The web trial takes PDFs and photos.
+2. **Make a signature**: draw it on the signature pad with a mouse, trackpad, pen or finger (shaky lines are smoothed, a pen's pressure sets the width), or upload a photo of a signature on paper and the paper is removed. The last three signatures are remembered, and each can be downloaded as a transparent PNG.
+3. **Place it**: drag it, size it by a corner or the size slider, turn it freely by the handle or an angle, or put it at the same spot on every page.
+4. **Save**: a PDF with the signature drawn into the page (`name_서명.pdf`), the same in every PDF viewer. It is a picture of a signature, not a certificate-based digital signature.
+
+<p align="center">
+  <img src="docs/assets/sign-pad.png" width="420" alt="Drawing a signature on the 똑딱서명 signature pad" />
+  <img src="docs/assets/sign-placed.png" width="420" alt="A drawn signature sized and turned on a Hangul document converted to PDF" />
+</p>
+
 ## Why
 
 Most school and office work is document work: opening a file to change one title or a few numbers. ttokttak-workspace is built to take that repetitive work off people with AI, not only to edit documents. You say what to change, the AI changes it inside the document and shows what changed, and you check and decide. It is built on open source, and everything it adds is published back as open source.
@@ -43,7 +57,7 @@ The agent picks the right file for your OS and CPU, downloads it from the offici
 - One window for Hangul, Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind files, saved in their own formats.
 - An AI panel in every editor that reads, edits, marks the changes and undoes them in one step.
 - HWPX saves that Hancom Hangul opens, checked before anything overwrites the original.
-- School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video) and a word-search worksheet maker.
+- School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video), a word-search worksheet maker and 똑딱서명, which signs a document with a drawn or uploaded signature.
 - A command line and MCP server (`ieumoffice`, `ieumoffice mcp`) for Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode and Windsurf.
 - The app runs the Claude Code or Codex program you signed in to; it never reads or stores those logins.
 
