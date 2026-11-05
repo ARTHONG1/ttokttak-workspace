@@ -12,6 +12,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
+import { REFUSALS, clientIp, createSessionGuard } from './abuse-guard.mjs'
 import {
   aiUsageOf,
   authRequired,
@@ -72,6 +73,8 @@ function revive(value) {
 
 // ---------------------------------------------------------------- sessions
 const sessions = new Map()
+/** who may open a new work space (abuse-guard.mjs): limits per address and in all */
+const guard = createSessionGuard()
 /**
  * Ends a session's program for good. The desktop main catches SIGTERM (sheets-main.ts turns it
  * into app.quit(), which the web edition does not act on), so a plain kill() left one process
@@ -137,6 +140,9 @@ class Session {
     }
     this.ws = null
     this.child = null
+    /** the address that opened it, and since when no tab has been attached (abuse-guard.mjs) */
+    this.ip = null
+    this.idleSince = null
     this.pending = new Map()
     this.nextId = 1
     this.idleTimer = null
@@ -580,6 +586,20 @@ async function handleHttp(req, res) {
     return send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8' })
   }
   if (p === '/app' || p === '/app/') {
+    // an address blocked for opening too many work spaces is told so at the door
+    if (guard.bannedUntil(clientIp(req))) {
+      const r = REFUSALS.banned
+      return send(
+        res,
+        429,
+        '<!doctype html><meta charset="utf-8"><title>똑딱작업실</title><p style="font:16px/1.6 sans-serif;margin:3em auto;max-width:32em"><b>' +
+          r.title +
+          '</b><br>' +
+          r.detail +
+          '</p>',
+        { 'Content-Type': 'text/html; charset=utf-8' },
+      )
+    }
     const headers = {}
     let sid = sessionFromCookie(req)
     if (!sid) {
@@ -823,18 +843,45 @@ const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_UPLOAD })
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url, 'http://localhost')
   const sid = sessionFromCookie(req)
-  if (url.pathname !== '/__ws' || !sid || !accountOf(sid) || (authRequired && !sameOrigin(req)))
+  // only this site's own pages open a work space, signed in or not
+  if (url.pathname !== '/__ws' || !sid || !accountOf(sid) || !sameOrigin(req))
     return socket.destroy()
-  wss.handleUpgrade(req, socket, head, (ws) => attach(sid, ws))
+  const ip = clientIp(req)
+  // a work space that exists (a reload) always comes back; a new one asks the guard
+  const verdict = sessions.has(sid)
+    ? { ok: true, evict: [] }
+    : guard.admit({
+        ip,
+        sid,
+        live: [...sessions.values()]
+          .filter((s) => s.child)
+          .map((s) => ({ sid: s.id, ip: s.ip, idleSince: s.ws ? null : s.idleSince })),
+      })
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    if (!verdict.ok) {
+      console.warn('[gateway] work space refused:', verdict.reason)
+      // said over the socket, so the page shows why instead of reconnecting
+      ws.send(encode({ t: 'refused', ...REFUSALS[verdict.reason] }))
+      ws.close()
+      return
+    }
+    for (const old of verdict.evict) {
+      console.warn('[gateway] idle work space closed to make room')
+      sessions.get(old)?.dispose()
+    }
+    attach(sid, ws, ip)
+  })
 })
 
-function attach(sid, ws) {
+function attach(sid, ws, ip) {
   let session = sessions.get(sid)
   if (!session) {
     session = new Session(sid)
+    session.ip = ip
     sessions.set(sid, session)
   }
   clearTimeout(session.idleTimer)
+  session.idleSince = null
   if (session.ws && session.ws !== ws) session.ws.close()
   session.ws = ws
   // a (re)loaded page starts the desktop app afresh; the session's files stay
@@ -861,6 +908,7 @@ function attach(sid, ws) {
   ws.on('close', () => {
     if (session.ws !== ws) return
     session.ws = null
+    session.idleSince = Date.now()
     session.idleTimer = setTimeout(() => session.dispose(), IDLE_MS)
   })
 }

@@ -1,5 +1,9 @@
 /**
- * Who may use the web edition: a Google account signed in with Firebase Authentication.
+ * Who may use the web edition. Since 2026-11-05 anyone may, without signing in: the web
+ * edition is anonymous by default, and abuse-guard.mjs limits how many work spaces an
+ * address opens. WEB_AUTH=google turns the Google sign-in below back on.
+ *
+ * With it on, a Google account signs in with Firebase Authentication.
  *
  * The browser signs in on the gate page (client/login.html) and posts the Firebase ID token
  * here. The gateway checks it the way Firebase documents for a token verified without the
@@ -30,8 +34,8 @@ const ALLOWED = new Set(
 /** how long one sign-in keeps a browser session open */
 const SESSION_MS = Math.max(1, Number(process.env.WEB_AUTH_SESSION_HOURS || 12)) * 3600_000
 
-/** the auth switch: on in the Cloud Run service, off for a local preview unless asked for */
-export const authRequired = process.env.WEB_AUTH !== 'off' && Boolean(PROJECT)
+/** the auth switch: off unless WEB_AUTH=google (and a project to check tokens against) */
+export const authRequired = process.env.WEB_AUTH === 'google' && Boolean(PROJECT)
 
 /** what the gate page needs to start Firebase in the browser (all public values) */
 export function firebaseWebConfig() {

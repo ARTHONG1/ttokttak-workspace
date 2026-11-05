@@ -966,6 +966,9 @@
           '작업 공간이 닫혔습니다',
           '프로그램이 종료되었습니다. 다시 시작하면 새 작업 공간이 열립니다.',
         )
+      case 'refused':
+        // the gateway would not open a work space (abuse-guard.mjs): say why, do not retry
+        return ended(msg.title, msg.detail)
       case 'ready':
         return
     }
