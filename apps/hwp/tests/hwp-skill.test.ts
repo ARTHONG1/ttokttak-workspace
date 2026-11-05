@@ -505,6 +505,24 @@ describe('replace_text', () => {
     expect(bridge.replaceText).not.toHaveBeenCalled()
   })
 
+  it('takes the ⏎ sign for the line break it stands for, and says how to get paragraphs', async () => {
+    const { call, bridge } = setup()
+    const result = await call('replace_text', {
+      find: '본문',
+      replace: '[장점] ⏎ - 학생 주도 운영',
+    })
+    expect(result.isError).toBe(true)
+    expect(result.output).toContain('fill_cells')
+    expect(bridge.replaceText).not.toHaveBeenCalled()
+    const inserted = await call('insert_paragraphs', {
+      where: 'after',
+      anchor: '본문',
+      paragraphs: ['한 줄 ⏎ 두 줄'],
+    })
+    expect(inserted.isError).toBe(true)
+    expect(bridge.insertParagraphs).not.toHaveBeenCalled()
+  })
+
   it('accepts an empty replacement as a deletion', async () => {
     const { call, bridge } = setup()
     expect((await call('replace_text', { find: '본문', replace: '' })).mutated).toBe(true)
@@ -1192,6 +1210,24 @@ describe('tables that are already in the document', () => {
     const cells = [{ row: 1, col: 2, text: 'x' }]
     await call('fill_cells', { table: 1, cells, overwrite: true })
     expect(bridge.fillCells).toHaveBeenCalledWith(1, cells, true)
+  })
+
+  it('turns the ⏎ sign the model copied from read_table into paragraphs of the cell', async () => {
+    // read_table shows a cell's paragraphs joined by " ⏎ "; a model writing that sign back
+    // must not leave it in the document as a character with everything run together
+    const { call, bridge } = setup()
+    await call('fill_cells', {
+      table: 1,
+      cells: [
+        { row: 3, col: 2, text: '[장점] ⏎ - 학생 주도 운영 ⏎ ⏎ [개선할 점]⏎- 대기 시간 단축' },
+      ],
+      overwrite: true,
+    })
+    expect(bridge.fillCells).toHaveBeenCalledWith(
+      1,
+      [{ row: 3, col: 2, text: '[장점]\n- 학생 주도 운영\n\n[개선할 점]\n- 대기 시간 단축' }],
+      true,
+    )
   })
 
   it('lists the cells that hold text when nothing was written', async () => {

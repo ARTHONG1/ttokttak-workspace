@@ -145,6 +145,7 @@ const SYSTEM_PROMPT = [
   '- A Korean form is mostly tables: a cell that names an item (성명, 소속, 연락처) and an empty cell beside or below it for the answer. The text of the document shows the names but not the empty cells, so read the table with read_table before filling it.',
   '- Tables are numbered in reading order; a table inside a cell of another table has its own number. Cells are named row.col, counted from 1. A merged cell is listed once, with the places it spans.',
   "- Fill every cell you have an answer for in one fill_cells call per table. The text keeps the cell's font, size and bold, but is written black and upright: a guide's blue italics do not carry over. Do not format the answer afterwards.",
+  '- In what read_table and the change list show, ⏎ marks where one paragraph of a cell ends; it is not a character in the document. Never type ⏎. To give a cell several paragraphs (a heading, then - items), write them into fill_cells text separated by real line breaks, with overwrite when the cell already holds text.',
   '- fill_cells only writes into empty cells. A cell that holds text is left alone, and so is the whole call, unless you pass overwrite. Do that when the user asked to fill the form (the text may be an example answer) or to change what is there. Never write into the cells that name the items.',
   '- A form template often leaves example answers in the cells (blue italics, "(예시)", zeros, a sample address). They are not empty. When the user asks you to fill the form, pass overwrite for those cells and write only the answer: the example is not part of it.',
   "- Fill form cells with fill_cells, not replace_text: a replacement keeps the guide's look, while fill_cells writes the answer plainly.",
@@ -632,7 +633,7 @@ const TOOLS: AgentToolDef[] = [
   {
     name: 'fill_cells',
     description:
-      "Write text into cells of one table, all of them at once (one step for the user to undo). The text keeps the cell's font, size and bold, but is written black and upright: blue italic guide text does not carry over. A line break starts a new paragraph inside the cell. Only empty cells are written unless overwrite is true: if any named cell holds text, nothing is changed and those cells are listed. Example answers left in a template are text: pass overwrite to replace them with the real answer.",
+      "Write text into cells of one table, all of them at once (one step for the user to undo). The text keeps the cell's font, size and bold, but is written black and upright: blue italic guide text does not carry over. A line break starts a new paragraph inside the cell; do not write the ⏎ sign, which only marks paragraph ends in what read_table shows. Only empty cells are written unless overwrite is true: if any named cell holds text, nothing is changed and those cells are listed. Example answers left in a template are text: pass overwrite to replace them with the real answer.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -840,9 +841,16 @@ const IN_TABLE_HELP =
 const HAS_OBJECTS_HELP =
   'Nothing was changed: a table, a picture or a form field sits in that paragraph, and the change would have moved or removed it. Use the paragraph before or after it as the anchor, or tell the user.'
 const ONE_LINE_HELP =
-  'Text with a line break cannot be searched or inserted: a replacement stays inside one paragraph or table cell. Split the change into one call per paragraph.'
+  'Text with a line break cannot be searched or inserted: a replacement stays inside one paragraph or table cell. The ⏎ sign counts as one: it only marks where a paragraph ends in what read_table shows, and is never typed. Split the change into one call per paragraph; to give a table cell several paragraphs, write the whole cell with fill_cells (overwrite) and real line breaks.'
 
-const hasLineBreak = (text: string) => /[\r\n]/.test(text)
+/** read_table and the change list join a cell's paragraphs with this sign */
+const PARAGRAPH_SIGN = '⏎'
+
+const hasLineBreak = (text: string) => /[\r\n⏎]/.test(text)
+
+/** the sign a model copied from read_table, back to the paragraph break it stands for */
+const signsToBreaks = (text: string) =>
+  text.includes(PARAGRAPH_SIGN) ? text.replace(/[ \t]*⏎[ \t]*/g, '\n') : text
 
 /** The plugin's answer when a change would take memo anchors with it and was rolled back. */
 function isMemoRemovalRefusal(value: unknown): value is AgentMemoRemovalRefusal {
@@ -908,7 +916,7 @@ function cellArgs(call: AgentToolCall): AgentCellText[] | null {
   for (const entry of raw) {
     const { row, col, text } = (entry ?? {}) as Record<string, unknown>
     if (typeof row !== 'number' || typeof col !== 'number' || typeof text !== 'string') return null
-    cells.push({ row, col, text })
+    cells.push({ row, col, text: signsToBreaks(text) })
   }
   return cells
 }
