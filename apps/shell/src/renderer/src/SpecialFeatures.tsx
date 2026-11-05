@@ -16,6 +16,7 @@ import {
 } from './special-common'
 import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import { SignIcon, TtokSign } from './sign/TtokSign'
+import { SignVideoButton } from './sign/sign-video'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -241,40 +242,49 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
       </header>
       <div className="sf-grid">
         {FEATURES.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className="sf-card"
-            data-testid={'special-feature-' + f.id}
-            onClick={() => onOpen(f.id)}
-          >
-            <span className="sf-card-top">
-              <span className="sf-card-icon">
-                {f.id === 'quiz' ? <QuizIcon /> : f.id === 'sign' ? <SignIcon /> : <ProposalIcon />}
-              </span>
-            </span>
-            <span className="sf-card-title">{f.title}</span>
-            <span className="sf-card-sum">{f.summary}</span>
-            <span className="sf-tags">
-              {f.tags.map((tag) => (
-                <span key={tag} className="sf-tag">
-                  {tag}
+          // the wrap carries what sits on a card without being part of its button (a video)
+          <div key={f.id} className="sf-card-wrap">
+            <button
+              type="button"
+              className="sf-card"
+              data-testid={'special-feature-' + f.id}
+              onClick={() => onOpen(f.id)}
+            >
+              <span className="sf-card-top">
+                <span className="sf-card-icon">
+                  {f.id === 'quiz' ? (
+                    <QuizIcon />
+                  ) : f.id === 'sign' ? (
+                    <SignIcon />
+                  ) : (
+                    <ProposalIcon />
+                  )}
                 </span>
-              ))}
-            </span>
-            <span className="sf-card-go">
-              열기
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M3 8h9.5M8.5 4l4 4-4 4"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          </button>
+              </span>
+              <span className="sf-card-title">{f.title}</span>
+              <span className="sf-card-sum">{f.summary}</span>
+              <span className="sf-tags">
+                {f.tags.map((tag) => (
+                  <span key={tag} className="sf-tag">
+                    {tag}
+                  </span>
+                ))}
+              </span>
+              <span className="sf-card-go">
+                열기
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M3 8h9.5M8.5 4l4 4-4 4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            {f.id === 'sign' && <SignVideoButton variant="card" />}
+          </div>
         ))}
         <div className="sf-card sf-card-soon" aria-label="다음 기능 준비 중">
           <span className="sf-soon-mark" aria-hidden="true">

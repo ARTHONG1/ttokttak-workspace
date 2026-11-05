@@ -298,7 +298,12 @@ export interface HomeApi {
   /** 특화 기능 · 똑딱수업: open one of the fixed partner or class-tool sites in the browser */
   openFeatureLink(
     site:
-      'blooket' | 'quizn' | 'aceCanvas' | 'aceCanvasVideo' | import('./intro-links').IntroLinkKey,
+      | 'blooket'
+      | 'quizn'
+      | 'aceCanvas'
+      | 'aceCanvasVideo'
+      | 'ttokSignVideo'
+      | import('./intro-links').IntroLinkKey,
   ): Promise<void>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>

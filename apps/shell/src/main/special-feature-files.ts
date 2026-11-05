@@ -21,6 +21,8 @@ export const FEATURE_LINKS = {
   quizn: 'https://quizn.show/',
   aceCanvas: 'https://ace-canvas--project-0c1d3dab-8644-4690-9e4.asia-east1.hosted.app/',
   aceCanvasVideo: 'https://youtu.be/1wl_L17E8R4',
+  /** 똑딱업무 > 똑딱서명's introduction video */
+  ttokSignVideo: 'https://youtu.be/tLxKYB8qInY',
 } as const
 export type FeatureLinkSite = keyof typeof FEATURE_LINKS
 

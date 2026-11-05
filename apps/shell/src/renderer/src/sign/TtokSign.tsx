@@ -11,6 +11,7 @@ import { Back, ToastView, useToast } from '../special-common'
 import { isWebEdition } from '../edition'
 import { cleanSignature } from './sign-image'
 import { SignPad, type PadPicture } from './SignPad'
+import { SignVideoButton } from './sign-video'
 import {
   angleFromPointer,
   clampToPage,
@@ -621,6 +622,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
           <h1>똑딱서명</h1>
           <p>문서를 올리고 서명 그림을 놓으면, 서명이 들어간 PDF로 저장해요.</p>
         </div>
+        <SignVideoButton variant="page" />
       </header>
 
       <ol className="ts-steps" aria-label="진행 순서">

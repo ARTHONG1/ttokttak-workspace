@@ -977,3 +977,41 @@ button.sf-card:hover .sf-card-go svg {
 .sf-send-warn {
   background: var(--sf-warn-soft);
 }
+
+/* a card's own extras (똑딱서명's video) sit over it, outside its button */
+.sf-card-wrap {
+  position: relative;
+  display: grid;
+}
+.sf-video-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--sf-line);
+  border-radius: 999px;
+  background: var(--sf-card);
+  color: var(--sf-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.sf-video-btn svg {
+  color: var(--sf-danger);
+}
+.sf-video-btn:hover {
+  border-color: var(--sf-line-2);
+  background: var(--sf-soft);
+}
+.sf-video-btn-card {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+.sf-video-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
