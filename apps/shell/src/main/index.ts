@@ -147,7 +147,13 @@ import { workOutbox } from './work-outbox'
 import { goUrl } from '@genoffice/ttokttak-extension/ids'
 import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
-import { SIGN_DOCUMENT_EXTENSIONS, documentToPdf, nodeSignDeps } from './sign-document'
+import {
+  SIGN_DOCUMENT_EXTENSIONS,
+  documentToPdf,
+  nodeSignDeps,
+  officeToPdf,
+  webCanConvert,
+} from './sign-document'
 import { imagesToPdfBytes } from '../../../pdf/src/main/images-to-pdf'
 import {
   FEATURE_LINKS,
@@ -5770,11 +5776,19 @@ function registerHomeIpc(): void {
     })
     if (picked.canceled || !picked.filePaths[0]) return null
     signConverting = true
+    // the web edition runs this process per session (WEB_SESSION_DIR): its server converts
+    // (sign-document.ts webCanConvert), and says so at once when it has no converter
+    const web = Boolean(process.env.WEB_SESSION_DIR)
+    const soffice = process.env.WEB_SOFFICE
     try {
       return await documentToPdf(
         picked.filePaths[0],
         nodeSignDeps({
           convertToPdf: async (input, outPath) => {
+            if (web && soffice && !/\.hwpx?$/i.test(input)) {
+              await officeToPdf(input, outPath, soffice)
+              return
+            }
             const outcome = await runHeadlessExport(
               { input, outPath, targetFormat: 'pdf', json: false },
               headlessExporters,
@@ -5784,9 +5798,7 @@ function registerHomeIpc(): void {
           // a photographed page lands on A4 (landscape for a wide photo), edge to edge
           imagesToPdf: (images) =>
             imagesToPdfBytes(images, { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
-          // the web edition runs this process per session (WEB_SESSION_DIR) and its browser
-          // frames cannot print a page to PDF, so only PDFs and photos are taken there
-          canConvert: !process.env.WEB_SESSION_DIR,
+          ...(web ? { canConvert: (path: string) => webCanConvert(path) } : {}),
         }),
       )
     } finally {

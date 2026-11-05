@@ -21,7 +21,7 @@ Put a signature into a document without printing, signing and scanning it again.
 
 ▶ [Watch the 똑딱서명 introduction (49 s)](https://youtu.be/tLxKYB8qInY)
 
-1. **Upload a document**: a PDF, Hangul (HWP/HWPX), Word, Excel or PowerPoint file, or a photo, shown as a PDF. The web trial takes PDFs and photos.
+1. **Upload a document**: a PDF, Hangul (HWP/HWPX), Word, Excel or PowerPoint file, or a photo, shown as a PDF, in the app and in the web trial alike.
 2. **Make a signature**: draw it on the signature pad with a mouse, trackpad, pen or finger (shaky lines are smoothed, a pen's pressure sets the width), or upload a photo of a signature on paper and the paper is removed. The last three signatures are remembered, and each can be downloaded as a transparent PNG.
 3. **Place it**: drag it, size it by a corner or the size slider, turn it freely by the handle or an angle, or put it at the same spot on every page.
 4. **Save**: a PDF with the signature drawn into the page (`name_서명.pdf`), the same in every PDF viewer. It is a picture of a signature, not a certificate-based digital signature.

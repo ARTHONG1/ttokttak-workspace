@@ -329,7 +329,10 @@ class FakeWebContents extends EventEmitter {
     link.send({ t: 'wc-print', wc: this.id })
     if (typeof callback === 'function') setTimeout(() => callback(true, ''), 0)
   }
-  async printToPDF() {
+  async printToPDF(options) {
+    // a print page that is a file here is printed by the server's Chromium (server-pdf.cjs)
+    const serverPdf = require('./server-pdf.cjs')
+    if (serverPdf.printsHere(this.url)) return serverPdf.printFileToPdf(this.url, options)
     const reply = await link.request({ t: 'wc-pdf', wc: this.id })
     if (reply.error || !reply.value)
       throw new Error(reply.error || 'printToPDF is not available in the web edition')

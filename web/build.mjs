@@ -94,6 +94,8 @@ await writeFile(
         'ajv-formats': version('ajv-formats'),
         // web-auth.mjs: checks Firebase sign-in tokens
         jose: version('jose'),
+        // server-pdf.cjs: drives the image's Chromium to print pages to PDF
+        'playwright-core': version('playwright-core'),
         '@rhwp/core': 'file:./vendor/rhwp-core',
       },
     },

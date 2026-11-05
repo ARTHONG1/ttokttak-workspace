@@ -1,4 +1,5 @@
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { mkdtemp, readFile, rename, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 import type { SignDocumentResult } from '../shared/home-api'
@@ -51,10 +52,10 @@ export interface SignDocumentDeps {
   makeTempDir(): Promise<string>
   removeDir(dir: string): Promise<void>
   /**
-   * false where no page can be printed to PDF (the web edition): other formats are
-   * refused at once with where they can be signed, instead of failing after a wait
+   * whether this run can turn the document into a PDF (always, on the desktop); a document
+   * it cannot is refused at once with where it can be signed, instead of failing after a wait
    */
-  canConvert?: boolean
+  canConvert?: (path: string) => boolean
 }
 
 /** the file system side of SignDocumentDeps; the conversions come from the caller */
@@ -87,7 +88,7 @@ export async function documentToPdf(
 ): Promise<SignDocumentResult> {
   const source = signSourceOf(path)
   if (!source) return { ok: false, error: UNSUPPORTED }
-  if (source === 'convert' && deps.canConvert === false) {
+  if (source === 'convert' && deps.canConvert && !deps.canConvert(path)) {
     return { ok: false, error: NO_CONVERSION_HERE }
   }
   const name = basename(path, extname(path))
@@ -121,5 +122,49 @@ export async function documentToPdf(
     return { ok: false, error: NOT_CONVERTED }
   } finally {
     await deps.removeDir(dir).catch(() => {})
+  }
+}
+
+/**
+ * The web edition's conversions: its browser frames cannot print to PDF, so the server does
+ * it. A Hangul document still goes through the hidden HWP view, whose print page the
+ * server's Chromium prints (web/runtime/server-pdf.cjs, WEB_PDF_CHROMIUM); Word, Excel and
+ * PowerPoint documents go through LibreOffice (WEB_SOFFICE).
+ */
+export function webCanConvert(path: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  return /\.hwpx?$/i.test(path) ? Boolean(env.WEB_PDF_CHROMIUM) : Boolean(env.WEB_SOFFICE)
+}
+
+/** LibreOffice's command line for one document: headless, its own profile, PDF into `outDir` */
+export function sofficeArgs(input: string, outDir: string, profileDir: string): string[] {
+  return [
+    '--headless',
+    '--norestore',
+    '--nolockcheck',
+    '-env:UserInstallation=file://' + profileDir,
+    '--convert-to',
+    'pdf',
+    '--outdir',
+    outDir,
+    input,
+  ]
+}
+
+/** `input` as a PDF at `outPath`, made by LibreOffice (`soffice`) in a scratch folder */
+export async function officeToPdf(input: string, outPath: string, soffice: string): Promise<void> {
+  const work = await mkdtemp(join(tmpdir(), 'ttokttak-office-'))
+  try {
+    const outDir = join(work, 'out')
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        soffice,
+        sofficeArgs(input, outDir, join(work, 'profile')),
+        { timeout: 120_000 },
+        (err) => (err ? reject(err) : resolve()),
+      )
+    })
+    await rename(join(outDir, basename(input, extname(input)) + '.pdf'), outPath)
+  } finally {
+    await rm(work, { recursive: true, force: true }).catch(() => {})
   }
 }

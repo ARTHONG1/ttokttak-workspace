@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   SIGN_DOCUMENT_EXTENSIONS,
   documentToPdf,
+  sofficeArgs,
   signSourceOf,
+  webCanConvert,
   type SignDocumentDeps,
 } from '../src/main/sign-document'
 
@@ -111,12 +113,32 @@ describe('documentToPdf', () => {
   })
 
   it('says at once where a Hangul document can be signed when this run cannot convert', async () => {
-    const d = deps({ canConvert: false })
+    const d = deps({ canConvert: () => false })
     const result = await documentToPdf('/docs/a.hwp', d)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toContain('PDF와 사진')
     expect(d.convertToPdf).not.toHaveBeenCalled()
     // a PDF still goes through
     expect((await documentToPdf('/docs/a.pdf', d)).ok).toBe(true)
+  })
+})
+
+describe('the web edition', () => {
+  it('converts Hangul with the server Chromium and office documents with LibreOffice', () => {
+    const both = { WEB_PDF_CHROMIUM: '/usr/bin/chromium', WEB_SOFFICE: '/usr/bin/soffice' }
+    expect(webCanConvert('/a/x.hwp', both)).toBe(true)
+    expect(webCanConvert('/a/x.HWPX', both)).toBe(true)
+    expect(webCanConvert('/a/x.docx', both)).toBe(true)
+    expect(webCanConvert('/a/x.pptx', both)).toBe(true)
+    // a server without them (a local preview) says so instead of failing after a wait
+    expect(webCanConvert('/a/x.hwp', { WEB_SOFFICE: '/usr/bin/soffice' })).toBe(false)
+    expect(webCanConvert('/a/x.docx', { WEB_PDF_CHROMIUM: '/usr/bin/chromium' })).toBe(false)
+  })
+
+  it('runs LibreOffice headless, with a profile of its own, into the given folder', () => {
+    const args = sofficeArgs('/w/계획.docx', '/tmp/out', '/tmp/profile')
+    expect(args).toContain('--headless')
+    expect(args).toContain('-env:UserInstallation=file:///tmp/profile')
+    expect(args.slice(-5)).toEqual(['--convert-to', 'pdf', '--outdir', '/tmp/out', '/w/계획.docx'])
   })
 })

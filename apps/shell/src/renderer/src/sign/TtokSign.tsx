@@ -8,7 +8,6 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/legacy/build/pdf.mj
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { Back, ToastView, useToast } from '../special-common'
-import { isWebEdition } from '../edition'
 import { cleanSignature } from './sign-image'
 import { SignPad, type PadPicture } from './SignPad'
 import { SignVideoButton } from './sign-video'
@@ -640,11 +639,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
             <div className="ts-empty">
               <SignIcon />
               <h2>서명할 문서를 올려 주세요</h2>
-              <p>
-                {isWebEdition()
-                  ? 'PDF나 사진(JPG·PNG)을 올려 주세요. 한글·오피스 문서는 PDF로 저장해 올리거나, PC에 설치한 똑딱작업실에서 바로 올릴 수 있어요.'
-                  : 'PDF·한글·워드·엑셀·PPT·사진을 올리면 PDF로 바꿔서 보여 드려요.'}
-              </p>
+              <p>PDF·한글·워드·엑셀·PPT·사진을 올리면 PDF로 바꿔서 보여 드려요.</p>
               <button
                 type="button"
                 className="sf-primary"
