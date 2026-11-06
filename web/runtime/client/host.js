@@ -556,15 +556,11 @@
         .then(function () {
           toast('‘' + msg.name + '’ 저장됨')
         })
-        .catch(function (err) {
-          toast(
-            '‘' +
-              msg.name +
-              '’을(를) 내 컴퓨터에 쓰지 못했습니다. 내려받아 보관하세요. (' +
-              err.message +
-              ')',
-            msg,
-          )
+        .catch(function () {
+          // The browser may refuse the write-back (no write permission once the user
+          // gesture has expired). The document is saved in the work space, so show the
+          // ordinary saved notice with its download button instead of an error.
+          toast('‘' + msg.name + '’ 저장됨 — 내 컴퓨터에 보관하려면 내려받으세요.', msg)
         })
       return
     }
