@@ -8,6 +8,7 @@ import { convertPdfFileToPptxLocal } from '../pdf2pptx-local'
 import { convertPdfFileToXlsxLocal } from '../pdf2xlsx-local'
 import { convertHwpContainer } from './hwp-container'
 import { PNG_PAGE_LIMIT, pdfToPngZip } from './pdf-pages'
+import { withPdfDocument } from '../../../../../packages/pdf2docx/src/extract/pdfium'
 import type { RouteStep } from './routes'
 import { ConvertStepError, type ConvertDeps, type StepJob, type StepOutcome } from './run'
 
@@ -66,13 +67,25 @@ const odtPassword = (err: unknown): never => {
 
 const pages = (n: number): string[] => [n + '쪽']
 
+/** a finished PDF's page count, as a fact; none when the count cannot be read */
+async function pdfPageFacts(path: string): Promise<string[]> {
+  try {
+    const m = await ensurePdfium()
+    const bytes = new Uint8Array(await readFile(path))
+    return pages(withPdfDocument(m, bytes, (doc) => m._FPDF_GetPageCount(doc)))
+  } catch {
+    return []
+  }
+}
+
 async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Promise<StepOutcome> {
   const read = async () => new Uint8Array(await readFile(job.input))
   const write = (bytes: Uint8Array) => writeFile(job.output, bytes)
   switch (step) {
     case 'to-pdf':
       await host.toPdf(job.input, job.output)
-      return {}
+      // the page count only when the PDF is the result (a later stage reports its own)
+      return job.format === 'pdf' ? { facts: await pdfPageFacts(job.output) } : {}
     case 'hwp-container':
       await write(await convertHwpContainer(await read(), job.format === 'hwp' ? 'hwp' : 'hwpx'))
       return {}

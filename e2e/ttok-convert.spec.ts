@@ -229,12 +229,17 @@ test('문서 변환 makes every built-in format and hands each result out', asyn
     for (const [name, formats] of cases) {
       const offered = await upload(page, file(name))
       expect.soft(offered, name + ' cards').toEqual(expect.arrayContaining(formats))
+      if (name.endsWith('.hwpx'))
+        await page.screenshot({ path: screenshotPath('ttok-convert-cards') })
       for (const format of formats) {
         const started = Date.now()
         try {
           const note = await convert(file(name), format)
           rows.push([name, format, 'ok', (Date.now() - started) / 1000 + 's', note].join(' | '))
           console.log(rows.at(-1))
+          if (name.endsWith('.hwpx') && format === 'pdf') {
+            await page.screenshot({ path: screenshotPath('ttok-convert-hwp-pdf') })
+          }
         } catch (err) {
           rows.push([name, format, 'FAIL', String(err).slice(0, 160)].join(' | '))
           console.log(rows.at(-1))
