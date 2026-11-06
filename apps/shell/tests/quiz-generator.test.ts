@@ -303,4 +303,17 @@ describe('what a feature page may save and read', () => {
         ?.name,
     ).toBe('서명.png')
   })
+
+  it("takes 문서 변환's results under their own names", () => {
+    const bytes = new Uint8Array([1])
+    for (const ext of ['hwp', 'hwpx', 'docx', 'odt', 'html', 'md', 'pptx', 'zip']) {
+      expect(
+        checkSaveRequest({ name: '계획 (최종).' + ext, filterName: ext, extensions: [ext], bytes })
+          ?.name,
+      ).toBe('계획 (최종).' + ext)
+    }
+    expect(
+      checkSaveRequest({ name: 'a/b.zip', filterName: 'ZIP', extensions: ['zip'], bytes })?.name,
+    ).toBe('a_b.zip')
+  })
 })

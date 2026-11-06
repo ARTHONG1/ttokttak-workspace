@@ -15,6 +15,12 @@ import type {
   FreeAiQuota,
 } from '@genoffice/ai-provider'
 import type { UpdateChannel, UpdateUiState } from './update-api'
+import type {
+  ConvertFormat,
+  ConvertOpenResult,
+  ConvertProgress,
+  ConvertRunResult,
+} from './convert-api'
 import type { KbFileInfo, KbReadPage, KbSearchHit } from '@genoffice/agent-core'
 import type { AiPanelPrefs } from '@genoffice/ui/ai-panel-prefs'
 
@@ -291,6 +297,12 @@ export interface HomeApi {
   readYoutubeTranscript(url: string): Promise<QuizSourceResult>
   /** 똑딱서명: pick a document and get it as a PDF (null = canceled) */
   openSignDocument(): Promise<SignDocumentResult | null>
+  /** 문서 변환: pick a document and get the formats it can be made into (null = canceled) */
+  openConvertDocument(): Promise<ConvertOpenResult | null>
+  /** 문서 변환: make the picked document (by its token) into one format */
+  runConvert(token: string, format: ConvertFormat): Promise<ConvertRunResult>
+  /** 문서 변환: which step of the running conversion has started; returns the unsubscribe */
+  onConvertProgress(handler: (progress: ConvertProgress) => void): () => void
   /** 특화 기능: save bytes the page made where the user picks; resolves to the path (null = canceled) */
   saveFeatureFile(request: QuizSaveRequest): Promise<string | null>
   /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
@@ -588,6 +600,9 @@ export const HOME_CHANNELS = {
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
   openSignDocument: 'home:open-sign-document',
+  openConvertDocument: 'home:open-convert-document',
+  runConvert: 'home:run-convert',
+  convertProgress: 'home:convert-progress',
   saveFeatureFile: 'home:save-feature-file',
   readFeatureAsset: 'home:read-feature-asset',
   openFeatureLink: 'home:open-feature-link',

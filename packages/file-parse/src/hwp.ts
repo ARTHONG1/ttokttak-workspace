@@ -52,6 +52,14 @@ function loadEngine(): Promise<Engine> {
   return engine
 }
 
+/**
+ * The loaded engine, for a caller that writes HWP / HWPX itself (the shell's document
+ * conversion); the same instance the readers here use.
+ */
+export function loadRhwpEngine(): Promise<Engine> {
+  return loadEngine()
+}
+
 /** The engine throws plain strings, in Korean; callers get an Error they can show. */
 function engineError(thrown: unknown): Error {
   const message = thrown instanceof Error ? thrown.message : String(thrown)

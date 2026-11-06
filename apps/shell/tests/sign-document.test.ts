@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   SIGN_DOCUMENT_EXTENSIONS,
   documentToPdf,
+  pdfConverterFor,
   sofficeArgs,
   signSourceOf,
   webCanConvert,
@@ -140,5 +141,22 @@ describe('the web edition', () => {
     expect(args).toContain('--headless')
     expect(args).toContain('-env:UserInstallation=file:///tmp/profile')
     expect(args.slice(-5)).toEqual(['--convert-to', 'pdf', '--outdir', '/tmp/out', '/w/계획.docx'])
+  })
+})
+
+describe('pdfConverterFor', () => {
+  it("uses the editors' own export on the desktop and for Hangul documents on the web", async () => {
+    const headless = vi.fn(async () => {})
+    await pdfConverterFor({}, headless)('/a/a.docx', '/o/a.pdf')
+    await pdfConverterFor({ WEB_SESSION_DIR: '/s', WEB_SOFFICE: '/usr/bin/soffice' }, headless)(
+      '/a/a.hwp',
+      '/o/a.pdf',
+    )
+    await pdfConverterFor({ WEB_SESSION_DIR: '/s' }, headless)('/a/a.pptx', '/o/a.pdf')
+    expect(headless.mock.calls).toEqual([
+      ['/a/a.docx', '/o/a.pdf'],
+      ['/a/a.hwp', '/o/a.pdf'],
+      ['/a/a.pptx', '/o/a.pdf'],
+    ])
   })
 })

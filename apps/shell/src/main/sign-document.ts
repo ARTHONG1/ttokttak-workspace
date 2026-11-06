@@ -135,6 +135,26 @@ export function webCanConvert(path: string, env: NodeJS.ProcessEnv = process.env
   return /\.hwpx?$/i.test(path) ? Boolean(env.WEB_PDF_CHROMIUM) : Boolean(env.WEB_SOFFICE)
 }
 
+/**
+ * The app's way to make a PDF of a document, shared by 똑딱서명 and 문서 변환: on the web
+ * edition (WEB_SESSION_DIR) with LibreOffice, office documents go through it; everything
+ * else, and every Hangul document, through the editors' dialog-free export (`headless`).
+ */
+export function pdfConverterFor(
+  env: NodeJS.ProcessEnv,
+  headless: (input: string, outPath: string) => Promise<void>,
+): (input: string, outPath: string) => Promise<void> {
+  const web = Boolean(env.WEB_SESSION_DIR)
+  const soffice = env.WEB_SOFFICE
+  return async (input, outPath) => {
+    if (web && soffice && !/\.hwpx?$/i.test(input)) {
+      await officeToPdf(input, outPath, soffice)
+      return
+    }
+    await headless(input, outPath)
+  }
+}
+
 /** LibreOffice's command line for one document: headless, its own profile, PDF into `outDir` */
 export function sofficeArgs(input: string, outDir: string, profileDir: string): string[] {
   return [

@@ -249,6 +249,22 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['openSignDocument']>
     >
   },
+  async openConvertDocument() {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.openConvertDocument)) as Awaited<
+      ReturnType<HomeApi['openConvertDocument']>
+    >
+  },
+  async runConvert(token, format) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.runConvert, token, format)) as Awaited<
+      ReturnType<HomeApi['runConvert']>
+    >
+  },
+  onConvertProgress(handler) {
+    const listener = (_event: IpcRendererEvent, progress: unknown) =>
+      handler(progress as Parameters<typeof handler>[0])
+    ipcRenderer.on(HOME_CHANNELS.convertProgress, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.convertProgress, listener)
+  },
   async workSend(feature, text) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.workSend, feature, text)) as Awaited<
       ReturnType<HomeApi['workSend']>

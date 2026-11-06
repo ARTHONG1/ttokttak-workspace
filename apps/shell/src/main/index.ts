@@ -151,9 +151,18 @@ import {
   SIGN_DOCUMENT_EXTENSIONS,
   documentToPdf,
   nodeSignDeps,
-  officeToPdf,
+  pdfConverterFor,
   webCanConvert,
 } from './sign-document'
+import {
+  CONVERT_EXTENSIONS,
+  sourceKindOf,
+  targetsFor,
+  type SourceKind,
+} from './document-convert/routes'
+import { runConversion } from './document-convert/run'
+import { nodeConvertDeps } from './document-convert/node-steps'
+import type { ConvertFormat } from '../shared/convert-api'
 import { imagesToPdfBytes } from '../../../pdf/src/main/images-to-pdf'
 import {
   FEATURE_LINKS,
@@ -5779,22 +5788,11 @@ function registerHomeIpc(): void {
     // the web edition runs this process per session (WEB_SESSION_DIR): its server converts
     // (sign-document.ts webCanConvert), and says so at once when it has no converter
     const web = Boolean(process.env.WEB_SESSION_DIR)
-    const soffice = process.env.WEB_SOFFICE
     try {
       return await documentToPdf(
         picked.filePaths[0],
         nodeSignDeps({
-          convertToPdf: async (input, outPath) => {
-            if (web && soffice && !/\.hwpx?$/i.test(input)) {
-              await officeToPdf(input, outPath, soffice)
-              return
-            }
-            const outcome = await runHeadlessExport(
-              { input, outPath, targetFormat: 'pdf', json: false },
-              headlessExporters,
-            )
-            if (!outcome.ok) throw new Error(outcome.message)
-          },
+          convertToPdf: pdfConverterFor(process.env, headlessPdf),
           // a photographed page lands on A4 (landscape for a wide photo), edge to edge
           imagesToPdf: (images) =>
             imagesToPdfBytes(images, { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
@@ -5803,6 +5801,86 @@ function registerHomeIpc(): void {
       )
     } finally {
       signConverting = false
+    }
+  })
+
+  // 똑딱업무 > 문서 변환: the document comes from a file the user picks here and stays in
+  // this process (by token); the page gets the formats this run can make of it, then asks
+  // for one of them. One conversion at a time; each stage's start goes back as progress.
+  const convertEdition = process.env.WEB_SESSION_DIR ? 'web' : 'desktop'
+  let convertSource: {
+    token: string
+    path: string
+    kind: SourceKind
+    canMakePdf: boolean
+  } | null = null
+  let convertRunning = false
+  ipcMain.handle(HOME_CHANNELS.openConvertDocument, async (event) => {
+    if (convertRunning) return { ok: false, error: '변환 중이에요. 끝난 뒤 올려 주세요.' }
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const picked = await showOpenDialogWithMemory(dialog, win, {
+      title: '변환할 문서 고르기',
+      filters: [{ name: '변환할 문서', extensions: [...CONVERT_EXTENSIONS] }],
+      properties: ['openFile'],
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+    const path = picked.filePaths[0]
+    const kind = sourceKindOf(path)
+    if (!kind) return { ok: false, error: '이 파일은 변환할 수 없어요.' }
+    let size: number
+    try {
+      size = statSync(path).size
+    } catch {
+      return { ok: false, error: '파일을 읽지 못했어요.' }
+    }
+    // the web edition prints PDFs on its server; without its converters those routes go
+    const canMakePdf = convertEdition === 'desktop' || webCanConvert(path)
+    const token = randomUUID()
+    convertSource = { token, path, kind, canMakePdf }
+    return {
+      ok: true,
+      token,
+      name: basename(path, extname(path)),
+      extension: extname(path).slice(1).toLowerCase(),
+      size,
+      targets: targetsFor(kind, convertEdition, canMakePdf),
+    }
+  })
+
+  ipcMain.handle(HOME_CHANNELS.runConvert, async (event, token: unknown, format: unknown) => {
+    const source = convertSource
+    if (!source || token !== source.token || typeof format !== 'string') {
+      return { ok: false, error: '문서를 다시 올려 주세요.' }
+    }
+    if (convertRunning) return { ok: false, error: '변환 중이에요. 끝난 뒤 다시 해 주세요.' }
+    convertRunning = true
+    try {
+      return await runConversion(
+        {
+          path: source.path,
+          kind: source.kind,
+          format: format as ConvertFormat,
+          edition: convertEdition,
+          canMakePdf: source.canMakePdf,
+          onStep: (step, total, label) => {
+            if (!event.sender.isDestroyed()) {
+              event.sender.send(HOME_CHANNELS.convertProgress, {
+                token: source.token,
+                step,
+                total,
+                label,
+              })
+            }
+          },
+        },
+        nodeConvertDeps({
+          toPdf: pdfConverterFor(process.env, headlessPdf),
+          headless: headlessTo,
+        }),
+      )
+    } finally {
+      convertRunning = false
     }
   })
 
@@ -8664,6 +8742,23 @@ const headlessExporters: HeadlessExporters = {
   markdown: (input, outPath) => exportMarkdownPdfHeadless(input, outPath),
   html: exportHtmlHeadless,
   hwp: (input, outPath) => exportHwpPdfHeadless(input, outPath),
+}
+
+/** one dialog-free export inside the running app (똑딱서명, 문서 변환); throws on failure */
+async function headlessTo(
+  input: string,
+  outPath: string,
+  targetFormat: 'pdf' | 'docx' | 'html' | 'md',
+): Promise<void> {
+  const outcome = await runHeadlessExport(
+    { input, outPath, targetFormat, json: false },
+    headlessExporters,
+  )
+  if (!outcome.ok) throw new Error(outcome.message)
+}
+
+function headlessPdf(input: string, outPath: string): Promise<void> {
+  return headlessTo(input, outPath, 'pdf')
 }
 
 /**
