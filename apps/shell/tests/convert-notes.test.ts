@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { odtReportNote, pdfConversionNotes } from '../src/main/document-convert/node-steps'
+import {
+  odtReportNote,
+  pdfConversionNotes,
+  pdfToWordNotes,
+} from '../src/main/document-convert/node-steps'
 
 describe('the notes a conversion shows', () => {
   it("says a scanned PDF once, in the user's words", () => {
@@ -24,5 +28,16 @@ describe('the notes a conversion shows', () => {
       '서식 3곳이 ODT에서 조금 달라질 수 있어요.',
     ])
     expect(odtReportNote([], 'Word')).toEqual([])
+  })
+
+  it('keeps the page notes of PDF → Word for a Word result only', () => {
+    const result = { scannedDocument: false, warnings: ['page 1: 4 stray vector path(s) ignored'] }
+    expect(pdfToWordNotes('docx', result)).toEqual(pdfConversionNotes(result))
+    // a Hangul result says its own note (the layout is the plain one) instead
+    expect(pdfToWordNotes('hwp', result)).toEqual([])
+    expect(pdfToWordNotes('hwpx', result)).toEqual([])
+    expect(pdfToWordNotes('hwp', { scannedDocument: true, warnings: [] })).toEqual([
+      '스캔한 문서라 글자를 고칠 수 없을 수 있어요.',
+    ])
   })
 })

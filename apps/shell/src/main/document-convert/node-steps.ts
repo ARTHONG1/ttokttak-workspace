@@ -7,6 +7,7 @@ import { PdfLoadError, convertPdfFileToDocxLocal, ensurePdfium } from '../pdf2do
 import { convertPdfFileToPptxLocal } from '../pdf2pptx-local'
 import { convertPdfFileToXlsxLocal } from '../pdf2xlsx-local'
 import { convertHwpContainer } from './hwp-container'
+import { DOCX_HWPX_NOTE, docxToHwpx } from './docx-hwpx'
 import { PNG_PAGE_LIMIT, pdfToPngZip } from './pdf-pages'
 import { withPdfDocument } from '../../../../../packages/pdf2docx/src/extract/pdfium'
 import type { RouteStep } from './routes'
@@ -105,7 +106,7 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
     case 'pdf-docx': {
       const made = await convertPdfFileToDocxLocal(job.input).catch(pdfPassword)
       await write(made.docx)
-      return { facts: pages(made.pages), warnings: pdfConversionNotes(made) }
+      return { facts: pages(made.pages), warnings: pdfToWordNotes(job.format, made) }
     }
     case 'pdf-pptx': {
       const made = await convertPdfFileToPptxLocal(job.input).catch(pdfPassword)
@@ -139,6 +140,9 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
         await imagesToPdfBytes([await read()], { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
       )
       return { facts: ['1쪽'] }
+    case 'docx-hwpx':
+      await write(await docxToHwpx(await read()))
+      return { warnings: [DOCX_HWPX_NOTE] }
   }
 }
 
@@ -151,4 +155,16 @@ export function nodeConvertDeps(host: NodeConvertHost): ConvertDeps {
     removeDir: (dir) => rm(dir, { recursive: true, force: true }),
     step: (step, job) => runStep(host, step, job),
   }
+}
+/**
+ * PDF → Word's notes for the whole conversion. On the way to a Hangul document the page
+ * notes would speak of a Word layout the result does not keep (it has its own note); a
+ * scanned PDF is still said.
+ */
+export function pdfToWordNotes(
+  format: string,
+  result: { warnings: string[]; scannedDocument: boolean },
+): string[] {
+  if (format === 'hwp' || format === 'hwpx') return result.scannedDocument ? [SCANNED] : []
+  return pdfConversionNotes(result)
 }

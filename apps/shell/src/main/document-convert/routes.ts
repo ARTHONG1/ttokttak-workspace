@@ -25,6 +25,7 @@ export type RouteStep =
   | 'docs-export'
   | 'html-docx'
   | 'images-pdf'
+  | 'docx-hwpx'
 
 export interface ConvertRoute {
   format: ConvertFormat
@@ -34,6 +35,8 @@ export interface ConvertRoute {
 interface RouteRow extends ConvertRoute {
   /** shown on the web edition (its server converts; checked there) */
   web: boolean
+  /** the card's line when it differs from the format's usual one */
+  summary?: string
 }
 
 const KIND_BY_EXTENSION: Record<string, SourceKind> = {
@@ -64,11 +67,20 @@ export function sourceKindOf(path: string): SourceKind | null {
   return KIND_BY_EXTENSION[extname(path).slice(1).toLowerCase()] ?? null
 }
 
-const row = (format: ConvertFormat, steps: RouteStep[], web = true): RouteRow => ({
+const row = (
+  format: ConvertFormat,
+  steps: RouteStep[],
+  web = true,
+  summary?: string,
+): RouteRow => ({
   format,
   steps,
   web,
+  ...(summary ? { summary } : {}),
 })
+
+/** a PDF's words and tables moved into a new Hangul document: the layout is not kept */
+const PDF_TO_HANGUL = '글과 표를 옮겨요 · 모양은 한글 기본 양식'
 
 const TABLE: Record<SourceKind, RouteRow[]> = {
   hwp: [row('pdf', ['to-pdf']), row('hwpx', ['hwp-container']), row('png', ['to-pdf', 'pdf-png'])],
@@ -91,6 +103,8 @@ const TABLE: Record<SourceKind, RouteRow[]> = {
   pptx: [row('pdf', ['to-pdf']), row('png', ['to-pdf', 'pdf-png'])],
   pdf: [
     row('docx', ['pdf-docx']),
+    row('hwp', ['pdf-docx', 'docx-hwpx', 'hwp-container'], true, PDF_TO_HANGUL),
+    row('hwpx', ['pdf-docx', 'docx-hwpx'], true, PDF_TO_HANGUL),
     row('pptx', ['pdf-pptx']),
     row('xlsx', ['pdf-xlsx']),
     row('png', ['pdf-png']),
@@ -130,6 +144,7 @@ export const STEP_LABELS: Record<RouteStep, string> = {
   'docs-export': 'Word 편집기로 내보내기',
   'html-docx': 'HTML을 Word로',
   'images-pdf': '사진을 A4 쪽으로',
+  'docx-hwpx': '한글 문서로 내용 옮기기',
 }
 
 /** the file extension a format downloads as */
@@ -162,6 +177,7 @@ export function targetsFor(kind: SourceKind, edition: Edition, canMakePdf = true
   return offered(kind, edition, canMakePdf).map((r) => ({
     format: r.format,
     ...CARD[r.format],
+    ...(r.summary ? { summary: r.summary } : {}),
     steps: r.steps.map((s) => STEP_LABELS[s]),
     extension: extensionOf(r.format),
   }))

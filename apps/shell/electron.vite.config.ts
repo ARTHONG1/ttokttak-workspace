@@ -12,13 +12,51 @@ const pdfjsRoot = dirname(dirname(require.resolve('pdfjs-dist/package.json')))
 // vite-plugin-static-copy globs require POSIX separators; join() breaks on Windows
 const pdfjsDir = (sub: string) => normalizePath(join(pdfjsRoot, 'pdfjs-dist', sub))
 
+// 문서 변환's PDF → Hangul stage uses kordoc, which loads cfb with a run-time require the
+// bundle cannot see (and the installed app and the web image cannot resolve, having no
+// node_modules for it): turn that require into an import so cfb is bundled with it.
+const kordocCfbImport = {
+  name: 'kordoc-cfb-import',
+  transform(code: string, id: string) {
+    if (!/[\\/]kordoc[\\/]dist[\\/]/.test(id)) return null
+    const out = code.replace(
+      /var (\w+) = require\d*\("cfb"\);/g,
+      (_line, name: string) =>
+        'import * as ' +
+        name +
+        '_ns from "cfb";\nvar ' +
+        name +
+        ' = ' +
+        name +
+        '_ns.default ?? ' +
+        name +
+        '_ns;',
+    )
+    // a newer kordoc may load it another way: stop the build rather than ship a crash
+    if (/require\w*\(\s*["']cfb["']\s*\)/.test(out)) {
+      throw new Error('kordoc still requires cfb at run time in ' + id + ': update kordocCfbImport')
+    }
+    return out === code ? null : { code: out, map: null }
+  },
+}
+
+// kordoc's OCR, image and browser paths (not used: 문서 변환 reads Word documents with it)
+const KORDOC_UNUSED = [
+  'onnxruntime-node',
+  'sharp',
+  '@hyzyla/pdfium',
+  'puppeteer-core',
+  '@huggingface/tokenizers',
+]
+
 export default defineConfig({
   // Bundle everything into the shell main (same policy as apps/docs): the
   // imported docs/sheets main modules are TS source with no build artifacts,
   // so externalizing them would break Node ESM resolution at runtime.
   main: {
+    plugins: [kordocCfbImport],
     // node:sqlite is a Node 22+ builtin the bundler's builtin list may predate
-    build: { rollupOptions: { external: ['node:sqlite'] } },
+    build: { rollupOptions: { external: ['node:sqlite', ...KORDOC_UNUSED] } },
     // the Google client for Drive (decision 0033) comes from the build's
     // environment only; without it the build offers no Drive at all
     define: {

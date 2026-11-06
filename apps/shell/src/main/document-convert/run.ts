@@ -74,6 +74,7 @@ const STEP_OUTPUT: Record<RouteStep, string | null> = {
   'docs-export': null,
   'html-docx': 'docx',
   'images-pdf': 'pdf',
+  'docx-hwpx': 'hwpx',
 }
 
 const startsWith = (bytes: Uint8Array, head: number[]): boolean =>

@@ -45,7 +45,7 @@ describe('targetsFor', () => {
     expect(formats('hwpx', 'desktop')).toEqual(['pdf', 'hwp', 'png'])
     expect(formats('docx', 'desktop')).toEqual(['pdf', 'odt', 'html', 'md', 'png'])
     expect(formats('odt', 'desktop')).toEqual(['docx', 'pdf', 'html', 'md', 'png'])
-    expect(formats('pdf', 'desktop')).toEqual(['docx', 'pptx', 'xlsx', 'png'])
+    expect(formats('pdf', 'desktop')).toEqual(['docx', 'hwp', 'hwpx', 'pptx', 'xlsx', 'png'])
     expect(formats('html', 'desktop')).toEqual(['pdf', 'docx', 'odt'])
     expect(formats('md', 'desktop')).toEqual(['pdf'])
     expect(formats('image', 'desktop')).toEqual(['pdf'])
@@ -54,7 +54,7 @@ describe('targetsFor', () => {
   it('leaves out on the web what the web edition has not been checked for', () => {
     expect(formats('docx', 'web')).toEqual(['pdf', 'odt', 'html', 'md', 'png'])
     expect(formats('html', 'web')).toEqual([])
-    expect(formats('pdf', 'web')).toEqual(['docx', 'pptx', 'xlsx', 'png'])
+    expect(formats('pdf', 'web')).toEqual(['docx', 'hwp', 'hwpx', 'pptx', 'xlsx', 'png'])
     expect(formats('md', 'web')).toEqual([])
   })
 
@@ -67,6 +67,8 @@ describe('targetsFor', () => {
     expect(targetsFor('hwp', 'web', false).map((t) => t.format)).toEqual(['hwpx'])
     expect(targetsFor('pdf', 'web', false).map((t) => t.format)).toEqual([
       'docx',
+      'hwp',
+      'hwpx',
       'pptx',
       'xlsx',
       'png',
@@ -105,8 +107,22 @@ describe('routeFor', () => {
     expect(routeFor('hwp', 'hwpx', 'web')?.steps).toEqual(['hwp-container'])
   })
 
+  it('turns a PDF into a Hangul document through Word, the HWP saved by the Hangul engine', () => {
+    expect(routeFor('pdf', 'hwpx', 'desktop')?.steps).toEqual(['pdf-docx', 'docx-hwpx'])
+    expect(routeFor('pdf', 'hwp', 'web')?.steps).toEqual(['pdf-docx', 'docx-hwpx', 'hwp-container'])
+  })
+
+  it('says on a PDF → Hangul card that the content moves and the layout does not', () => {
+    const hwp = targetsFor('pdf', 'desktop').find((t) => t.format === 'hwp')!
+    expect(hwp.summary).toContain('기본 양식')
+    // a Hangul card for a Hangul document keeps its usual words
+    expect(targetsFor('hwpx', 'desktop').find((t) => t.format === 'hwp')!.summary).toBe(
+      '한글에서 바로 열어요',
+    )
+  })
+
   it('has no route the table does not list', () => {
-    expect(routeFor('pdf', 'hwp', 'desktop')).toBeNull()
+    expect(routeFor('sheet', 'hwp', 'desktop')).toBeNull()
     expect(routeFor('html', 'docx', 'web')).toBeNull()
   })
 })

@@ -1,4 +1,4 @@
-import { copyFile, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { deflateSync } from 'node:zlib'
@@ -212,6 +212,10 @@ test('문서 변환 makes every built-in format and hands each result out', asyn
       if (await failed.isVisible()) throw new Error(await failed.innerText())
       await page.getByTestId('tc-download').click({ timeout: 30_000 })
       await expect(page.locator('.sf-toast')).toContainText('저장했어요')
+      // the toast may still be the previous card's: wait for this file itself
+      await expect
+        .poll(async () => (await stat(out).catch(() => null))?.size ?? 0, { timeout: 30_000 })
+        .toBeGreaterThan(0)
       const bytes = new Uint8Array(await readFile(out))
       const note = await checkResult(format, bytes)
       return out + ' · ' + note
@@ -252,11 +256,11 @@ test('문서 변환 makes every built-in format and hands each result out', asyn
 
     // the results feed the inputs that need them
     await copyFile(join(dir, 'out-운영계획.hwp'), file('운영계획2.hwp'))
-    await copyFile(join(dir, 'out-운영계획.pdf'), file('운영계획.pdf'))
+    await copyFile(join(dir, 'out-운영계획.pdf'), file('운영계획-인쇄.pdf'))
     await copyFile(join(dir, 'out-안내문.odt'), file('안내문2.odt'))
     const later: [string, string[]][] = [
       ['운영계획2.hwp', ['hwpx', 'pdf']],
-      ['운영계획.pdf', ['docx', 'pptx', 'xlsx', 'png']],
+      ['운영계획-인쇄.pdf', ['docx', 'hwp', 'hwpx', 'pptx', 'xlsx', 'png']],
       ['안내문2.odt', ['docx', 'pdf', 'html', 'md']],
     ]
     for (const [name, formats] of later) {
@@ -282,6 +286,14 @@ test('문서 변환 makes every built-in format and hands each result out', asyn
     const backToHwpx = await hangulText(join(dir, 'out-운영계획2.hwpx'))
     expect(asHwp).toBe(original)
     expect(backToHwpx).toBe(original)
+
+    // PDF → Hangul carries the words over (in the plain layout)
+    const fromPdf = await hangulText(join(dir, 'out-운영계획-인쇄.hwp'))
+    const firstLine = original
+      .split('\n')
+      .map((l) => l.trim())
+      .find(Boolean)!
+    expect(fromPdf.replace(/\s+/g, ' ')).toContain(firstLine.replace(/\s+/g, ' '))
   } finally {
     console.log('문서 변환 results:\n' + rows.join('\n'))
     await writeFile(join(dir, 'results.txt'), rows.join('\n'))

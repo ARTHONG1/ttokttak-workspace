@@ -127,7 +127,7 @@ describe('runConversion', () => {
 
   it('refuses a format the route table has no route for', async () => {
     const { deps } = fakeDeps({})
-    const result = await runConversion({ ...request(), kind: 'pdf', format: 'hwp' }, deps)
+    const result = await runConversion({ ...request(), kind: 'sheet', format: 'hwp' }, deps)
     expect(result).toEqual({ ok: false, error: CONVERT_ERRORS.noRoute })
     expect(deps.step).not.toHaveBeenCalled()
   })
