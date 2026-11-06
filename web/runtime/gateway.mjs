@@ -49,7 +49,7 @@ function withPopupEditor(body, req) {
 const IDLE_MS = Number(process.env.WEB_SESSION_IDLE_MS || 15 * 60 * 1000)
 const MAX_UPLOAD = 200 * 1024 * 1024
 const DOC_EXT =
-  /\.(hwp|hwpx|docx|doc|xlsx|xls|xlsm|csv|pptx|ppt|pdf|md|markdown|html|htm|epub|xmind|txt|odt|rtf|png|jpg|jpeg)$/i
+  /\.(hwp|hwpx|docx|doc|xlsx|xls|xlsm|csv|pptx|ppt|pdf|md|markdown|html|htm|epub|xmind|txt|odt|rtf|png|jpg|jpeg|zip)$/i
 fs.mkdirSync(SESSIONS_ROOT, { recursive: true })
 
 // ---------------------------------------------------------------- codec (browser ⇄ gateway)

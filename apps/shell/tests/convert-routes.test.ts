@@ -52,7 +52,8 @@ describe('targetsFor', () => {
   })
 
   it('leaves out on the web what the web edition has not been checked for', () => {
-    expect(formats('docx', 'web')).toEqual(['pdf', 'odt', 'png'])
+    expect(formats('docx', 'web')).toEqual(['pdf', 'odt', 'html', 'md', 'png'])
+    expect(formats('html', 'web')).toEqual([])
     expect(formats('pdf', 'web')).toEqual(['docx', 'pptx', 'xlsx', 'png'])
     expect(formats('md', 'web')).toEqual([])
   })
@@ -62,7 +63,7 @@ describe('targetsFor', () => {
   })
 
   it('leaves out routes through a PDF where nothing can print one', () => {
-    expect(targetsFor('docx', 'web', false).map((t) => t.format)).toEqual(['odt'])
+    expect(targetsFor('docx', 'web', false).map((t) => t.format)).toEqual(['odt', 'html', 'md'])
     expect(targetsFor('hwp', 'web', false).map((t) => t.format)).toEqual(['hwpx'])
     expect(targetsFor('pdf', 'web', false).map((t) => t.format)).toEqual([
       'docx',
@@ -106,6 +107,6 @@ describe('routeFor', () => {
 
   it('has no route the table does not list', () => {
     expect(routeFor('pdf', 'hwp', 'desktop')).toBeNull()
-    expect(routeFor('docx', 'html', 'web')).toBeNull()
+    expect(routeFor('html', 'docx', 'web')).toBeNull()
   })
 })
