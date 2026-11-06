@@ -21,7 +21,7 @@ Upload any document, pick the format you want, and download it. Open **똑딱업
 
 - The document is checked and only the formats it can be made into appear as cards, each with the steps it goes through (for example Hangul → PDF → one picture per page).
 - While it runs the current step is shown; the result comes with a first-page preview and what to check (a scanned page, pages drawn as pictures).
-- Hangul HWP·HWPX → PDF, HWP↔HWPX, page pictures · Word → PDF, ODT, HTML, Markdown, page pictures · ODT → Word, PDF, HTML, Markdown, page pictures · Excel and PowerPoint → PDF, page pictures · PDF → Word, PowerPoint, Excel, page pictures · HTML → PDF, Word, ODT and Markdown → PDF (desktop app) · photos → PDF.
+- Hangul HWP·HWPX → PDF, HWP↔HWPX, page pictures · Word → PDF, ODT, HTML, Markdown, page pictures · ODT → Word, PDF, HTML, Markdown, page pictures · Excel and PowerPoint → PDF, page pictures · PDF → Word, Hangul HWP·HWPX (words, tables and pictures in a plain Hangul layout), PowerPoint, Excel, page pictures · HTML → PDF, Word, ODT and Markdown → PDF (desktop app) · photos → PDF.
 - Everything runs on the engines inside 똑딱작업실; HWP↔HWPX is handed out only when the result reads back with the original's text.
 
 ## 똑딱서명 (sign a document)

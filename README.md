@@ -37,10 +37,12 @@
 | 워드 DOCX     | PDF, ODT, HTML, Markdown, 쪽마다 그림  |
 | ODT           | 워드, PDF, HTML, Markdown, 쪽마다 그림 |
 | 엑셀·PPT      | PDF, 쪽마다 그림                       |
-| PDF           | 워드, PowerPoint, 엑셀, 쪽마다 그림    |
+| PDF           | 워드, 한글 HWP·HWPX\*, PowerPoint, 엑셀, 쪽마다 그림 |
 | HTML          | PDF, 워드, ODT (설치 앱)               |
 | Markdown      | PDF (설치 앱)                          |
 | 사진 JPG·PNG  | PDF                                    |
+
+\* PDF → 한글은 글·표·그림을 새 한글 문서로 옮깁니다. 띄어쓰기와 표 순서는 그대로 두고, 글꼴과 배치는 한글 기본 양식으로 바뀝니다(PDF → 워드를 거쳐 [kordoc](https://github.com/chrisryugj/kordoc)으로 HWPX를 만들고, HWP는 한글 엔진으로 다시 저장).
 
 모두 똑딱작업실에 들어 있는 엔진으로 바꾸며, 문서를 다른 변환 서비스로 보내지 않습니다. 한글 HWP↔HWPX는 바꾼 문서를 다시 열어 본문이 원본과 같을 때만 내려받게 합니다. 바꿀 수 있는 형식은 앞으로 계속 늘립니다.
 
