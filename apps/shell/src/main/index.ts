@@ -162,6 +162,11 @@ import {
 } from './document-convert/routes'
 import { runConversion } from './document-convert/run'
 import { nodeConvertDeps } from './document-convert/node-steps'
+import {
+  appExportLaunch,
+  exportInAppProcess,
+  exportsInPlace,
+} from './document-convert/app-process-export'
 import type { ConvertFormat } from '../shared/convert-api'
 import { imagesToPdfBytes } from '../../../pdf/src/main/images-to-pdf'
 import {
@@ -5137,7 +5142,16 @@ function openDocumentPath(filePath: string): boolean {
  * annotations). In-memory edits on that tab are discarded — Save would
  * overwrite the file we just exported.
  */
+/**
+ * The outputs of dialog-free exports running inside the app. The editors open what they
+ * export (openGeneratedPath); these stay silent — see openGeneratedDocument.
+ */
+const silentExportPaths = new Set<string>()
+
 function openGeneratedDocument(filePath: string): boolean {
+  // a file a dialog-free export made for 똑딱서명 or 문서 변환 is theirs: no tab opens it
+  // (it lives in a temporary folder about to be removed), and nothing reveals it
+  if (silentExportPaths.has(filePath)) return true
   if (tabManager && PDF_RE.test(filePath)) {
     const existing = tabManager.findPdfTabByPath(filePath)
     if (existing) {
@@ -5792,7 +5806,7 @@ function registerHomeIpc(): void {
       return await documentToPdf(
         picked.filePaths[0],
         nodeSignDeps({
-          convertToPdf: pdfConverterFor(process.env, headlessPdf),
+          convertToPdf: pdfConverterFor(process.env, documentPdf),
           // a photographed page lands on A4 (landscape for a wide photo), edge to edge
           imagesToPdf: (images) =>
             imagesToPdfBytes(images, { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
@@ -5875,8 +5889,8 @@ function registerHomeIpc(): void {
           },
         },
         nodeConvertDeps({
-          toPdf: pdfConverterFor(process.env, headlessPdf),
-          headless: headlessTo,
+          toPdf: pdfConverterFor(process.env, documentPdf),
+          headless: exportDocument,
         }),
       )
     } finally {
@@ -8750,15 +8764,42 @@ async function headlessTo(
   outPath: string,
   targetFormat: 'pdf' | 'docx' | 'html' | 'md',
 ): Promise<void> {
-  const outcome = await runHeadlessExport(
-    { input, outPath, targetFormat, json: false },
-    headlessExporters,
-  )
-  if (!outcome.ok) throw new Error(outcome.message)
+  silentExportPaths.add(outPath)
+  try {
+    const outcome = await runHeadlessExport(
+      { input, outPath, targetFormat, json: false },
+      headlessExporters,
+    )
+    if (!outcome.ok) throw new Error(outcome.message)
+  } finally {
+    silentExportPaths.delete(outPath)
+  }
 }
 
-function headlessPdf(input: string, outPath: string): Promise<void> {
-  return headlessTo(input, outPath, 'pdf')
+/**
+ * 똑딱서명 and 문서 변환's dialog-free exports. Hangul and Word documents export in this
+ * process; on the desktop the others go to a second copy of the app (app-process-export.ts),
+ * whose editors share nothing with the running app's tabs. The web edition's session
+ * process has no app binary and exports everything in place.
+ */
+function exportDocument(
+  input: string,
+  outPath: string,
+  format: 'pdf' | 'docx' | 'html' | 'md',
+): Promise<void> {
+  if (process.env.WEB_SESSION_DIR || exportsInPlace(input)) {
+    return headlessTo(input, outPath, format)
+  }
+  return exportInAppProcess(
+    appExportLaunch(process.execPath, app.isPackaged, app.getAppPath()),
+    input,
+    outPath,
+    format,
+  )
+}
+
+function documentPdf(input: string, outPath: string): Promise<void> {
+  return exportDocument(input, outPath, 'pdf')
 }
 
 /**
