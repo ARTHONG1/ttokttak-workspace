@@ -152,9 +152,17 @@ function selectItem(id) {
   controls()
 }
 
+function hasControlChar(value) {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
+    if (code <= 0x1f || code === 0x7f) return true
+  }
+  return false
+}
+
 function validUrl(value) {
   if (localMedia.test(value)) return true
-  if (!/^https:\/\//i.test(value) || /[\s\\\u0000-\u001f\u007f]/.test(value)) return false
+  if (!/^https:\/\//i.test(value) || /[\s\\]/.test(value) || hasControlChar(value)) return false
   try {
     const url = new URL(value)
     return url.protocol === 'https:' && !url.username && !url.password
@@ -241,9 +249,12 @@ async function request(url, options = {}) {
     if (failure.name === 'AbortError')
       throw new Error(
         '응답 시간이 초과되었습니다. 입력한 내용은 유지됩니다. 저장 요청이었다면 서버 반영 여부를 다시 확인해 주세요.',
+        { cause: failure },
       )
     if (failure instanceof TypeError)
-      throw new Error('로컬 서버에 연결할 수 없습니다. 서버 상태를 확인하고 다시 시도해 주세요.')
+      throw new Error('로컬 서버에 연결할 수 없습니다. 서버 상태를 확인하고 다시 시도해 주세요.', {
+        cause: failure,
+      })
     throw failure
   } finally {
     clearTimeout(timer)

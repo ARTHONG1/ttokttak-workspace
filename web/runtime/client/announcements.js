@@ -2,11 +2,19 @@ const LOCAL_MEDIA =
   /^\/__web\/popup-media\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:png|jpg|webp|gif)$/i
 let dialogNumber = 0
 
+function hasControlChar(value) {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
+    if (code <= 0x1f || code === 0x7f) return true
+  }
+  return false
+}
+
 function safeUrl(value) {
   if (typeof value !== 'string') return null
   const raw = value.trim()
   if (LOCAL_MEDIA.test(raw)) return raw
-  if (!/^https:\/\//i.test(raw) || /[\s\\\u0000-\u001f\u007f]/.test(raw)) return null
+  if (!/^https:\/\//i.test(raw) || /[\s\\]/.test(raw) || hasControlChar(raw)) return null
   try {
     const url = new URL(raw)
     return url.protocol === 'https:' && !url.username && !url.password ? url.href : null

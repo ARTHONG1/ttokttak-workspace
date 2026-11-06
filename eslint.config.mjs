@@ -91,6 +91,14 @@ export default tseslint.config(
     },
   },
   {
+    // The popup editor (dev only) is a browser ES module.
+    files: ['web/dev/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: { ...globals.browser },
+    },
+  },
+  {
     // The web edition's stand-in for Electron keeps "the focused object" the way
     // Electron does, by remembering `this`.
     files: ['web/runtime/fake-electron.cjs'],
