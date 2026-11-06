@@ -1050,6 +1050,17 @@ button.sf-card:hover .sf-card-go svg {
   --sf-visual-accent: var(--sf-work);
   --sf-visual-soft: var(--sf-work-soft);
 }
+.sf-work-card-convert {
+  --sf-visual-accent: var(--sf-class);
+  --sf-visual-soft: var(--sf-class-soft);
+}
+.sf-work-card-convert .sf-work-paper {
+  transform: rotate(-4deg) translateY(-3px);
+}
+.sf-work-card-convert .sf-work-paper-stamp {
+  right: -46px;
+  font-size: 14px;
+}
 .sf-work-visual,
 .sf-work-video {
   position: relative;

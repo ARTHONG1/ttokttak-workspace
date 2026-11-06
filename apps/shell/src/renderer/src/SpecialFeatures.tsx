@@ -17,6 +17,7 @@ import {
 import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import { TtokSign } from './sign/TtokSign'
 import { SignVideoPreview } from './sign/sign-video'
+import { ConvertIcon, TtokConvert } from './convert/TtokConvert'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -31,7 +32,7 @@ import './quiz-generator.css'
  * always the table's total.
  */
 
-type FeatureId = 'proposal' | 'quiz' | 'sign'
+type FeatureId = 'proposal' | 'quiz' | 'sign' | 'convert'
 
 interface Feature {
   id: FeatureId
@@ -40,7 +41,7 @@ interface Feature {
   tags: string[]
 }
 
-const FEATURES: Feature[] = [
+export const FEATURES: Feature[] = [
   {
     id: 'proposal',
     title: '품의서 생성',
@@ -60,7 +61,23 @@ const FEATURES: Feature[] = [
     summary: '문서를 올리고 서명 그림을 놓으면, 크기와 방향을 맞춰 서명이 들어간 PDF로 저장해요.',
     tags: ['한글·워드·PDF', '배경 자동 지우기', '자유 회전', '서명 기억'],
   },
+  {
+    id: 'convert',
+    title: '문서 변환',
+    summary: '어떤 문서든 올리면 바꿀 수 있는 형식을 보여 주고, 고른 형식으로 바꿔 내려받아요.',
+    tags: ['한글·워드·PDF·PPT', '카드로 고르기', '변환 과정 보기'],
+  },
 ]
+
+/** the picture side of a card that has no video: a tilted paper with the tool's stamp */
+const CARD_VISUAL: Record<
+  Exclude<FeatureId, 'sign'>,
+  { kicker: string; stamp: string; caption: string }
+> = {
+  proposal: { kicker: '문서 작성', stamp: 'AI', caption: '장바구니에서 기안문까지' },
+  quiz: { kicker: '학습 자료', stamp: 'Q & A', caption: '자료 하나로 다채로운 퀴즈' },
+  convert: { kicker: '형식 바꾸기', stamp: 'HWP→PDF', caption: '올리고, 고르고, 내려받기' },
+}
 
 /** one row of the 품의 목록; the field names are the original's estimateData */
 interface EstimateRow {
@@ -252,18 +269,20 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
                 aria-label={f.title + ' 열기'}
                 onClick={() => onOpen(f.id)}
               >
-                <span className="sf-work-kicker">
-                  {f.id === 'proposal' ? '문서 작성' : '학습 자료'}
-                </span>
+                <span className="sf-work-kicker">{CARD_VISUAL[f.id].kicker}</span>
                 <span className="sf-work-paper" aria-hidden="true">
-                  {f.id === 'quiz' ? <QuizIcon /> : <ProposalIcon />}
+                  {f.id === 'quiz' ? (
+                    <QuizIcon />
+                  ) : f.id === 'convert' ? (
+                    <ConvertIcon />
+                  ) : (
+                    <ProposalIcon />
+                  )}
                   <span className="sf-work-paper-line" />
                   <span className="sf-work-paper-line" />
-                  <span className="sf-work-paper-stamp">{f.id === 'quiz' ? 'Q & A' : 'AI'}</span>
+                  <span className="sf-work-paper-stamp">{CARD_VISUAL[f.id].stamp}</span>
                 </span>
-                <span className="sf-work-caption">
-                  {f.id === 'proposal' ? '장바구니에서 기안문까지' : '자료 하나로 다채로운 퀴즈'}
-                </span>
+                <span className="sf-work-caption">{CARD_VISUAL[f.id].caption}</span>
               </button>
             )}
             <button
@@ -782,6 +801,8 @@ export function SpecialFeatures({
         <QuizGenerator onBack={() => setOpen(null)} />
       ) : open === 'sign' ? (
         <TtokSign onBack={() => setOpen(null)} />
+      ) : open === 'convert' ? (
+        <TtokConvert onBack={() => setOpen(null)} />
       ) : (
         <FeatureList onOpen={setOpen} />
       )}

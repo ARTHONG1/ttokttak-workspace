@@ -1,0 +1,397 @@
+/* 문서 변환 (convert/TtokConvert.tsx). Inside .sf, so the 특화 기능 palette applies. Motion is
+   transform/opacity only, and none under prefers-reduced-motion (AGENTS.md: keep the Mac
+   light). */
+.sf-page.tc-root {
+  --tc-accent: var(--sf-class);
+  --tc-accent-soft: var(--sf-class-soft);
+  --tc-warn-line: #f5c58a;
+  --tc-warn-ink: #8a4b0c;
+  --tc-page-shadow: 0 18px 40px -22px rgb(15 23 42 / 45%);
+  width: min(1120px, 100%);
+}
+.tc-head-icon {
+  color: var(--tc-accent);
+  background: var(--tc-accent-soft);
+}
+
+.tc-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--sf-ink-3);
+}
+.tc-stages li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.tc-stage-no {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--sf-line-2);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+.tc-stages li.is-now {
+  color: var(--sf-ink);
+  font-weight: 700;
+}
+.tc-stages li.is-now .tc-stage-no {
+  border-color: var(--tc-accent);
+  background: var(--tc-accent);
+  color: var(--sf-on-color);
+}
+.tc-stages li.is-done .tc-stage-no {
+  border-color: var(--tc-accent);
+  color: var(--tc-accent);
+}
+
+/* step 1: one big place to put the document */
+.tc-drop {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 56px 24px;
+  border: 2px dashed var(--sf-line-2);
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--tc-accent-soft), var(--sf-card) 70%);
+  text-align: center;
+}
+.tc-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--sf-card);
+  color: var(--tc-accent);
+  box-shadow: var(--sf-shadow);
+}
+.tc-drop-icon svg {
+  width: 34px;
+  height: 34px;
+}
+.tc-drop h2 {
+  margin: 8px 0 0;
+  font-size: 21px;
+  color: var(--sf-ink);
+}
+.tc-drop p {
+  margin: 0;
+  color: var(--sf-ink-2);
+}
+.tc-drop-button {
+  margin-top: 10px;
+  min-width: 180px;
+}
+
+/* the document that was put in */
+.tc-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--sf-line);
+  border-radius: 16px;
+  background: var(--sf-card);
+}
+.tc-file-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--sf-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-file-name small {
+  font-weight: 500;
+  color: var(--sf-ink-3);
+}
+.tc-file-change {
+  flex: none;
+}
+
+.tc-section-title {
+  margin: 4px 0 12px;
+  font-size: 17px;
+  color: var(--sf-ink);
+}
+.tc-empty {
+  padding: 28px;
+  border: 1px solid var(--sf-line);
+  border-radius: 16px;
+  background: var(--sf-card);
+  color: var(--sf-ink-2);
+  text-align: center;
+}
+
+/* step 2: one card per format */
+.tc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.tc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 176px;
+  padding: 20px;
+  border: 1px solid var(--sf-line);
+  border-radius: 20px;
+  background: var(--sf-card);
+  box-shadow: var(--sf-shadow);
+  font: inherit;
+  text-align: left;
+  color: var(--sf-ink);
+  cursor: pointer;
+  transition: transform 0.18s var(--sf-ease);
+}
+.tc-card:hover,
+.tc-card:focus-visible {
+  border-color: var(--tc-accent);
+  transform: translateY(-3px);
+}
+.tc-card-title {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 800;
+}
+.tc-card-sum {
+  color: var(--sf-ink-2);
+  font-size: 14px;
+}
+.tc-card-flow {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sf-ink-3);
+}
+
+/* a format's badge */
+.tc-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 52px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--tc-badge, var(--sf-ink-2));
+  color: var(--sf-on-color);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.tc-badge-source {
+  --tc-badge: var(--sf-ink-2);
+}
+.tc-badge-pdf {
+  --tc-badge: #e5484d;
+}
+.tc-badge-hwp,
+.tc-badge-hwpx {
+  --tc-badge: #2f6bff;
+}
+.tc-badge-docx,
+.tc-badge-odt {
+  --tc-badge: #2b579a;
+}
+.tc-badge-pptx {
+  --tc-badge: #d24726;
+}
+.tc-badge-xlsx {
+  --tc-badge: #1e7e45;
+}
+.tc-badge-html {
+  --tc-badge: #e8730c;
+}
+.tc-badge-md {
+  --tc-badge: #475569;
+}
+.tc-badge-png {
+  --tc-badge: #7357f6;
+}
+
+/* step 3: what is happening */
+.tc-work h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+}
+.tc-steps {
+  display: grid;
+  gap: 2px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+.tc-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14.5px;
+  color: var(--sf-ink-3);
+}
+.tc-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: 10px;
+  width: 2px;
+  height: calc(100% - 22px);
+  background: var(--sf-line);
+}
+.tc-step.is-done {
+  color: var(--sf-ink-2);
+}
+.tc-step.is-done::after {
+  background: var(--tc-accent);
+}
+.tc-step.is-now {
+  color: var(--sf-ink);
+  font-weight: 700;
+}
+.tc-step-mark,
+.tc-step-spin {
+  flex: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+}
+.tc-step-mark {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--sf-line-2);
+  border-radius: 50%;
+  background: var(--sf-card);
+}
+.tc-step-mark.is-done {
+  border-color: var(--tc-accent);
+  background: var(--tc-accent);
+  color: var(--sf-on-color);
+}
+.tc-step-spin {
+  color: var(--tc-accent);
+}
+.tc-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sf-ink-3);
+}
+.tc-failed {
+  color: var(--sf-danger);
+}
+
+/* step 4: the result */
+.tc-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+.tc-preview {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  padding: 24px;
+  border: 1px solid var(--sf-line);
+  border-radius: 20px;
+  background: var(--sf-soft);
+}
+.tc-preview-page {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  background: var(--sf-paper);
+  box-shadow: var(--tc-page-shadow);
+}
+.tc-preview-badge {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--sf-ink-2);
+}
+.tc-preview-badge .tc-badge {
+  min-width: 96px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  font-size: 22px;
+}
+.tc-preview-none {
+  color: var(--sf-ink-3);
+}
+.tc-result-side {
+  display: grid;
+  gap: 10px;
+}
+.tc-result-side h2 {
+  margin: 0;
+}
+.tc-result-side h3 {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--sf-ink-2);
+}
+.tc-result-side .tc-steps {
+  margin: 0;
+}
+.tc-result-name {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--sf-ink);
+  text-overflow: ellipsis;
+  word-break: break-all;
+}
+.tc-result-name span {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--sf-ink-3);
+}
+.tc-warn {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid var(--tc-warn-line);
+  border-radius: 12px;
+  background: var(--sf-warn-soft);
+  color: var(--tc-warn-ink);
+  font-size: 13px;
+}
+.tc-download {
+  margin-top: 6px;
+}
+
+@media (max-width: 860px) {
+  .tc-result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tc-file {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-card {
+    transition: none;
+  }
+  .tc-card:hover,
+  .tc-card:focus-visible {
+    transform: none;
+  }
+}

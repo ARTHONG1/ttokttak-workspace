@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { proposalArticle } from '../src/renderer/src/SpecialFeatures'
+import { FEATURES, proposalArticle } from '../src/renderer/src/SpecialFeatures'
+
+describe('똑딱업무 tools', () => {
+  it('lists 문서 변환 after 똑딱서명', () => {
+    expect(FEATURES.map((f) => f.id)).toEqual(['proposal', 'quiz', 'sign', 'convert'])
+    expect(FEATURES.find((f) => f.id === 'convert')?.title).toBe('문서 변환')
+  })
+})
 
 /**
  * 특화 기능 > 품의서 생성 writes the 기안문 of the author's ACE AI 품의서 생성기. The text
