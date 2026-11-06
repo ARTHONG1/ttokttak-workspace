@@ -15,7 +15,16 @@ Try it in the browser, or install it and connect your own AI agent.
 
 <p align="center"><a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="ttokttak-workspace intro film preview" /></a></p>
 
-## New: 똑딱서명 (sign a document)
+## New: 문서 변환 (convert a document)
+
+Upload any document, pick the format you want, and download it. Open **똑딱업무 → 문서 변환**.
+
+- The document is checked and only the formats it can be made into appear as cards, each with the steps it goes through (for example Hangul → PDF → one picture per page).
+- While it runs the current step is shown; the result comes with a first-page preview and what to check (a scanned page, pages drawn as pictures).
+- Hangul HWP·HWPX → PDF, HWP↔HWPX, page pictures · Word → PDF, ODT, HTML, Markdown, page pictures · ODT → Word, PDF, HTML, Markdown, page pictures · Excel and PowerPoint → PDF, page pictures · PDF → Word, PowerPoint, Excel, page pictures · HTML → PDF, Word, ODT and Markdown → PDF (desktop app) · photos → PDF.
+- Everything runs on the engines inside 똑딱작업실; HWP↔HWPX is handed out only when the result reads back with the original's text.
+
+## 똑딱서명 (sign a document)
 
 Put a signature into a document without printing, signing and scanning it again. Open **똑딱업무 → 똑딱서명**.
 
@@ -59,7 +68,7 @@ The agent picks the right file for your OS and CPU, downloads it from the offici
 - One window for Hangul, Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind files, saved in their own formats.
 - An AI panel in every editor that reads, edits, marks the changes and undoes them in one step.
 - HWPX saves that Hancom Hangul opens, checked before anything overwrites the original.
-- School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video), a word-search worksheet maker and 똑딱서명, which signs a document with a drawn or uploaded signature.
+- School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video), a word-search worksheet maker, 똑딱서명, which signs a document with a drawn or uploaded signature, and 문서 변환, which turns an uploaded document into the format you pick.
 - A command line and MCP server (`ieumoffice`, `ieumoffice mcp`) for Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode and Windsurf.
 - The app runs the Claude Code or Codex program you signed in to; it never reads or stores those logins.
 
