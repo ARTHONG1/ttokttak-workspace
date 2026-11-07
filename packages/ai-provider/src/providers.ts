@@ -430,7 +430,9 @@ export function defaultAiSettings(
   for (const meta of AI_PROVIDERS) {
     providers[meta.id] = {
       apiKey: defaultApiKeys?.[meta.id] ?? '',
-      model: meta.defaultModel,
+      // The bundled model exists only in installers that ship it; the app
+      // fills it in through withLocalAiAvailability when the files are present.
+      model: meta.id === 'local' ? '' : meta.defaultModel,
       baseUrl: meta.needsBaseUrl ? '' : undefined,
       cliPath: meta.needsCliPath ? '' : undefined,
     }
@@ -444,6 +446,24 @@ export function defaultAiSettings(
     headlessSubscriptionEnabled: false,
     headlessSubscriptionConsentVersion: 0,
     subscriptionNoticeSeen: false,
+  }
+}
+
+/**
+ * Offers the built-in AI exactly when this installation can run it. Only
+ * installers that bundle the model (Apple Silicon Mac since 0.16.2) have it;
+ * elsewhere the local entry has no model, so pickers leave it out and a stored
+ * `local` selection falls back to `auto` instead of failing on every request.
+ */
+export function withLocalAiAvailability(settings: AiSettings, available: boolean): AiSettings {
+  const local = settings.providers?.local ?? { apiKey: '', model: '' }
+  return {
+    ...settings,
+    provider: !available && settings.provider === 'local' ? 'auto' : settings.provider,
+    providers: {
+      ...settings.providers,
+      local: { ...local, apiKey: '', model: available ? 'qwen3.5-2b-local' : '' },
+    },
   }
 }
 

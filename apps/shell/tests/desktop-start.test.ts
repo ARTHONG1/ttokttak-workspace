@@ -9,7 +9,7 @@ describe('desktop start destination', () => {
   })
 })
 
-import { defaultAiSettings } from '@genoffice/ai-provider'
+import { defaultAiSettings, withLocalAiAvailability } from '@genoffice/ai-provider'
 import { desktopConnectionState } from '../src/renderer/src/desktop-start'
 
 it('requires the selected subscription to be usable', () => {
@@ -28,7 +28,6 @@ it('requires the selected subscription to be usable', () => {
     desktopConnectionState({ ...defaultAiSettings(), provider: 'claude-code' }, statuses),
   ).toBe('disconnected')
   expect(desktopConnectionState(null, statuses)).toBe('checking')
-  expect(desktopConnectionState({ ...defaultAiSettings(), provider: 'local' }, statuses)).toBe(
-    'connected',
-  )
+  const local = { ...defaultAiSettings(), provider: 'local' as const }
+  expect(desktopConnectionState(withLocalAiAvailability(local, true), statuses)).toBe('connected')
 })

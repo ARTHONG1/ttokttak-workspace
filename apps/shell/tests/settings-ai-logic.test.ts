@@ -379,7 +379,10 @@ describe('the Advanced key pane', () => {
     expect(initialAdvancedProvider({ provider: 'openai' }, AI_PROVIDERS)).toBe('openai')
     expect(initialAdvancedProvider({ provider: 'codex' }, AI_PROVIDERS)).toBe('codex')
     const first = initialAdvancedProvider({ provider: 'auto' }, AI_PROVIDERS)
-    expect(first).toBe(AI_PROVIDERS.find((m) => !['claude-code', 'codex'].includes(m.id))!.id)
+    // the built-in AI takes no key, so the pane opens on the first real key provider
+    expect(first).toBe(
+      AI_PROVIDERS.find((m) => !['claude-code', 'codex', 'local'].includes(m.id))!.id,
+    )
     // a subscription or an unknown id selected: the pane still opens on a key provider
     expect(initialAdvancedProvider({ provider: 'claude-code' }, AI_PROVIDERS)).toBe(first)
     expect(initialAdvancedProvider({ provider: 'retired-provider' as never }, AI_PROVIDERS)).toBe(

@@ -18,7 +18,8 @@ describe('defaultAiSettings', () => {
     expect(settings.provider).toBe('auto')
     for (const meta of AI_PROVIDERS) {
       expect(settings.providers[meta.id].apiKey).toBe('')
-      expect(settings.providers[meta.id].model).toBe(meta.defaultModel)
+      // the built-in model is filled in only where the installer bundles it
+      expect(settings.providers[meta.id].model).toBe(meta.id === 'local' ? '' : meta.defaultModel)
     }
     expect(settings.providers.custom.baseUrl).toBe('')
     expect(settings.providers.codex.cliPath).toBe('')

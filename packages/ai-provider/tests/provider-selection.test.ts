@@ -14,7 +14,7 @@ import {
   selectAiProvider,
   subscriptionConnection,
 } from '../src/provider-selection'
-import { defaultAiSettings } from '../src/providers'
+import { defaultAiSettings, withLocalAiAvailability } from '../src/providers'
 import type {
   AiProviderSelection,
   AiSettings,
@@ -168,7 +168,7 @@ describe('selectAiProvider with auto', () => {
 
 describe('selectAiProvider with an explicit selection', () => {
   it('uses embedded local AI without a key and never falls back to a subscription', () => {
-    const settings = settingsWith('local')
+    const settings = withLocalAiAvailability(settingsWith('local'), true)
     expect(settings.providers.local).toEqual({
       apiKey: '',
       model: 'qwen3.5-2b-local',
@@ -187,6 +187,17 @@ describe('selectAiProvider with an explicit selection', () => {
       provider: 'local',
       reason: 'not-configured',
     })
+  })
+
+  it('offers embedded local AI only where the installer bundles the model', () => {
+    // a build without the model (Windows, Intel Mac, the web) neither lists nor keeps it
+    expect(isKeyProviderConfigured(defaultAiSettings(), 'local')).toBe(false)
+    const missing = withLocalAiAvailability(settingsWith('local'), false)
+    expect(missing.provider).toBe('auto')
+    expect(isKeyProviderConfigured(missing, 'local')).toBe(false)
+    const bundled = withLocalAiAvailability(settingsWith('codex'), true)
+    expect(bundled.provider).toBe('codex')
+    expect(isKeyProviderConfigured(bundled, 'local')).toBe(true)
   })
 
   it('honors a ready subscription even when the other one would win auto', () => {

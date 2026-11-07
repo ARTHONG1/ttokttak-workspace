@@ -655,7 +655,14 @@ function AiModelPane({ t }: { t: TFunc }) {
           value={provider}
           ariaLabel={t('setAiProvider')}
           options={catalog
-            .filter((c) => listed.includes(c.id))
+            // the built-in AI is offered only where the installer bundles its model
+            .filter(
+              (c) =>
+                listed.includes(c.id) &&
+                (c.id !== 'local' ||
+                  provider === 'local' ||
+                  !!settings.providers.local?.model?.trim()),
+            )
             .map((c) => ({
               value: c.id,
               label: c.label,

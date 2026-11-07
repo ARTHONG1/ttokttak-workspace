@@ -114,6 +114,7 @@ export {
   headlessSubscriptionOn,
   maxOutputTokensOf,
   resolveAiSettings,
+  withLocalAiAvailability,
 } from './providers'
 export {
   activeCustomEndpoint,

@@ -307,8 +307,8 @@ export function advancedProviderIds(catalog: readonly { id: string }[]): AiProvi
  * The provider the key pane opens on: the stored selection when it is one of
  * the listed providers, else the first key provider whose settings are filled
  * in (so a saved key that is not in use opens with its "use this AI" button),
- * else the first one that takes a key. Opening the pane never changes which AI
- * is in use.
+ * else the first one that takes a key (the built-in AI takes none). Opening
+ * the pane never changes which AI is in use.
  */
 export function initialAdvancedProvider(
   settings: Pick<AiSettings, 'provider'> & Partial<Pick<AiSettings, 'providers'>>,
@@ -323,7 +323,9 @@ export function initialAdvancedProvider(
     : undefined
   return (
     filled ??
-    listed.find((id) => !catalog.find((entry) => entry.id === id)?.needsCliPath) ??
+    listed.find(
+      (id) => id !== 'local' && !catalog.find((entry) => entry.id === id)?.needsCliPath,
+    ) ??
     listed[0]
   )
 }

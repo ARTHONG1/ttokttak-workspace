@@ -122,6 +122,7 @@ import {
   type AiStreamRequest,
   type AiSubscriptionProviderId,
   sealAiSecrets,
+  withLocalAiAvailability,
 } from '@genoffice/ai-provider'
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
@@ -3961,10 +3962,14 @@ function broadcastAiSettingsChanged(): void {
 /** the settings file as every reader gets it: removed and unknown selections read as their defaults */
 function storedAiSettings(): AiSettings {
   const defaults = defaultAiSettings()
+  const available = localAiAvailable()
   // Only a genuinely new installation gets local AI preselected. Existing
   // provider preferences, including explicit 'auto', remain intact.
-  if (!existsSync(SETTINGS_PATH()) && localAiAvailable()) defaults.provider = 'local'
-  return normalizeAiSettings(readJson<unknown>(SETTINGS_PATH(), {}), defaults)
+  if (!existsSync(SETTINGS_PATH()) && available) defaults.provider = 'local'
+  return withLocalAiAvailability(
+    normalizeAiSettings(readJson<unknown>(SETTINGS_PATH(), {}), defaults),
+    available,
+  )
 }
 
 /** where the image and media tools may run: the screen path, with the live subscription statuses */
