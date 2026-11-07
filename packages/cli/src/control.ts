@@ -80,7 +80,7 @@ export function controlRequest(
         reject(
           new CliError(EXIT.app, `${PRODUCT_NAME} did not answer: ${why}`, undefined, {
             reason: 'app_unavailable',
-            suggestion: `start ${PRODUCT_NAME} (or \`ieumoffice open <file>\`) and retry`,
+            suggestion: `start ${PRODUCT_NAME} (or \`ttokttak open <file>\`) and retry`,
           }),
         ),
       )
@@ -136,7 +136,7 @@ function defaultSuggestion(reason: ErrorReason, detail: Record<string, unknown>)
     case 'sheet_not_found':
       return 'use one of `detail.sheets` verbatim'
     case 'file_not_open_in_gui':
-      return 'run `ieumoffice open <file>` first'
+      return 'run `ttokttak open <file>` first'
     default:
       return 'check the target and retry'
   }

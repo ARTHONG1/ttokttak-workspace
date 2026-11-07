@@ -9,7 +9,7 @@ import { randomBytes } from 'node:crypto'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import JSZip from 'jszip'
-import { IEUM_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
+import { TTOK_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
 import { SkillImportError } from './errors'
 import { listSkillFolderFiles, readUserSkillFolder, type SkillFolderLimits } from './folder'
 
@@ -36,7 +36,7 @@ async function readForExport(skillDir: string, limits: SkillFolderLimits) {
   const listed = await listSkillFolderFiles(skillDir, limits)
   if (!listed) throw new SkillImportError('failed', `Cannot read ${skillDir}`)
   if (listed.tooLarge) throw new SkillImportError('too-large', 'The skill folder is too large')
-  const files = listed.files.filter((file) => file.rel !== IEUM_SOURCE_FILE)
+  const files = listed.files.filter((file) => file.rel !== TTOK_SOURCE_FILE)
   const info: SkillExportInfo = {
     name: skill.name,
     fileName: `${skill.name}.zip`,

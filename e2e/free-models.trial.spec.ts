@@ -17,7 +17,7 @@ const MODEL = process.env.TRIAL_MODEL ?? ''
 const RUN_TIMEOUT = 240_000
 
 async function storedKey(): Promise<string> {
-  const path = join(process.env.APPDATA ?? '', 'IeumOffice', 'ai-settings.json')
+  const path = join(process.env.APPDATA ?? '', 'HangulAIWorkbench', 'ai-settings.json')
   const settings = JSON.parse(await readFile(path, 'utf8'))
   return settings.providers.openrouter.apiKey
 }
@@ -26,7 +26,7 @@ test(`free model trial: ${MODEL}`, async () => {
   test.skip(!MODEL, 'TRIAL_MODEL is not set')
   test.setTimeout(RUN_TIMEOUT * 2 + 120_000)
   const key = await storedKey()
-  const userDataDir = await mkdtemp(join(tmpdir(), 'ieum-free-trial-'))
+  const userDataDir = await mkdtemp(join(tmpdir(), 'ttok-free-trial-'))
   await writeFile(
     join(userDataDir, 'ai-settings.json'),
     JSON.stringify({

@@ -35,4 +35,4 @@ Because the installer is not signed, only run one you downloaded from the Releas
 
 ## The command line comes with it
 
-Every install ships an `ieumoffice` command that talks to the same engines the window does, so the two never disagree about a file. `ieumoffice install-cli` puts it on your `PATH`. See [Command line and agents](help://cli) for what it can do.
+Every install ships an `ttokttak` command that talks to the same engines the window does, so the two never disagree about a file. `ttokttak install-cli` puts it on your `PATH`. See [Command line and agents](help://cli) for what it can do.

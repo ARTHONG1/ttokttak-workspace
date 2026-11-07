@@ -15,8 +15,8 @@ const RELEASES = [
       { name: 'HangulAIWorkbench-0.12.1-arm64.dmg', download_count: 7 },
       { name: 'HangulAIWorkbench-0.12.1-arm64-mac.zip', download_count: 1 },
       { name: 'HangulAIWorkbench-0.12.1.AppImage', download_count: 3 },
-      { name: 'ieumoffice_0.12.1_amd64.deb', download_count: 2 },
-      { name: 'ieumoffice-0.12.1.x86_64.rpm', download_count: 1 },
+      { name: 'ttokttak_0.12.1_amd64.deb', download_count: 2 },
+      { name: 'ttokttak-0.12.1.x86_64.rpm', download_count: 1 },
       { name: 'latest.yml', download_count: 112 },
       { name: 'latest-mac.yml', download_count: 26 },
       { name: 'latest-linux.yml', download_count: 5 },
@@ -51,7 +51,9 @@ describe('buildSnapshot', () => {
   })
 
   it('ignores support files such as .blockmap', () => {
-    expect(snapshot.perAsset.map((a) => a.asset)).not.toContain('HangulAIWorkbench-0.12.1.exe.blockmap')
+    expect(snapshot.perAsset.map((a) => a.asset)).not.toContain(
+      'HangulAIWorkbench-0.12.1.exe.blockmap',
+    )
   })
 
   it('sums installer downloads per release', () => {

@@ -64,7 +64,7 @@ export const SKILL_TEXT_EXTENSIONS: ReadonlySet<string> = new Set([
 ])
 
 /** The GitHub source record kept in an installed skill's folder; left out of the content hash */
-export const IEUM_SOURCE_FILE = '.ieum-source.json'
+export const TTOK_SOURCE_FILE = '.ttok-source.json'
 
 /** The list of builtin skills next to their folders */
 export const BUILTIN_SKILLS_MANIFEST = 'builtin-skills.json'
@@ -73,8 +73,8 @@ export const BUILTIN_SKILLS_MANIFEST = 'builtin-skills.json'
 export const SKILL_TEMPLATE_FOLDER = 'assets'
 
 /** Front matter keys of this app, under `metadata` */
-export const IEUM_TITLE_KEY = 'ieum-title'
-export const IEUM_TEMPLATE_KEY = 'ieum-template'
+export const TTOK_TITLE_KEY = 'ttok-title'
+export const TTOK_TEMPLATE_KEY = 'ttok-template'
 
 /**
  * Which enabled skill wins when two share a name, first wins. Plugins among

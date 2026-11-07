@@ -1,19 +1,19 @@
 # Kommandozeile und Agenten
 
-Jede Installation bringt den Befehl `ieumoffice` mit, der dieselben Engines antreibt wie das Fenster: dieselben Parser, denselben Writer, denselben Renderer. Eine Datei, die die App speichert, und eine Datei, die der Befehl schreibt, sind dieselbe Datei, und eine Prüfung, die der KI-Bereich der App besteht, besteht auch der Befehl.
+Jede Installation bringt den Befehl `ttokttak` mit, der dieselben Engines antreibt wie das Fenster: dieselben Parser, denselben Writer, denselben Renderer. Eine Datei, die die App speichert, und eine Datei, die der Befehl schreibt, sind dieselbe Datei, und eine Prüfung, die der KI-Bereich der App besteht, besteht auch der Befehl.
 
 ```sh
-ieumoffice --help          # every command
-ieumoffice guide slides    # the op reference, for writing your own
+ttokttak --help          # every command
+ttokttak guide slides    # the op reference, for writing your own
 ```
 
-`ieumoffice --help` zeigt die gesamte Oberfläche auf einem Bildschirm: jeder Befehl mit einer Zeile dazu, was er bewirkt, dann die globalen Optionen und die Exit-Codes.
+`ttokttak --help` zeigt die gesamte Oberfläche auf einem Bildschirm: jeder Befehl mit einer Zeile dazu, was er bewirkt, dann die globalen Optionen und die Exit-Codes.
 
 ## Den Befehl bereitstellen
 
-Der Befehl wird mit der App geliefert. Um ihn beim Namen aufzurufen, einmal `ieumoffice install-cli` ausführen: Unter Windows wird der Ordner, in dem der Befehl liegt, in Ihren Benutzer-`PATH` aufgenommen, und danach geöffnete Terminals finden ihn. **Einstellungen ▸ Integrationen** zeigt, ob Ihr Terminal den Befehl bereits findet, und andernfalls die genaue Zeile, die Sie ausführen müssen.
+Der Befehl wird mit der App geliefert. Um ihn beim Namen aufzurufen, einmal `ttokttak install-cli` ausführen: Unter Windows wird der Ordner, in dem der Befehl liegt, in Ihren Benutzer-`PATH` aufgenommen, und danach geöffnete Terminals finden ihn. **Einstellungen ▸ Integrationen** zeigt, ob Ihr Terminal den Befehl bereits findet, und andernfalls die genaue Zeile, die Sie ausführen müssen.
 
-Coding-Agenten brauchen diesen Schritt nicht. Die App hält in `~/.ieumoffice/launcher` fest, wo der Befehl liegt, und dort finden sie ihn.
+Coding-Agenten brauchen diesen Schritt nicht. Die App hält in `~/.ttokttak/launcher` fest, wo der Befehl liegt, und dort finden sie ihn.
 
 ## Die Befehle, die man kennen sollte
 
@@ -32,18 +32,18 @@ Coding-Agenten brauchen diesen Schritt nicht. Die App hält in `~/.ieumoffice/la
 | `merge`           | Die Platzhalter `{{key}}` in einer Vorlage `.docx`, `.pptx` oder `.xlsx` füllen.                                                                                                                                                                                      |
 | `capabilities`    | Melden, welche KI-Funktionen (Suche, Bildgenerierung, Bild- und Videoanalyse) auf diesem Rechner verfügbar sind und über welchen Weg.                                                                                                                                 |
 | `guide`           | Die op-Referenz und die Design-Leitfäden, erzeugt aus genau den Definitionen, gegen die der Executor prüft — sie kann also nicht von dem abweichen, was `apply` akzeptiert. `--json` liefert sie mit dem Schema jedes ops.                                            |
-| `install-cli`     | `ieumoffice` in den `PATH` legen.                                                                                                                                                                                                                                     |
+| `install-cli`     | `ttokttak` in den `PATH` legen.                                                                                                                                                                                                                                       |
 | `skill`           | Die auf diesem Rechner gefundenen Coding-Agenten auflisten und den GenOffice-Skill dort installieren oder aktualisieren.                                                                                                                                              |
 | `mcp`             | Jeden Befehl als Model-Context-Protocol-Werkzeug bereitstellen. Siehe **Einen Coding-Agenten anbinden**.                                                                                                                                                              |
 
 ## Bearbeiten: Dokumente, Tabellen, Folien
 
-`ieumoffice docs`, `ieumoffice sheet` und `ieumoffice slides` lesen und schreiben über denselben Pfad wie die App und teilen ein Vokabular: ein **op** ist eine einzelne Änderung, und eine **spec** ist eine Liste von ops, die der Reihe nach angewendet werden.
+`ttokttak docs`, `ttokttak sheet` und `ttokttak slides` lesen und schreiben über denselben Pfad wie die App und teilen ein Vokabular: ein **op** ist eine einzelne Änderung, und eine **spec** ist eine Liste von ops, die der Reihe nach angewendet werden.
 
 ```sh
-ieumoffice sheet read report.xlsx
-ieumoffice slides apply deck.pptx --ops ops.json --dry-run
-ieumoffice docs apply brief.docx --ops ops.json
+ttokttak sheet read report.xlsx
+ttokttak slides apply deck.pptx --ops ops.json --dry-run
+ttokttak docs apply brief.docx --ops ops.json
 ```
 
 `--dry-run` meldet, was ein Stapel tun würde, und schreibt nichts — so prüfen Sie eine spec günstig, bevor sie landet. Der KI-Bereich der App läuft auf genau diesen ops, Sie können also alles, was Sie ihm anvertrauen können, auch skripten.
@@ -57,7 +57,7 @@ ieumoffice docs apply brief.docx --ops ops.json
 - `media` nutzt für ein Bild einen Anbieter mit Schlüssel, wenn einer eingerichtet ist. Ihr Claude- oder Codex-Abonnement nutzt der Befehl nur, wenn Sie das erlaubt haben, und das ist **standardmäßig aus**; [Einen Coding-Agenten anbinden](help://mcp) erklärt den Schalter und seine Grenzen.
 - `media` braucht für Video oder Audio einen Anbieter mit Schlüssel, der Video unterstützt.
 
-`ieumoffice capabilities --json` meldet all das, ohne eine KI aufzurufen. Sein `detail` enthält:
+`ttokttak capabilities --json` meldet all das, ohne eine KI aufzurufen. Sein `detail` enthält:
 
 | Feld                                                                             | Was es aussagt                                                                                                                                                                                                                                                                             |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -71,15 +71,15 @@ Wenn `image` oder `media` nicht laufen kann, endet der Befehl mit Code 4 und `er
 
 ## Was der Befehl auf diesem PC ablegt
 
-Beide Dateien liegen im Ordner `.ieumoffice` in Ihrem Benutzerordner:
+Beide Dateien liegen im Ordner `.ttokttak` in Ihrem Benutzerordner:
 
-- `~/.ieumoffice/launcher` hält fest, wo der Befehl der App liegt, damit ein Coding-Agent ihn auch dann findet, wenn er nicht in Ihrem `PATH` liegt.
-- `~/.ieumoffice/cli-audit.jsonl` erhält für jeden ausgeführten Befehl eine Zeile — den Befehl, seine Argumente und das Ergebnis —, sodass Sie nachträglich sehen können, was ein Agent getan hat.
+- `~/.ttokttak/launcher` hält fest, wo der Befehl der App liegt, damit ein Coding-Agent ihn auch dann findet, wenn er nicht in Ihrem `PATH` liegt.
+- `~/.ttokttak/cli-audit.jsonl` erhält für jeden ausgeführten Befehl eine Zeile — den Befehl, seine Argumente und das Ergebnis —, sodass Sie nachträglich sehen können, was ein Agent getan hat.
 
 ## Model Context Protocol
 
-`ieumoffice mcp` stellt jeden Befehl als MCP-Werkzeug bereit, und `ieumoffice mcp install <agent|all>` registriert es in der Konfiguration eines Coding-Agenten. Diese Seite steht in **Einen Coding-Agenten anbinden**.
+`ttokttak mcp` stellt jeden Befehl als MCP-Werkzeug bereit, und `ttokttak mcp install <agent|all>` registriert es in der Konfiguration eines Coding-Agenten. Diese Seite steht in **Einen Coding-Agenten anbinden**.
 
 ## Was der Befehl nicht tut
 
-Er liest und schreibt die Datei. Er ist nicht die App: es gibt kein Fenster, und der Aktualisierungsdialog in der App gilt hierfür nicht. Alles, was das Fenster braucht — der KI-Bereich, die QC-Prüfung einer gerenderten Folie —, wartet darauf, dass Sie die Datei öffnen. `ieumoffice render` liefert Ihnen die Pixel auch ohne Fenster, und `ieumoffice slides` prüft das Layout eines Decks eigenständig.
+Er liest und schreibt die Datei. Er ist nicht die App: es gibt kein Fenster, und der Aktualisierungsdialog in der App gilt hierfür nicht. Alles, was das Fenster braucht — der KI-Bereich, die QC-Prüfung einer gerenderten Folie —, wartet darauf, dass Sie die Datei öffnen. `ttokttak render` liefert Ihnen die Pixel auch ohne Fenster, und `ttokttak slides` prüft das Layout eines Decks eigenständig.

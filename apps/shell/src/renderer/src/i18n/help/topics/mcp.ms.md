@@ -15,27 +15,27 @@ Tempatnya ialah **Tetapan ▸ Integrasi**. Panel itu mempunyai dua bahagian, dan
 Perkara yang sama daripada satu terminal — inilah laluan lanjutan, dan laluan yang perlu digunakan apabila ejen berada di tempat yang tidak dapat dicari oleh panel:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Ia menemui ejen penulisan kod pada mesin ini — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — lalu menulis entri pelayan stdio ke dalam konfigurasi sendiri setiap satu, dan meninggalkan bahagian lain fail itu seperti yang dijumpainya. Entri itu dinamakan `ieumoffice`. Jika dilakukan secara manual untuk Claude Code, pendaftaran yang sama ialah `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Ia menemui ejen penulisan kod pada mesin ini — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — lalu menulis entri pelayan stdio ke dalam konfigurasi sendiri setiap satu, dan meninggalkan bahagian lain fail itu seperti yang dijumpainya. Entri itu dinamakan `ttokttak`. Jika dilakukan secara manual untuk Claude Code, pendaftaran yang sama ialah `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Ejen yang anda pasang di tempat yang luar biasa menggunakan `--dir <path>`; `--force` menulis semula entri yang sudah ada di situ.
 
-`ieumoffice mcp --help` memaparkan segala yang diterima oleh pelayan itu pada satu skrin: borang untuk mendaftar, mengeluarkan dan menyenaraikan, penyajian melalui HTTP, dan dua pilihan skema.
+`ttokttak mcp --help` memaparkan segala yang diterima oleh pelayan itu pada satu skrin: borang untuk mendaftar, mengeluarkan dan menyenaraikan, penyajian melalui HTTP, dan dua pilihan skema.
 
 ## Menjalankannya tanpa pembantu
 
 Bagi klien pada mesin lain, layankannya melalui HTTP:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` menukar tempat ia mendengarkan. Berikan token yang sama kepada klien.
@@ -55,7 +55,7 @@ Setiap perintah ialah sebuah alat. Yang menarik:
 
 ## Carian, imej dan media: apa yang boleh digunakan oleh ejen
 
-Permintaan daripada perintah `ieumoffice` atau daripada klien MCP tidak ditaip oleh anda dalam aplikasi, jadi GenOffice berhati-hati dengannya.
+Permintaan daripada perintah `ttokttak` atau daripada klien MCP tidak ditaip oleh anda dalam aplikasi, jadi GenOffice berhati-hati dengannya.
 
 - **Carian** sentiasa berfungsi dan percuma secara lalai. Kunci penyedia carian digunakan hanya jika anda memilihnya.
 - **Menjana gambar** memerlukan kunci penyedia imej. Dalam versi ini, langganan tidak menjana imej.
@@ -74,16 +74,16 @@ Apabila suis dimatikan dan tiada kunci disediakan, alat itu menjawab bahawa ciri
 
 ## Skema, dan bajet yang lebih kecil
 
-`apply` dan `create` membentangkan parameter `ops`, `cells` dan `data` mereka bersama skema bertip bagi setiap op, yang dijana daripada `ieumoffice guide <domain> --json`. Itu tepat, tetapi tidak kecil. Klien dengan tetingkap konteks yang sempit boleh meminta tatasusunan biasa sebagai gantinya:
+`apply` dan `create` membentangkan parameter `ops`, `cells` dan `data` mereka bersama skema bertip bagi setiap op, yang dijana daripada `ttokttak guide <domain> --json`. Itu tepat, tetapi tidak kecil. Klien dengan tetingkap konteks yang sempit boleh meminta tatasusunan biasa sebagai gantinya:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Mengapa perlu skill
 
-Ejen yang tidak tahu kosa kata op akan meneka. Skill itu membawa rujukan dan panduan reka bentuk — bahan yang sama seperti yang dicetak oleh `ieumoffice guide` —, jadi pembantu menulis op yang spesifikasinya memang telah dibaca. Pasang ia daripada panel di atas, atau dengan `ieumoffice skill` daripada terminal.
+Ejen yang tidak tahu kosa kata op akan meneka. Skill itu membawa rujukan dan panduan reka bentuk — bahan yang sama seperti yang dicetak oleh `ttokttak guide` —, jadi pembantu menulis op yang spesifikasinya memang telah dibaca. Pasang ia daripada panel di atas, atau dengan `ttokttak skill` daripada terminal.
 
 ## Apa yang boleh dicapainya dalam aplikasi
 

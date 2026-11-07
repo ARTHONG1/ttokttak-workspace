@@ -124,7 +124,7 @@ describe('pickerSkillsOf (what the list shows)', () => {
     view({ id: 'builtin:find-skills', source: 'builtin', name: 'find-skills', agentOnly: true }),
     view({ id: 'builtin:hidden', source: 'builtin', name: 'hidden', hidden: true }),
     view({ id: 'app:broken', name: 'broken', unreadable: 'no-frontmatter' }),
-    view({ id: 'user:IeumOffice', source: 'user', name: 'IeumOffice' }),
+    view({ id: 'user:TtokTtak', source: 'user', name: 'TtokTtak' }),
   ]
 
   it('lists enabled skills only, including ones used only when called', () => {

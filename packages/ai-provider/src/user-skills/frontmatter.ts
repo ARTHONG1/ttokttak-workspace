@@ -4,7 +4,7 @@
  * block (`|`, `>`) scalars, and one level of `key: value` under a map key such
  * as `metadata`. Anything else is kept as written when the app rewrites a file.
  */
-import { IEUM_TEMPLATE_KEY, IEUM_TITLE_KEY } from './constants'
+import { TTOK_TEMPLATE_KEY, TTOK_TITLE_KEY } from './constants'
 
 export interface ParsedSkillMd {
   name: string | undefined
@@ -378,9 +378,9 @@ function keyValue(key: string, value: string | boolean, indent: number): string[
 export interface SkillMdInput {
   name: string
   description: string
-  /** `metadata.ieum-title`; left out when undefined */
+  /** `metadata.ttok-title`; left out when undefined */
   title?: string | undefined
-  /** `metadata.ieum-template`; left out when undefined */
+  /** `metadata.ttok-template`; left out when undefined */
   template?: string | undefined
   body: string
   /** other top-level keys to set, such as `disable-model-invocation` */
@@ -393,9 +393,9 @@ export interface SkillMdInput {
  * other keys and other metadata entries stay as they were written, in place.
  */
 export function renderSkillMd(input: SkillMdInput, base?: string): string {
-  const ieum: Array<[string, string]> = []
-  if (input.title !== undefined) ieum.push([IEUM_TITLE_KEY, input.title])
-  if (input.template !== undefined) ieum.push([IEUM_TEMPLATE_KEY, input.template])
+  const ttok: Array<[string, string]> = []
+  if (input.title !== undefined) ttok.push([TTOK_TITLE_KEY, input.title])
+  if (input.template !== undefined) ttok.push([TTOK_TEMPLATE_KEY, input.template])
   const fields = new Map<string, string | boolean>([
     ['name', input.name],
     ['description', input.description],
@@ -406,14 +406,14 @@ export function renderSkillMd(input: SkillMdInput, base?: string): string {
     const map = block ? readMap(block) : undefined
     if (block && !map) {
       // a metadata value this reader does not understand: keep it unless app values must go in
-      if (ieum.length === 0) return block.raw
+      if (ttok.length === 0) return block.raw
     }
     const indent = map?.indent ?? 2
-    const pending = new Map(ieum)
+    const pending = new Map(ttok)
     const lines: string[] = [...(map?.lead ?? [])]
     let kept = 0
     for (const entry of map?.entries ?? []) {
-      if (entry.key === IEUM_TITLE_KEY || entry.key === IEUM_TEMPLATE_KEY) {
+      if (entry.key === TTOK_TITLE_KEY || entry.key === TTOK_TEMPLATE_KEY) {
         const value = pending.get(entry.key)
         pending.delete(entry.key)
         if (value === undefined) continue

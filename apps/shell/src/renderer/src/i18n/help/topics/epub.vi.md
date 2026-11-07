@@ -57,7 +57,7 @@ Trình soạn thảo sách điện tử mở sách EPUB (`.epub`) trong một th
 - Sách viết dọc sẽ chuyển thành viết ngang, trừ khi được dịch sang tiếng Nhật, tiếng Trung hoặc tiếng Hàn. Bản dịch tiếng Ả Rập và tiếng Do Thái đọc từ phải sang trái.
 - Phần đã dịch được giữ lại. Nếu bạn dừng, hãy chọn **Xuất phần đã dịch đến giờ** (phần còn lại giữ ngôn ngữ gốc) hoặc **Tiếp tục sau**. Khi bạn mở một cuốn sách có bản dịch chưa xong, GenOffice sẽ đề nghị dịch tiếp. **Dịch lại từ đầu** sẽ xóa bản dịch đã giữ của ngôn ngữ đó trước.
 - Bản dịch đã giữ được tính trong Cài đặt ▸ Chung ▸ **Kết quả AI đã lưu**, cùng với kết quả của tài liệu PDF, và **Xóa tất cả** cũng xóa luôn chúng.
-- Cũng có thể chạy cùng phép dịch này từ [lệnh trên terminal](help://cli) bằng `ieumoffice epub translate`.
+- Cũng có thể chạy cùng phép dịch này từ [lệnh trên terminal](help://cli) bằng `ttokttak epub translate`.
 
 ## Chưa hỗ trợ
 

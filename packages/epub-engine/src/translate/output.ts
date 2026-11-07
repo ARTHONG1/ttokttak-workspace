@@ -85,7 +85,7 @@ import {
 } from './units'
 
 /** the class token that marks a translation copy in a bilingual book */
-export const EPUB_TRANSLATION_CLASS = 'ieum-translation'
+export const EPUB_TRANSLATION_CLASS = 'ttok-translation'
 
 export type EpubTranslationOutputKind = 'translated' | 'bilingual'
 

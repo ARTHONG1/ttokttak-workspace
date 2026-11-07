@@ -14,8 +14,8 @@ interface CliLinkRecord {
 }
 
 /**
- * Every launch: record where the ieumoffice launcher lives so agents can find it
- * without a PATH (the `ieumoffice` skill reads `~/.ieumoffice/launcher`), then
+ * Every launch: record where the ttokttak launcher lives so agents can find it
+ * without a PATH (the `ttokttak` skill reads `~/.ttokttak/launcher`), then
  * try to expose it on the PATH. The dmg has no installer step to do that, so
  * macOS retries on each start until a writable directory turns up; Windows
  * gets its PATH entry from the installer and only re-checks once per version
@@ -54,12 +54,12 @@ export function isEphemeralInstall(resourcesPath: string, env: NodeJS.ProcessEnv
   return /^\/Volumes\//.test(resourcesPath) || /\/\.mount_[^/]+\//.test(resourcesPath)
 }
 
-/** Same directory the ieumoffice CLI uses for its audit log; never the upstream app's `~/.genoffice`. */
+/** Same directory the ttokttak CLI uses for its audit log; never the upstream app's `~/.genoffice`. */
 export function launcherFilePath(env: NodeJS.ProcessEnv): string {
   return join(env.GENOFFICE_AUTH_DIR || join(homedir(), HOME_DIR_NAME), 'launcher')
 }
 
-/** One line, the directory holding ieumoffice / ieumoffice.cmd; rewritten only when it changed. */
+/** One line, the directory holding ttokttak / ttokttak.cmd; rewritten only when it changed. */
 export function writeLauncherFile(file: string, launcherDir: string): boolean {
   const content = `${launcherDir}\n`
   try {

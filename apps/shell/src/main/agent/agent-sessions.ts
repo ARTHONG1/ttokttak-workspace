@@ -117,7 +117,7 @@ export function agentProtectedPaths(homeDir: string, userData: string): string[]
     join(homeDir, '.claude'),
     join(homeDir, '.codex'),
     join(homeDir, '.genoffice'),
-    join(homeDir, '.ieumoffice'),
+    join(homeDir, '.ttokttak'),
     userData,
   ]
 }
@@ -201,7 +201,7 @@ export async function agentInstructions(
   ]
   if (withAppTools) {
     lines.push(
-      'To read or change a document that is open in the app, use the ieumoffice-editor tools: open_documents (action "list") shows what is open; pass a document\'s id or path as `document` to read_document / insert_content / replace_blocks / apply_ops (Word), read_sheet / apply_sheet_ops (Excel), read_deck / apply_slide_ops (PowerPoint). Changes made this way show in the editor and the person can undo them.',
+      'To read or change a document that is open in the app, use the ttokttak-editor tools: open_documents (action "list") shows what is open; pass a document\'s id or path as `document` to read_document / insert_content / replace_blocks / apply_ops (Word), read_sheet / apply_sheet_ops (Excel), read_deck / apply_slide_ops (PowerPoint). Changes made this way show in the editor and the person can undo them.',
       'Some words may read as {{label}}: the person withheld them from AI. Keep every such marker exactly as it is, never guess what it stands for, and never write a marker into a file.',
       'read_hwp and read_pdf read Hangul and PDF files of the project folder.',
       'When the person asks to keep the work as a skill, or to make or change a skill, call propose_skill: the app shows them a card to check and save; never write skill files yourself. To install a skill from GitHub, call propose_skill_install with its address: the app shows the person a preview and they decide; never install skills with a command.',
@@ -294,7 +294,7 @@ export function createAgentManager(deps: AgentManagerDeps): AgentManager {
       if (!connection) return { ok: false, reason: 'not-connected' }
 
       const id = randomUUID()
-      const sessionDir = await mkdtemp(join(tmpdir(), 'ieum-agent-'))
+      const sessionDir = await mkdtemp(join(tmpdir(), 'ttok-agent-'))
       const entry: LiveSession = { id, ownerId, session: undefined, sessionDir, projectRoot }
       live.set(id, entry)
       try {

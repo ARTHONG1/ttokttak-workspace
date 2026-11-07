@@ -20,7 +20,7 @@ export function sharePictures(svg: string, images: string[], known: Map<string, 
       images.push(dataUrl)
       known.set(dataUrl, index)
     }
-    return `href="ieum-image:${index}"`
+    return `href="ttok-image:${index}"`
   })
 }
 

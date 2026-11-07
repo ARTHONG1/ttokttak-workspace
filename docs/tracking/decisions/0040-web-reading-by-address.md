@@ -8,7 +8,7 @@
 
 ## 결정
 
-- **여덟 편집기 AI 창에 `read_url` 도구.** 웹 검색 유무와 무관하게 항상 도구 목록에 있다. 터미널은 `ieumoffice read-url <url> [--offset <n>]`, MCP는 `read_url`. 결과와 실패 이유(종료 코드·`error`·`detail.errorCode`)는 공개 계약으로 `docs/contracts.md`에 적는다.
+- **여덟 편집기 AI 창에 `read_url` 도구.** 웹 검색 유무와 무관하게 항상 도구 목록에 있다. 터미널은 `ttokttak read-url <url> [--offset <n>]`, MCP는 `read_url`. 결과와 실패 이유(종료 코드·`error`·`detail.errorCode`)는 공개 계약으로 `docs/contracts.md`에 적는다.
 - **글 페이지만** 받는다(`text/*`, JSON, XML). 그림·PDF·오피스 파일은 "파일로 내려받아 첨부하라"고 안내한다 — 링크로 받은 파일의 본문 파싱은 이번 범위가 아니다.
 - **받기는 앱의 기존 가드로.** `fetchWithSsrfGuard`의 홉별 사설·루프백 검사를 그대로 쓰고, 내려받기 10MB·요청 30초(연결·리다이렉트·본문 전부)·리다이렉트 10회. 글은 50,000자씩 나눠 주고 `offset`으로 이어 읽는다(도구 결과가 다음 턴마다 제공자에게 다시 전송되기 때문). 같은 주소 재읽기는 뒷단 메모리에서 3분·최근 8개까지 재사용한다. 인코딩은 사이트가 선언한 것(Content-Type charset → HTML meta → UTF-8)을 따른다.
 - **비공개 GitHub은 사용자가 설정에 넣은 읽기 전용 토큰으로만.** 토큰은 `ai-settings.json`에 평문으로 저장한다(AI 제공자 키와 같은 방식 — 터미널·MCP가 Electron 없이 같은 파일을 읽어야 한다). 토큰은 `api.github.com` 요청에만 실리고, 다른 사이트·리다이렉트 홉에는 싣지 않는다. 로그인 화면·쿠키·브라우저 기록에는 관여하지 않는다. 그 밖의 로그인 벽은 지원하지 않고 파일 첨부를 권한다.

@@ -1,19 +1,19 @@
 # Linha de comandos e agentes
 
-Todas as instalações incluem um comando `ieumoffice` que conduz os mesmos motores que a janela usa — os mesmos analisadores, o mesmo escritor, o mesmo renderizador. Um ficheiro que a aplicação guarda e um ficheiro que o comando escreve são o mesmo ficheiro, e uma verificação que o painel de IA da aplicação ultrapassa é uma verificação que o comando também ultrapassa.
+Todas as instalações incluem um comando `ttokttak` que conduz os mesmos motores que a janela usa — os mesmos analisadores, o mesmo escritor, o mesmo renderizador. Um ficheiro que a aplicação guarda e um ficheiro que o comando escreve são o mesmo ficheiro, e uma verificação que o painel de IA da aplicação ultrapassa é uma verificação que o comando também ultrapassa.
 
 ```sh
-ieumoffice --help          # every command
-ieumoffice guide slides    # the op reference, for writing your own
+ttokttak --help          # every command
+ttokttak guide slides    # the op reference, for writing your own
 ```
 
-`ieumoffice --help` mostra a superfície completa num único ecrã: cada comando com uma linha a dizer o que faz, depois as opções globais e os códigos de saída.
+`ttokttak --help` mostra a superfície completa num único ecrã: cada comando com uma linha a dizer o que faz, depois as opções globais e os códigos de saída.
 
 ## Obter o comando
 
-O comando vem dentro da aplicação. Para o chamar pelo nome, execute uma vez `ieumoffice install-cli`: no Windows, acrescenta ao seu `PATH` de utilizador a pasta onde está o comando, e os terminais que abrir a seguir encontram-no. **Configurações ▸ Integrações** mostra se o seu terminal já encontra o comando e, se não encontrar, a linha exata a executar.
+O comando vem dentro da aplicação. Para o chamar pelo nome, execute uma vez `ttokttak install-cli`: no Windows, acrescenta ao seu `PATH` de utilizador a pasta onde está o comando, e os terminais que abrir a seguir encontram-no. **Configurações ▸ Integrações** mostra se o seu terminal já encontra o comando e, se não encontrar, a linha exata a executar.
 
-Os agentes de programação não precisam desse passo. A aplicação regista em `~/.ieumoffice/launcher` onde está o comando, e eles encontram-no aí.
+Os agentes de programação não precisam desse passo. A aplicação regista em `~/.ttokttak/launcher` onde está o comando, e eles encontram-no aí.
 
 ## Os comandos que vale a pena conhecer
 
@@ -32,18 +32,18 @@ Os agentes de programação não precisam desse passo. A aplicação regista em 
 | `merge`           | Preenche os marcadores `{{key}}` num modelo `.docx`, `.pptx` ou `.xlsx`.                                                                                                                                                                                                                              |
 | `capabilities`    | Indica que funcionalidades de IA (pesquisa, geração de imagens, análise de imagens e de vídeo) estão disponíveis nesta máquina, e por que via.                                                                                                                                                        |
 | `guide`           | A referência de operações e os guias de design, gerados a partir das mesmas definições contra as quais o executor valida — por isso não pode divergir do que `apply` aceita. `--json` devolve-a com o esquema de cada operação.                                                                       |
-| `install-cli`     | Coloca o `ieumoffice` no `PATH`.                                                                                                                                                                                                                                                                      |
+| `install-cli`     | Coloca o `ttokttak` no `PATH`.                                                                                                                                                                                                                                                                        |
 | `skill`           | Lista os agentes de programação encontrados nesta máquina e instala ou atualiza neles a competência do GenOffice.                                                                                                                                                                                     |
 | `mcp`             | Serve cada comando como uma ferramenta do Model Context Protocol. Consulte **Ligar um agente de programação**.                                                                                                                                                                                        |
 
 ## Edição: documentos, folhas, apresentações
 
-`ieumoffice docs`, `ieumoffice sheet` e `ieumoffice slides` leem e editam pelo mesmo caminho de escrita que a aplicação usa, e partilham um vocabulário: uma **operação** (op) é uma única edição, e uma **especificação** (spec) é uma lista de operações aplicadas por ordem.
+`ttokttak docs`, `ttokttak sheet` e `ttokttak slides` leem e editam pelo mesmo caminho de escrita que a aplicação usa, e partilham um vocabulário: uma **operação** (op) é uma única edição, e uma **especificação** (spec) é uma lista de operações aplicadas por ordem.
 
 ```sh
-ieumoffice sheet read report.xlsx
-ieumoffice slides apply deck.pptx --ops ops.json --dry-run
-ieumoffice docs apply brief.docx --ops ops.json
+ttokttak sheet read report.xlsx
+ttokttak slides apply deck.pptx --ops ops.json --dry-run
+ttokttak docs apply brief.docx --ops ops.json
 ```
 
 `--dry-run` relata o que um lote faria e não escreve nada, que é a forma barata de verificar uma especificação antes de a aplicar. O painel de IA da aplicação funciona exatamente com estas operações, por isso tudo o que lhe pedir também pode ser escrito em script.
@@ -57,7 +57,7 @@ ieumoffice docs apply brief.docx --ops ops.json
 - `media` sobre uma imagem usa um fornecedor com chave quando há um configurado. Só usa a sua assinatura do Claude ou do Codex se o tiver autorizado, e isso vem **desligado por predefinição**; [Conectar um agente de programação](help://mcp) explica o interruptor e os seus limites.
 - `media` sobre vídeo ou áudio precisa de um fornecedor com chave que suporte vídeo.
 
-`ieumoffice capabilities --json` indica tudo isto sem chamar nenhuma IA. O seu `detail` contém:
+`ttokttak capabilities --json` indica tudo isto sem chamar nenhuma IA. O seu `detail` contém:
 
 | Campo                                                                            | O que indica                                                                                                                                                                                                                                                              |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -71,15 +71,15 @@ Quando `image` ou `media` não pode ser executado, o comando termina com o códi
 
 ## O que guarda neste PC
 
-Os dois ficheiros estão na pasta `.ieumoffice`, dentro da sua pasta de utilizador:
+Os dois ficheiros estão na pasta `.ttokttak`, dentro da sua pasta de utilizador:
 
-- `~/.ieumoffice/launcher` regista onde está o comando da aplicação, para que um agente de programação o encontre mesmo quando não está no seu `PATH`.
-- `~/.ieumoffice/cli-audit.jsonl` recebe uma linha por cada comando executado — o comando, os argumentos e o resultado —, para poder ver depois o que um agente fez.
+- `~/.ttokttak/launcher` regista onde está o comando da aplicação, para que um agente de programação o encontre mesmo quando não está no seu `PATH`.
+- `~/.ttokttak/cli-audit.jsonl` recebe uma linha por cada comando executado — o comando, os argumentos e o resultado —, para poder ver depois o que um agente fez.
 
 ## Model Context Protocol
 
-`ieumoffice mcp` serve cada comando como uma ferramenta MCP, e `ieumoffice mcp install <agent|all>` regista-a na configuração do próprio agente de programação. Consulte **Ligar um agente de programação** para esse lado.
+`ttokttak mcp` serve cada comando como uma ferramenta MCP, e `ttokttak mcp install <agent|all>` regista-a na configuração do próprio agente de programação. Consulte **Ligar um agente de programação** para esse lado.
 
 ## O que o comando não faz
 
-Ele lê e escreve o ficheiro. Não é a aplicação: não há janela, e a janela de atualização da aplicação não se aplica. Tudo o que precisa da janela — o painel de IA, a verificação de qualidade de uma apresentação renderizada — tem de esperar que abra o ficheiro. `ieumoffice render` dá-lhe os píxeis sem ela, e `ieumoffice slides` audita a disposição de uma apresentação por si só.
+Ele lê e escreve o ficheiro. Não é a aplicação: não há janela, e a janela de atualização da aplicação não se aplica. Tudo o que precisa da janela — o painel de IA, a verificação de qualidade de uma apresentação renderizada — tem de esperar que abra o ficheiro. `ttokttak render` dá-lhe os píxeis sem ela, e `ttokttak slides` audita a disposição de uma apresentação por si só.

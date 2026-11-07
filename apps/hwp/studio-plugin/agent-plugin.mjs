@@ -13,7 +13,7 @@
  * Everything returned crosses to the app renderer by structured clone.
  */
 
-export const AGENT_PLUGIN_ID = 'ieum-agent'
+export const AGENT_PLUGIN_ID = 'ttok-agent'
 
 /** Matches listed back to the caller when a search is ambiguous. */
 const MAX_LISTED_MATCHES = 20
@@ -58,30 +58,30 @@ const MAX_BOX_CHOICE_CHARS = 40
 /** What sits on the page as an object and can lie over a table cell without being in it. */
 const FLOATING_KINDS = new Set(['image', 'picture', 'shape', 'group', 'ole', 'textbox'])
 /** The command this plugin registers with the editor to move its caret to a place. */
-const REVEAL_COMMAND = 'ext:ieum-reveal'
+const REVEAL_COMMAND = 'ext:ttok-reveal'
 /**
  * The event the File menu items this plugin adds fire on the editor's window, with the
  * command as its detail: the app hears it and saves or prints the way Ctrl+S and Ctrl+P do.
  */
-export const FILE_COMMAND_EVENT = 'ieum:file-command'
+export const FILE_COMMAND_EVENT = 'ttok:file-command'
 /**
  * The event this plugin fires on the editor's window when the document's unsaved state
  * changes, with the new state (true: unsaved changes) as its detail.
  */
-export const DIRTY_EVENT = 'ieum:dirty-changed'
+export const DIRTY_EVENT = 'ttok:dirty-changed'
 /** The File menu items, top to bottom: the command the app runs, and the shortcut shown. */
 const FILE_MENU = [
-  { command: 'save', id: 'ext:ieum-save', shortcut: 'Ctrl+S' },
-  { command: 'saveAs', id: 'ext:ieum-save-as', shortcut: 'Ctrl+Shift+S' },
-  { command: 'pdf', id: 'ext:ieum-export-pdf' },
-  { command: 'print', id: 'ext:ieum-print', shortcut: 'Ctrl+P' },
+  { command: 'save', id: 'ext:ttok-save', shortcut: 'Ctrl+S' },
+  { command: 'saveAs', id: 'ext:ttok-save-as', shortcut: 'Ctrl+Shift+S' },
+  { command: 'pdf', id: 'ext:ttok-export-pdf' },
+  { command: 'print', id: 'ext:ttok-print', shortcut: 'Ctrl+P' },
 ]
 /** The command that reads what the user has selected in the editor. */
-const SELECTION_COMMAND = 'ext:ieum-selection'
+const SELECTION_COMMAND = 'ext:ttok-selection'
 /** The command that selects the word under the caret (a double click in the page). */
-const WORD_COMMAND = 'ext:ieum-select-word'
+const WORD_COMMAND = 'ext:ttok-select-word'
 /** The command that draws the marks of this plugin's changes on the pages. */
-const MARK_COMMAND = 'ext:ieum-mark-changes'
+const MARK_COMMAND = 'ext:ttok-mark-changes'
 /** Most places marked at once: a replace-all over a long document stops here. */
 const MAX_MARKS = 500
 /** How long one call of printPages draws pages for; the bridge gives a call ten seconds. */
@@ -103,17 +103,17 @@ const UNMARKED_CHANGES = new Set(['delete-paragraph', 'remove-table-lines', 'del
  * The events the memo panel and the app use: a user's own edit took memos away, or a paste
  * brought text without the memo that was copied with it (a paste from another editor).
  */
-export const MEMO_REMOVED_EVENT = 'ieum:memo-removed'
-export const MEMO_NOT_COPIED_EVENT = 'ieum:memo-not-copied'
+export const MEMO_REMOVED_EVENT = 'ttok:memo-removed'
+export const MEMO_NOT_COPIED_EVENT = 'ttok:memo-not-copied'
 /** The commands this plugin registers with the editor for the memo panel. */
-const MEMO_LIST_COMMAND = 'ext:ieum-memo-list'
-const MEMO_SELECTION_COMMAND = 'ext:ieum-memo-selection'
-const MEMO_INSERT_COMMAND = 'ext:ieum-memo-insert'
-const MEMO_SET_COMMAND = 'ext:ieum-memo-set'
-const MEMO_REMOVE_COMMAND = 'ext:ieum-memo-remove'
-const MEMO_MARK_COMMAND = 'ext:ieum-memo-anchors'
-const MEMO_LOCK_COMMAND = 'ext:ieum-memo-lock'
-const MEMO_UNLOCK_COMMAND = 'ext:ieum-memo-unlock'
+const MEMO_LIST_COMMAND = 'ext:ttok-memo-list'
+const MEMO_SELECTION_COMMAND = 'ext:ttok-memo-selection'
+const MEMO_INSERT_COMMAND = 'ext:ttok-memo-insert'
+const MEMO_SET_COMMAND = 'ext:ttok-memo-set'
+const MEMO_REMOVE_COMMAND = 'ext:ttok-memo-remove'
+const MEMO_MARK_COMMAND = 'ext:ttok-memo-anchors'
+const MEMO_LOCK_COMMAND = 'ext:ttok-memo-lock'
+const MEMO_UNLOCK_COMMAND = 'ext:ttok-memo-unlock'
 /** Where a memo anchor may be put. */
 const MEMO_PLACES = new Set(['body', 'tableCell', 'textBox'])
 /** Changes the plugin makes for the memo panel: removing the memo is what was asked. */
@@ -141,7 +141,7 @@ const MEMO_PROBE_MS = 250
  * It carries a marker only, not the clipboard content; a paste from the system clipboard
  * gives no way to know what it held, so this is best effort.
  */
-const MEMO_COPY_CHANNEL = 'ieum:hwp-memo-copied'
+const MEMO_COPY_CHANNEL = 'ttok:hwp-memo-copied'
 const MEMO_COPY_WINDOW_MS = 15_000
 
 /** The most runs and characters of one selection: a sanity limit, far above real use. */
@@ -1162,7 +1162,7 @@ const STYLE_LIST_SELECTOR = '#style-name'
 /** How long the document rests before the toolbar's style list is checked against it. */
 const STYLE_LIST_PAUSE_MS = 400
 /** The command this plugin registers to have the editor show the caret's style again. */
-const CARET_STATE_COMMAND = 'ext:ieum-caret-state'
+const CARET_STATE_COMMAND = 'ext:ttok-caret-state'
 
 /**
  * Fill the editor toolbar's style list (`select`) with the document's styles (as
@@ -3329,7 +3329,7 @@ export const agentPlugin = {
       if (!memoLayer || memoLayer.parentElement !== content) {
         if (stopMemoLayer) stopMemoLayer()
         memoLayer = page.createElement('div')
-        memoLayer.className = 'ieum-memo-anchors'
+        memoLayer.className = 'ttok-memo-anchors'
         memoLayer.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:${MEMO_LAYER_Z};`
         content.appendChild(memoLayer)
         // the content is resized when the zoom changes: the anchors are placed again
@@ -3388,7 +3388,7 @@ export const agentPlugin = {
             boxShadow: `inset 0 -${selected ? 2 : 1}px 0 ${selected ? MEMO_SELECTED_LINE : MEMO_LINE}`,
             borderRadius: '2px',
           })
-          box.className = `ieum-memo-anchor${selected ? ' selected' : ''}${caret ? ' caret' : ''}`
+          box.className = `ttok-memo-anchor${selected ? ' selected' : ''}${caret ? ' caret' : ''}`
           memoLayer.appendChild(box)
         }
       }
@@ -3728,7 +3728,7 @@ export const agentPlugin = {
       if (!layer || layer.parentElement !== content) {
         if (stopMarking) stopMarking()
         layer = page.createElement('div')
-        layer.className = 'ieum-change-marks'
+        layer.className = 'ttok-change-marks'
         layer.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:${MARK_LAYER_Z};`
         content.appendChild(layer)
         // the content is resized when the zoom changes: the marks are placed again

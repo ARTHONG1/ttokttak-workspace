@@ -1,13 +1,13 @@
 cff-version: 1.2.0
-message: "If you use or build on this software, please cite it as below."
-title: "똑딱작업실 (ttokttak-workspace)"
-abstract: "Open-source AI document workspace for Hangul (HWP/HWPX), Word, Excel, PowerPoint and PDF, built from several open-source projects; attribution is in NOTICE."
+message: 'If you use or build on this software, please cite it as below.'
+title: '똑딱작업실 (ttokttak-workspace)'
+abstract: 'Open-source AI document workspace for Hangul (HWP/HWPX), Word, Excel, PowerPoint and PDF, built from several open-source projects; attribution is in NOTICE.'
 type: software
 authors:
-  - name: "홍찬우 (Chanwoo Hong)"
-    affiliation: "Incheon Bongsu Elementary School · 클래스똑딱"
-repository-code: "https://github.com/ARTHONG1/ttokttak-workspace"
-url: "https://hangul-ai-workbench-545101783843.asia-northeast3.run.app"
+  - name: '홍찬우 (Chanwoo Hong)'
+    affiliation: 'Incheon Bongsu Elementary School · 클래스똑딱'
+repository-code: 'https://github.com/ARTHONG1/ttokttak-workspace'
+url: 'https://hangul-ai-workbench-545101783843.asia-northeast3.run.app'
 license: Apache-2.0
 keywords:
   - hwp
@@ -19,39 +19,32 @@ keywords:
   - education
 references:
   - type: software
-    title: "IeumOffice (이음오피스)"
-    repository-code: "https://github.com/pblsketch/openoffice"
-    license: Apache-2.0
-    version: "0.12.5"
-    authors:
-      - name: "IeumOffice contributors"
-  - type: software
-    title: "GenOffice"
-    repository-code: "https://github.com/genspark-ai/genoffice"
+    title: 'GenOffice'
+    repository-code: 'https://github.com/genspark-ai/genoffice'
     license: Apache-2.0
     authors:
-      - name: "Mainfunc, Inc."
+      - name: 'Mainfunc, Inc.'
   - type: software
-    title: "rhwp"
-    repository-code: "https://github.com/edwardkim/rhwp"
+    title: 'rhwp'
+    repository-code: 'https://github.com/edwardkim/rhwp'
     license: MIT
     authors:
-      - name: "Edward Kim"
+      - name: 'Edward Kim'
   - type: software
-    title: "Univer"
-    repository-code: "https://github.com/dream-num/univer"
+    title: 'Univer'
+    repository-code: 'https://github.com/dream-num/univer'
     license: Apache-2.0
     authors:
-      - name: "DreamNum"
+      - name: 'DreamNum'
   - type: software
-    title: "Tiptap"
-    repository-code: "https://github.com/ueberdosis/tiptap"
+    title: 'Tiptap'
+    repository-code: 'https://github.com/ueberdosis/tiptap'
     license: MIT
     authors:
-      - name: "überdosis"
+      - name: 'überdosis'
   - type: software
-    title: "PDF.js"
-    repository-code: "https://github.com/mozilla/pdf.js"
+    title: 'PDF.js'
+    repository-code: 'https://github.com/mozilla/pdf.js'
     license: Apache-2.0
     authors:
-      - name: "Mozilla"
+      - name: 'Mozilla'

@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { extractSkillArchive } from './archive'
-import { IEUM_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
+import { TTOK_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
 import { SkillImportError } from './errors'
 import { isInsideDir, listSkillFolderFiles, skillContentHash, type SkillFolderFile } from './folder'
 import {
@@ -29,7 +29,7 @@ import {
   type InstalledSkill,
   type SkillImport,
 } from './import'
-import { readIeumSourceRecord, type IeumSourceRecord } from './source-record'
+import { readTtokSourceRecord, type TtokSourceRecord } from './source-record'
 
 /** One file that differs between the installed skill and the new one */
 export interface SkillFileChange {
@@ -39,7 +39,7 @@ export interface SkillFileChange {
 }
 
 interface UpdateCheckBase {
-  record: IeumSourceRecord
+  record: TtokSourceRecord
   /** the commit the recorded branch points at now */
   commit: string
   /** the installed folder differs from what was installed (the person changed it) */
@@ -81,7 +81,7 @@ async function filesByRel(dir: string): Promise<Map<string, SkillFolderFile>> {
   if (!listed) throw new SkillImportError('failed', `Cannot read ${dir}`)
   if (listed.tooLarge) throw new SkillImportError('too-large', 'A skill folder is too large')
   return new Map(
-    listed.files.filter((file) => file.rel !== IEUM_SOURCE_FILE).map((file) => [file.rel, file]),
+    listed.files.filter((file) => file.rel !== TTOK_SOURCE_FILE).map((file) => [file.rel, file]),
   )
 }
 
@@ -124,7 +124,7 @@ export async function checkGitHubSkillUpdate(
   if (!isInsideDir(skillDir, appSkillsDir) || isInsideDir(appSkillsDir, skillDir)) {
     throw new SkillImportError('invalid-source', 'Only skills of the app folder are updated')
   }
-  const record = await readIeumSourceRecord(skillDir)
+  const record = await readTtokSourceRecord(skillDir)
   if (!record) throw new SkillImportError('not-github', 'The skill has no GitHub source record')
   const address = parseGitHubSkillAddress(record.repo)
   if (!address || address.skill !== undefined) {
@@ -146,7 +146,7 @@ export async function checkGitHubSkillUpdate(
   })
   if (options.signal?.aborted) throw new SkillImportError('cancelled', 'Cancelled')
   await mkdir(options.tempDir, { recursive: true })
-  const work = await mkdtemp(join(options.tempDir, 'ieum-skill-update-'))
+  const work = await mkdtemp(join(options.tempDir, 'ttok-skill-update-'))
   const update: SkillImport = {
     origin: {
       kind: 'github',

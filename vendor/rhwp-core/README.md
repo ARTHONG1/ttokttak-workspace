@@ -3,7 +3,7 @@
 한글(HWP·HWPX) 편집기와 한글 파일 읽기(`packages/file-parse`)가 쓰는 rhwp 엔진(`@rhwp/core`)이다. npm에 배포된 0.8.7을 그대로 쓰지 않고, 같은 태그의 소스에 `patches/`의 수정을 얹어 이 저장소에서 빌드한 것을 둔다(결정 0050).
 
 - 원본: https://github.com/edwardkim/rhwp 태그 `v0.8.7`(커밋 `1a76570e833917d15817415a53c09ad61ab3203f`), MIT. 원본 라이선스는 `LICENSE`, WASM에 링크된 크레이트의 라이선스 목록은 `THIRD_PARTY_LICENSES.md`다.
-- 패키지 이름은 `@rhwp/core` 그대로다. `apps/hwp`와 `packages/file-parse`가 `file:../../vendor/rhwp-core`로 이 폴더를 가리킨다. 버전 `0.8.7-ieum.N`의 `N`은 패치 묶음이 바뀔 때마다 올린다.
+- 패키지 이름은 `@rhwp/core` 그대로다. `apps/hwp`와 `packages/file-parse`가 `file:../../vendor/rhwp-core`로 이 폴더를 가리킨다. 버전 `0.8.7-ttok.N`의 `N`은 패치 묶음이 바뀔 때마다 올린다.
 - `rhwp.js`, `rhwp.d.ts`, `rhwp_bg.wasm.d.ts`는 npm 0.8.7과 패치가 더한 호출만 다르다. 0014가 둘(`setPageNumberPos`, `getPageNumberPos`), 0016이 하나(`resizeTableCell`), 0018이 다섯(`getMemoList`, `insertMemo`, `insertMemoByPath`, `setMemoText`, `removeMemo`)을 더한다. 나머지 패치는 내보내는 함수를 바꾸지 않는다.
 
 ## 패치

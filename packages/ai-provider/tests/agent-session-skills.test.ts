@@ -90,7 +90,7 @@ describe('the bundle', () => {
     ])
     expect(
       JSON.parse(readFileSync(join(bundle, '.claude-plugin', 'plugin.json'), 'utf8')).name,
-    ).toBe('ieum-skills')
+    ).toBe('ttok-skills')
     expect(existsSync(join(bundle, 'skills', 'pdf', 'scripts', 'run.js'))).toBe(true)
     // an "auto" skill keeping its own name is copied byte for byte
     expect(readFileSync(join(bundle, 'skills', 'pdf', 'SKILL.md'), 'utf8')).toBe(
@@ -101,7 +101,7 @@ describe('the bundle', () => {
   it('takes only what it is given: the enabled skills and the project’s, from both project folders', async () => {
     const home = temp()
     const project = join(home, 'Project')
-    skillFolder(join(home, '.ieumoffice', 'skills'), 'mine')
+    skillFolder(join(home, '.ttokttak', 'skills'), 'mine')
     skillFolder(join(home, '.claude', 'skills'), 'claude-off')
     skillFolder(join(home, '.claude', 'skills'), 'claude-on')
     skillFolder(join(home, '.agents', 'skills'), 'codex-off')
@@ -200,7 +200,7 @@ describe('the bundle', () => {
     const dir = join(base, 'letter')
     mkdirSync(dir, { recursive: true })
     const source =
-      '---\nname: letter\ndescription: Write a letter.\nmetadata:\n  ieum-title: 가정통신문\n  ieum-template: assets/form.hwpx\nlicense: MIT\n---\nBody stays.\n'
+      '---\nname: letter\ndescription: Write a letter.\nmetadata:\n  ttok-title: 가정통신문\n  ttok-template: assets/form.hwpx\nlicense: MIT\n---\nBody stays.\n'
     writeFileSync(join(dir, 'SKILL.md'), source)
     const bundle = temp()
     const result = await buildAgentSkillBundle(
@@ -210,8 +210,8 @@ describe('the bundle', () => {
     expect(result.skills[0]!.invoke).toBe('manual')
     const copy = readFileSync(join(bundle, 'skills', 'letter', 'SKILL.md'), 'utf8')
     expect(copy).toContain('disable-model-invocation: true')
-    expect(copy).toContain('ieum-title: 가정통신문')
-    expect(copy).toContain('ieum-template: assets/form.hwpx')
+    expect(copy).toContain('ttok-title: 가정통신문')
+    expect(copy).toContain('ttok-template: assets/form.hwpx')
     expect(copy).toContain('license: MIT')
     expect(copy).toContain('name: letter\n')
     expect(copy.endsWith('---\nBody stays.\n')).toBe(true)
@@ -275,9 +275,9 @@ describe('the bundle', () => {
     const result = await buildAgentSkillBundle(
       [
         input('user', skillFolder(base, 'genoffice'), 'genoffice'),
-        input('app', skillFolder(base, 'IeumOffice'), 'IeumOffice'),
+        input('app', skillFolder(base, 'TtokTtak'), 'TtokTtak'),
         // by folder name too, whatever the front matter says
-        input('app', skillFolder(join(base, 'x'), 'ieumoffice'), 'renamed'),
+        input('app', skillFolder(join(base, 'x'), 'ttokttak'), 'renamed'),
         input('app', skillFolder(base, 'kept'), 'kept'),
       ],
       bundle,

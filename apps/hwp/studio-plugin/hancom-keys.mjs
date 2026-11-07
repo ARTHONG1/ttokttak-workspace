@@ -16,7 +16,7 @@
  * (hancomHooks), and a release that renames one fails the build.
  */
 
-export const HANCOM_KEYS_MODULE = '@ieum/hancom-keys'
+export const HANCOM_KEYS_MODULE = '@ttok/hancom-keys'
 
 /**
  * Sequential shortcuts: hold Ctrl, press the first letter, then press the second letter (with or
@@ -39,30 +39,30 @@ export const CHORDS = {
     z: 'table:attach',
     f: 'table:formula',
     k: ['field:edit', 'format:object-properties', 'table:cell-props'],
-    p: 'ieum:page-number',
+    p: 'ttok:page-number',
   },
   k: {
     h: 'insert:hyperlink',
     b: 'insert:bookmark',
     n: 'format:para-num-shape',
     e: 'insert:field',
-    d: 'ieum:insert-date',
+    d: 'ttok:insert-date',
   },
   q: {
     f: 'edit:find',
     a: 'edit:find-replace',
-    l: 'ieum:find-backward',
+    l: 'ttok:find-backward',
   },
   // Hangul's Ctrl+M sequences colour the text
   m: {
-    k: 'ieum:text-color-k',
-    r: 'ieum:text-color-r',
-    b: 'ieum:text-color-b',
-    d: 'ieum:text-color-d',
-    g: 'ieum:text-color-g',
-    y: 'ieum:text-color-y',
-    c: 'ieum:text-color-c',
-    w: 'ieum:text-color-w',
+    k: 'ttok:text-color-k',
+    r: 'ttok:text-color-r',
+    b: 'ttok:text-color-b',
+    d: 'ttok:text-color-d',
+    g: 'ttok:text-color-g',
+    y: 'ttok:text-color-y',
+    c: 'ttok:text-color-c',
+    w: 'ttok:text-color-w',
   },
   g: {
     c: 'view:ctrl-mark',
@@ -138,14 +138,14 @@ export const REMOVED_SHORTCUTS = [
 
 /** Hangul's keys the studio lacks, ahead of its own so they win a tie. */
 export const ADDED_SHORTCUTS = [
-  [{ key: 'y', code: 'KeyY', ctrl: true }, 'ieum:delete-line'],
+  [{ key: 'y', code: 'KeyY', ctrl: true }, 'ttok:delete-line'],
   [{ key: 'c', code: 'KeyC', ctrl: true, shift: true }, 'format:align-center'],
   [{ key: 'r', code: 'KeyR', ctrl: true, shift: true }, 'format:align-right'],
   [{ key: 't', code: 'KeyT', ctrl: true, shift: true }, 'format:align-distribute'],
   [{ key: 'f10', ctrl: true }, 'insert:symbols'],
   [{ key: 'insert', code: 'Insert', alt: true }, 'table:insert-row-col'],
   // the character keys of a selection (Hangul: 보통 모양, 위 첨자, 아래 첨자, 진하게, 기울임, 밑줄)
-  [{ key: 'c', code: 'KeyC', alt: true, shift: true }, 'ieum:normal-shape'],
+  [{ key: 'c', code: 'KeyC', alt: true, shift: true }, 'ttok:normal-shape'],
   [{ key: 'p', code: 'KeyP', alt: true, shift: true }, 'format:superscript'],
   [{ key: 's', code: 'KeyS', alt: true, shift: true }, 'format:subscript'],
   [{ key: 'b', code: 'KeyB', alt: true, shift: true }, 'format:bold'],
@@ -155,11 +155,11 @@ export const ADDED_SHORTCUTS = [
   [{ key: 'h', code: 'KeyH', ctrl: true }, 'edit:find-replace'],
   ...Array.from({ length: STYLE_KEYS }, (_, i) => [
     { key: digitOf(i + 1), code: `Digit${digitOf(i + 1)}`, ctrl: true },
-    `ieum:style-${i + 1}`,
+    `ttok:style-${i + 1}`,
   ]),
   ...Array.from({ length: STYLE_KEYS }, (_, i) => [
     { key: digitOf(i + 1), code: `Digit${digitOf(i + 1)}`, ctrl: true, alt: true },
-    `ieum:style-${i + 1}`,
+    `ttok:style-${i + 1}`,
   ]),
 ]
 
@@ -227,7 +227,7 @@ export function withHancomLabel(def, mac = onMac()) {
  * The keys the main process takes before the editor and hands back when the caret says they are
  * Hangul's table keys (decision 0060): Ctrl+Shift+S in a cell block is the block sum (elsewhere
  * "save as"), Ctrl+Shift+H in a table cell is the horizontal sum (elsewhere "home"). The main
- * process calls `window.__ieumHancomKey(name)` in the editor frame; true means it was done here.
+ * process calls `window.__ttokHancomKey(name)` in the editor frame; true means it was done here.
  */
 export const MAIN_PROCESS_KEYS = {
   'ctrl-shift-s': (ih, dispatcher) =>
@@ -285,7 +285,7 @@ export const MAIN_PROCESS_KEYS = {
 
 /** Opens the window function the main process asks; see MAIN_PROCESS_KEYS. */
 export function installHancomMainKeys(win, getInputHandler, dispatcher) {
-  win.__ieumHancomKey = (name) => {
+  win.__ttokHancomKey = (name) => {
     const take = MAIN_PROCESS_KEYS[name]
     if (!take) return false
     // clipboard keys and Ctrl+Tab belong to the page when focus is outside the editor
@@ -423,25 +423,25 @@ export function hancomChordKey(ih, e) {
  * sum, average or product of the cells to its left or above it in that cell.
  */
 export const EASY_FORMULAS = {
-  h: { id: 'ieum:easy-sum-left', func: 'SUM', range: 'LEFT', ko: '가로 합계', en: 'Sum Left' },
-  v: { id: 'ieum:easy-sum-above', func: 'SUM', range: 'ABOVE', ko: '세로 합계', en: 'Sum Above' },
-  j: { id: 'ieum:easy-avg-left', func: 'AVG', range: 'LEFT', ko: '가로 평균', en: 'Average Left' },
+  h: { id: 'ttok:easy-sum-left', func: 'SUM', range: 'LEFT', ko: '가로 합계', en: 'Sum Left' },
+  v: { id: 'ttok:easy-sum-above', func: 'SUM', range: 'ABOVE', ko: '세로 합계', en: 'Sum Above' },
+  j: { id: 'ttok:easy-avg-left', func: 'AVG', range: 'LEFT', ko: '가로 평균', en: 'Average Left' },
   b: {
-    id: 'ieum:easy-avg-above',
+    id: 'ttok:easy-avg-above',
     func: 'AVG',
     range: 'ABOVE',
     ko: '세로 평균',
     en: 'Average Above',
   },
   k: {
-    id: 'ieum:easy-product-left',
+    id: 'ttok:easy-product-left',
     func: 'PRODUCT',
     range: 'LEFT',
     ko: '가로 곱',
     en: 'Product Left',
   },
   n: {
-    id: 'ieum:easy-product-above',
+    id: 'ttok:easy-product-above',
     func: 'PRODUCT',
     range: 'ABOVE',
     ko: '세로 곱',
@@ -457,9 +457,9 @@ export const EASY_FORMULAS = {
  */
 const TABLE_OBJECT_KEYS = {
   p: 'table:cell-props',
-  t: 'ieum:table-transpose',
-  l: 'ieum:table-border-each',
-  c: 'ieum:table-border-background',
+  t: 'ttok:table-transpose',
+  l: 'ttok:table-border-each',
+  c: 'ttok:table-border-background',
 }
 
 /** Arrow keys as the directions the table commands take. */
@@ -482,24 +482,24 @@ export function hancomTableObjectKey(ih, e) {
     const direction = ARROWS[e.key]
     if (direction) {
       e.preventDefault()
-      if (dispatcher.isEnabled('ieum:table-resize')) {
-        dispatcher.dispatch('ieum:table-resize', { direction })
+      if (dispatcher.isEnabled('ttok:table-resize')) {
+        dispatcher.dispatch('ttok:table-resize', { direction })
       }
       return true
     }
     const order = e.key === 'PageUp' ? 'front' : e.key === 'PageDown' ? 'back' : null
     if (order) {
       e.preventDefault()
-      if (dispatcher.isEnabled('ieum:table-order')) {
-        dispatcher.dispatch('ieum:table-order', { mode: order })
+      if (dispatcher.isEnabled('ttok:table-order')) {
+        dispatcher.dispatch('ttok:table-order', { mode: order })
       }
       return true
     }
     const wrap = e.key === 'Home' ? 'front' : e.key === 'End' ? 'back' : null
     if (wrap) {
       e.preventDefault()
-      if (dispatcher.isEnabled('ieum:table-wrap')) {
-        dispatcher.dispatch('ieum:table-wrap', { mode: wrap })
+      if (dispatcher.isEnabled('ttok:table-wrap')) {
+        dispatcher.dispatch('ttok:table-wrap', { mode: wrap })
       }
       return true
     }
@@ -756,8 +756,8 @@ export function hancomCellBlockKey(ih, e) {
   // as Hangul does; the table keeps its size.
   if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && ARROWS[e.key]) {
     e.preventDefault()
-    if (ih.dispatcher?.isEnabled?.('ieum:table-cell-resize')) {
-      ih.dispatcher.dispatch('ieum:table-cell-resize', { direction: ARROWS[e.key] })
+    if (ih.dispatcher?.isEnabled?.('ttok:table-cell-resize')) {
+      ih.dispatcher.dispatch('ttok:table-cell-resize', { direction: ARROWS[e.key] })
     }
     return true
   }
@@ -765,16 +765,16 @@ export function hancomCellBlockKey(ih, e) {
   // with them (Hangul's Ctrl+arrow). Alt+arrow keeps the table size instead.
   if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && ARROWS[e.key]) {
     e.preventDefault()
-    if (ih.dispatcher?.isEnabled?.('ieum:table-row-column-resize')) {
-      ih.dispatcher.dispatch('ieum:table-row-column-resize', { direction: ARROWS[e.key] })
+    if (ih.dispatcher?.isEnabled?.('ttok:table-row-column-resize')) {
+      ih.dispatcher.dispatch('ttok:table-row-column-resize', { direction: ARROWS[e.key] })
     }
     return true
   }
   // Alt+arrow resizes the selected rows/columns while the table keeps its size
   if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && ARROWS[e.key]) {
     e.preventDefault()
-    if (ih.dispatcher?.isEnabled?.('ieum:table-block-resize')) {
-      ih.dispatcher.dispatch('ieum:table-block-resize', { direction: ARROWS[e.key] })
+    if (ih.dispatcher?.isEnabled?.('ttok:table-block-resize')) {
+      ih.dispatcher.dispatch('ttok:table-block-resize', { direction: ARROWS[e.key] })
     }
     return true
   }
@@ -991,8 +991,8 @@ function hancomTableRowKey(ih, e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     if (nested) return true
-    if (ih.dispatcher?.isEnabled?.('ieum:table-insert-row-below')) {
-      ih.dispatcher.dispatch('ieum:table-insert-row-below')
+    if (ih.dispatcher?.isEnabled?.('ttok:table-insert-row-below')) {
+      ih.dispatcher.dispatch('ttok:table-insert-row-below')
     }
     return true
   }
@@ -1881,7 +1881,7 @@ function pageNumberDialog(ModalDialog, ko, start, onApply) {
         label.style.cssText = 'display:flex;align-items:center;gap:4px;white-space:nowrap'
         const input = doc.createElement('input')
         input.type = 'radio'
-        input.name = 'ieum-page-number-position'
+        input.name = 'ttok-page-number-position'
         input.value = String(p.code)
         input.checked = p.code === this.setting.position
         input.addEventListener('change', () => {
@@ -1940,7 +1940,7 @@ export function hancomCommands(locale, studio = {}) {
   insertTabCommand = studio.InsertTabCommand ?? insertTabCommand
   const commands = [
     {
-      id: 'ieum:delete-line',
+      id: 'ttok:delete-line',
       label: ko ? '한 줄 지우기' : 'Delete Line',
       shortcutLabel: 'Ctrl+Y',
       canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,
@@ -1951,7 +1951,7 @@ export function hancomCommands(locale, studio = {}) {
   ]
   for (const [letter, { color, ko: nameKo, en }] of Object.entries(TEXT_COLORS)) {
     commands.push({
-      id: `ieum:text-color-${letter}`,
+      id: `ttok:text-color-${letter}`,
       label: ko ? nameKo : en,
       shortcutLabel: `Ctrl+M,${letter.toUpperCase()}`,
       canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,
@@ -1962,7 +1962,7 @@ export function hancomCommands(locale, studio = {}) {
   }
   commands.push(
     {
-      id: 'ieum:normal-shape',
+      id: 'ttok:normal-shape',
       label: ko ? '보통 모양' : 'Normal Shape',
       shortcutLabel: 'Alt+Shift+C',
       canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,
@@ -1971,7 +1971,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:insert-date',
+      id: 'ttok:insert-date',
       label: ko ? '날짜/시간 문자열' : 'Date String',
       shortcutLabel: 'Ctrl+K,D',
       canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,
@@ -1988,7 +1988,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:find-backward',
+      id: 'ttok:find-backward',
       label: ko ? '거꾸로 찾기' : 'Find Backward',
       shortcutLabel: 'Ctrl+Q,L',
       canExecute: (ctx) => ctx.hasDocument,
@@ -1997,7 +1997,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:page-number',
+      id: 'ttok:page-number',
       opensDialog: true,
       label: ko ? '쪽 번호 매기기' : 'Page Numbering',
       shortcutLabel: 'Ctrl+N,P',
@@ -2013,7 +2013,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-transpose',
+      id: 'ttok:table-transpose',
       label: ko ? '표 뒤집기' : 'Flip Table',
       shortcutLabel: 'T',
       canExecute: (ctx) => ctx.inTableObjectSelection && !ctx.isFormMode,
@@ -2022,7 +2022,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-border-each',
+      id: 'ttok:table-border-each',
       opensDialog: true,
       label: ko ? '셀 테두리' : 'Cell Border',
       shortcutLabel: 'L',
@@ -2032,7 +2032,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-border-background',
+      id: 'ttok:table-border-background',
       opensDialog: true,
       label: ko ? '셀 배경' : 'Cell Background',
       shortcutLabel: 'C',
@@ -2042,7 +2042,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-insert-row-below',
+      id: 'ttok:table-insert-row-below',
       label: ko ? '아래에 줄 추가' : 'Insert Row Below',
       canExecute: (ctx) => ctx.inTable && !ctx.isFormMode,
       execute(services) {
@@ -2050,7 +2050,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-resize',
+      id: 'ttok:table-resize',
       label: ko ? '표 크기 조절' : 'Resize Table',
       canExecute: (ctx) => ctx.inTableObjectSelection && !ctx.isFormMode,
       execute(services, params) {
@@ -2058,7 +2058,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-order',
+      id: 'ttok:table-order',
       label: ko ? '표 순서' : 'Table Order',
       canExecute: (ctx) => ctx.inTableObjectSelection && !ctx.isFormMode,
       execute(services, params) {
@@ -2066,7 +2066,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-wrap',
+      id: 'ttok:table-wrap',
       label: ko ? '표 글자 배치' : 'Table Text Wrap',
       canExecute: (ctx) => ctx.inTableObjectSelection && !ctx.isFormMode,
       execute(services, params) {
@@ -2074,7 +2074,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-block-resize',
+      id: 'ttok:table-block-resize',
       label: ko ? '셀 블록 크기 조절' : 'Resize Cell Block',
       canExecute: (ctx) => ctx.inCellSelectionMode && !ctx.isFormMode,
       execute(services, params) {
@@ -2082,7 +2082,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-row-column-resize',
+      id: 'ttok:table-row-column-resize',
       label: ko ? '줄/칸 전체 크기 조절' : 'Resize Row/Column',
       canExecute: (ctx) => ctx.inCellSelectionMode && !ctx.isFormMode,
       execute(services, params) {
@@ -2090,7 +2090,7 @@ export function hancomCommands(locale, studio = {}) {
       },
     },
     {
-      id: 'ieum:table-cell-resize',
+      id: 'ttok:table-cell-resize',
       label: ko ? '셀 크기 조절' : 'Resize Cell',
       canExecute: (ctx) => ctx.inCellSelectionMode && !ctx.isFormMode,
       execute(services, params) {
@@ -2111,7 +2111,7 @@ export function hancomCommands(locale, studio = {}) {
   }
   for (let n = 1; n <= STYLE_KEYS; n += 1) {
     commands.push({
-      id: `ieum:style-${n}`,
+      id: `ttok:style-${n}`,
       label: ko ? `스타일 ${n} 적용` : `Apply Style ${n}`,
       shortcutLabel: `Ctrl+${digitOf(n)}`,
       canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,
@@ -2126,10 +2126,10 @@ export function hancomCommands(locale, studio = {}) {
 
 /** Menu items for the new commands, each after a studio item: [command, after, Korean, English]. */
 export const MENU_ITEMS = [
-  ['ieum:page-number', 'page:new-page-num', '쪽 번호 매기기', 'Page Numbering'],
-  ['ieum:find-backward', 'edit:find-again', '거꾸로 찾기', 'Find Backward'],
-  ['ieum:insert-date', 'insert:symbols', '날짜/시간 문자열', 'Date String'],
-  ['ieum:table-transpose', 'table:transpose-copy', '표 뒤집기', 'Flip Table'],
+  ['ttok:page-number', 'page:new-page-num', '쪽 번호 매기기', 'Page Numbering'],
+  ['ttok:find-backward', 'edit:find-again', '거꾸로 찾기', 'Find Backward'],
+  ['ttok:insert-date', 'insert:symbols', '날짜/시간 문자열', 'Date String'],
+  ['ttok:table-transpose', 'table:transpose-copy', '표 뒤집기', 'Flip Table'],
 ]
 
 /**
@@ -2172,5 +2172,5 @@ export function studioCommandIds() {
   }
   for (const [, id] of ADDED_SHORTCUTS) ids.add(id)
   for (const id of Object.keys(LABELS)) ids.add(id)
-  return [...ids].filter((id) => !id.startsWith('ieum:')).sort()
+  return [...ids].filter((id) => !id.startsWith('ttok:')).sort()
 }

@@ -24,7 +24,7 @@ Tài liệu mới mở ra chưa có tiêu đề; tập tin trên đĩa chỉ đ�
 
 - Menu **File ▸ Mở** (⌘O/ctrl+O) mở bộ chọn của hệ thống: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Nhấp vào bất kỳ mục nào trong danh sách **Gần đây** của Trang chủ.
-- `ieumoffice <file>` từ terminal cũng mở được tập tin.
+- `ttokttak <file>` từ terminal cũng mở được tập tin.
 
 ## Tài liệu ODT
 

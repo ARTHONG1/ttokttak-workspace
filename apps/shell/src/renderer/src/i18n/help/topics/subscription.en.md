@@ -109,4 +109,4 @@ Anything you hid with **Hide the selection from AI** is not sent, whichever AI y
 - **Free ChatGPT plan.** It shows as Connected, but its limits are small, so requests stop sooner. The usage line does not appear for it.
 - **Image generation.** In this version a subscription does not generate images, on any plan. That needs an image provider key; see [AI models and settings](help://ai-models).
 - **Proxies.** Claude Code and Codex do not take proxy settings from GenOffice. They use the proxy set for this PC, for example the `HTTPS_PROXY` environment variable, just as when you run them in a terminal. If they cannot connect in a terminal, they cannot connect from here either.
-- **Commands and other programs.** A request that arrives from the `ieumoffice` command or from a connected coding agent does not use your subscription unless you allow it. See [Connecting a coding agent](help://mcp).
+- **Commands and other programs.** A request that arrives from the `ttokttak` command or from a connected coding agent does not use your subscription unless you allow it. See [Connecting a coding agent](help://mcp).

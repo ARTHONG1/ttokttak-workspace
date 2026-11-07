@@ -231,7 +231,7 @@ export const TOOLS: ToolSpec[] = [
     command: 'docs',
     verb: 'apply',
     description:
-      'Edit a .docx or .odt with a batch of ops (the op reference: guide docs, or the ieumoffice://guide/docs resource); an .odt is written back as .odt, ops of features an ODT keeps off (comments, tracked changes, TOC, equations, charts, text boxes, columns, watermark) are rejected as unsupported, and ops touching protected cells or locked objects as op_rejected. ' +
+      'Edit a .docx or .odt with a batch of ops (the op reference: guide docs, or the ttokttak://guide/docs resource); an .odt is written back as .odt, ops of features an ODT keeps off (comments, tracked changes, TOC, equations, charts, text boxes, columns, watermark) are rejected as unsupported, and ops touching protected cells or locked objects as op_rejected. ' +
       READ_THEN_APPLY +
       'Block indexes inside one batch are live: after an insert adds two blocks, later indexes shift by two. Atomic by default: one rejected op leaves the file untouched and comes back with its index and reason; fix that op and resend the whole batch. dry_run validates without writing. ' +
       GUI_OPEN,
@@ -555,7 +555,7 @@ export const TOOLS: ToolSpec[] = [
     readOnly: true,
     plainText: true,
     description:
-      'The op reference an agent reads before writing ops: guide("docs"), guide("sheets") or guide("slides") list the groups; topic narrows to one group or one op. guide("slides", "design") is the staged deck workflow and guide("slides", "spec") the outline and page spec format (deck_start returns both). guide("slides", "templates") lists the built-in design templates; guide("slides", "templates", "<id>") prints one as a ready-made style sheet to save as style.md. Also available as ieumoffice://guide/* resources.',
+      'The op reference an agent reads before writing ops: guide("docs"), guide("sheets") or guide("slides") list the groups; topic narrows to one group or one op. guide("slides", "design") is the staged deck workflow and guide("slides", "spec") the outline and page spec format (deck_start returns both). guide("slides", "templates") lists the built-in design templates; guide("slides", "templates", "<id>") prints one as a ready-made style sheet to save as style.md. Also available as ttokttak://guide/* resources.',
     positionals: [
       { key: 'domain', description: 'slides | docs | sheets' },
       {

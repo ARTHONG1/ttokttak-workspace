@@ -6,13 +6,13 @@ Uma habilidade é um conjunto de instruções de trabalho para a IA. Registe uma
 
 **Configurações ▸ Habilidades** lista as habilidades deste PC, agrupadas pela origem. Cada habilidade aparece pelo nome, como nos agentes de programação. Use a caixa de pesquisa no topo para encontrar uma por nome ou descrição.
 
-| Origem                             | O que contém                                                | No início   |
-| ---------------------------------- | ----------------------------------------------------------- | ----------- |
-| **Integradas**                     | As 5 habilidades que vêm com o GenOffice                    | Ativadas    |
-| **Minhas habilidades**             | Habilidades que adicionou ou criou (`~/.ieumoffice/skills`) | Ativadas    |
-| **Pasta de habilidades do Claude** | As habilidades em `~/.claude/skills`                        | Desativadas |
-| **Plugins do Claude**              | As habilidades dos plugins do Claude instalados             | Desativadas |
-| **Pasta de habilidades do Codex**  | As habilidades em `~/.agents/skills`                        | Desativadas |
+| Origem                             | O que contém                                              | No início   |
+| ---------------------------------- | --------------------------------------------------------- | ----------- |
+| **Integradas**                     | As 5 habilidades que vêm com o GenOffice                  | Ativadas    |
+| **Minhas habilidades**             | Habilidades que adicionou ou criou (`~/.ttokttak/skills`) | Ativadas    |
+| **Pasta de habilidades do Claude** | As habilidades em `~/.claude/skills`                      | Desativadas |
+| **Plugins do Claude**              | As habilidades dos plugins do Claude instalados           | Desativadas |
+| **Pasta de habilidades do Codex**  | As habilidades em `~/.agents/skills`                      | Desativadas |
 
 - O interruptor ativa ou desativa uma habilidade. A mesma configuração vale para o painel de IA de todos os editores, para o Ask AI do Início e para a janela do agente.
 - Para uma habilidade ativada, escolha **A IA decide** ou **Só quando chamada**. No início fica em A IA decide. Com Só quando chamada, a habilidade só é usada quando a chama.

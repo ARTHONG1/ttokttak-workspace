@@ -60,7 +60,7 @@ describe('unsigned Windows builds can update', () => {
       provider: 'github',
       owner: PRODUCT_REPO_OWNER,
       repo: PRODUCT_REPO_NAME,
-      updaterCacheDirName: 'ieumoffice-updater',
+      updaterCacheDirName: 'ttokttak-updater',
     })
     // null is "nothing wrong": NsisUpdater goes on to install the download
     await expect(outcome).resolves.toBeNull()

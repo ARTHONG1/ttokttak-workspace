@@ -1,19 +1,19 @@
 # Opdrachtregel en agents
 
-Elke installatie bevat een `ieumoffice`-commando dat dezelfde engines aanstuurt als het venster — dezelfde parsers, dezelfde writer, dezelfde renderer. Een bestand dat de app opslaat en een bestand dat de opdracht schrijft zijn hetzelfde bestand, en een controle die het AI-paneel van de app doorstaat, doorstaat de opdracht ook.
+Elke installatie bevat een `ttokttak`-commando dat dezelfde engines aanstuurt als het venster — dezelfde parsers, dezelfde writer, dezelfde renderer. Een bestand dat de app opslaat en een bestand dat de opdracht schrijft zijn hetzelfde bestand, en een controle die het AI-paneel van de app doorstaat, doorstaat de opdracht ook.
 
 ```sh
-ieumoffice --help          # every command
-ieumoffice guide slides    # the op reference, for writing your own
+ttokttak --help          # every command
+ttokttak guide slides    # the op reference, for writing your own
 ```
 
-`ieumoffice --help` toont het hele oppervlak op één scherm: elke opdracht met een regel die zegt wat hij doet, en daarna de globale opties en de exitcodes.
+`ttokttak --help` toont het hele oppervlak op één scherm: elke opdracht met een regel die zegt wat hij doet, en daarna de globale opties en de exitcodes.
 
 ## De opdracht bemachtigen
 
-De opdracht wordt met de app meegeleverd. Om hem bij naam aan te roepen, voer je eenmaal `ieumoffice install-cli` uit: op Windows voegt dat de map met de opdracht toe aan je gebruikers-`PATH`, en terminals die je daarna opent, vinden hem. **Instellingen ▸ Integraties** laat zien of je terminal de opdracht al vindt en, zo niet, welke regel je precies moet uitvoeren.
+De opdracht wordt met de app meegeleverd. Om hem bij naam aan te roepen, voer je eenmaal `ttokttak install-cli` uit: op Windows voegt dat de map met de opdracht toe aan je gebruikers-`PATH`, en terminals die je daarna opent, vinden hem. **Instellingen ▸ Integraties** laat zien of je terminal de opdracht al vindt en, zo niet, welke regel je precies moet uitvoeren.
 
-Coding agents hebben die stap niet nodig. De app legt in `~/.ieumoffice/launcher` vast waar de opdracht staat, en daar vinden ze hem.
+Coding agents hebben die stap niet nodig. De app legt in `~/.ttokttak/launcher` vast waar de opdracht staat, en daar vinden ze hem.
 
 ## De opdrachten die je moet kennen
 
@@ -32,18 +32,18 @@ Coding agents hebben die stap niet nodig. De app legt in `~/.ieumoffice/launcher
 | `merge`           | Vult `{{key}}`-placeholders in een `.docx`-, `.pptx`- of `.xlsx`-sjabloon.                                                                                                                                                                                                    |
 | `capabilities`    | Meldt welke AI-functies (zoeken, afbeeldingen genereren, afbeeldings- en video-analyse) op deze computer beschikbaar zijn, en via welke route.                                                                                                                                |
 | `guide`           | De op-referentie en de ontwerphoogedelen, gegenereerd uit dezelfde definities waarop de executor valideert — dus kan niet afwijken van wat `apply` accepteert. `--json` geeft ze met het schema van elke op.                                                                  |
-| `install-cli`     | Zet `ieumoffice` in de `PATH`.                                                                                                                                                                                                                                                |
+| `install-cli`     | Zet `ttokttak` in de `PATH`.                                                                                                                                                                                                                                                  |
 | `skill`           | Toont de coding agents op deze computer en installeert of werkt de GenOffice-skill daarin bij.                                                                                                                                                                                |
 | `mcp`             | Biedt elke opdracht aan als Model Context Protocol-tool. Zie **Verbinden met een coding agent**.                                                                                                                                                                              |
 
 ## Bewerken: docs, sheets, slides
 
-`ieumoffice docs`, `ieumoffice sheet` en `ieumoffice slides` lezen en bewerken via hetzelfde schrijfpad als de app, en ze delen één woordenlijst: een **op** is één bewerking, en een **spec** is een lijst van ops die in volgorde worden toegepast.
+`ttokttak docs`, `ttokttak sheet` en `ttokttak slides` lezen en bewerken via hetzelfde schrijfpad als de app, en ze delen één woordenlijst: een **op** is één bewerking, en een **spec** is een lijst van ops die in volgorde worden toegepast.
 
 ```sh
-ieumoffice sheet read report.xlsx
-ieumoffice slides apply deck.pptx --ops ops.json --dry-run
-ieumoffice docs apply brief.docx --ops ops.json
+ttokttak sheet read report.xlsx
+ttokttak slides apply deck.pptx --ops ops.json --dry-run
+ttokttak docs apply brief.docx --ops ops.json
 ```
 
 `--dry-run` meldt wat een batch zou doen en schrijft niets, wat de goedkoopste manier is om een spec te controleren voordat die landt. Het AI-paneel in de app draait op precies deze ops, dus alles wat je het kunt vragen kun je ook scripten.
@@ -57,7 +57,7 @@ ieumoffice docs apply brief.docx --ops ops.json
 - `media` op een afbeelding gebruikt een provider met een sleutel als die is ingesteld. Je Claude- of Codex-abonnement wordt alleen gebruikt als je dat hebt toegestaan, en dat staat **standaard uit**; [Verbinden met een coding agent](help://mcp) legt de schakelaar en de grenzen ervan uit.
 - `media` op video of audio heeft een provider met een sleutel nodig die video ondersteunt.
 
-`ieumoffice capabilities --json` meldt dit allemaal zonder een AI aan te roepen. In `detail` staat:
+`ttokttak capabilities --json` meldt dit allemaal zonder een AI aan te roepen. In `detail` staat:
 
 | Veld                                                                             | Wat het zegt                                                                                                                                                                                                                                                    |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -71,15 +71,15 @@ Kan `image` of `media` niet worden uitgevoerd, dan stopt de opdracht met code 4 
 
 ## Wat het op deze pc bewaart
 
-Beide bestanden staan in de map `.ieumoffice` in je gebruikersmap:
+Beide bestanden staan in de map `.ttokttak` in je gebruikersmap:
 
-- `~/.ieumoffice/launcher` legt vast waar de opdracht van de app staat, zodat een coding agent hem ook vindt als hij niet in je `PATH` staat.
-- `~/.ieumoffice/cli-audit.jsonl` krijgt één regel voor elke opdracht die is uitgevoerd — de opdracht, de argumenten en het resultaat — zodat je achteraf kunt zien wat een agent heeft gedaan.
+- `~/.ttokttak/launcher` legt vast waar de opdracht van de app staat, zodat een coding agent hem ook vindt als hij niet in je `PATH` staat.
+- `~/.ttokttak/cli-audit.jsonl` krijgt één regel voor elke opdracht die is uitgevoerd — de opdracht, de argumenten en het resultaat — zodat je achteraf kunt zien wat een agent heeft gedaan.
 
 ## Model Context Protocol
 
-`ieumoffice mcp` biedt elke opdracht aan als MCP-tool, en `ieumoffice mcp install <agent|all>` registreert die in de eigen configuratie van een coding agent. Die kant staat in **Verbinden met een coding agent**.
+`ttokttak mcp` biedt elke opdracht aan als MCP-tool, en `ttokttak mcp install <agent|all>` registreert die in de eigen configuratie van een coding agent. Die kant staat in **Verbinden met een coding agent**.
 
 ## Wat de opdracht niet doet
 
-Het leest en schrijft het bestand. Het is niet de app: er is geen venster, en het updatevenster in de app geldt hier niet. Alles wat het venster nodig heeft — het AI-paneel, de kwaliteitscontrole over een gerenderde slide — moet wachten tot je het bestand opent. `ieumoffice render` levert je de pixels zonder venster, en `ieumoffice slides` controleert de opmaak van een deck zelf.
+Het leest en schrijft het bestand. Het is niet de app: er is geen venster, en het updatevenster in de app geldt hier niet. Alles wat het venster nodig heeft — het AI-paneel, de kwaliteitscontrole over een gerenderde slide — moet wachten tot je het bestand opent. `ttokttak render` levert je de pixels zonder venster, en `ttokttak slides` controleert de opmaak van een deck zelf.

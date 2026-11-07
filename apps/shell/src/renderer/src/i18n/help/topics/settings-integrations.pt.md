@@ -54,8 +54,8 @@ Em **Servidor HTTP local**, a aplicação também pode arrancar o servidor por s
 
 ## Folha de referência da linha de comandos
 
-| Comando             | O que faz                    |
-| ------------------- | ---------------------------- |
-| `ieumoffice <file>` | abrir um ficheiro            |
-| `ieumoffice mcp`    | iniciar o servidor MCP local |
-| `ieumoffice --help` | todos os comandos e opções   |
+| Comando           | O que faz                    |
+| ----------------- | ---------------------------- |
+| `ttokttak <file>` | abrir um ficheiro            |
+| `ttokttak mcp`    | iniciar o servidor MCP local |
+| `ttokttak --help` | todos os comandos e opções   |

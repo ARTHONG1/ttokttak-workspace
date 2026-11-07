@@ -6,13 +6,13 @@ A skill is a set of working instructions for the AI. Write down something you do
 
 **Settings ▸ Skills** lists the skills on this PC, grouped by where they come from. Each skill is shown by its name, the way coding agents show it. Use the search box at the top to find one by name or description.
 
-| Source                   | What it holds                                     | At first |
-| ------------------------ | ------------------------------------------------- | -------- |
-| **Built-in**             | The 5 skills that come with GenOffice             | On       |
-| **My skills**            | Skills you added or made (`~/.ieumoffice/skills`) | On       |
-| **Claude skills folder** | The skills in `~/.claude/skills`                  | Off      |
-| **Claude plugins**       | The skills of installed Claude plugins            | Off      |
-| **Codex skills folder**  | The skills in `~/.agents/skills`                  | Off      |
+| Source                   | What it holds                                   | At first |
+| ------------------------ | ----------------------------------------------- | -------- |
+| **Built-in**             | The 5 skills that come with GenOffice           | On       |
+| **My skills**            | Skills you added or made (`~/.ttokttak/skills`) | On       |
+| **Claude skills folder** | The skills in `~/.claude/skills`                | Off      |
+| **Claude plugins**       | The skills of installed Claude plugins          | Off      |
+| **Codex skills folder**  | The skills in `~/.agents/skills`                | Off      |
 
 - The switch turns a skill on or off. The same setting applies to the AI panel of every editor, Ask AI on Home, and the agent window.
 - For a skill that is on, choose **AI decides** or **Only when called**. It starts as AI decides. With Only when called, the skill is used only when you call it yourself.

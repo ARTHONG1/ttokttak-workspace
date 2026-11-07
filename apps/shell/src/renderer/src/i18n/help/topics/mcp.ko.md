@@ -15,27 +15,27 @@ GenOffice는 Model Context Protocol을 말하므로, 코딩 에이전트가 앱�
 같은 일을 터미널에서도 할 수 있습니다. 이것이 고급 경로이고, 패널이 찾지 못하는 곳에 에이전트가 있을 때 쓰는 방법입니다.
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-이 컴퓨터에 있는 코딩 에이전트를 찾아, 각자의 설정에 stdio 서버 항목을 씁니다. 그 파일의 나머지는 있는 그대로 둡니다. 항목 이름은 `ieumoffice`입니다. Claude Code에 손으로 등록한다면 `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`가 같은 일을 합니다.
+이 컴퓨터에 있는 코딩 에이전트를 찾아, 각자의 설정에 stdio 서버 항목을 씁니다. 그 파일의 나머지는 있는 그대로 둡니다. 항목 이름은 `ttokttak`입니다. Claude Code에 손으로 등록한다면 `claude mcp add --transport stdio ttokttak -- ttokttak mcp`이 같은 일을 합니다.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 평소와 다른 곳에 설치한 에이전트에는 `--dir <path>`를 줍니다. `--force`는 이미 있는 항목을 다시 씁니다.
 
-서버가 받는 것은 `ieumoffice mcp --help` 한 화면에 다 들어 있습니다. 등록, 제거, 목록 형태, HTTP로 서비스하기, 그리고 두 스키마 플래그까지.
+서버가 받는 것은 `ttokttak mcp --help` 한 화면에 다 들어 있습니다. 등록, 제거, 목록 형태, HTTP로 서비스하기, 그리고 두 스키마 플래그까지.
 
 ## 어시스턴트 없이 실행하기
 
 다른 컴퓨터에 있는 클라이언트라면 HTTP로 내보내세요.
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>`는 어디에서 받을지를 바꿉니다. 클라이언트에는 같은 토큰을 넘기세요.
@@ -55,7 +55,7 @@ HTTP로도 파일이 오갑니다. `PUT /files/<name>`으로 하나를 올리고
 
 ## 검색·이미지·미디어: 에이전트가 쓸 수 있는 것
 
-`ieumoffice` 명령이나 MCP 클라이언트에서 들어온 요청은 사용자가 앱 화면에서 직접 시킨 것이 아닙니다. 그래서 GenOffice는 이런 요청을 조심해서 다룹니다.
+`ttokttak` 명령이나 MCP 클라이언트에서 들어온 요청은 사용자가 앱 화면에서 직접 시킨 것이 아닙니다. 그래서 GenOffice는 이런 요청을 조심해서 다룹니다.
 
 - **검색**은 언제나 되고, 기본은 무료입니다. 검색 제공업체의 키는 골라 둔 경우에만 씁니다.
 - **그림 만들기**에는 이미지 제공업체의 키가 필요합니다. 이 버전에서는 구독으로 이미지를 만들지 않습니다.
@@ -74,16 +74,16 @@ HTTP로도 파일이 오갑니다. `PUT /files/<name>`으로 하나를 올리고
 
 ## 스키마와 더 작은 예산
 
-`apply`와 `create`는 `ops`, `cells`, `data` 매개변수를 op마다 타입이 붙은 스키마로 알립니다. 그 스키마는 `ieumoffice guide <domain> --json`에서 만들어집니다. 정확하지만 크지는 않습니다. 컨텍스트 창이 좁은 클라이언트는 대신 단순 배열을 요청할 수 있습니다:
+`apply`와 `create`는 `ops`, `cells`, `data` 매개변수를 op마다 타입이 붙은 스키마로 알립니다. 그 스키마는 `ttokttak guide <domain> --json`에서 만들어집니다. 정확하지만 크지는 않습니다. 컨텍스트 창이 좁은 클라이언트는 대신 단순 배열을 요청할 수 있습니다:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## 스킬이 필요한 이유
 
-op 어휘를 모르는 에이전트는 추측합니다. 스킬에는 레퍼런스와 디자인 가이드가 들어 있습니다. `ieumoffice guide`가 출력하는 것과 같은 내용이라, 어시스턴트가 실제로 읽어 본 스펙에 맞춰 op를 쓰게 됩니다. 위 패널에서 설치하거나, 터미널의 `ieumoffice skill`로 넣으세요.
+op 어휘를 모르는 에이전트는 추측합니다. 스킬에는 레퍼런스와 디자인 가이드가 들어 있습니다. `ttokttak guide`이 출력하는 것과 같은 내용이라, 어시스턴트가 실제로 읽어 본 스펙에 맞춰 op를 쓰게 됩니다. 위 패널에서 설치하거나, 터미널의 `ttokttak skill`으로 넣으세요.
 
 ## 앱 안에서 무엇에 닿을 수 있나
 

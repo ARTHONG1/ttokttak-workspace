@@ -15,7 +15,7 @@ import JSZip from 'jszip'
 import type { SkillProposal } from '@genoffice/agent-core'
 import { REDACT_NS } from '@genoffice/agent-core/redact-range'
 import {
-  IEUM_TEMPLATE_KEY,
+  TTOK_TEMPLATE_KEY,
   MAX_USER_SKILL_BYTES,
   USER_SKILL_PRIORITY,
   isInsideCodexHome,
@@ -80,7 +80,7 @@ export async function agentSessionSkillsOf(
     let template: string | undefined
     try {
       const parsed = parseSkillMd(await readFile(entry.skillMd, 'utf8'))
-      const rel = templateRelOf(parsed?.metadata[IEUM_TEMPLATE_KEY])
+      const rel = templateRelOf(parsed?.metadata[TTOK_TEMPLATE_KEY])
       if (rel) {
         const path = join(dirname(entry.skillMd), ...rel)
         if ((await stat(path)).isFile()) template = path
@@ -128,7 +128,7 @@ function priorityOf(entry: AgentSkillListEntry): number {
 
 /**
  * The skill a change names. The model knows a skill by its name in the
- * session's copy (Claude may prefix the plugin's name, `ieum-skills:`), a
+ * session's copy (Claude may prefix the plugin's name, `ttok-skills:`), a
  * renamed duplicate (`<name>--<source>`, `<name>--plugin-<plugin>`) included;
  * Codex is also told the identifier. Either is taken. A plain name shared by
  * several skills is the one that won the name in the copy; one not in the copy
@@ -431,7 +431,7 @@ async function isProtectedPath(path: string, guard: TemplateReadGuard): Promise<
 /**
  * A candidate's file, read whole in the main process; refused when it is gone,
  * larger than a skill may be, or (as written or where it really is) inside a
- * protected folder: `~/.claude`, `~/.codex`, `~/.genoffice`, `~/.ieumoffice`,
+ * protected folder: `~/.claude`, `~/.codex`, `~/.genoffice`, `~/.ttokttak`,
  * the app's data.
  */
 export async function readTemplateCandidate(

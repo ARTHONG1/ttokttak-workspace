@@ -1,4 +1,4 @@
-export declare const AGENT_PLUGIN_ID: 'ieum-agent'
+export declare const AGENT_PLUGIN_ID: 'ttok-agent'
 
 /** One place a searched text occurs. */
 export interface AgentMatch {
@@ -478,7 +478,7 @@ export type AgentDeleteTableResult =
 export type AgentFileCommand = 'save' | 'saveAs' | 'pdf' | 'print'
 
 /** The event those items fire on the editor's window; `detail` is the AgentFileCommand. */
-export declare const FILE_COMMAND_EVENT: 'ieum:file-command'
+export declare const FILE_COMMAND_EVENT: 'ttok:file-command'
 
 /** The parts of the editor toolbar's style list (a select element) syncStyleList uses. */
 export interface StyleListElement {
@@ -501,7 +501,7 @@ export declare function syncStyleList(
 ): boolean
 
 /** The event the plugin fires on the editor's window when the unsaved state changes; `detail` is the new state. */
-export declare const DIRTY_EVENT: 'ieum:dirty-changed'
+export declare const DIRTY_EVENT: 'ttok:dirty-changed'
 
 export type AgentNoteKind = 'footnote' | 'endnote'
 
@@ -702,10 +702,10 @@ export type AgentRemoveMemoResult =
   { ok: true } | { ok: false; reason: string; why?: string | null }
 
 /** The event the plugin fires when a user's own edit took memos away. */
-export declare const MEMO_REMOVED_EVENT: 'ieum:memo-removed'
+export declare const MEMO_REMOVED_EVENT: 'ttok:memo-removed'
 
 /** The event the plugin fires when a paste brought text without the memos copied with it. */
-export declare const MEMO_NOT_COPIED_EVENT: 'ieum:memo-not-copied'
+export declare const MEMO_NOT_COPIED_EVENT: 'ttok:memo-not-copied'
 
 /** One heading of a table of contents: text it contains, and its level (1 to 3). */
 export interface AgentTocEntry {

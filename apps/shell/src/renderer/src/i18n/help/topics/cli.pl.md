@@ -1,19 +1,19 @@
 # Wiersz poleceń i agenci
 
-Każda instalacja zawiera polecenie `ieumoffice`, które napędza te same silniki co okno — te same parsery, ten sam moduł zapisu, ten sam renderujący. Plik zapisany przez aplikację i plik zapisany przez polecenie to ten sam plik, a kontrola, którą przechodzi panel AI aplikacji, przechodzi też polecenie.
+Każda instalacja zawiera polecenie `ttokttak`, które napędza te same silniki co okno — te same parsery, ten sam moduł zapisu, ten sam renderujący. Plik zapisany przez aplikację i plik zapisany przez polecenie to ten sam plik, a kontrola, którą przechodzi panel AI aplikacji, przechodzi też polecenie.
 
 ```sh
-ieumoffice --help          # every command
-ieumoffice guide slides    # the op reference, for writing your own
+ttokttak --help          # every command
+ttokttak guide slides    # the op reference, for writing your own
 ```
 
-`ieumoffice --help` pokazuje całą powierzchnię na jednym ekranie: każde polecenie z wierszem, który mówi, co robi, a potem opcje globalne i kody wyjścia.
+`ttokttak --help` pokazuje całą powierzchnię na jednym ekranie: każde polecenie z wierszem, który mówi, co robi, a potem opcje globalne i kody wyjścia.
 
 ## Zdobycie polecenia
 
-Polecenie jest dostarczane razem z aplikacją. Aby wołać je po imieniu, uruchom raz `ieumoffice install-cli`: w systemie Windows dodaje to folder z poleceniem do twojej zmiennej `PATH` użytkownika, a terminale otwarte później już je znajdą. **Ustawienia ▸ Integracje** pokazuje, czy terminal już znajduje polecenie, a jeśli nie — dokładny wiersz, który trzeba uruchomić.
+Polecenie jest dostarczane razem z aplikacją. Aby wołać je po imieniu, uruchom raz `ttokttak install-cli`: w systemie Windows dodaje to folder z poleceniem do twojej zmiennej `PATH` użytkownika, a terminale otwarte później już je znajdą. **Ustawienia ▸ Integracje** pokazuje, czy terminal już znajduje polecenie, a jeśli nie — dokładny wiersz, który trzeba uruchomić.
 
-Agenci programistyczni nie potrzebują tego kroku. Aplikacja zapisuje położenie polecenia w `~/.ieumoffice/launcher` i tam je znajdują.
+Agenci programistyczni nie potrzebują tego kroku. Aplikacja zapisuje położenie polecenia w `~/.ttokttak/launcher` i tam je znajdują.
 
 ## Polecenia warte znajomości
 
@@ -32,18 +32,18 @@ Agenci programistyczni nie potrzebują tego kroku. Aplikacja zapisuje położeni
 | `merge`           | Wypełnia symbole zastępcze `{{key}}` w szablonie `.docx`, `.pptx` lub `.xlsx`.                                                                                                                                                           |
 | `capabilities`    | Zgłasza, które funkcje AI (wyszukiwanie, generowanie obrazów, analiza obrazów i wideo) są dostępne na tym komputerze i jaką drogą.                                                                                                       |
 | `guide`           | Referencja op i przewodniki projektowe, wygenerowane z tych samych definicji, względem których waliduje executor — więc nie może się rozjechać z tym, co przyjmuje `apply`. `--json` zwraca je ze schematem każdej op.                   |
-| `install-cli`     | Umieszcza `ieumoffice` w `PATH`.                                                                                                                                                                                                         |
+| `install-cli`     | Umieszcza `ttokttak` w `PATH`.                                                                                                                                                                                                           |
 | `skill`           | Wypisuje agentów programistycznych znalezionych na tym komputerze i instaluje w nich lub aktualizuje skill GenOffice.                                                                                                                    |
 | `mcp`             | Udostępnia każde polecenie jako narzędzie Model Context Protocol. Zobacz **Podłączenie z agentem programistycznym**.                                                                                                                     |
 
 ## Edycja: Docs, Sheets, Slides
 
-`ieumoffice docs`, `ieumoffice sheet` i `ieumoffice slides` czytają i edytują przez tę samą ścieżkę zapisu co aplikacja i dzielą jedno słownictwo: **op** to pojedyncza zmiana, a **spec** to lista op zastosowanych po kolei.
+`ttokttak docs`, `ttokttak sheet` i `ttokttak slides` czytają i edytują przez tę samą ścieżkę zapisu co aplikacja i dzielą jedno słownictwo: **op** to pojedyncza zmiana, a **spec** to lista op zastosowanych po kolei.
 
 ```sh
-ieumoffice sheet read report.xlsx
-ieumoffice slides apply deck.pptx --ops ops.json --dry-run
-ieumoffice docs apply brief.docx --ops ops.json
+ttokttak sheet read report.xlsx
+ttokttak slides apply deck.pptx --ops ops.json --dry-run
+ttokttak docs apply brief.docx --ops ops.json
 ```
 
 `--dry-run` zgłasza, co zrobiłaby partia, i nic nie zapisuje — to najtańszy sposób na sprawdzenie spec przed zastosowaniem. Panel AI w aplikacji działa dokładnie na tych op, więc wszystko, o co możesz go zapytać, możesz też zapisać w skrypcie.
@@ -57,7 +57,7 @@ ieumoffice docs apply brief.docx --ops ops.json
 - `media` dla obrazu korzysta z dostawcy z kluczem, jeśli jest skonfigurowany. Z subskrypcji Claude lub Codex korzysta tylko wtedy, gdy na to pozwolisz, a jest to **domyślnie wyłączone**; przełącznik i jego ograniczenia opisuje [Podłączenie z agentem programistycznym](help://mcp).
 - `media` dla wideo lub dźwięku wymaga dostawcy z kluczem obsługującego wideo.
 
-`ieumoffice capabilities --json` zgłasza to wszystko bez wywoływania jakiegokolwiek AI. Jego `detail` zawiera:
+`ttokttak capabilities --json` zgłasza to wszystko bez wywoływania jakiegokolwiek AI. Jego `detail` zawiera:
 
 | Pole                                                                             | Co mówi                                                                                                                                                                                                                                                      |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -71,15 +71,15 @@ Gdy `image` lub `media` nie może zadziałać, polecenie kończy się kodem 4 i 
 
 ## Co polecenie przechowuje na tym komputerze
 
-Oba pliki znajdują się w folderze `.ieumoffice` w twoim folderze użytkownika:
+Oba pliki znajdują się w folderze `.ttokttak` w twoim folderze użytkownika:
 
-- `~/.ieumoffice/launcher` zapisuje położenie polecenia aplikacji, dzięki czemu agent programistyczny znajdzie je nawet wtedy, gdy nie ma go w twojej zmiennej `PATH`.
-- `~/.ieumoffice/cli-audit.jsonl` otrzymuje jeden wiersz dla każdego uruchomionego polecenia — polecenie, jego argumenty i wynik — więc później możesz sprawdzić, co zrobił agent.
+- `~/.ttokttak/launcher` zapisuje położenie polecenia aplikacji, dzięki czemu agent programistyczny znajdzie je nawet wtedy, gdy nie ma go w twojej zmiennej `PATH`.
+- `~/.ttokttak/cli-audit.jsonl` otrzymuje jeden wiersz dla każdego uruchomionego polecenia — polecenie, jego argumenty i wynik — więc później możesz sprawdzić, co zrobił agent.
 
 ## Model Context Protocol
 
-`ieumoffice mcp` udostępnia każde polecenie jako narzędzie MCP, a `ieumoffice mcp install <agent|all>` rejestruje je we własnej konfiguracji agenta programistycznego. Tej strony dotyczy rozdział **Podłączenie z agentem programistycznym**.
+`ttokttak mcp` udostępnia każde polecenie jako narzędzie MCP, a `ttokttak mcp install <agent|all>` rejestruje je we własnej konfiguracji agenta programistycznego. Tej strony dotyczy rozdział **Podłączenie z agentem programistycznym**.
 
 ## Czego polecenie nie robi
 
-Czyta i zapisuje plik. To nie jest aplikacja: nie ma okna, a okno aktualizacji w aplikacji nie ma tu zastosowania. Wszystko, co wymaga okna — panel AI, kontrola jakości wyrenderowanej slajdy — musi poczekać, aż otworzysz plik. `ieumoffice render` daje ci piksele bez okna, a `ieumoffice slides` sam sprawdza układ prezentacji.
+Czyta i zapisuje plik. To nie jest aplikacja: nie ma okna, a okno aktualizacji w aplikacji nie ma tu zastosowania. Wszystko, co wymaga okna — panel AI, kontrola jakości wyrenderowanej slajdy — musi poczekać, aż otworzysz plik. `ttokttak render` daje ci piksele bez okna, a `ttokttak slides` sam sprawdza układ prezentacji.

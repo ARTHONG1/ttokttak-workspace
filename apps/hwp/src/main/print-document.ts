@@ -102,7 +102,7 @@ export function printableHtml(pages: PrintPage[], picture: (index: number) => st
     rules.push(`@page p${index} { size: ${width} ${height}; margin: 0; }`)
     rules.push(`.p${index} { page: p${index}; width: ${width}; height: ${height}; }`)
     const svg = ownIds(page.svg, `p${index}-`).replace(
-      /\bhref="ieum-image:(\d+)"/g,
+      /\bhref="ttok-image:(\d+)"/g,
       (_, n: string) => `href="${picture(Number(n))}"`,
     )
     body.push(`<div class="page p${index}">${svg}</div>`)
@@ -142,7 +142,7 @@ async function withPrintWindow<T>(
   createWindow: () => PrintWindow,
   use: (win: PrintWindow) => Promise<T>,
 ): Promise<T> {
-  const dir = await mkdtemp(join(tmpdir(), 'ieum-hwp-print-'))
+  const dir = await mkdtemp(join(tmpdir(), 'ttok-hwp-print-'))
   let win: PrintWindow | undefined
   try {
     const names = await Promise.all(

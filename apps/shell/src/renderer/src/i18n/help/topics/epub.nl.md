@@ -57,7 +57,7 @@ De e-boekeditor opent EPUB-boeken (`.epub`) in een tabblad. Je leest het boek, v
 - Een verticaal geschreven boek wordt horizontaal, tenzij het naar het Japans, Chinees of Koreaans wordt vertaald. Arabische en Hebreeuwse vertalingen lees je van rechts naar links.
 - Wat al vertaald is, wordt bewaard. Als je stopt, kies je **Exporteren wat tot nu toe vertaald is** (de rest blijft in de oorspronkelijke taal) of **Later verdergaan**. Open je een boek met een onafgemaakte vertaling, dan biedt GenOffice aan om ermee verder te gaan. **Opnieuw vertalen vanaf het begin** verwijdert eerst de bewaarde vertaling voor die taal.
 - Bewaarde vertalingen tellen mee onder Instellingen ▸ Algemeen ▸ **Opgeslagen AI-resultaten**, samen met die van pdf-documenten, en **Alles verwijderen** wist ook deze.
-- Dezelfde vertaling kun je ook starten met de [terminalopdrachten](help://cli) als `ieumoffice epub translate`.
+- Dezelfde vertaling kun je ook starten met de [terminalopdrachten](help://cli) als `ttokttak epub translate`.
 
 ## Nog niet ondersteund
 

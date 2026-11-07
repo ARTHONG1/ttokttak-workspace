@@ -670,7 +670,7 @@ const CONTENT_CONTROL_SCHEMAS: Record<(typeof CONTENT_CONTROL_OPS)[number], Json
       startBlockIndex: {
         type: 'integer',
         description:
-          'the first block of the range to wrap (0-based, as `ieumoffice docs read` numbers them)',
+          'the first block of the range to wrap (0-based, as `ttokttak docs read` numbers them)',
       },
       endBlockIndex: {
         type: 'integer',
@@ -700,7 +700,7 @@ const CONTENT_CONTROL_SCHEMAS: Record<(typeof CONTENT_CONTROL_OPS)[number], Json
 
 const CONTENT_CONTROL_NOTES: Record<(typeof CONTENT_CONTROL_OPS)[number], string> = {
   wrap_content_control:
-    'put a block range into one block-level content control (w:sdt); the blocks stay editable and the control carries the tag/title/lock; `ieumoffice docs read` shows the control on every block in it',
+    'put a block range into one block-level content control (w:sdt); the blocks stay editable and the control carries the tag/title/lock; `ttokttak docs read` shows the control on every block in it',
   unwrap_content_control:
     'remove the content control with that tag and leave its blocks as plain body blocks',
 }
@@ -1475,32 +1475,32 @@ const CONTENT_NOTES: Record<(typeof CONTENT_OPS)[number], string> = {
   set_watermark:
     'watermark behind every page, written into the page header (Word Design > Watermark): gray text (color "#RRGGBB", opacity 0-1, diagonal true/false) or a picture (image = local path / data: / http(s) URL; scale percent, default fits the margins; washout true/false); text null or image null removes it',
   define_style:
-    'create or patch a style in styles.xml; only the given fields change; put it on paragraphs with the block op { op: "applyStyle", target, styleId }; `ieumoffice docs read --styles` lists ids',
+    'create or patch a style in styles.xml; only the given fields change; put it on paragraphs with the block op { op: "applyStyle", target, styleId }; `ttokttak docs read --styles` lists ids',
   insert_chart:
     'native Word chart; values per series match the categories; appended when afterBlockIndex is omitted',
   edit_chart:
-    'change the data of a chart block (`ieumoffice docs read` lists blocks with kind "chart"); counts must match the original, null keeps a position',
+    'change the data of a chart block (`ttokttak docs read` lists blocks with kind "chart"); counts must match the original, null keeps a position',
   set_header_footer:
-    'plain text, \\n between lines, {PAGE} / {NUMPAGES} become page-number fields, "" clears; view first/even switches the different-first-page / odd-even setting on; `ieumoffice docs read --header-footer` shows the current text',
+    'plain text, \\n between lines, {PAGE} / {NUMPAGES} become page-number fields, "" clears; view first/even switches the different-first-page / odd-even setting on; `ttokttak docs read --header-footer` shows the current text',
   set_page_setup:
-    'paper (A3/A4/A5/B5/Letter/Legal/Tabloid) or width/height, orientation, margins {top,right,bottom,left,header,footer,gutter}, columns {count,spacing}, titlePg, pageNumberStart/pageNumberFormat; lengths as "2.54cm" / "1in" / "72pt" or twips; section or blockIndex picks one section, neither = all; `ieumoffice docs read --sections` lists them',
+    'paper (A3/A4/A5/B5/Letter/Legal/Tabloid) or width/height, orientation, margins {top,right,bottom,left,header,footer,gutter}, columns {count,spacing}, titlePg, pageNumberStart/pageNumberFormat; lengths as "2.54cm" / "1in" / "72pt" or twips; section or blockIndex picks one section, neither = all; `ttokttak docs read --sections` lists them',
   insert_section_break:
     'the blocks after afterBlockIndex become a new section (a copy of the current setup, then change it with set_page_setup section: N); type nextPage (default) / continuous / evenPage / oddPage',
   add_comment:
     'new thread on a block, or on an exact text span inside it (occurrence picks one of several matches); the document text is untouched; author defaults to "AI Assistant"',
-  reply_comment: 'ids from `ieumoffice docs read --comments`; replies attach to the thread root',
-  resolve_comment: 'ids from `ieumoffice docs read --comments`',
+  reply_comment: 'ids from `ttokttak docs read --comments`; replies attach to the thread root',
+  resolve_comment: 'ids from `ttokttak docs read --comments`',
   accept_changes:
-    'selector: all: true, ids from `ieumoffice docs read --revisions` (positional, re-read after every edit), or author / type / blockIndex / blockRange / before; insertions become plain text, deleted text goes',
+    'selector: all: true, ids from `ttokttak docs read --revisions` (positional, re-read after every edit), or author / type / blockIndex / blockRange / before; insertions become plain text, deleted text goes',
   reject_changes:
     'same selector as accept_changes; inserted text goes, deleted text comes back, formatting reverts',
   insert_footnote:
-    'a superscript reference mark goes into blockIndex (right after afterText, else at the block end) and the note text prints at the page bottom; `ieumoffice docs read --notes` lists notes',
+    'a superscript reference mark goes into blockIndex (right after afterText, else at the block end) and the note text prints at the page bottom; `ttokttak docs read --notes` lists notes',
   insert_endnote: 'like insert_footnote, but the note text collects at the end of the document',
   edit_note:
-    'findReplace inside one footnote or endnote (id from `ieumoffice docs read --notes`; kind only when a footnote and an endnote share the id): every occurrence of find becomes replace, the note keeps its id, reference mark and formatting; matchCase defaults to true',
+    'findReplace inside one footnote or endnote (id from `ttokttak docs read --notes`; kind only when a footnote and an endnote share the id): every occurrence of find becomes replace, the note keeps its id, reference mark and formatting; matchCase defaults to true',
   delete_note:
-    'kind footnote|endnote and an id from `ieumoffice docs read --notes`; removes the reference mark too',
+    'kind footnote|endnote and an id from `ttokttak docs read --notes`; removes the reference mark too',
   delete_comment:
     'removes the comment and its anchor; a thread root with replies needs withReplies: true, a reply id removes just that reply',
 }

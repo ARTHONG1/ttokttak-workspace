@@ -92,7 +92,7 @@ const INIT = {
   ],
   mcp_servers: [],
   model: 'claude-test',
-  skills: ['ieum-skills:probe'],
+  skills: ['ttok-skills:probe'],
 }
 
 function options(overrides: Partial<AgentSessionOptions> = {}): AgentSessionOptions {
@@ -264,8 +264,8 @@ describe('what the CLI reports at the start', () => {
     expect(
       claudeAgentInitProblem({
         ...INIT,
-        tools: [...INIT.tools, 'mcp__ieumoffice-editor__read_document'],
-        mcp_servers: [{ name: 'ieumoffice-editor', status: 'connected' }],
+        tools: [...INIT.tools, 'mcp__ttokttak-editor__read_document'],
+        mcp_servers: [{ name: 'ttokttak-editor', status: 'connected' }],
       }),
     ).toBeUndefined()
   })
@@ -300,11 +300,11 @@ describe('what the CLI reports at the start', () => {
       'propose_skill',
       'propose_skill_install',
     ])
-    const server = [{ name: 'ieumoffice-editor', status: 'connected' }]
+    const server = [{ name: 'ttokttak-editor', status: 'connected' }]
     expect(
       claudeAgentInitProblem({
         ...INIT,
-        tools: [...INIT.tools, ...AGENT_APP_MCP_TOOLS.map((t) => `mcp__ieumoffice-editor__${t}`)],
+        tools: [...INIT.tools, ...AGENT_APP_MCP_TOOLS.map((t) => `mcp__ttokttak-editor__${t}`)],
         mcp_servers: server,
       }),
     ).toBeUndefined()
@@ -312,7 +312,7 @@ describe('what the CLI reports at the start', () => {
       expect(
         claudeAgentInitProblem({
           ...INIT,
-          tools: [...INIT.tools, `mcp__ieumoffice-editor__${outside}`],
+          tools: [...INIT.tools, `mcp__ttokttak-editor__${outside}`],
           mcp_servers: server,
         }),
       ).toMatch(/tools/)
@@ -329,7 +329,7 @@ describe('what the CLI reports at the start', () => {
       command: 'dir',
       reason: 'list',
     })
-    expect(claudeAgentAction('mcp__ieumoffice-editor__apply_ops', {})).toMatchObject({
+    expect(claudeAgentAction('mcp__ttokttak-editor__apply_ops', {})).toMatchObject({
       kind: 'app-tool',
     })
     expect(claudeAgentAction('WebSearch', { query: 'tide tables' })).toEqual({
@@ -401,7 +401,7 @@ describe('a session', () => {
         type: 'started',
         provider: 'claude-code',
         model: 'claude-test',
-        skills: ['ieum-skills:probe'],
+        skills: ['ttok-skills:probe'],
       },
       { type: 'text', text: 'Looking.' },
       {
@@ -476,7 +476,7 @@ describe('a session', () => {
     expect(responses[1]).toMatchObject({
       response: { request_id: 'r2', response: { behavior: 'deny' } },
     })
-    expect(responses[1]!.response.response.message).toMatch(/ieumoffice-editor/)
+    expect(responses[1]!.response.response.message).toMatch(/ttokttak-editor/)
     expect(harness.events.some((event) => event.type === 'permission')).toBe(false)
     session.stop()
   })

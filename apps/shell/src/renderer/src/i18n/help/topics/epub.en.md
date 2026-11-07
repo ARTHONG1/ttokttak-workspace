@@ -57,7 +57,7 @@ The e-book editor opens EPUB books (`.epub`) in a tab. You read the book, correc
 - A book written vertically becomes horizontal, unless it is translated into Japanese, Chinese or Korean. Arabic and Hebrew translations read from right to left.
 - What has been translated is kept. If you stop, choose **Export what is translated so far** (the rest stays in the original language) or **Continue later**. When you open a book with an unfinished translation, GenOffice offers to continue it. **Translate again from the start** first deletes the kept translation for that language.
 - Kept translations count under Settings ▸ General ▸ **Saved AI results**, together with those of PDF documents, and **Delete all** removes them too.
-- The same translation can also run from the [terminal commands](help://cli) as `ieumoffice epub translate`.
+- The same translation can also run from the [terminal commands](help://cli) as `ttokttak epub translate`.
 
 ## Not supported yet
 

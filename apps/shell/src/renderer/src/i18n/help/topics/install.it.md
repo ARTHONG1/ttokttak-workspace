@@ -35,4 +35,4 @@ Poiché il programma di installazione non è firmato, esegui solo quello che hai
 
 ## La riga di comando è inclusa
 
-Ogni installazione include il comando `ieumoffice`, che comunica con gli stessi motori della finestra, così i due non si contraddicono mai su un file. `ieumoffice install-cli` lo mette sul tuo `PATH`. Vedi [Riga di comando e agenti](help://cli) per scoprire cosa può fare.
+Ogni installazione include il comando `ttokttak`, che comunica con gli stessi motori della finestra, così i due non si contraddicono mai su un file. `ttokttak install-cli` lo mette sul tuo `PATH`. Vedi [Riga di comando e agenti](help://cli) per scoprire cosa può fare.

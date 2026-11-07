@@ -78,7 +78,7 @@
  *
  * studio-memo-command, studio-memo-label-ko, studio-memo-label-en
  *   The studio's Insert > Comment item is a stub. It becomes the app's memo: with a
- *   document open outside form mode it sends `ieum:memo-insert` to the window the app
+ *   document open outside form mode it sends `ttok:memo-insert` to the window the app
  *   listens on, and the menu names it 메모 (Memo) in the studio's two languages.
  *
  * studio-memo-anchors, studio-memo-delete-undo
@@ -108,13 +108,13 @@ export const APP_SCHEME = 'genoffice-app'
 export const PASSWORD_FLAG = 'passwordProtected'
 
 /** Module specifier the studio-plugin-allow patch imports; build-studio.mjs aliases it. */
-export const AGENT_PLUGIN_MODULE = '@ieum/agent-plugin'
+export const AGENT_PLUGIN_MODULE = '@ttok/agent-plugin'
 
 /** Module specifier the studio-hancom-* patches import; build-studio.mjs aliases it. */
 export { HANCOM_KEYS_MODULE }
 
 /** Module specifier the studio-format-copy patches import; build-studio.mjs aliases it. */
-export const FORMAT_COPY_MODULE = '@ieum/format-copy'
+export const FORMAT_COPY_MODULE = '@ttok/format-copy'
 
 const PATCHES = {
   'sdk-scheme': {
@@ -136,7 +136,7 @@ const PATCHES = {
     file: /[\\/]rhwp-studio[\\/]src[\\/]main\.ts$/,
     find: "  if (import.meta.env.DEV && id === 'dev-probe') {",
     replace:
-      "  if (id === 'ieum-agent') {\n" +
+      "  if (id === 'ttok-agent') {\n" +
       `    return (await import('${AGENT_PLUGIN_MODULE}')).agentPlugin as StudioPlugin;\n` +
       '  }\n' +
       "  if (import.meta.env.DEV && id === 'dev-probe') {",
@@ -349,7 +349,7 @@ const PATCHES = {
           "import { getLocale } from '@/i18n/core.ts';",
           "import { ModalDialog } from '@/ui/dialog';",
           "import { showToast } from '@/ui/toast';",
-          `import { ieumFormatCopy, ieumFormatPaste } from '${FORMAT_COPY_MODULE}';`,
+          `import { ttokFormatCopy, ttokFormatPaste } from '${FORMAT_COPY_MODULE}';`,
         ].join('\n'),
       },
       {
@@ -402,7 +402,7 @@ const PATCHES = {
         ].join('\n'),
         replace: [
           '    execute(services) {',
-          '      ieumFormatCopy(services, formatCopyStudio());',
+          '      ttokFormatCopy(services, formatCopyStudio());',
           '    },',
         ].join('\n'),
       },
@@ -414,7 +414,7 @@ const PATCHES = {
         ].join('\n'),
         replace: [
           '    execute(services) {',
-          '      ieumFormatPaste(services, formatCopyStudio());',
+          '      ttokFormatPaste(services, formatCopyStudio());',
           '    },',
         ].join('\n'),
       },
@@ -427,12 +427,12 @@ const PATCHES = {
         find: "import { selectCellIndicesInRange, paraFormatTargetsForCellBlock, withCellPathTarget } from './cell-block-format';",
         replace: [
           "import { selectCellIndicesInRange, paraFormatTargetsForCellBlock, withCellPathTarget } from './cell-block-format';",
-          `import { ieumHasCopiedFormat } from '${FORMAT_COPY_MODULE}';`,
+          `import { ttokHasCopiedFormat } from '${FORMAT_COPY_MODULE}';`,
         ].join('\n'),
       },
       {
         find: '  hasCopiedFormat(): boolean { return this.formatCopyState !== null; }',
-        replace: '  hasCopiedFormat(): boolean { return ieumHasCopiedFormat(this); }',
+        replace: '  hasCopiedFormat(): boolean { return ttokHasCopiedFormat(this); }',
       },
     ],
   },
@@ -660,7 +660,7 @@ const PATCHES = {
       '    canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode,',
       '    execute() {',
       '      // the app listens on this window and opens its memo editor',
-      "      globalThis.dispatchEvent(new CustomEvent('ieum:memo-insert'));",
+      "      globalThis.dispatchEvent(new CustomEvent('ttok:memo-insert'));",
       '    },',
       '  },',
     ].join('\n'),

@@ -66,7 +66,7 @@ async function sourceWithLinkAndHighlight(): Promise<Uint8Array> {
 }
 
 function files(): { source: string; target: string } {
-  dir = mkdtempSync(join(tmpdir(), 'ieum-pdf-annots-'))
+  dir = mkdtempSync(join(tmpdir(), 'ttok-pdf-annots-'))
   return { source: join(dir, 'source.pdf'), target: join(dir, 'copy.pdf') }
 }
 

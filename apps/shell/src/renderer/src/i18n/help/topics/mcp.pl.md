@@ -15,27 +15,27 @@ Robisz to w **Ustawienia ▸ Integracje**. Panel ma dwie połowy i możesz skorz
 To samo z terminala — to jest ścieżka zaawansowana, po którą sięgasz, gdy agent jest tam, gdzie panel nie potrafi go znaleźć:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Znajduje agentów programistycznych na tym komputerze i zapisuje wpis serwera stdio we własnej konfiguracji każdego z nich, nie ruszając reszty pliku. Wpis nosi nazwę `ieumoffice`. Wykonana ręcznie dla Claude Code ta sama rejestracja to `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Znajduje agentów programistycznych na tym komputerze i zapisuje wpis serwera stdio we własnej konfiguracji każdego z nich, nie ruszając reszty pliku. Wpis nosi nazwę `ttokttak`. Wykonana ręcznie dla Claude Code ta sama rejestracja to `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Agent zainstalowany w nietypowym miejscu wymaga `--dir <path>`; `--force` przepisuje wpis, który już tam jest.
 
-`ieumoffice mcp --help` mieści na jednym ekranie wszystko, co przyjmuje serwer: formularze rejestracji, usuwania i listowania, udostępnianie przez HTTP oraz dwie flagi schematów.
+`ttokttak mcp --help` mieści na jednym ekranie wszystko, co przyjmuje serwer: formularze rejestracji, usuwania i listowania, udostępnianie przez HTTP oraz dwie flagi schematów.
 
 ## Uruchamianie samodzielne
 
 Dla klienta na innym komputerze udostępnij go przez HTTP:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` zmienia adres nasłuchu. Przekaż ten sam token klientowi.
@@ -55,7 +55,7 @@ Każde polecenie jest narzędziem. Najciekawsze:
 
 ## Wyszukiwanie, obrazy i media: z czego agent może korzystać
 
-Żądanie z polecenia `ieumoffice` albo od klienta MCP nie zostało wpisane przez ciebie w aplikacji, więc GenOffice traktuje je ostrożnie.
+Żądanie z polecenia `ttokttak` albo od klienta MCP nie zostało wpisane przez ciebie w aplikacji, więc GenOffice traktuje je ostrożnie.
 
 - **Wyszukiwanie** działa zawsze i domyślnie jest bezpłatne. Klucz dostawcy wyszukiwania jest używany tylko wtedy, gdy został wybrany.
 - **Generowanie obrazu** wymaga klucza dostawcy obrazów. W tej wersji subskrypcja nie generuje obrazów.
@@ -74,16 +74,16 @@ Gdy przełącznik jest wyłączony i nie skonfigurowano żadnego klucza, narzęd
 
 ## Schematy i mniejszy budżet
 
-`apply` i `create` deklarują parametry `ops`, `cells` i `data` wraz z typowanym schematem dla każdej op, wygenerowanym z `ieumoffice guide <domain> --json`. To jest precyzyjne, ale nie małe. Klient o ciasnym oknie kontekstowym może zamiast tego poprosić o zwykłe tablice:
+`apply` i `create` deklarują parametry `ops`, `cells` i `data` wraz z typowanym schematem dla każdej op, wygenerowanym z `ttokttak guide <domain> --json`. To jest precyzyjne, ale nie małe. Klient o ciasnym oknie kontekstowym może zamiast tego poprosić o zwykłe tablice:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Po co jest skill
 
-Agent, który nie zna słownictwa op, będzie zgadywał. Skill zabiera ze sobą referencję i przewodniki projektowe — dokładnie te materiały, które wypisuje `ieumoffice guide` —, więc asystent pisze op, których specyfikację naprawdę przeczytał. Zainstaluj go z panelu powyżej albo poleceniem `ieumoffice skill` z terminala.
+Agent, który nie zna słownictwa op, będzie zgadywał. Skill zabiera ze sobą referencję i przewodniki projektowe — dokładnie te materiały, które wypisuje `ttokttak guide` —, więc asystent pisze op, których specyfikację naprawdę przeczytał. Zainstaluj go z panelu powyżej albo poleceniem `ttokttak skill` z terminala.
 
 ## Do czego sięga w aplikacji
 

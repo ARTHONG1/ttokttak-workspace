@@ -168,7 +168,7 @@
   !insertmacro GenOfficeRegisterOpenWithEpub
   !insertmacro GenOfficeRegisterApplicationCapabilities
   ; native messaging host for the 똑딱작업실 Chrome/Edge extension (HKCU, no admin)
-  nsExec::Exec '"$INSTDIR\resources\cli\ieumoffice.cmd" edufine-register'
+  nsExec::Exec '"$INSTDIR\resources\cli\ttokttak.cmd" edufine-register'
   Pop $0
   !insertmacro UPDATEFILEASSOC
 !macroend

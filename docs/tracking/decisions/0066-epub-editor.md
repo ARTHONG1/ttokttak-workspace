@@ -2,7 +2,7 @@
 
 ## 맥락
 
-이음오피스는 PDF를 EPUB으로 내보내지만 EPUB 파일은 열지 못했다. 내보낸 책을 고치거나 다른 언어로 옮기려면 다른 프로그램이 필요했다. `docs/tracking/status.md`의 남은 일에 "EPUB 열기와 번역"이 있었다.
+똑딱작업실은 PDF를 EPUB으로 내보내지만 EPUB 파일은 열지 못했다. 내보낸 책을 고치거나 다른 언어로 옮기려면 다른 프로그램이 필요했다. `docs/tracking/status.md`의 남은 일에 "EPUB 열기와 번역"이 있었다.
 
 EPUB은 zip 안에 장마다 XHTML 문서가 하나씩 든 형식이다. 책마다 만든 프로그램이 달라 표시와 스타일이 제각각이고, 이 앱이 모르는 요소가 많다. 원본 프로그램과 문서를 주고받을 수 있어야 한다는 규칙(저장 결과는 원본과 같아야 한다)을 EPUB에도 지켜야 한다. 대상은 누구나라서, 코드를 읽을 줄 아는 사람만 쓸 수 있는 화면은 맞지 않는다. 사람이 읽는 계획은 `docs/plans/epub-editor.md`에 있다.
 
@@ -23,7 +23,7 @@ EPUB은 zip 안에 장마다 XHTML 문서가 하나씩 든 형식이다. 책마�
 - **고르지 않은 장은 결과에 원문으로 넣는다.** 저장소 주인이 골랐다. 책 모양이 유지되고 나머지를 이어 번역하기 좋다. PDF의 EPUB 번역(고른 페이지만 담는다)과 다르다.
 - **번역 결과는 새 식별자를 받는다.** 저장소 주인이 골랐다. 서재 앱이 원본과 합치거나 덮지 않게 한다. 원본 식별자는 `dc:source`로 남긴다. 감춘 글꼴은 식별자에서 키를 만드므로 새 키로 다시 감춘다.
 - **대역본의 제목은 둘 다, 목차는 번역만 쓴다.** 저장소 주인이 골랐다.
-- **대역본에서 표·그림·목록의 구조 블록은 그 요소 안에 번역을 넣는다.** 흐르는 글 블록은 바로 뒤에 복사본을 두지만, `td`·`th`·`figcaption`·`dt`·`dd`와 `li`는 그 요소 안 원문 뒤에 `<br/>`과 번역 표시(`ieum-translation`)를 붙인 `span`으로 넣는다. 복사본을 두면 표의 칸 수, 그림 설명의 수, 목록 번호가 바뀌기 때문이다. 구현하며 정했다.
+- **대역본에서 표·그림·목록의 구조 블록은 그 요소 안에 번역을 넣는다.** 흐르는 글 블록은 바로 뒤에 복사본을 두지만, `td`·`th`·`figcaption`·`dt`·`dd`와 `li`는 그 요소 안 원문 뒤에 `<br/>`과 번역 표시(`ttok-translation`)를 붙인 `span`으로 넣는다. 복사본을 두면 표의 칸 수, 그림 설명의 수, 목록 번호가 바뀌기 때문이다. 구현하며 정했다.
 - **세로쓰기 책은 한중일 언어가 아닌 언어로 번역할 때 가로로 바꾼다.** 저장소 주인이 골랐다. 세로로 쓰지 않는 언어가 세로로 눕지 않게 한다.
 - **터미널 명령어(`epub translate`, `epub status`)와 MCP 도구도 이번에 넣는다.** 저장소 주인이 골랐다. `pdf translate`·`pdf status`의 규칙(예상만 답하기, 요금 경로, 자동 호출 스위치, 한 문서에 작업 하나)을 그대로 따른다.
 - **새 엔진 패키지(`packages/epub-engine`)와 새 편집기(`apps/epub`)를 만든다.** 셸에 붙이는 방식은 마인드맵 편집기와 같다. 새 바깥 의존성은 들이지 않는다(`jszip`, `zip-gate`, `saxes`, `parse5`, 번역은 작업 공간의 `pdf-structure`).
@@ -48,7 +48,7 @@ EPUB은 zip 안에 장마다 XHTML 문서가 하나씩 든 형식이다. 책마�
 - 셸에 새 문서 종류 `epub`이 생겼다. 탭 종류, 앱 안 MCP의 열린 문서 목록(`kind: "epub"`, `type: "e-book"`)과 `get_app_info`의 `families`, 첨부 형식 목록에 들어갔다(`docs/contracts.md`).
 - EPUB 탭은 갑자기 꺼진 뒤 다른 문서 탭과 함께 되살아난다(결정 0061). 복구 사본은 만들지 않는다. 자동 저장이 책 파일에 바로 쓰기 때문이다.
 - `file-parse`가 EPUB 글을 뽑는다. 첨부, `@문서`, 파일 색인이 EPUB을 읽는다. DRM 책과 글자가 깨진 책은 읽지 않는다.
-- 터미널 명령어에 `epub translate`·`epub status`, MCP에 `epub_translate`·`epub_status`가 생겼다. 밖으로 보내는 명령이 일곱이 되었다(`docs/contracts.md`, `PRIVACY.md`, `skills/ieumoffice/SKILL.md`).
+- 터미널 명령어에 `epub translate`·`epub status`, MCP에 `epub_translate`·`epub_status`가 생겼다. 밖으로 보내는 명령이 일곱이 되었다(`docs/contracts.md`, `PRIVACY.md`, `skills/ttokttak/SKILL.md`).
 - 결과 보관소(`pdf-store`)가 PDF와 EPUB 번역을 함께 담는다. 폴더 이름은 그대로이고, 설정의 이름만 21개 언어 모두 "AI 결과 보관소"로 바뀌었다.
 - "고치지 않은 부분은 원본 그대로"의 예외는 둘이다. 저장한 EPUB은 `mimetype`이 맨 앞에 압축 없이 놓이고(원본이 그 규칙을 어겼으면 저장으로 바뀐다), EPUB 3 책은 OPF의 `dcterms:modified` 한 줄이 저장 시각으로 바뀐다.
 - 알려진 한계(굵게·기울임 개수가 바뀐 블록의 표시 다시 쓰기, 입력으로 통째로 지운 인라인 요소, Linux 포장 파일)는 `docs/tracking/findings.md`와 `apps/epub/AGENTS.md`에 있다. `epubcheck`, 실제 책, 다른 뷰어, 실제 구독 확인은 사람이 한다(`docs/tracking/status.md`).

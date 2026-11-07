@@ -1,6 +1,6 @@
 # packages/cli (`@genoffice/cli`)
 
-`ieumoffice` 명령줄과 MCP 서버다. 앱과 같은 문서 엔진으로 문서를 만들고·읽고·고치고·변환하며, 창 없이 앱에 번들된 Node 런타임에서 돈다. 사람이 아니라 코딩 에이전트나 스크립트가 부르는 "자동 호출 경로"의 입구이기도 하다.
+`ttokttak` 명령줄과 MCP 서버다. 앱과 같은 문서 엔진으로 문서를 만들고·읽고·고치고·변환하며, 창 없이 앱에 번들된 Node 런타임에서 돈다. 사람이 아니라 코딩 에이전트나 스크립트가 부르는 "자동 호출 경로"의 입구이기도 하다.
 
 ## 맡은 범위
 
@@ -13,7 +13,7 @@
 - EPUB 책 번역 명령: `epub translate`, `epub status`(`src/commands/epub.ts`, `epub-translate.ts`, `epub-status.ts`, MCP `epub_translate`·`epub_status`, 결정 0066). 단위·작업·결과 책은 `packages/epub-engine`을, 작업 엔진과 보관소는 `pdf-structure`를 명령 프로세스 안에서 부른다. AI 연결과 공통 준비는 PDF 작업 명령의 것(`src/pdf-ai.ts`, `pdf-job.ts`)을 함께 쓴다.
 - PC에 등록하는 이름(`src/names.ts`)과 등록 작업: PATH 연결(`src/install.ts`), 에이전트 MCP 설정에 항목 쓰기(`src/agent-mcp.ts`), 스킬 설치(`src/agent-skills.ts`), MCP 클라이언트가 실행할 명령 조립(`src/mcp-launch.ts`).
 - 실행 중인 앱과의 연결: 제어 채널(`src/control.ts`, `src/control-protocol.ts`), 열려 있는 문서 확인(`src/gui.ts`), 앱 실행 파일과 번들 자원 찾기(`src/resources.ts`).
-- 경로 정책과 감사 기록(`src/fs.ts`, `src/audit.ts`), 번들 빌드(`build.mjs`, `collect-deps.mjs`), 실행기(`bin/ieumoffice`, `bin/ieumoffice.cmd`).
+- 경로 정책과 감사 기록(`src/fs.ts`, `src/audit.ts`), 번들 빌드(`build.mjs`, `collect-deps.mjs`), 실행기(`bin/ttokttak`, `bin/ttokttak.cmd`).
 
 ## 맡지 않는 것 (경계)
 
@@ -26,7 +26,7 @@
 ## 항상 지켜야 하는 것
 
 - 앱이 봉인한 키(`sealed:v1:`)는 `runCli`가 등록하는 `cliSecretCodecFor`(`src/secrets.ts`)가 앱을 창 없이 `--reveal-ai-secrets`로 띄워 풀고 그 프로세스의 메모리에만 둔다. 명령줄은 봉인하지 않고, 푼 값을 파일·로그·출력에 쓰지 않는다(결정 0063).
-- PC에 등록하는 이름은 전부 이 제품의 것이다. 명령 `ieumoffice`, MCP 항목 `ieumoffice`, 스킬 `ieumoffice`, 홈 폴더 `~/.ieumoffice`이고 `src/names.ts`의 상수로만 쓴다. 문자열로 다시 적지 않는다.
+- PC에 등록하는 이름은 전부 이 제품의 것이다. 명령 `ttokttak`, MCP 항목 `ttokttak`, 스킬 `ttokttak`, 홈 폴더 `~/.ttokttak`이고 `src/names.ts`의 상수로만 쓴다. 문자열로 다시 적지 않는다.
 - 원본 GenOffice가 같은 PC에 설치돼 있을 수 있다. 그 앱이 등록한 것(`genoffice` 명령, `[mcp_servers.genoffice]` 같은 MCP 항목, `genoffice` 스킬 폴더, `~/.genoffice`, 그 앱의 실행 파일)은 읽지도, 우리 것으로 간주하지도, 바꾸지도, 지우지도, 실행하지도 않는다. `isOurLauncher`·`isGenofficeLauncher`·`installedAppBinaries`가 이 구분을 한다.
 - 번들 파일 이름 `genoffice.cjs`(`CLI_BUNDLE_FILE`)는 앱 안의 내부 파일이라 원본 이름을 유지한다. 그래서 "이 번들을 실행한다"만으로는 우리 항목인지 알 수 없다. 원본 실행 파일로 이 이름의 번들을 실행하는 MCP 항목은 원본의 것으로 판정한다.
 - 내부 이름은 바꾸지 않는다. 패키지 이름 `@genoffice/cli`, 환경 변수 `GENOFFICE_*`(`GENOFFICE_USER_DATA`, `GENOFFICE_AI_SETTINGS`, `GENOFFICE_APP_BIN`, `GENOFFICE_ALLOWED_ROOTS`, `GENOFFICE_AUDIT_LOG` 등), 함수 이름(`genofficeUserDataDir`)은 원본 표기 그대로다.
@@ -48,21 +48,21 @@
 
 ## 이 모듈의 방식
 
-- 명령은 `CommandDef` 하나다. `defaultRegistry()`에 등록하면 도움말, README 예시, 스킬 문서, MCP 도구가 같은 표에서 나온다. `tests/help-sync.test.ts`가 등록된 명령과 옵션이 `README.md`와 `skills/ieumoffice/SKILL.md`에 모두 나오는지 확인하므로, 옵션을 추가하면 세 곳을 함께 고친다.
+- 명령은 `CommandDef` 하나다. `defaultRegistry()`에 등록하면 도움말, README 예시, 스킬 문서, MCP 도구가 같은 표에서 나온다. `tests/help-sync.test.ts`가 등록된 명령과 옵션이 `README.md`와 `skills/ttokttak/SKILL.md`에 모두 나오는지 확인하므로, 옵션을 추가하면 세 곳을 함께 고친다.
 - `slides read --comments`는 저장된 pptx의 클래식 메모를 페이지별 `comments`(`authorId`·`idx`·`작성자`·`시각`·`본문`)와 `hidden`으로 낸다. `--slide`·`--full`과 독립이고, 터미널 읽기는 다른 읽기 명령처럼 가리기를 적용하지 않는다.
 - 스킬 본문을 고치면 `metadata.version`을 올린다. 스킬은 사용자의 에이전트 폴더로 복사되고 버전이 커질 때만 교체되기 때문이다(`npm run check:skill-version`).
 - MCP 도구는 명령의 두 번째 구현이 아니다. 도구 호출을 명령줄 인자로 바꿔(`buildArgv`) 같은 명령을 실행한다. 인라인 값(ops, 명세, Markdown)은 임시 파일에 써서 경로로 넘긴다.
 - 명령줄은 Electron 없이 앱의 userData를 찾는다(`genofficeUserDataDir`). AI 설정은 그 안의 `ai-settings.json`이고, 자동 호출의 잠금·장부와 종량 허용 기록은 같은 폴더에 둔다(`aiDataDir`). PDF 결과 보관소도 같은 폴더의 `pdf-store`다. 앱과 모든 명령줄 프로세스가 같은 폴더를 써야 차례가 하나로 지켜지고 보관된 결과를 함께 쓴다.
 - 번역 PDF는 HarfBuzz의 `hb-subset.wasm`이 있어야 쓴다. 설치본에서는 `Resources/wasm/hb-subset.wasm`, 저장소에서는 `harfbuzzjs`의 것을 찾고, `GENOFFICE_HB_SUBSET_WASM`으로 바꿀 수 있다(`hbSubsetWasmPath`).
-- 패키징: `build.mjs`가 전체를 CommonJS 파일 하나로 묶고, 설치된 앱은 그것을 `ELECTRON_RUN_AS_NODE=1`로 자기 실행 파일에서 돌린다(`bin/ieumoffice.cmd`). `node_modules`는 함께 배포되지 않는다. 번들의 버전은 `GENOFFICE_APP_VERSION`으로 주입되어 앱 버전과 어긋나지 않는다.
+- 패키징: `build.mjs`가 전체를 CommonJS 파일 하나로 묶고, 설치된 앱은 그것을 `ELECTRON_RUN_AS_NODE=1`로 자기 실행 파일에서 돌린다(`bin/ttokttak.cmd`). `node_modules`는 함께 배포되지 않는다. 번들의 버전은 `GENOFFICE_APP_VERSION`으로 주입되어 앱 버전과 어긋나지 않는다.
 - 한글 엔진의 WASM은 번들에 들어가지 않는다. `rhwpWasmPath`(`src/resources.ts`)가 설치본의 `Resources/wasm`이나 체크아웃의 `node_modules`에서 찾아 `GENOFFICE_RHWP_WASM`으로 넘긴다. 번들 안에서는 `import.meta.url`이 비어서 읽는 쪽이 스스로 찾지 못한다.
 - MCP 도구 목록 전체의 크기에는 상한이 있다(`tests/mcp.test.ts`, 91KiB). 도구를 더할 때는 설명과 옵션 설명을 짧게 쓴다.
 - MCP 클라이언트는 셸 없이 프로세스를 띄운다. Windows에서 `.cmd`나 `cmd /c`를 등록하면 공백이 든 경로가 쪼개지므로, 등록하는 명령은 "앱 실행 파일을 Node로, 번들 CLI를 인자로"다(`src/mcp-launch.ts`). 이 파일은 순수 문자열 코드라 렌더러도 import한다.
-- 에이전트 설정 파일은 키 하나만 쓰거나 지운다. `ieumoffice` 이름의 항목이 우리 실행기가 아닌 것을 가리키면 강제 옵션 없이는 바꾸지 않는다. JSON 설정은 다시 직렬화되고 TOML은 해당 표만 줄 단위로 바꾼다. symlink인 설정은 대상에 써서 링크를 보존한다.
+- 에이전트 설정 파일은 키 하나만 쓰거나 지운다. `ttokttak` 이름의 항목이 우리 실행기가 아닌 것을 가리키면 강제 옵션 없이는 바꾸지 않는다. JSON 설정은 다시 직렬화되고 TOML은 해당 표만 줄 단위로 바꾼다. symlink인 설정은 대상에 써서 링크를 보존한다.
 - ODT(`src/formats/odt.ts`): `.odt`는 `odtToDocx`의 다리 docx로 열고(`openDocumentFile`이 `OpenDocument.odt`에 원본·다리 지도·보고를 둔다) `saveDocument`가 `saveOdt`로 원본에 좁게 되돌려 쓴다. 엔진 패키지(`@genoffice/odt-engine`)는 공개 API만 쓰고 고치지 않는다.
   - 꺼 둔 기능의 작업 목록은 `odtDisabledFeature` 한 곳에 있다(메모, 변경 내용, 목차, 수식 `<formula>`, 차트, 글상자, 워터마크, 다단 `set_page_setup.columns`, 그림 번호·상호 참조·인용 `insertField`). 거절 이유는 `unsupported`다. `--track`과 확장자가 다른 `--out`은 `docs apply`가 작업 전에 거절한다.
   - `OdtEditGuard`는 작업마다 앞뒤를 비교한다. 잠긴 칸(`isProtectedCell`, 셀 안 표는 바깥 칸)과 `odt-keep:` 자리 표시가 바뀌면 편집기 상태와 곁 상태를 되돌리고 `op_rejected`로 거절한다. 자리 표시를 통째로 지우는 것과 잠긴 칸 둘레의 행 추가는 된다. 격자 모양이 그대로면(칸 합치기·나누기 포함) 같은 자리에서 비교한다. 행만 또는 열만 바뀌었으면 앞뒤 행(열)을 맞춰 잠긴 칸이 옮겨 간 자리에서 비교한다(`movedLockedCell`). 둘 다 바뀌었을 때만 칸 지문의 개수로 본다.
-  - `convert`의 ODT 경로는 docx를 거친다. 앱의 `--headless-export`는 `.odt`를 받지 않으므로 odt→pdf/html은 출력 폴더 안의 임시 폴더(`.ieumoffice-odt-*`)에 docx를 쓰고 끝나면(실패해도) 지운다. html→odt도 같은 임시 폴더를 쓴다. 변환 보고는 항목마다 `warnings[]`(`odt_converted`/`odt_dropped`)와 `detail.odt_report`로 낸다.
+  - `convert`의 ODT 경로는 docx를 거친다. 앱의 `--headless-export`는 `.odt`를 받지 않으므로 odt→pdf/html은 출력 폴더 안의 임시 폴더(`.ttokttak-odt-*`)에 docx를 쓰고 끝나면(실패해도) 지운다. html→odt도 같은 임시 폴더를 쓴다. 변환 보고는 항목마다 `warnings[]`(`odt_converted`/`odt_dropped`)와 `detail.odt_report`로 낸다.
   - 암호 ODT는 종료 코드 2, `unsupported`와 암호를 풀라는 `suggestion`이다(`odtOpenFailure`). 기본 이유 `file_not_found`로 두지 않는다.
 - 이 패키지는 `@genoffice/i18n`과 `@genoffice/electron-utils`를 import하지만 `package.json`의 `dependencies`에는 적혀 있지 않다(workspace 호이스팅에 기대는 기존 구조다).
 

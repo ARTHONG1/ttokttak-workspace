@@ -54,8 +54,8 @@ Onder **Lokale HTTP-server** kan de app de server ook zelf draaien — een insch
 
 ## Commandoregel in één oogopslag
 
-| Opdracht               | Wat het doet               |
-| ---------------------- | -------------------------- |
-| `ieumoffice <bestand>` | opent een bestand          |
-| `ieumoffice mcp`       | start de lokale MCP-server |
-| `ieumoffice --help`    | alle opdrachten en opties  |
+| Opdracht             | Wat het doet               |
+| -------------------- | -------------------------- |
+| `ttokttak <bestand>` | opent een bestand          |
+| `ttokttak mcp`       | start de lokale MCP-server |
+| `ttokttak --help`    | alle opdrachten en opties  |

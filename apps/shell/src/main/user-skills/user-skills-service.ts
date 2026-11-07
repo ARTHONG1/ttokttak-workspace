@@ -4,7 +4,7 @@
  * writes, imports, GitHub updates, export, and the AI's reads. No Electron
  * here; the IPC layer adds dialogs, the OS trash and who may ask.
  *
- * Writes go only to the app's skills folder (`~/.ieumoffice/skills`); other
+ * Writes go only to the app's skills folder (`~/.ttokttak/skills`); other
  * sources are read only. Imports and update checks also use their own
  * temporary folder under the OS temp folder.
  */
@@ -12,7 +12,7 @@ import { randomBytes } from 'node:crypto'
 import { copyFile, mkdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path'
 import {
-  IEUM_SOURCE_FILE,
+  TTOK_SOURCE_FILE,
   SKILL_STAGING_PREFIX,
   SKILL_TEXT_EXTENSIONS,
   SkillImportError,
@@ -34,7 +34,7 @@ import {
   prepareFolderImport,
   prepareGitHubImport,
   prepareZipImport,
-  readIeumSourceRecord,
+  readTtokSourceRecord,
   renderSkillMd,
   resolveUserSkillStates,
   skillExportInfo,
@@ -377,7 +377,7 @@ export function createUserSkillsService(deps: UserSkillsServiceDeps) {
     if (!listed) throw new SkillImportError('failed', `Cannot read ${from}`)
     if (listed.tooLarge) throw new SkillImportError('too-large', 'The skill folder is too large')
     for (const file of listed.files) {
-      if (file.rel === IEUM_SOURCE_FILE) continue
+      if (file.rel === TTOK_SOURCE_FILE) continue
       const target = join(to, ...file.rel.split('/'))
       await mkdir(dirname(target), { recursive: true })
       await copyFile(file.path, target)
@@ -532,7 +532,7 @@ export function createUserSkillsService(deps: UserSkillsServiceDeps) {
       for (const skill of all) {
         let github: UserSkillView['github']
         if (skill.source === 'app' && skill.github) {
-          const record = await readIeumSourceRecord(skill.dir)
+          const record = await readTtokSourceRecord(skill.dir)
           if (record) {
             github = {
               repo: record.repo,
@@ -566,7 +566,7 @@ export function createUserSkillsService(deps: UserSkillsServiceDeps) {
           body: parsed?.body ?? text ?? '',
           template: skill.template,
           files: listed.files
-            .filter((file) => file.rel !== IEUM_SOURCE_FILE)
+            .filter((file) => file.rel !== TTOK_SOURCE_FILE)
             .map((file) => ({ rel: file.rel, size: file.size })),
         },
       }
@@ -878,7 +878,7 @@ export function createUserSkillsService(deps: UserSkillsServiceDeps) {
             .filter(
               (rel) =>
                 rel !== 'SKILL.md' &&
-                rel !== IEUM_SOURCE_FILE &&
+                rel !== TTOK_SOURCE_FILE &&
                 SKILL_TEXT_EXTENSIONS.has(extname(rel).toLowerCase()),
             ),
           template: skill.templateExists ? skill.template : undefined,

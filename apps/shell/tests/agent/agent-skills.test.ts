@@ -82,7 +82,8 @@ const SKILL: AgentSessionSkill = {
   title: 'Meeting minutes',
   description: 'Writes minutes.',
   invoke: 'auto',
-  skillMd: 'C:\\Users\\me\\AppData\\Local\\HangulAIWorkbench\\agent-skills\\skills\\minutes\\SKILL.md',
+  skillMd:
+    'C:\\Users\\me\\AppData\\Local\\HangulAIWorkbench\\agent-skills\\skills\\minutes\\SKILL.md',
   template: undefined,
 }
 
@@ -231,7 +232,7 @@ describe('propose_skill', () => {
       newKey: () => 'k1',
     })
     const propose = createAgentSkillTools(hooks)[0]!
-    for (const targetId of ['minutes--builtin', 'ieum-skills:minutes--builtin', 'minutes']) {
+    for (const targetId of ['minutes--builtin', 'ttok-skills:minutes--builtin', 'minutes']) {
       await propose.handler({ title: 'L', description: 'D', body: 'B', targetId })
     }
     expect(sent.map(([, p]) => (p as Record<string, any>).proposal.target.id)).toEqual([
@@ -378,14 +379,14 @@ describe('the session’s skills for the window', () => {
     mkdirSync(join(a, 'assets'), { recursive: true })
     writeFileSync(
       join(a, 'SKILL.md'),
-      '---\nname: form\ndescription: d\nmetadata:\n  ieum-template: assets/form.docx\n---\nBody\n',
+      '---\nname: form\ndescription: d\nmetadata:\n  ttok-template: assets/form.docx\n---\nBody\n',
     )
     writeFileSync(join(a, 'assets', 'form.docx'), 'x')
     const b = join(bundle, 'skills', 'plain')
     mkdirSync(b, { recursive: true })
     writeFileSync(
       join(b, 'SKILL.md'),
-      '---\nname: plain\ndescription: d\nmetadata:\n  ieum-template: ../escape.docx\n---\nBody\n',
+      '---\nname: plain\ndescription: d\nmetadata:\n  ttok-template: ../escape.docx\n---\nBody\n',
     )
     const entry = (name: string, dir: string) => ({
       id: `app:${name}`,
@@ -402,7 +403,7 @@ describe('the session’s skills for the window', () => {
     mkdirSync(c, { recursive: true })
     writeFileSync(
       join(c, 'SKILL.md'),
-      '---\nname: loose\ndescription: d\nmetadata:\n  ieum-template: form.docx\n---\nBody\n',
+      '---\nname: loose\ndescription: d\nmetadata:\n  ttok-template: form.docx\n---\nBody\n',
     )
     writeFileSync(join(c, 'form.docx'), 'x')
     const skills = await agentSessionSkillsOf([
@@ -498,7 +499,7 @@ describe('the skill a change is for', () => {
     { id: 'plugin:tools:minutes', source: 'plugin', name: 'minutes', title: 'T', owned: false },
     { id: 'user:letter', source: 'user', name: 'letter', title: 'L', owned: false },
     { id: 'builtin:letter', source: 'builtin', name: 'letter', title: 'L', owned: false },
-    { id: 'app:ieumoffice', source: 'app', name: 'ieumoffice', title: 'I', owned: true },
+    { id: 'app:ttokttak', source: 'app', name: 'ttokttak', title: 'I', owned: true },
   ]
   const session = [
     { id: 'project:minutes', name: 'minutes' },
@@ -519,7 +520,7 @@ describe('the skill a change is for', () => {
     expect(targetOf('minutes--app')).toBe('app:minutes')
     expect(targetOf('Minutes--Builtin')).toBe('builtin:minutes')
     expect(targetOf('minutes--plugin-tools')).toBe('plugin:tools:minutes')
-    expect(targetOf('ieum-skills:minutes--app')).toBe('app:minutes')
+    expect(targetOf('ttok-skills:minutes--app')).toBe('app:minutes')
   })
 
   it('takes a shared plain name as the skill that won it in the session', () => {
@@ -532,8 +533,8 @@ describe('the skill a change is for', () => {
 
   it('refuses a name no skill has, and a hidden one', () => {
     expect(targetOf('nope')).toMatch(/No skill/)
-    expect(targetOf('ieumoffice')).toMatch(/No skill/)
-    expect(targetOf('app:ieumoffice')).toMatch(/No skill/)
+    expect(targetOf('ttokttak')).toMatch(/No skill/)
+    expect(targetOf('app:ttokttak')).toMatch(/No skill/)
   })
 })
 
@@ -543,7 +544,7 @@ describe('reading a candidate in main', () => {
     const userData = join(home, 'AppData', 'HangulAIWorkbench')
     const guard = {
       homeDir: home,
-      protectedPaths: ['.claude', '.codex', '.genoffice', '.ieumoffice'].map((n) => join(home, n)),
+      protectedPaths: ['.claude', '.codex', '.genoffice', '.ttokttak'].map((n) => join(home, n)),
     }
     guard.protectedPaths.push(userData)
     for (const dir of [...guard.protectedPaths]) {

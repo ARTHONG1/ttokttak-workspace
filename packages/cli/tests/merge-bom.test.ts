@@ -12,7 +12,7 @@ afterEach(() => {
 })
 
 async function fixture(data: string) {
-  const dir = mkdtempSync(join(tmpdir(), 'ieumoffice-merge-bom-'))
+  const dir = mkdtempSync(join(tmpdir(), 'ttokttak-merge-bom-'))
   dirs.push(dir)
   const input = join(dir, 'template.docx'),
     values = join(dir, 'values.json'),

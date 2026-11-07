@@ -86,7 +86,7 @@ export function checkDocument(doc: OpenDocument): IssueDraft[] {
       level: 'info',
       path: `block[${revisions[0]!.blockIndex}]`,
       blockIndex: revisions[0]!.blockIndex,
-      message: `${revisions.length} tracked change(s) pending (${[...kinds].map(([k, n]) => `${k} ${n}`).join(', ')}); \`ieumoffice docs read --revisions\` lists them`,
+      message: `${revisions.length} tracked change(s) pending (${[...kinds].map(([k, n]) => `${k} ${n}`).join(', ')}); \`ttokttak docs read --revisions\` lists them`,
     })
   }
   const open = listComments(doc).filter((c) => !c.done)
@@ -97,7 +97,7 @@ export function checkDocument(doc: OpenDocument): IssueDraft[] {
       level: 'info',
       path: first?.blockIndex !== undefined ? `block[${first.blockIndex}]` : 'comments',
       ...(first?.blockIndex !== undefined ? { blockIndex: first.blockIndex } : {}),
-      message: `${open.length} comment thread(s) unresolved; \`ieumoffice docs read --comments\` lists them`,
+      message: `${open.length} comment thread(s) unresolved; \`ttokttak docs read --comments\` lists them`,
     })
   }
   return issues

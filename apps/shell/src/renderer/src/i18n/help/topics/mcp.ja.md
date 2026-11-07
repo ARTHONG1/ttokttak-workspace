@@ -15,27 +15,27 @@ GenOffice は Model Context Protocol を話せます。コーディングエー�
 同じことをターミナルから行うこともできます——これは上級者向けの経路で、パネルが見つけられない場所にエージェントがいるときはこちらを使ってください：
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-このマシンにあるコーディングエージェントを見つけ、それぞれの設定に stdio サーバーのエントリを書き、そのファイルの残りは見つかったときの様子のままにしておきます。エントリの名前は `ieumoffice` です。Claude Code に手動で登録する場合、同じ登録は `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp` で行えます。
+このマシンにあるコーディングエージェントを見つけ、それぞれの設定に stdio サーバーのエントリを書き、そのファイルの残りは見つかったときの様子のままにしておきます。エントリの名前は `ttokttak` です。Claude Code に手動で登録する場合、同じ登録は `claude mcp add --transport stdio ttokttak -- ttokttak mcp` で行えます。
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 通常以外の場所にインストールしたエージェントには `--dir <path>` を指定します。`--force` を付けると、すでに存在するエントリを上書きします。
 
-`ieumoffice mcp --help` を実行すると、サーバーが受け取れるものが 1 画面にまとまって表示されます。登録・削除・一覧の各形、HTTP での配信、そして 2 つのスキーマ用のフラグです。
+`ttokttak mcp --help` を実行すると、サーバーが受け取れるものが 1 画面にまとまって表示されます。登録・削除・一覧の各形、HTTP での配信、そして 2 つのスキーマ用のフラグです。
 
 ## アシスタントなしで動かす
 
 別のマシンにあるクライアントには、代わりに HTTP で配信します。
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` で待ち受ける先が変わります。クライアントには同じトークンを渡してください。
@@ -55,7 +55,7 @@ HTTP の上でもファイルは運べます。`PUT /files/<name>` で 1 つを�
 
 ## 検索・画像・メディア：エージェントが使えるもの
 
-`ieumoffice` コマンドや MCP クライアントからのリクエストは、アプリの中でご自身が入力したものではないため、GenOffice は慎重に扱います。
+`ttokttak` コマンドや MCP クライアントからのリクエストは、アプリの中でご自身が入力したものではないため、GenOffice は慎重に扱います。
 
 - **検索** は常に使え、既定では無料です。検索プロバイダーのキーが使われるのは、ご自身で選択した場合だけです。
 - **画像の生成** には画像プロバイダーのキーが必要です。このバージョンでは、サブスクリプションで画像は生成できません。
@@ -74,16 +74,16 @@ HTTP の上でもファイルは運べます。`PUT /files/<name>` で 1 つを�
 
 ## スキーマと小さめの予算
 
-`apply` と `create` は `ops`、`cells`、`data` パラメーターを、op ごとの型付きスキーマ付きで公開します。そのスキーマは `ieumoffice guide <domain> --json` から生成されます。正確ですが、大きなものです。コンテキストウィンドウの狭いクライアントは、代わりに単純な配列を要求できます：
+`apply` と `create` は `ops`、`cells`、`data` パラメーターを、op ごとの型付きスキーマ付きで公開します。そのスキーマは `ttokttak guide <domain> --json` から生成されます。正確ですが、大きなものです。コンテキストウィンドウの狭いクライアントは、代わりに単純な配列を要求できます：
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## なぜスキルなのか
 
-op の語彙を知らないエージェントは当て推量します。スキルにはリファレンスとデザインガイド—— `ieumoffice guide` が出すのと同じ内容——が入っているので、アシスタントは実際に spec を読んでから op を書けます。上のパネルからインストールするか、ターミナルの `ieumoffice skill` で入れてください。
+op の語彙を知らないエージェントは当て推量します。スキルにはリファレンスとデザインガイド—— `ttokttak guide` が出すのと同じ内容——が入っているので、アシスタントは実際に spec を読んでから op を書けます。上のパネルからインストールするか、ターミナルの `ttokttak skill` で入れてください。
 
 ## アプリの中で何に手が届くか
 

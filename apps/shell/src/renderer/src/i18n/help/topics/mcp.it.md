@@ -15,27 +15,27 @@ GenOffice parla il Model Context Protocol, così un agente di programmazione pu�
 La stessa cosa da un terminale: questo è il percorso avanzato, quello da usare quando l'agente si trova dove il pannello non può cercarlo:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Trova gli agenti di programmazione su questa macchina e scrive la voce del server stdio nella configurazione di ciascuno, lasciando intatto tutto il resto del file. La voce si chiama `ieumoffice`. Fatta a mano per Claude Code, la stessa registrazione è `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Trova gli agenti di programmazione su questa macchina e scrive la voce del server stdio nella configurazione di ciascuno, lasciando intatto tutto il resto del file. La voce si chiama `ttokttak`. Fatta a mano per Claude Code, la stessa registrazione è `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Un agente installato in una posizione non convenzionale richiede `--dir <path>`; `--force` riscrive una voce già presente.
 
-`ieumoffice mcp --help` mette su una sola schermata tutto ciò che il server accetta: le forme per installare, rimuovere e elencare, l'erogazione via HTTP e le due opzioni sugli schemi.
+`ttokttak mcp --help` mette su una sola schermata tutto ciò che il server accetta: le forme per installare, rimuovere e elencare, l'erogazione via HTTP e le due opzioni sugli schemi.
 
 ## Eseguirlo senza un assistente
 
 Per un client su un'altra macchina, pubblicalo via HTTP:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` cambia l'indirizzo su cui è in ascolto. Passa lo stesso token al client.
@@ -55,7 +55,7 @@ Ogni comando è uno strumento. Quelli più interessanti:
 
 ## Ricerca, immagini e media: che cosa può usare un agente
 
-Una richiesta che arriva dal comando `ieumoffice` o da un client MCP non l'hai digitata tu nell'app, quindi GenOffice la tratta con cautela.
+Una richiesta che arriva dal comando `ttokttak` o da un client MCP non l'hai digitata tu nell'app, quindi GenOffice la tratta con cautela.
 
 - **La ricerca** funziona sempre ed è gratuita per impostazione predefinita. La chiave di un provider di ricerca viene usata solo se ne hai selezionata una.
 - **Generare un'immagine** richiede la chiave di un provider di immagini. In questa versione un abbonamento non genera immagini.
@@ -74,16 +74,16 @@ Con l'interruttore disattivato e nessuna chiave configurata, lo strumento rispon
 
 ## Schemi e un budget più piccolo
 
-`apply` e `create` annunciano i loro parametri `ops`, `cells` e `data` con lo schema tipizzato per ogni op, generato da `ieumoffice guide <domain> --json`. È preciso e non è piccolo. Un client con una finestra di contesto ridotta può chiedere invece semplici array:
+`apply` e `create` annunciano i loro parametri `ops`, `cells` e `data` con lo schema tipizzato per ogni op, generato da `ttokttak guide <domain> --json`. È preciso e non è piccolo. Un client con una finestra di contesto ridotta può chiedere invece semplici array:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Perché la skill
 
-Un agente che non conosce il vocabolario delle op indovinerà. La skill porta con sé il riferimento e le guide di progettazione — lo stesso materiale che stampa `ieumoffice guide` —, così l'assistente scrive op di cui ha davvero letto la specifica. Installala dal pannello qui sopra, oppure con `ieumoffice skill` da un terminale.
+Un agente che non conosce il vocabolario delle op indovinerà. La skill porta con sé il riferimento e le guide di progettazione — lo stesso materiale che stampa `ttokttak guide` —, così l'assistente scrive op di cui ha davvero letto la specifica. Installala dal pannello qui sopra, oppure con `ttokttak skill` da un terminale.
 
 ## Che cosa raggiunge nell'app
 

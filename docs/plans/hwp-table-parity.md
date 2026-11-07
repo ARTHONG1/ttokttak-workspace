@@ -6,7 +6,7 @@
 
 ## 0. 왜 이 작업을 하는가
 
-이음오피스의 한글(HWP) 탭은 rhwp-studio v0.8.7을 편집 화면으로 쓰고, 그 위에 한컴 키 레이어(`apps/hwp/studio-plugin/hancom-keys.mjs`)와 AI 표 도구(`apps/hwp/studio-plugin/agent-plugin.mjs`)를 얹었다.
+똑딱작업실의 한글(HWP) 탭은 rhwp-studio v0.8.7을 편집 화면으로 쓰고, 그 위에 한컴 키 레이어(`apps/hwp/studio-plugin/hancom-keys.mjs`)와 AI 표 도구(`apps/hwp/studio-plugin/agent-plugin.mjs`)를 얹었다.
 
 2026-10-25에 v0.12.4 릴리스 빌드로 실제 Electron 앱을 띄워 표를 만들고 편집해 본 결과:
 
@@ -71,7 +71,7 @@
 
 1. 홈 → `AI HWP` 카드 → HWP 창 + studio frame.
 2. `Table` 메뉴 → `Insert Table (Ctrl+N,T)` → 3×3 표.
-3. `ieum-agent` 플러그인의 `listTables`/`readTable`로 표 구조 확인.
+3. `ttok-agent` 플러그인의 `listTables`/`readTable`로 표 구조 확인.
 4. `A1`, `Tab`, `B1`, `Tab`, `C1` 입력.
 5. 마지막 셀에서 `Tab` → 줄 3→4.
 6. `Ctrl+Enter` → 줄 4→5, 표 밖으로 나가지 않음.
@@ -103,7 +103,7 @@ E2E는 production 빌드에서 `window.rhwpStudio.automation`과 `window.rhwpStu
 ## 2.2 Phase 2A (구현됨, 2026-10-26)
 
 - 셀 블록에서 `Shift+화살표`: 현재 칸의 오른쪽/아래 경계와 같은 줄의 다음 칸을 서로 반대로 옮긴다. 표 전체 크기는 그대로다.
-- 엔진에 이미 있던 `resize_table_cell_native`(한글 `TableResizeCell*` 대응)를 WASM `resizeTableCell`로 내고(엔진 패치 0016), studio 브리지와 `ieum:table-cell-resize` 명령이 연결했다. 여러 번 눌러도 같은 경계를 이어서 옮기고, HWP 저장·다시 열기에서도 격자가 유지된다.
+- 엔진에 이미 있던 `resize_table_cell_native`(한글 `TableResizeCell*` 대응)를 WASM `resizeTableCell`로 내고(엔진 패치 0016), studio 브리지와 `ttok:table-cell-resize` 명령이 연결했다. 여러 번 눌러도 같은 경계를 이어서 옮기고, HWP 저장·다시 열기에서도 격자가 유지된다.
 - 한컴 2024와 3×3 표에서 한 번/두 번 누른 폭이 같았다(192.7/185.2px, 196.5/181.4px).
 - 한컴 2024는 병합 칸이 있는 표에서 `TableResizeCell*`을 거부했고, 로컬 리사이즈 뒤 저장·다시 열기한 격자에서도 거부했다. 앱은 편집기별로 이번 세션의 Shift 격자만 이어서 허용하고, 병합 표나 새로 연 격자는 안내하고 하지 않는다.
 - 검증: `tests/hancom-keys.test.ts`(키 배선, 호출 인자, 마지막 칸 무동작, 표 안의 표/병합 표 거절, 같은 편집기에서 이어짐), `tests/rhwp-patches.test.ts`(브리지 패치), `tests/engine-table-resize.test.ts`(실제 엔진 두 번 호출·HWP/HWPX 저장 뒤 다시 읽기·마지막 칸), `e2e/hwp-table.spec.ts`(F5+Shift+Right 두 번, 표 크기 유지, Ctrl+Z, 병합 표에서 무동작).
@@ -175,7 +175,7 @@ npx playwright test --config e2e/playwright.config.ts hwp-table.spec.ts --report
 
 ---
 
-당신은 이음오피스의 HWP(한글) 표 편집을 한컴 한글 2024에 더 가깝게 만드는 작업을 맡는다. 작업 디렉터리는 `E:\github\openoffice\.dryforge\worktrees\hwp-table-parity`, 브랜치는 `feat/hwp-table-parity`이고 기준은 `origin/main`의 `cb1af81c`다. 먼저 `docs/plans/hwp-table-parity.md`를 끝까지 읽어라.
+당신은 똑딱작업실의 HWP(한글) 표 편집을 한컴 한글 2024에 더 가깝게 만드는 작업을 맡는다. 작업 디렉터리는 `E:\github\openoffice\.dryforge\worktrees\hwp-table-parity`, 브랜치는 `feat/hwp-table-parity`이고 기준은 `origin/main`의 `cb1af81c`다. 먼저 `docs/plans/hwp-table-parity.md`를 끝까지 읽어라.
 
 ### 배경
 

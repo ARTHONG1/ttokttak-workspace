@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { closeAndSaveVideo, launchShell, waitForPageWithUrl } from './helpers'
 
 test('the HWP tab opens the Hancom-style format copy dialog', async () => {
-  const file = join(await mkdtemp(join(tmpdir(), 'ieum-format-copy-')), 'blank.hwp')
+  const file = join(await mkdtemp(join(tmpdir(), 'ttok-format-copy-')), 'blank.hwp')
   await copyFile(
     join(__dirname, '..', 'apps', 'hwp', 'src', 'renderer', 'assets', 'blank.hwp'),
     file,
@@ -21,7 +21,7 @@ test('the HWP tab opens the Hancom-style format copy dialog', async () => {
     const hwp = await waitForPageWithUrl(launched.app, '://hwp/')
     await hwp.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
     const frame = hwp.frameLocator('.hwp-editor-host iframe')
-    await expect(frame.locator('[data-cmd="ext:ieum-save"]')).toHaveCount(1)
+    await expect(frame.locator('[data-cmd="ext:ttok-save"]')).toHaveCount(1)
     const box = (await hwp.locator('.hwp-editor-host iframe').boundingBox())!
     await hwp.mouse.click(box.x + box.width * 0.4, box.y + 300)
     await hwp.keyboard.type('source')

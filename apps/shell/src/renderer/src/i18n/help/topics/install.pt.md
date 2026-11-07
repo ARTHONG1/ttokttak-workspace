@@ -35,4 +35,4 @@ Como o instalador não está assinado, execute apenas um que tenha transferido d
 
 ## A linha de comandos vem de brinde
 
-Todas as instalações incluem um comando `ieumoffice` que fala com os mesmos motores que a janela usa, por isso os dois nunca discordam sobre um ficheiro. `ieumoffice install-cli` coloca-o no seu `PATH`. Consulte [Linha de comandos e agentes](help://cli) para saber o que ele sabe fazer.
+Todas as instalações incluem um comando `ttokttak` que fala com os mesmos motores que a janela usa, por isso os dois nunca discordam sobre um ficheiro. `ttokttak install-cli` coloca-o no seu `PATH`. Consulte [Linha de comandos e agentes](help://cli) para saber o que ele sabe fazer.

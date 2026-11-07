@@ -1,6 +1,6 @@
 ---
-name: release-ieumoffice
-description: IeumOffice의 새 버전을 내는 작업(버전 올리기, Windows 설치 파일, GitHub 릴리스와 latest.yml, 베타 채널 예행, Mac 빌드)과 앱의 업데이트 창에 그대로 보이는 릴리스 본문 작성·윤문을 맡을 때 읽는다. Use when cutting a release, shipping a version, publishing an installer, writing or polishing release notes, or rehearsing an update on the beta channel.
+name: release-ttokttak
+description: 똑딱작업실의 새 버전을 내는 작업(버전 올리기, Windows 설치 파일, GitHub 릴리스와 latest.yml, 베타 채널 예행, Mac 빌드)과 앱의 업데이트 창에 그대로 보이는 릴리스 본문 작성·윤문을 맡을 때 읽는다. Use when cutting a release, shipping a version, publishing an installer, writing or polishing release notes, or rehearsing an update on the beta channel.
 ---
 
 # 릴리스 작업
@@ -18,7 +18,7 @@ description: IeumOffice의 새 버전을 내는 작업(버전 올리기, Windows
 3. **GitHub에서 "Publish release"를 누르기 전.**
 4. **예행 릴리스의 프리릴리스 표시를 풀기 전** — 그 순간 모든 사용자에게 나간다.
 5. 게시할 릴리스 본문 최종본.
-6. **소개 사이트 저장소(`ieumoffice-site`)에 push하기 전** — push가 곧 공개다. 바뀐 글과 캡처를 먼저 보여 준다.
+6. **소개 사이트 저장소(`ttokttak-site`)에 push하기 전** — push가 곧 공개다. 바뀐 글과 캡처를 먼저 보여 준다.
 
 ## 릴리스 본문 — 사용자가 앱 안에서 읽는 글
 

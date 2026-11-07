@@ -6,13 +6,13 @@ Een vaardigheid is een set werkinstructies voor de AI. Leg iets wat je steeds op
 
 **Instellingen ▸ Vaardigheden** toont de vaardigheden op deze pc, gegroepeerd naar herkomst. Vaardigheden worden bij hun naam getoond, zoals codeeragents dat doen. Met het zoekvak bovenaan vind je er een op naam of beschrijving.
 
-| Herkomst                   | Wat erin staat                                                          | In het begin |
-| -------------------------- | ----------------------------------------------------------------------- | ------------ |
-| **Ingebouwd**              | De 5 vaardigheden die met GenOffice meekomen                            | Aan          |
-| **Mijn vaardigheden**      | Vaardigheden die je hebt toegevoegd of gemaakt (`~/.ieumoffice/skills`) | Aan          |
-| **Claude-vaardighedenmap** | De vaardigheden in `~/.claude/skills`                                   | Uit          |
-| **Claude-plug-ins**        | De vaardigheden van geïnstalleerde Claude-plug-ins                      | Uit          |
-| **Codex-vaardighedenmap**  | De vaardigheden in `~/.agents/skills`                                   | Uit          |
+| Herkomst                   | Wat erin staat                                                        | In het begin |
+| -------------------------- | --------------------------------------------------------------------- | ------------ |
+| **Ingebouwd**              | De 5 vaardigheden die met GenOffice meekomen                          | Aan          |
+| **Mijn vaardigheden**      | Vaardigheden die je hebt toegevoegd of gemaakt (`~/.ttokttak/skills`) | Aan          |
+| **Claude-vaardighedenmap** | De vaardigheden in `~/.claude/skills`                                 | Uit          |
+| **Claude-plug-ins**        | De vaardigheden van geïnstalleerde Claude-plug-ins                    | Uit          |
+| **Codex-vaardighedenmap**  | De vaardigheden in `~/.agents/skills`                                 | Uit          |
 
 - Met de schakelaar zet je een vaardigheid aan of uit. Dezelfde instelling geldt voor het AI-paneel van elke editor, voor Ask AI op Start en voor het agentvenster.
 - Kies voor een vaardigheid die aanstaat **AI beslist** of **Alleen bij aanroepen**. In het begin staat AI beslist ingesteld. Met Alleen bij aanroepen wordt de vaardigheid alleen gebruikt als je hem zelf aanroept.

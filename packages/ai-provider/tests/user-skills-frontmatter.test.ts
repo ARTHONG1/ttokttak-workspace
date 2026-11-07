@@ -30,14 +30,14 @@ afterEach(() => {
 describe('reading front matter', () => {
   it('reads name, description and the metadata map', () => {
     const parsed = parseSkillMd(
-      '---\nname: home-letter\ndescription: Writes a letter.\nmetadata:\n  ieum-title: 가정통신문\n  ieum-template: assets/양식.hwpx\n  author: someone\n---\n# Body\n',
+      '---\nname: home-letter\ndescription: Writes a letter.\nmetadata:\n  ttok-title: 가정통신문\n  ttok-template: assets/양식.hwpx\n  author: someone\n---\n# Body\n',
     )
     expect(parsed).toMatchObject({
       name: 'home-letter',
       description: 'Writes a letter.',
       metadata: {
-        'ieum-title': '가정통신문',
-        'ieum-template': 'assets/양식.hwpx',
+        'ttok-title': '가정통신문',
+        'ttok-template': 'assets/양식.hwpx',
         author: 'someone',
       },
       body: '# Body\n',
@@ -109,7 +109,7 @@ describe('writing front matter', () => {
       body: '# Steps\n',
     })
     expect(text).toBe(
-      '---\nname: home-letter\ndescription: Writes a letter home.\nmetadata:\n  ieum-title: 가정통신문\n  ieum-template: assets/양식.hwpx\n---\n# Steps\n',
+      '---\nname: home-letter\ndescription: Writes a letter home.\nmetadata:\n  ttok-title: 가정통신문\n  ttok-template: assets/양식.hwpx\n---\n# Steps\n',
     )
   })
 
@@ -125,7 +125,7 @@ describe('writing front matter', () => {
     expect(parsed).toMatchObject({
       name: 'tricky',
       description: input.description,
-      metadata: { 'ieum-title': input.title },
+      metadata: { 'ttok-title': input.title },
       body: 'Body\n',
     })
     for (const value of [
@@ -157,7 +157,7 @@ describe('writing front matter', () => {
 
   it('keeps other keys and other metadata of the file it rewrites', () => {
     const base =
-      '---\nname: old\nlicense: MIT\ndescription: Old.\nmetadata:\n  author: me\n  ieum-title: Old title\nallowed-tools:\n  - Read\n---\nOld body\n'
+      '---\nname: old\nlicense: MIT\ndescription: Old.\nmetadata:\n  author: me\n  ttok-title: Old title\nallowed-tools:\n  - Read\n---\nOld body\n'
     const text = renderSkillMd(
       {
         name: 'new-name',
@@ -169,18 +169,18 @@ describe('writing front matter', () => {
       base,
     )
     expect(text).toBe(
-      '---\nname: new-name\nlicense: MIT\ndescription: New.\nmetadata:\n  author: me\n  ieum-title: New title\n  ieum-template: assets/a.docx\nallowed-tools:\n  - Read\n---\nNew body\n',
+      '---\nname: new-name\nlicense: MIT\ndescription: New.\nmetadata:\n  author: me\n  ttok-title: New title\n  ttok-template: assets/a.docx\nallowed-tools:\n  - Read\n---\nNew body\n',
     )
     const parsed = parseSkillMd(text)
     expect(parsed?.metadata).toEqual({
       author: 'me',
-      'ieum-title': 'New title',
-      'ieum-template': 'assets/a.docx',
+      'ttok-title': 'New title',
+      'ttok-template': 'assets/a.docx',
     })
   })
 
   it('drops the app values it is told to drop and adds extra keys', () => {
-    const base = '---\nname: a\ndescription: b\nmetadata:\n  ieum-title: T\n---\nx'
+    const base = '---\nname: a\ndescription: b\nmetadata:\n  ttok-title: T\n---\nx'
     expect(renderSkillMd({ name: 'a', description: 'b', body: 'x' }, base)).toBe(
       '---\nname: a\ndescription: b\n---\nx',
     )
@@ -196,14 +196,14 @@ describe('writing front matter', () => {
 
   it('round-trips a parsed file unchanged when nothing changes', () => {
     const original =
-      '---\nname: deck\ndescription: |\n  Makes decks.\n  Second line.\nmetadata:\n  ieum-title: 발표\n---\n# Deck\n\nSteps.\n'
+      '---\nname: deck\ndescription: |\n  Makes decks.\n  Second line.\nmetadata:\n  ttok-title: 발표\n---\n# Deck\n\nSteps.\n'
     const parsed = parseSkillMd(original)!
     const again = renderSkillMd(
       {
         name: parsed.name!,
         description: parsed.description!,
-        title: parsed.metadata['ieum-title'],
-        template: parsed.metadata['ieum-template'],
+        title: parsed.metadata['ttok-title'],
+        template: parsed.metadata['ttok-template'],
         body: parsed.body,
       },
       original,
@@ -228,12 +228,12 @@ describe('new names', () => {
     expect(validateNewUserSkillName('a-')).toBe('hyphen-edge')
     expect(validateNewUserSkillName('a--b')).toBe('double-hyphen')
     expect(validateNewUserSkillName('genoffice')).toBe('reserved')
-    expect(validateNewUserSkillName('ieumoffice')).toBe('reserved')
+    expect(validateNewUserSkillName('ttokttak')).toBe('reserved')
   })
 
   it('knows the reserved names in any case', () => {
     expect(isReservedUserSkillName('GenOffice')).toBe(true)
-    expect(isReservedUserSkillName('IEUMOFFICE')).toBe(true)
+    expect(isReservedUserSkillName('TTOKTTAK')).toBe(true)
     expect(isReservedUserSkillName('genoffice-x')).toBe(false)
   })
 
@@ -265,7 +265,7 @@ describe('content hash', () => {
     const first = await skillContentHash(dir)
     expect(first).toMatch(/^[0-9a-f]{64}$/)
     expect(await skillContentHash(dir)).toBe(first)
-    writeFileSync(join(dir, '.ieum-source.json'), '{"kind":"github"}')
+    writeFileSync(join(dir, '.ttok-source.json'), '{"kind":"github"}')
     expect(await skillContentHash(dir)).toBe(first)
     const other = folder()
     expect(await skillContentHash(other)).toBe(first)
@@ -285,7 +285,7 @@ describe('content hash', () => {
     rmSync(join(dir, 'references', 'b.md'))
     writeFileSync(join(dir, 'references', 'a.md'), 'alpha')
     mkdirSync(join(dir, 'references', 'deeper'))
-    writeFileSync(join(dir, 'references', 'deeper', '.ieum-source.json'), 'x')
+    writeFileSync(join(dir, 'references', 'deeper', '.ttok-source.json'), 'x')
     expect(await skillContentHash(dir)).not.toBe(first)
   })
 })

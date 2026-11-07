@@ -74,7 +74,7 @@ function open(lines: string[]) {
 
 /** The marks on the page, as page rectangles again. */
 function marksOnPage(): Rect[] {
-  return [...document.querySelectorAll<HTMLElement>('.ieum-change-marks > div')].map((box) => {
+  return [...document.querySelectorAll<HTMLElement>('.ttok-change-marks > div')].map((box) => {
     const top = parseFloat(box.style.top)
     const pageIndex = Math.floor(top / PAGE_GAP)
     return {

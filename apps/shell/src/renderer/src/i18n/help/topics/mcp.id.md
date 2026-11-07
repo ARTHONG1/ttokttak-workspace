@@ -15,27 +15,27 @@ Inilah tempatnya: **Pengaturan ▸ Integrasi**. Panel ini punya dua bagian, dan 
 Hal yang sama dari sebuah terminal — inilah jalur mahir, dan yang sebaiknya dipakai ketika agen ada di tempat yang tidak bisa ditemukan panel:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Perintah ini menemukan agen pemrograman di komputer ini — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — dan menulis entri server stdio ke dalam konfigurasi masing-masing, meninggalkan sisa berkas itu persis seperti ditemukannya. Entri itu bernama `ieumoffice`. Jika dilakukan secara manual untuk Claude Code, pendaftaran yang sama adalah `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Perintah ini menemukan agen pemrograman di komputer ini — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — dan menulis entri server stdio ke dalam konfigurasi masing-masing, meninggalkan sisa berkas itu persis seperti ditemukannya. Entri itu bernama `ttokttak`. Jika dilakukan secara manual untuk Claude Code, pendaftaran yang sama adalah `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Agen yang Anda pasang di lokasi tidak biasa menerima `--dir <path>`; `--force` menulis ulang entri yang sudah ada di sana.
 
-`ieumoffice mcp --help` menampilkan semua yang diterima server dalam satu layar: bentuk untuk mendaftar, melepas, dan mencantumkan, menyajikan lewat HTTP, serta dua opsi skema.
+`ttokttak mcp --help` menampilkan semua yang diterima server dalam satu layar: bentuk untuk mendaftar, melepas, dan mencantumkan, menyajikan lewat HTTP, serta dua opsi skema.
 
 ## Menjalankannya tanpa asisten
 
 Untuk klien di komputer lain, sajikan lewat HTTP sebagai gantinya:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` menentukan ke mana ia mendengarkan. Berikan token yang sama kepada kliennya.
@@ -55,7 +55,7 @@ Setiap perintah adalah sebuah alat. Yang menarik:
 
 ## Pencarian, gambar, dan media: apa yang boleh dipakai agen
 
-Permintaan dari perintah `ieumoffice` atau dari klien MCP tidak Anda ketik sendiri di aplikasi, jadi GenOffice memperlakukannya dengan hati-hati.
+Permintaan dari perintah `ttokttak` atau dari klien MCP tidak Anda ketik sendiri di aplikasi, jadi GenOffice memperlakukannya dengan hati-hati.
 
 - **Pencarian** selalu berfungsi dan gratis secara bawaan. Kunci penyedia pencarian hanya dipakai jika Anda memilihnya.
 - **Membuat gambar** memerlukan kunci penyedia gambar. Pada versi ini langganan tidak membuat gambar.
@@ -74,16 +74,16 @@ Jika sakelar nonaktif dan tidak ada kunci yang disiapkan, alat menjawab bahwa fi
 
 ## Skema, dan anggaran yang lebih kecil
 
-`apply` dan `create` mengumumkan parameter `ops`, `cells`, dan `data` dengan skema bertipe per-op, yang dibangkitkan dari `ieumoffice guide <domain> --json`. Itu akurat, dan ukurannya tidak kecil. Klien dengan jendela konteks sempit bisa meminta larik biasa sebagai gantinya:
+`apply` dan `create` mengumumkan parameter `ops`, `cells`, dan `data` dengan skema bertipe per-op, yang dibangkitkan dari `ttokttak guide <domain> --json`. Itu akurat, dan ukurannya tidak kecil. Klien dengan jendela konteks sempit bisa meminta larik biasa sebagai gantinya:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Mengapa perlu skill
 
-Agen yang tidak mengenal kosakata op akan menebak. Skill itu membawa referensi dan panduan desain — materi yang sama dengan yang dicetak `ieumoffice guide` —, sehingga asisten menulis op yang spesifikasinya memang sudah dibacanya. Pasang dari panel di atas, atau dengan `ieumoffice skill` dari terminal.
+Agen yang tidak mengenal kosakata op akan menebak. Skill itu membawa referensi dan panduan desain — materi yang sama dengan yang dicetak `ttokttak guide` —, sehingga asisten menulis op yang spesifikasinya memang sudah dibacanya. Pasang dari panel di atas, atau dengan `ttokttak skill` dari terminal.
 
 ## Apa yang bisa dicapainya di dalam aplikasi
 

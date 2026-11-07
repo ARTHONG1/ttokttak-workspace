@@ -2,7 +2,7 @@
  * HWP tables with Hancom Hangul's keys (docs/plans/hwp-table-parity.md, Phase 1A–2B).
  *
  * Runs against the production build: the studio's own automation surface and the app's
- * `ieum-agent` plugin are used, never the DEV-only `window.__wasm`.
+ * `ttok-agent` plugin are used, never the DEV-only `window.__wasm`.
  */
 import { test, expect } from '@playwright/test'
 import type { ElectronApplication, Frame, Page } from '@playwright/test'
@@ -91,16 +91,16 @@ async function insertTable(frame: Frame, rows: number, cols: number): Promise<vo
 async function listTables(frame: Frame): Promise<TableList> {
   return frame.evaluate(async () => {
     const studio = (window as unknown as { rhwpStudio: StudioLike }).rhwpStudio
-    await studio.plugins.load('ieum-agent')
-    return studio.plugins.invoke('ieum-agent', 'listTables', []) as TableList
+    await studio.plugins.load('ttok-agent')
+    return studio.plugins.invoke('ttok-agent', 'listTables', []) as TableList
   })
 }
 
 async function readTable(frame: Frame, table = 1): Promise<TableRead> {
   return frame.evaluate(async (number) => {
     const studio = (window as unknown as { rhwpStudio: StudioLike }).rhwpStudio
-    await studio.plugins.load('ieum-agent')
-    return studio.plugins.invoke('ieum-agent', 'readTable', [number]) as TableRead
+    await studio.plugins.load('ttok-agent')
+    return studio.plugins.invoke('ttok-agent', 'readTable', [number]) as TableRead
   }, table)
 }
 
@@ -304,8 +304,8 @@ async function mergeCells(
   return frame.evaluate(
     async ([start, end]) => {
       const studio = (window as unknown as { rhwpStudio: StudioLike }).rhwpStudio
-      await studio.plugins.load('ieum-agent')
-      return studio.plugins.invoke('ieum-agent', 'mergeCells', [1, start, end])
+      await studio.plugins.load('ttok-agent')
+      return studio.plugins.invoke('ttok-agent', 'mergeCells', [1, start, end])
     },
     [from, to],
   )

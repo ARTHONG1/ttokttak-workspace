@@ -176,7 +176,7 @@ describe('open / selection through the control channel', () => {
             error: {
               reason: 'file_not_open_in_gui',
               message: 'not open',
-              detail: { suggestion: 'ieumoffice open x' },
+              detail: { suggestion: 'ttokttak open x' },
             },
           },
     )
@@ -190,7 +190,7 @@ describe('open / selection through the control channel', () => {
     expect(notOpen.code).toBe(2)
     expect(notOpen.json()).toMatchObject({
       error: 'file_not_open_in_gui',
-      suggestion: 'ieumoffice open x',
+      suggestion: 'ttokttak open x',
     })
   })
 
@@ -202,7 +202,7 @@ describe('open / selection through the control channel', () => {
     expect(r.code).toBe(4)
     expect(r.json()).toMatchObject({
       error: 'app_unavailable',
-      suggestion: expect.stringContaining(`ieumoffice open ${DOCX}`),
+      suggestion: expect.stringContaining(`ttokttak open ${DOCX}`),
     })
   })
 })

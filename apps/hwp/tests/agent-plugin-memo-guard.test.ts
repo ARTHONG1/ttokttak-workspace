@@ -553,7 +553,7 @@ describe('a memo the user’s own edit takes away', () => {
       doc.insertMemoByPath(0, 1, path, 0, 4, JSON.stringify({ author: 'cell', text: 'cell memo' })),
     )
     const editor = openEditor(doc)
-    const watched = watch('ieum:memo-removed')
+    const watched = watch('ttok:memo-removed')
 
     editor.userEdit((current) => current.deleteTableControl(0, 1, 0))
     expect(watched.seen).toHaveLength(1)
@@ -575,7 +575,7 @@ describe('a memo the user’s own edit takes away', () => {
     const doc = blank(['hello world'])
     insertBodyMemo(doc, 0, 0, 5, 'body', 'body memo')
     const editor = openEditor(doc)
-    const watched = watch('ieum:memo-removed')
+    const watched = watch('ttok:memo-removed')
 
     editor.userEdit((current) => current.deleteText(0, 0, 0, 5))
     expect(watched.seen).toHaveLength(1)
@@ -598,7 +598,7 @@ describe('a memo the user’s own edit takes away', () => {
       doc.insertMemoByPath(0, 1, path, 0, 4, JSON.stringify({ author: 'cell', text: 'cell memo' })),
     )
     const editor = openEditor(doc)
-    const watched = watch('ieum:memo-removed')
+    const watched = watch('ttok:memo-removed')
 
     editor.userEdit((current) => current.deleteTextInCellByPath(0, 1, path, 0, 4))
     expect(watched.seen).toHaveLength(1)
@@ -618,7 +618,7 @@ describe('a memo the user’s own edit takes away', () => {
       doc.insertMemoByPath(0, 0, path, 0, 3, JSON.stringify({ author: 'box', text: 'box memo' })),
     )
     const editor = openEditor(doc)
-    const watched = watch('ieum:memo-removed')
+    const watched = watch('ttok:memo-removed')
 
     editor.userEdit((current) => current.deleteTextInCellByPath(0, 0, path, 0, 3))
     expect(watched.seen).toHaveLength(1)
@@ -684,7 +684,7 @@ describe('copy and paste', () => {
       start: { sectionIndex: 0, paragraphIndex: 0, charOffset: 0 },
       end: { sectionIndex: 0, paragraphIndex: 0, charOffset: 5 },
     }
-    const watched = watch('ieum:memo-not-copied')
+    const watched = watch('ttok:memo-not-copied')
 
     document.body.dispatchEvent(new Event('copy', { bubbles: true, cancelable: true }))
     document.body.dispatchEvent(new Event('paste', { bubbles: true, cancelable: true }))
@@ -705,7 +705,7 @@ describe('copy and paste', () => {
       start: { sectionIndex: 0, paragraphIndex: 0, charOffset: 0 },
       end: { sectionIndex: 0, paragraphIndex: 0, charOffset: 11 },
     }
-    const watched = watch('ieum:memo-not-copied')
+    const watched = watch('ttok:memo-not-copied')
 
     document.body.dispatchEvent(new Event('copy', { bubbles: true, cancelable: true }))
     document.body.dispatchEvent(new Event('paste', { bubbles: true, cancelable: true }))
@@ -726,10 +726,10 @@ describe('copy and paste', () => {
     try {
       const doc = blank(['hello world'])
       openEditor(doc)
-      const watched = watch('ieum:memo-not-copied')
+      const watched = watch('ttok:memo-not-copied')
 
       // the other editor instance copied two memos and told the channel so
-      const source = new FakeChannel('ieum:hwp-memo-copied')
+      const source = new FakeChannel('ttok:hwp-memo-copied')
       source.postMessage({ kind: 'memo-copied', count: 2, at: Date.now(), source: 'another' })
       document.body.dispatchEvent(new Event('paste', { bubbles: true, cancelable: true }))
       // the system-clipboard paste lands as text only

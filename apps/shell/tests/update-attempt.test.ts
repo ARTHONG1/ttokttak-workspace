@@ -20,7 +20,7 @@ import {
 let dir = ''
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'ieum-attempt-'))
+  dir = mkdtempSync(join(tmpdir(), 'ttok-attempt-'))
 })
 
 afterEach(() => {

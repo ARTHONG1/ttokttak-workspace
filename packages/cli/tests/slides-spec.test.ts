@@ -740,6 +740,6 @@ describe('genoffice guide slides design|spec', () => {
     expect(spec.stdout).toContain('1280 × 720')
     expect(spec.stdout).toContain('"type": "image"')
     const catalog = await run(['guide', 'slides'])
-    expect(catalog.stdout).toContain('ieumoffice guide slides design')
+    expect(catalog.stdout).toContain('ttokttak guide slides design')
   })
 })

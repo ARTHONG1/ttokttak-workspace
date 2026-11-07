@@ -6,13 +6,13 @@ Skill adalah sekumpulan petunjuk kerja untuk AI. Tuliskan sekali saja hal yang A
 
 **Pengaturan ▸ Skill** menampilkan skill yang ada di PC ini, dikelompokkan menurut asalnya. Setiap skill ditampilkan dengan namanya, seperti di agen pemrograman. Pakai kotak pencarian di bagian atas untuk mencari menurut nama atau deskripsi.
 
-| Sumber                  | Isinya                                                       | Awalnya  |
-| ----------------------- | ------------------------------------------------------------ | -------- |
-| **Bawaan**              | 5 skill yang disertakan bersama GenOffice                    | Aktif    |
-| **Skill saya**          | Skill yang Anda tambahkan atau buat (`~/.ieumoffice/skills`) | Aktif    |
-| **Folder skill Claude** | Skill di `~/.claude/skills`                                  | Nonaktif |
-| **Plugin Claude**       | Skill dari plugin Claude yang terpasang                      | Nonaktif |
-| **Folder skill Codex**  | Skill di `~/.agents/skills`                                  | Nonaktif |
+| Sumber                  | Isinya                                                     | Awalnya  |
+| ----------------------- | ---------------------------------------------------------- | -------- |
+| **Bawaan**              | 5 skill yang disertakan bersama GenOffice                  | Aktif    |
+| **Skill saya**          | Skill yang Anda tambahkan atau buat (`~/.ttokttak/skills`) | Aktif    |
+| **Folder skill Claude** | Skill di `~/.claude/skills`                                | Nonaktif |
+| **Plugin Claude**       | Skill dari plugin Claude yang terpasang                    | Nonaktif |
+| **Folder skill Codex**  | Skill di `~/.agents/skills`                                | Nonaktif |
 
 - Sakelar mengaktifkan atau menonaktifkan skill. Pengaturan yang sama berlaku untuk panel AI di semua editor, Tanya AI di Beranda, dan jendela agen.
 - Untuk skill yang aktif, pilih **AI yang menentukan** atau **Hanya saat dipanggil**. Awalnya disetel ke AI yang menentukan. Dengan Hanya saat dipanggil, skill hanya dipakai jika Anda sendiri yang memanggilnya.

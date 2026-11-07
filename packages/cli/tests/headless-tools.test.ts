@@ -511,7 +511,7 @@ describe('search on the automatic-call path', () => {
       .spyOn(aiSearch, 'imageSearchTool')
       .mockResolvedValue({ method: 'duckduckgo', images: [] })
     const { env, dir } = dataFolder({ provider: 'claude-code', ...ON })
-    const r = await run(['search', 'ieum office', '--json'], { env })
+    const r = await run(['search', 'ttok office', '--json'], { env })
     expect(r.code).toBe(0)
     expect(r.json().detail).toEqual({
       method: 'parallel',
@@ -576,7 +576,7 @@ describe('no trace of the removed login', () => {
   ])('%s does not look for the removed login or its command line', (file) => {
     const source = readFileSync(join(__dirname, '..', 'src', file), 'utf8')
     expect(source).not.toMatch(
-      /cloudToolsEnabled|auth\.json|GENOFFICE_AUTH_DIR|~\/\.(genoffice|ieumoffice)/,
+      /cloudToolsEnabled|auth\.json|GENOFFICE_AUTH_DIR|~\/\.(genoffice|ttokttak)/,
     )
   })
 })

@@ -8,13 +8,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./install": "./src/install.ts",
+    "./agent-mcp": "./src/agent-mcp.ts",
     "./agent-skills": "./src/agent-skills.ts",
     "./mcp-launch": "./src/mcp-launch.ts",
     "./control-protocol": "./src/control-protocol.ts",
     "./edufine-register": "./src/edufine-register.ts"
   },
   "bin": {
-    "ieumoffice": "./bin/ieumoffice"
+    "ttokttak": "./bin/ttokttak"
   },
   "scripts": {
     "build": "node build.mjs && node collect-deps.mjs",

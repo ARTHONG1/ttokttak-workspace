@@ -10,14 +10,14 @@ import { join } from 'node:path'
 import JSZip from 'jszip'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  IEUM_SOURCE_FILE,
+  TTOK_SOURCE_FILE,
   SkillImportError,
   applyGitHubSkillUpdate,
   checkGitHubSkillUpdate,
   disposeSkillImport,
   installImportedSkills,
   prepareGitHubImport,
-  readIeumSourceRecord,
+  readTtokSourceRecord,
   skillContentHash,
   type SkillFetch,
 } from '../src/user-skills'
@@ -73,7 +73,7 @@ async function installed(
   archives: Record<string, Record<string, string>>,
 ) {
   const base = temp()
-  const app = join(base, 'home', '.ieumoffice', 'skills')
+  const app = join(base, 'home', '.ttokttak', 'skills')
   const tmp = join(base, 'tmp')
   mkdirSync(app, { recursive: true })
   const github = fakeGitHub(archives, head)
@@ -169,7 +169,7 @@ describe('checkGitHubSkillUpdate', () => {
     expect(readdirSync(app)).toEqual(['minutes'])
     expect(readFileSync(join(skillDir, 'SKILL.md'), 'utf8')).toContain('Better minutes')
     expect(readdirSync(join(skillDir, 'ref')).sort()).toEqual(['a.md', 'c.md'])
-    const record = await readIeumSourceRecord(skillDir)
+    const record = await readTtokSourceRecord(skillDir)
     expect(record).toEqual({
       kind: 'github',
       repo: 'o/skills',
@@ -229,7 +229,7 @@ describe('checkGitHubSkillUpdate', () => {
     ).toBe('no-skills')
     expect(readdirSync(tmp)).toEqual([])
 
-    rmSync(join(skillDir, IEUM_SOURCE_FILE))
+    rmSync(join(skillDir, TTOK_SOURCE_FILE))
     expect(
       await kindOf(
         checkGitHubSkillUpdate({ skillDir, appSkillsDir: app, fetch: github.fetch, tempDir: tmp }),

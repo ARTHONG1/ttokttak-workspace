@@ -139,7 +139,7 @@ https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md 를 읽고 �
 1. 내 컴퓨터(macOS·Windows, Apple Silicon·Intel)를 알아내고 맞는 설치 파일을 고릅니다.
 2. 공식 릴리스에서만 내려받고, 릴리스에 함께 올라온 SHA-512 값으로 파일이 맞는지 확인합니다.
 3. 앱을 설치하고, 바탕화면에 `똑딱작업실` 바로 가기를 만듭니다.
-4. 터미널 명령어 `ieumoffice`를 연결하고, 이 PC의 AI 에이전트에 MCP 서버와 문서 작업 스킬을 등록합니다.
+4. 터미널 명령어 `ttokttak`을 연결하고, 이 PC의 AI 에이전트에 MCP 서버와 문서 작업 스킬을 등록합니다.
 5. 무엇이 끝났고 사용자가 할 일(계정 로그인 정도)이 남았는지 짧게 알려 줍니다.
 
 직접 하고 싶다면 설치 스크립트를 실행해도 됩니다.
@@ -191,7 +191,7 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ### AI 에이전트와 함께
 
-- **터미널 명령어와 MCP 서버**(`ieumoffice`, `ieumoffice mcp`): Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf가 같은 문서를 읽고 만들고 고칩니다.
+- **터미널 명령어와 MCP 서버**(`ttokttak`, `ttokttak mcp`): Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf가 같은 문서를 읽고 만들고 고칩니다.
 - **구독 그대로**: 앱은 내 PC에 로그인된 Claude Code·Codex를 실행할 뿐, 로그인 정보를 읽거나 저장하지 않습니다.
 - **화면 언어 21개**(한국어·영어 외에는 기계 번역).
 
@@ -207,7 +207,7 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 | 분야           | 오픈소스                                                                                                                                                                                                 | 맡은 일                                                         | 라이선스         |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------- |
-| 앱의 바탕      | [이음오피스](https://github.com/pblsketch/openoffice) · [GenOffice](https://github.com/genspark-ai/genoffice)                                                                                            | 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결, 문서 엔진 | Apache-2.0       |
+| 앱의 바탕      | [GenOffice](https://github.com/genspark-ai/genoffice) 계열 오픈소스 (출처 전체는 [NOTICE](NOTICE))                                                                                                       | 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결, 문서 엔진 | Apache-2.0       |
 | 한글 문서      | [rhwp](https://github.com/edwardkim/rhwp)                                                                                                                                                                | 한글(HWP·HWPX) 읽기·쓰기와 화면 그리기                          | MIT              |
 | 엑셀           | [Univer](https://github.com/dream-num/univer) · [calamine](https://github.com/tafia/calamine)                                                                                                            | 표 계산과 화면, 엑셀 파일 읽기                                  | Apache-2.0 · MIT |
 | 워드·마크다운  | [Tiptap](https://github.com/ueberdosis/tiptap) · [ProseMirror](https://prosemirror.net)                                                                                                                  | 문서 편집                                                       | MIT              |
@@ -248,7 +248,7 @@ npm run shell    # 또는: 전체를 빌드한 뒤 앱 실행
 - Mac·Windows 설치 파일은 GitHub Actions의 **macOS build**, **Windows build**에서도 만듭니다.
 - 웹 체험판: `GOOGLE_CLOUD_PROJECT=<프로젝트> WEB_AUTH=off node web/scripts/local-preview.mjs`
 
-코드 안의 패키지 이름과 환경 변수에는 `genoffice` / `GENOFFICE_`, 터미널 명령어에는 `ieumoffice`가 남아 있습니다. 바탕 프로젝트의 개선을 계속 받아오기 쉽게 하려고 둔 것입니다. 변경할 때 통과해야 하는 검사는 [CONTRIBUTING.md](CONTRIBUTING.md)에 있습니다.
+코드 안의 패키지 이름과 환경 변수에는 바탕 프로젝트의 `genoffice` / `GENOFFICE_`가 남아 있습니다. 문서 엔진의 개선을 계속 받아오기 쉽게 하려고 둔 것입니다. 변경할 때 통과해야 하는 검사는 [CONTRIBUTING.md](CONTRIBUTING.md)에 있습니다.
 
 ## 저장소 구조 (AI 에이전트와 기여자용)
 
@@ -257,8 +257,8 @@ npm run shell    # 또는: 전체를 빌드한 뒤 앱 실행
 | `apps/shell`                                                   | 데스크톱 앱의 껍데기: 탭, 홈, 설정, 똑딱업무, 패키징(`electron-builder.cjs`) |
 | `apps/{docs,sheets,slides,pdf,hwp,markdown,html,mindmap,epub}` | 형식별 편집기                                                                |
 | `packages/ai-provider`                                         | AI 연결(구독, 키, 무료 AI, Vertex)                                           |
-| `packages/cli`                                                 | 터미널 명령어 `ieumoffice`와 MCP 서버                                        |
-| `skills/ieumoffice`                                            | 에이전트에 설치하는 문서 작업 스킬                                           |
+| `packages/cli`                                                 | 터미널 명령어 `ttokttak`과 MCP 서버                                          |
+| `skills/ttokttak`                                              | 에이전트에 설치하는 문서 작업 스킬                                           |
 | `web/`                                                         | 웹 체험판: 가짜 `electron` 모듈, 게이트웨이, 로그인, Cloud Run 이미지        |
 | `scripts/install`                                              | AI 에이전트가 실행하는 설치 스크립트                                         |
 | `docs/`                                                        | 설계·계약·운영 문서                                                          |
@@ -282,15 +282,15 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 
 똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다.
 
-이 저장소의 코드는 [이음오피스](https://github.com/pblsketch/openoffice) 0.12.5(커밋 `4e4e9cc`)를 바탕으로 고치고 더한 것이며, 이음오피스는 [GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 합니다. 두 프로젝트 모두 Apache License 2.0이고, 원래의 저작권 고지는 그대로 두었습니다. 출처와 바꾼 내용은 [NOTICE](NOTICE)에, 이음오피스에 기여한 분들은 [CONTRIBUTORS.md](CONTRIBUTORS.md)에 있습니다. 바꾼 파일과 내용은 커밋 기록으로 확인할 수 있습니다.
+이 저장소의 코드는 Apache License 2.0으로 공개된 [GenOffice](https://github.com/genspark-ai/genoffice) 계열 오픈소스를 바탕으로 고치고 더한 것입니다. 원래의 저작권 고지는 그대로 두었고, 출처와 바꾼 내용은 [NOTICE](NOTICE)에 있습니다. 바꾼 파일과 내용은 커밋 기록으로 확인할 수 있습니다.
 
 한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인 조건에 따라 밝힙니다.
 
 > 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
 
-앱 아이콘의 토끼는 **ACE 연구회의 마스코트**입니다. 똑딱작업실은 바탕이 된 이음오피스의 아이콘과 로고를 쓰지 않고, 연구회의 허락을 받아 이 토끼를 아이콘으로 씁니다. 마스코트 그림은 Apache License 2.0에 포함되지 않으므로, 이 저장소를 고쳐 다시 배포할 때는 아이콘을 바꿔야 합니다.
+앱 아이콘의 토끼는 **ACE 연구회의 마스코트**입니다. 똑딱작업실은 바탕 프로젝트의 이름·아이콘·로고를 쓰지 않고, 연구회의 허락을 받아 이 토끼를 아이콘으로 씁니다. 마스코트 그림은 Apache License 2.0에 포함되지 않으므로, 이 저장소를 고쳐 다시 배포할 때는 아이콘을 바꿔야 합니다.
 
-똑딱작업실은 독립된 프로젝트입니다. 이음오피스 개발자, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, 한글과컴퓨터, Adobe, XMind, Google과 제휴하거나 후원·보증을 받은 관계가 아닙니다. "이음오피스"·"IeumOffice", "GenOffice", "Genspark"의 이름과 로고는 각 소유자의 것이고, Apache License 2.0은 상표를 쓸 권리를 주지 않습니다(6조). "Claude"는 Anthropic, "Codex"·"ChatGPT"는 OpenAI, "Microsoft"·"Windows"·"Word"·"Excel"·"PowerPoint"는 Microsoft Corporation의 상표이고, "한글"·"한컴"·"HWP"·"HWPX"는 주식회사 한글과컴퓨터의 등록 상표, "XMind"는 XMind Ltd., "Gemini"·"Google 드라이브"는 Google LLC의 상표입니다. 이 이름들은 무엇을 바탕으로 만들었고, 무엇과 함께 동작하며, 어떤 파일을 여는지 알리기 위해서만 적었습니다.
+똑딱작업실은 독립된 프로젝트입니다. 바탕 오픈소스 프로젝트의 개발자, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, 한글과컴퓨터, Adobe, XMind, Google과 제휴하거나 후원·보증을 받은 관계가 아닙니다. "GenOffice", "Genspark"의 이름과 로고는 각 소유자의 것이고, Apache License 2.0은 상표를 쓸 권리를 주지 않습니다(6조). "Claude"는 Anthropic, "Codex"·"ChatGPT"는 OpenAI, "Microsoft"·"Windows"·"Word"·"Excel"·"PowerPoint"는 Microsoft Corporation의 상표이고, "한글"·"한컴"·"HWP"·"HWPX"는 주식회사 한글과컴퓨터의 등록 상표, "XMind"는 XMind Ltd., "Gemini"·"Google 드라이브"는 Google LLC의 상표입니다. 이 이름들은 무엇을 바탕으로 만들었고, 무엇과 함께 동작하며, 어떤 파일을 여는지 알리기 위해서만 적었습니다.
 
 ### 다시 배포할 때
 

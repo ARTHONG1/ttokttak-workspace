@@ -24,7 +24,7 @@ Un nouveau document s’ouvre sans titre ; le fichier sur le disque n’est cré
 
 - Le menu **Fichier ▸ Ouvrir** (⌘O/ctrl+O) ouvre le sélecteur du système : .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Cliquez sur n’importe quel élément de la liste **Récents** de l’accueil.
-- `ieumoffice <file>` depuis un terminal ouvre aussi les fichiers.
+- `ttokttak <file>` depuis un terminal ouvre aussi les fichiers.
 
 ## Documents ODT
 

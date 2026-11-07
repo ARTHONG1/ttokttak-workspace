@@ -57,7 +57,7 @@ Der E-Book-Editor öffnet EPUB-Bücher (`.epub`) in einem Tab. Sie lesen das Buc
 - Ein senkrecht gesetztes Buch wird waagerecht, es sei denn, es wird ins Japanische, Chinesische oder Koreanische übersetzt. Übersetzungen ins Arabische und Hebräische laufen von rechts nach links.
 - Bereits Übersetztes bleibt erhalten. Wenn Sie anhalten, wählen Sie **Bisher Übersetztes exportieren** (der Rest bleibt in der Originalsprache) oder **Später fortsetzen**. Öffnen Sie ein Buch mit einer unfertigen Übersetzung, bietet GenOffice an, sie fortzusetzen. **Von vorn neu übersetzen** löscht zuerst die aufbewahrte Übersetzung für diese Sprache.
 - Aufbewahrte Übersetzungen werden unter Einstellungen ▸ Allgemein ▸ **Gespeicherte KI-Ergebnisse** zusammen mit denen von PDF-Dokumenten gezählt, und **Alle löschen** entfernt auch sie.
-- Dieselbe Übersetzung lässt sich auch über die [Kommandozeile](help://cli) mit `ieumoffice epub translate` ausführen.
+- Dieselbe Übersetzung lässt sich auch über die [Kommandozeile](help://cli) mit `ttokttak epub translate` ausführen.
 
 ## Noch nicht unterstützt
 

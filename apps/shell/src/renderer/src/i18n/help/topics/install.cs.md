@@ -35,4 +35,4 @@ Protože instalátor není podepsaný, spouštějte jen ten, který jste stáhli
 
 ## Příkazová řádka je součástí
 
-Každá instalace obsahuje příkaz `ieumoffice`, který mluví se stejnými enginy jako okno, takže se oba na souboru vždy shodnou. `ieumoffice install-cli` jej umístí do vaší `PATH`. Co umí, se dozvíte v kapitole [Příkazová řádka a agenti](help://cli).
+Každá instalace obsahuje příkaz `ttokttak`, který mluví se stejnými enginy jako okno, takže se oba na souboru vždy shodnou. `ttokttak install-cli` jej umístí do vaší `PATH`. Co umí, se dozvíte v kapitole [Příkazová řádka a agenti](help://cli).

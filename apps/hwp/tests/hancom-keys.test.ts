@@ -239,7 +239,7 @@ describe('Hangul sequences (Ctrl+N,T and the like)', () => {
     const ih = handler()
     hancomChordStart(ih, key({ key: 'm', code: 'KeyM', ctrlKey: true }))
     hancomChordKey(ih, key({ key: 'r', code: 'KeyR' }))
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:text-color-r')
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:text-color-r')
     expect(Object.keys(CHORDS.m).sort()).toEqual(Object.keys(TEXT_COLORS).sort())
   })
 
@@ -292,10 +292,10 @@ describe("the studio's shortcut table, made Hangul's", () => {
   })
 
   it('names Ctrl+1..0 and Ctrl+Alt+1..0 for the first ten styles', () => {
-    const styles = ADDED_SHORTCUTS.filter(([, id]) => id.startsWith('ieum:style-'))
+    const styles = ADDED_SHORTCUTS.filter(([, id]) => id.startsWith('ttok:style-'))
     expect(styles).toHaveLength(STYLE_KEYS * 2)
-    expect(styles.find(([def]) => def.key === '1' && !def.alt)?.[1]).toBe('ieum:style-1')
-    expect(styles.find(([def]) => def.key === '0' && !def.alt)?.[1]).toBe('ieum:style-10')
+    expect(styles.find(([def]) => def.key === '1' && !def.alt)?.[1]).toBe('ttok:style-1')
+    expect(styles.find(([def]) => def.key === '0' && !def.alt)?.[1]).toBe('ttok:style-10')
   })
 })
 
@@ -346,44 +346,44 @@ describe('the new commands', () => {
       { id: 1, name: '본문' },
       { id: 2, name: '개요 1' },
     ])
-    command('ieum:style-3').execute(s)
+    command('ttok:style-3').execute(s)
     expect(ih.applyStyle).toHaveBeenCalledWith(2)
-    command('ieum:style-10').execute(s)
+    command('ttok:style-10').execute(s)
     expect(ih.applyStyle).toHaveBeenCalledTimes(1)
   })
 
   it("colour the text with Hangul's colours", () => {
     const { services: s } = services()
-    command('ieum:text-color-d').execute(s)
+    command('ttok:text-color-d').execute(s)
     expect(s.eventBus.emit).toHaveBeenCalledWith('format-char', { textColor: '#993366' })
   })
 
   it('carry labels in the two languages the editor shows', () => {
-    expect(command('ieum:delete-line').label).toBe('한 줄 지우기')
-    expect(hancomCommands('en').find((c) => c.id === 'ieum:delete-line')!.label).toBe('Delete Line')
+    expect(command('ttok:delete-line').label).toBe('한 줄 지우기')
+    expect(hancomCommands('en').find((c) => c.id === 'ttok:delete-line')!.label).toBe('Delete Line')
   })
 
   it('cover every command the keys name', () => {
     const ids = new Set(hancomCommands('en').map((c) => c.id))
-    for (const [, id] of ADDED_SHORTCUTS) if (id.startsWith('ieum:')) expect(ids, id).toContain(id)
+    for (const [, id] of ADDED_SHORTCUTS) if (id.startsWith('ttok:')) expect(ids, id).toContain(id)
     for (const table of Object.values(CHORDS)) {
       for (const target of Object.values(table)) {
-        for (const id of [target].flat()) if (id.startsWith('ieum:')) expect(ids, id).toContain(id)
+        for (const id of [target].flat()) if (id.startsWith('ttok:')) expect(ids, id).toContain(id)
       }
     }
-    expect(studioCommandIds().some((id) => id.startsWith('ieum:'))).toBe(false)
+    expect(studioCommandIds().some((id) => id.startsWith('ttok:'))).toBe(false)
   })
 
   it('register the table commands the keys use', () => {
     const ids = new Set(hancomCommands('en').map((command) => command.id))
     for (const id of [
-      'ieum:table-insert-row-below',
-      'ieum:table-resize',
-      'ieum:table-order',
-      'ieum:table-wrap',
-      'ieum:table-block-resize',
-      'ieum:table-row-column-resize',
-      'ieum:table-cell-resize',
+      'ttok:table-insert-row-below',
+      'ttok:table-resize',
+      'ttok:table-order',
+      'ttok:table-wrap',
+      'ttok:table-block-resize',
+      'ttok:table-row-column-resize',
+      'ttok:table-cell-resize',
     ]) {
       expect(ids, id).toContain(id)
     }
@@ -512,7 +512,7 @@ describe("Ctrl+Y, Hangul's line deletion (as Hancom Hangul 2024 does it)", () =>
 })
 
 describe("Hangul's table row keys inside a cell", () => {
-  const inCell = (enabled = ['ieum:table-insert-row-below', 'table:delete-row']) => {
+  const inCell = (enabled = ['ttok:table-insert-row-below', 'table:delete-row']) => {
     const ih = handler(enabled)
     ih.cursor.isInCell = () => true
     return ih
@@ -523,7 +523,7 @@ describe("Hangul's table row keys inside a cell", () => {
     const e = key({ key: 'Enter', code: 'Enter', ctrlKey: true })
     expect(hancomContextKey(ih, e)).toBe(true)
     expect(e.preventDefault).toHaveBeenCalled()
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:table-insert-row-below')
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:table-insert-row-below')
   })
 
   it('puts the new row after a merged cell, reading its span live', () => {
@@ -534,7 +534,7 @@ describe("Hangul's table row keys inside a cell", () => {
     ih.executeOperation = vi.fn((desc: { operation: (w: typeof ih.wasm) => unknown }) =>
       desc.operation(ih.wasm),
     )
-    const command = hancomCommands('ko').find((c) => c.id === 'ieum:table-insert-row-below')!
+    const command = hancomCommands('ko').find((c) => c.id === 'ttok:table-insert-row-below')!
     command.execute({ getInputHandler: () => ih, wasm: ih.wasm })
     expect(ih.wasm.insertTableRow).toHaveBeenCalledWith(0, 1, 0, 5, true)
     expect(ih.wasm.mergeTableCells).toHaveBeenCalledWith(0, 1, 0, 6, 0, 6, 1)
@@ -558,7 +558,7 @@ describe("Hangul's table row keys inside a cell", () => {
   })
 
   it('leaves both keys alone outside a table', () => {
-    const ih = handler(['ieum:table-insert-row-below', 'table:delete-row'])
+    const ih = handler(['ttok:table-insert-row-below', 'table:delete-row'])
     for (const e of [
       key({ key: 'Enter', code: 'Enter', ctrlKey: true }),
       key({ key: 'Backspace', code: 'Backspace', ctrlKey: true }),
@@ -608,9 +608,9 @@ describe('the table-object keys (표를 선택한 상태에서)', () => {
   it('run the command of the letter, and keep the letter out', () => {
     const keys = [
       ['p', 'table:cell-props'],
-      ['t', 'ieum:table-transpose'],
-      ['l', 'ieum:table-border-each'],
-      ['c', 'ieum:table-border-background'],
+      ['t', 'ttok:table-transpose'],
+      ['l', 'ttok:table-border-each'],
+      ['c', 'ttok:table-border-background'],
     ] as const
     for (const [letter, id] of keys) {
       const ih = inObject([id])
@@ -825,28 +825,28 @@ describe('Phase 1B cell block keys', () => {
   })
 
   it('resizes the block for Alt+arrow', () => {
-    const ih = inBlock(['ieum:table-block-resize'])
+    const ih = inBlock(['ttok:table-block-resize'])
     const e = key({ key: 'ArrowRight', code: 'ArrowRight', altKey: true })
     expect(hancomCellBlockKey(ih, e)).toBe(true)
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:table-block-resize', {
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:table-block-resize', {
       direction: 'right',
     })
   })
 
   it('resizes whole rows/columns for Ctrl+arrow', () => {
-    const ih = inBlock(['ieum:table-row-column-resize'])
+    const ih = inBlock(['ttok:table-row-column-resize'])
     const e = key({ key: 'ArrowDown', code: 'ArrowDown', ctrlKey: true })
     expect(hancomCellBlockKey(ih, e)).toBe(true)
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:table-row-column-resize', {
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:table-row-column-resize', {
       direction: 'down',
     })
   })
 
   it('resizes one cell for Shift+arrow', () => {
-    const ih = inBlock(['ieum:table-cell-resize'])
+    const ih = inBlock(['ttok:table-cell-resize'])
     const e = key({ key: 'ArrowRight', code: 'ArrowRight', shiftKey: true })
     expect(hancomCellBlockKey(ih, e)).toBe(true)
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:table-cell-resize', {
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:table-cell-resize', {
       direction: 'right',
     })
   })
@@ -874,18 +874,18 @@ describe('Phase 1B table-object keys', () => {
     const cases = [
       [
         { key: 'ArrowRight', code: 'ArrowRight', shiftKey: true },
-        'ieum:table-resize',
+        'ttok:table-resize',
         { direction: 'right' },
       ],
       [
         { key: 'ArrowUp', code: 'ArrowUp', shiftKey: true },
-        'ieum:table-resize',
+        'ttok:table-resize',
         { direction: 'up' },
       ],
-      [{ key: 'PageUp', code: 'PageUp', shiftKey: true }, 'ieum:table-order', { mode: 'front' }],
-      [{ key: 'PageDown', code: 'PageDown', shiftKey: true }, 'ieum:table-order', { mode: 'back' }],
-      [{ key: 'Home', code: 'Home', shiftKey: true }, 'ieum:table-wrap', { mode: 'front' }],
-      [{ key: 'End', code: 'End', shiftKey: true }, 'ieum:table-wrap', { mode: 'back' }],
+      [{ key: 'PageUp', code: 'PageUp', shiftKey: true }, 'ttok:table-order', { mode: 'front' }],
+      [{ key: 'PageDown', code: 'PageDown', shiftKey: true }, 'ttok:table-order', { mode: 'back' }],
+      [{ key: 'Home', code: 'Home', shiftKey: true }, 'ttok:table-wrap', { mode: 'front' }],
+      [{ key: 'End', code: 'End', shiftKey: true }, 'ttok:table-wrap', { mode: 'back' }],
     ] as const
     for (const [init, id, params] of cases) {
       const ih = inObject([id])
@@ -1372,7 +1372,7 @@ describe('against the studio source the build fetched', () => {
     const { defaultShortcuts, matchShortcut } = await import(/* @vite-ignore */ map)
     const table = adaptToHancom([...defaultShortcuts])
     const match = (init: Partial<KeyboardEvent>) => matchShortcut(key(init), table, 'other')
-    expect(match({ key: 'y', code: 'KeyY', ctrlKey: true })).toBe('ieum:delete-line')
+    expect(match({ key: 'y', code: 'KeyY', ctrlKey: true })).toBe('ttok:delete-line')
     expect(match({ key: 'z', code: 'KeyZ', ctrlKey: true, shiftKey: true })).toBe('edit:redo')
     expect(match({ key: 'C', code: 'KeyC', ctrlKey: true, shiftKey: true })).toBe(
       'format:align-center',
@@ -1385,7 +1385,7 @@ describe('against the studio source the build fetched', () => {
     )
     // Alt+Shift+C is Hangul's 보통 모양 now, no longer rhwp's stand-in for centering
     expect(match({ key: 'C', code: 'KeyC', altKey: true, shiftKey: true })).toBe(
-      'ieum:normal-shape',
+      'ttok:normal-shape',
     )
     expect(match({ key: 'H', code: 'KeyH', altKey: true, shiftKey: true })).toBeNull()
     expect(match({ key: 'P', code: 'KeyP', altKey: true, shiftKey: true })).toBe(
@@ -1398,11 +1398,11 @@ describe('against the studio source the build fetched', () => {
     // rhwp's Alt+F10 stays: Hangul gives it nothing to do in the body
     expect(match({ key: 'f10', code: 'F10', altKey: true })).toBe('insert:symbols')
     expect(match({ key: 'h', code: 'KeyH', ctrlKey: true })).toBe('edit:find-replace')
-    expect(match({ key: '0', code: 'Digit0', ctrlKey: true })).toBe('ieum:style-10')
-    expect(match({ key: '1', code: 'Digit1', ctrlKey: true })).toBe('ieum:style-1')
+    expect(match({ key: '0', code: 'Digit0', ctrlKey: true })).toBe('ttok:style-10')
+    expect(match({ key: '1', code: 'Digit1', ctrlKey: true })).toBe('ttok:style-1')
     // the IME reports a Ctrl key as "Process" while it composes; the physical key decides
     expect(match({ key: 'Process', code: 'KeyY', ctrlKey: true, keyCode: 229 })).toBe(
-      'ieum:delete-line',
+      'ttok:delete-line',
     )
     expect(
       match({ key: 'Process', code: 'KeyC', ctrlKey: true, shiftKey: true, keyCode: 229 }),

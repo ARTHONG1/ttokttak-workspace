@@ -6,9 +6,9 @@ import type { McpLaunch } from './mcp-launch'
 import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND, MCP_SERVER_NAME } from './names'
 
 /**
- * Registering `ieumoffice mcp` (stdio) in each coding agent's MCP config, the
+ * Registering `ttokttak mcp` (stdio) in each coding agent's MCP config, the
  * MCP twin of agent-skills.ts. One key per file is set or removed; an entry
- * named ieumoffice that starts something other than an ieumoffice launcher is
+ * named ttokttak that starts something other than an ttokttak launcher is
  * never replaced unless forced. Paths and shapes follow each agent's docs.
  * The upstream app's `genoffice` entry is another program's: never read as
  * ours, never replaced, never removed.
@@ -17,13 +17,13 @@ import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND, MCP_SERVER_NAME } from '
 export { MCP_SERVER_NAME }
 
 export type McpEntryStatus =
-  /** no ieumoffice entry in the file */
+  /** no ttokttak entry in the file */
   | 'absent'
-  /** ieumoffice entry starting our launcher, exactly as this CLI would write it */
+  /** ttokttak entry starting our launcher, exactly as this CLI would write it */
   | 'registered'
-  /** an ieumoffice launcher, but another path or extra fields */
+  /** an ttokttak launcher, but another path or extra fields */
   | 'stale'
-  /** an entry named ieumoffice that starts something else */
+  /** an entry named ttokttak that starts something else */
   | 'occupied'
   /** the file cannot be edited safely (unparsable, or a shape we do not know) */
   | 'manual'
@@ -190,7 +190,7 @@ export function readMcpEntry(id: AgentId, file: string, launch: McpLaunch): McpE
   return { status: isGenofficeLauncher(command, args) ? 'stale' : 'occupied', command }
 }
 
-/** Set the ieumoffice entry (replacing any existing one); the caller has already decided that is allowed. */
+/** Set the ttokttak entry (replacing any existing one); the caller has already decided that is allowed. */
 export function writeMcpEntry(id: AgentId, file: string, launch: McpLaunch): void {
   const def = MCP_AGENTS.find((a) => a.id === id)!
   const text = existsSync(file) ? readFileSync(file, 'utf-8') : ''
@@ -207,7 +207,7 @@ export function writeMcpEntry(id: AgentId, file: string, launch: McpLaunch): voi
   save(file, `${JSON.stringify(doc, null, 2)}\n`)
 }
 
-/** Remove the ieumoffice entry; false when there was none. Other keys stay. */
+/** Remove the ttokttak entry; false when there was none. Other keys stay. */
 export function removeMcpEntry(id: AgentId, file: string): boolean {
   const def = MCP_AGENTS.find((a) => a.id === id)!
   if (!existsSync(file)) return false
@@ -229,6 +229,47 @@ export function removeMcpEntry(id: AgentId, file: string): boolean {
   return true
 }
 
+/** The key releases up to 0.16.2 registered this server under (the base project's command name). */
+export const LEGACY_MCP_SERVER_NAME = 'ieumoffice'
+
+/** An entry that starts something inside this product's install (its launcher or its app binary). */
+function startsThisProduct(command: string | null, args: string[]): boolean {
+  return [command ?? '', ...args].some((part) => part.includes(APP_BINARY_NAME))
+}
+
+/**
+ * Moves the entry an earlier release of this app wrote under the legacy key to
+ * the current key, pointed at `launch`. An entry under that key that starts
+ * another program (the base project's own app) is left alone. False when there
+ * was nothing of ours to move.
+ */
+export function migrateLegacyMcpEntry(id: AgentId, file: string, launch: McpLaunch): boolean {
+  const def = MCP_AGENTS.find((a) => a.id === id)
+  if (!def || !existsSync(file)) return false
+  const text = readFileSync(file, 'utf-8')
+  if (def.shape.kind === 'toml') {
+    const header = tomlHeader(LEGACY_MCP_SERVER_NAME)
+    const lines = text.split('\n')
+    const ranges = tomlTableLines(lines, header)
+    const own = ranges.find(([start]) => !header.exec(lines[start]!)?.[1])
+    if (!own) return false
+    const block = lines.slice(own[0], own[1])
+    if (!startsThisProduct(tomlString(block, 'command'), tomlStrings(block, 'args'))) return false
+    save(file, removeTomlTable(text, header))
+  } else {
+    const doc = text.trim() ? parseJsonObject(text) : null
+    const map = doc?.[def.shape.key]
+    if (!doc || !isRecord(map) || !(LEGACY_MCP_SERVER_NAME in map)) return false
+    const { command, args } = def.shape.launchOf(map[LEGACY_MCP_SERVER_NAME])
+    if (!startsThisProduct(command, args)) return false
+    const { [LEGACY_MCP_SERVER_NAME]: _legacy, ...rest } = map
+    doc[def.shape.key] = rest
+    save(file, `${JSON.stringify(doc, null, 2)}\n`)
+  }
+  writeMcpEntry(id, file, launch)
+  return true
+}
+
 const LAUNCHER_NAMES = new Set(
   [CLI_COMMAND, `${CLI_COMMAND}.cmd`, `${APP_BINARY_NAME}.exe`].map((n) => n.toLowerCase()),
 )
@@ -237,7 +278,7 @@ const LAUNCHER_NAMES = new Set(
 const UPSTREAM_LAUNCHER_NAMES = new Set(['genoffice', 'genoffice.cmd', 'genoffice.exe'])
 
 /**
- * Any ieumoffice launcher, whatever install it came from (an older app path is
+ * Any ttokttak launcher, whatever install it came from (an older app path is
  * ours to update): the launcher scripts, or the app run as Node on the CLI
  * bundle. The bundle keeps the upstream file name, so an entry running it on
  * the upstream binary is the upstream's, not ours.
@@ -299,10 +340,15 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v)
 }
 
-const TOML_HEADER =
-  /^\s*\[\s*mcp_servers\s*\.\s*(?:"ieumoffice"|'ieumoffice'|ieumoffice)\s*(\.[^\]]*)?\]/
+function tomlHeader(name: string): RegExp {
+  return new RegExp(
+    `^\\s*\\[\\s*mcp_servers\\s*\\.\\s*(?:"${name}"|'${name}'|${name})\\s*(\\.[^\\]]*)?\\]`,
+  )
+}
 
-/** `env` becomes the `[mcp_servers.ieumoffice.env]` sub-table Codex reads its `env` map from. */
+const TOML_HEADER = tomlHeader(MCP_SERVER_NAME)
+
+/** `env` becomes the `[mcp_servers.ttokttak.env]` sub-table Codex reads its `env` map from. */
 function tomlTable(launch: McpLaunch): string {
   const head = `[mcp_servers.${MCP_SERVER_NAME}]\ncommand = ${JSON.stringify(launch.command)}\nargs = ${JSON.stringify(launch.args)}\n`
   const env = Object.entries(launch.env ?? {})
@@ -311,11 +357,11 @@ function tomlTable(launch: McpLaunch): string {
   return `${head}\n[mcp_servers.${MCP_SERVER_NAME}.env]\n${body}\n`
 }
 
-/** The `[mcp_servers.ieumoffice]` table and its sub-tables (`[mcp_servers.ieumoffice.env]`), as line ranges. */
-function tomlTableLines(lines: string[]): Array<[number, number]> {
+/** The `[mcp_servers.ttokttak]` table and its sub-tables (`[mcp_servers.ttokttak.env]`), as line ranges. */
+function tomlTableLines(lines: string[], header = TOML_HEADER): Array<[number, number]> {
   const out: Array<[number, number]> = []
   for (let i = 0; i < lines.length; i++) {
-    if (!TOML_HEADER.test(lines[i]!)) continue
+    if (!header.test(lines[i]!)) continue
     let end = i + 1
     while (end < lines.length && !/^\s*\[/.test(lines[end]!)) end++
     out.push([i, end])
@@ -369,9 +415,9 @@ function tomlStrings(block: string[], key: string): string[] {
   }
 }
 
-function removeTomlTable(text: string): string {
+function removeTomlTable(text: string, header = TOML_HEADER): string {
   const lines = text.split('\n')
-  const ranges = tomlTableLines(lines)
+  const ranges = tomlTableLines(lines, header)
   if (!ranges.length) return text
   const keep: string[] = []
   let i = 0

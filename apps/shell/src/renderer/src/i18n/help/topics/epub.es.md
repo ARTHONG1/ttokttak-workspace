@@ -57,7 +57,7 @@ El editor de libros electrónicos abre libros EPUB (`.epub`) en una pestaña. Pu
 - Un libro escrito en vertical pasa a horizontal, salvo que se traduzca al japonés, al chino o al coreano. Las traducciones al árabe y al hebreo se leen de derecha a izquierda.
 - Lo ya traducido se conserva. Si se detiene, elija **Exportar lo traducido hasta ahora** (el resto queda en el idioma original) o **Continuar más tarde**. Al abrir un libro con una traducción sin terminar, GenOffice ofrece continuarla. **Volver a traducir desde el principio** borra primero la traducción conservada para ese idioma.
 - Las traducciones conservadas cuentan en Configuración ▸ General ▸ **Resultados de IA guardados**, junto con las de los documentos PDF, y **Eliminar todo** también las borra.
-- La misma traducción también puede ejecutarse desde la [línea de comandos](help://cli) como `ieumoffice epub translate`.
+- La misma traducción también puede ejecutarse desde la [línea de comandos](help://cli) como `ttokttak epub translate`.
 
 ## Todavía no disponible
 

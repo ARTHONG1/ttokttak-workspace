@@ -59,38 +59,38 @@ afterAll(() => {
 describe('installing a font file the user already has', () => {
   it('copies it into the store and the registry resolves the family afterwards', () => {
     initFontStore()
-    expect(familyAvailable('Ieum Probe Sans')).toBe(false)
+    expect(familyAvailable('Ttok Probe Sans')).toBe(false)
 
     // named the way a download folder names things, nothing like the family
     const regular = join(picked, 'font (3).ttf')
     const bold = join(picked, 'font (3) bold.ttf')
-    writeFileSync(regular, fontBytes('Ieum Probe Sans'))
-    writeFileSync(bold, fontBytes('Ieum Probe Sans', 'Bold'))
+    writeFileSync(regular, fontBytes('Ttok Probe Sans'))
+    writeFileSync(bold, fontBytes('Ttok Probe Sans', 'Bold'))
     const notAFont = join(picked, 'readme.ttf')
     writeFileSync(notAFont, 'this is a text file with a font extension')
 
-    expect(installLocalFontFiles([regular, bold, notAFont])).toEqual(['Ieum Probe Sans'])
+    expect(installLocalFontFiles([regular, bold, notAFont])).toEqual(['Ttok Probe Sans'])
     expect(
-      readFileSync(join(fontStoreDir(), 'Ieum Probe Sans.ttf')).equals(readFileSync(regular)),
+      readFileSync(join(fontStoreDir(), 'Ttok Probe Sans.ttf')).equals(readFileSync(regular)),
     ).toBe(true)
-    expect(existsSync(join(fontStoreDir(), 'Ieum Probe Sans-Bold.ttf'))).toBe(true)
+    expect(existsSync(join(fontStoreDir(), 'Ttok Probe Sans-Bold.ttf'))).toBe(true)
 
     // what the fonts-changed path does before it relays every open deck
     resetFontRegistry()
-    expect(familyAvailable('Ieum Probe Sans')).toBe(true)
-    expect(familyAvailable('Ieum Probe Serif')).toBe(false)
+    expect(familyAvailable('Ttok Probe Sans')).toBe(true)
+    expect(familyAvailable('Ttok Probe Serif')).toBe(false)
   })
 
   it('a family an earlier version downloaded into the store keeps resolving', () => {
     // The removed downloader named its files <Family>-<style>.ttf in this same flat folder.
     mkdirSync(fontStoreDir(), { recursive: true })
-    writeFileSync(join(fontStoreDir(), 'IeumLegacySans-regular.ttf'), fontBytes('Ieum Legacy Sans'))
+    writeFileSync(join(fontStoreDir(), 'TtokLegacySans-regular.ttf'), fontBytes('Ttok Legacy Sans'))
     writeFileSync(
-      join(fontStoreDir(), 'IeumLegacySans-bold.ttf'),
-      fontBytes('Ieum Legacy Sans', 'Bold'),
+      join(fontStoreDir(), 'TtokLegacySans-bold.ttf'),
+      fontBytes('Ttok Legacy Sans', 'Bold'),
     )
     initFontStore()
     resetFontRegistry()
-    expect(familyAvailable('Ieum Legacy Sans')).toBe(true)
+    expect(familyAvailable('Ttok Legacy Sans')).toBe(true)
   })
 })

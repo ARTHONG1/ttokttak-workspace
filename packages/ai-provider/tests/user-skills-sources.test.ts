@@ -73,7 +73,7 @@ function fakeHome(): { home: string; builtin: string } {
   const home = temp()
   const builtin = join(home, 'app-resources', 'builtin-skills')
   skill(builtin, 'meeting-minutes')
-  skill(join(home, '.ieumoffice', 'skills'), 'mine')
+  skill(join(home, '.ttokttak', 'skills'), 'mine')
   skill(join(home, '.claude', 'skills'), 'claude-one')
   skill(join(home, '.agents', 'skills'), 'agents-one')
   skill(join(home, '.codex', 'skills'), 'codex-home-one')
@@ -111,8 +111,8 @@ describe('identifiers', () => {
 describe('sources', () => {
   it('skips hidden folders such as an install that is still staging', async () => {
     const home = temp()
-    const app = join(home, '.ieumoffice', 'skills')
-    skill(app, '.ieum-staging-abc123', { name: 'half-copied' })
+    const app = join(home, '.ttokttak', 'skills')
+    skill(app, '.ttok-staging-abc123', { name: 'half-copied' })
     skill(app, 'kept')
     const skills = await readUserSkillsFrom([{ source: 'app', dir: app }], { homeDir: home })
     expect(skills.map((entry) => entry.name)).toEqual(['kept'])
@@ -123,7 +123,7 @@ describe('sources', () => {
     const sources = await userSkillSources({ homeDir: home, builtinDir: builtin, projectRoot: 'P' })
     expect(sources).toEqual([
       { source: 'builtin', dir: builtin },
-      { source: 'app', dir: join(home, '.ieumoffice', 'skills') },
+      { source: 'app', dir: join(home, '.ttokttak', 'skills') },
       { source: 'user', dir: join(home, '.claude', 'skills') },
       {
         source: 'plugin',
@@ -218,14 +218,14 @@ describe('the list', () => {
     expect(ids(await listUserSkills({ homeDir: home }))).toEqual(['user:shared'])
   })
 
-  it('never reads the genoffice or ieumoffice skill, in any case, by folder or by name', async () => {
+  it('never reads the genoffice or ttokttak skill, in any case, by folder or by name', async () => {
     const home = temp()
     const claude = join(home, '.claude', 'skills')
     skill(claude, 'genoffice')
-    skill(claude, 'IeumOffice')
+    skill(claude, 'TtokTtak')
     skill(claude, 'other-folder', { name: 'GenOffice' })
     skill(claude, 'kept')
-    skill(join(home, '.ieumoffice', 'skills'), 'ieumoffice')
+    skill(join(home, '.ttokttak', 'skills'), 'ttokttak')
     const skills = await listUserSkills({ homeDir: home })
     expect(ids(skills)).toEqual(['user:kept'])
   })
@@ -274,7 +274,7 @@ describe('the list', () => {
 
   it('lists the same name from different sources side by side', async () => {
     const { home, builtin } = fakeHome()
-    skill(join(home, '.ieumoffice', 'skills'), 'meeting-minutes')
+    skill(join(home, '.ttokttak', 'skills'), 'meeting-minutes')
     const skills = await listUserSkills({ homeDir: home, builtinDir: builtin })
     expect(ids(skills).filter((id) => id.endsWith(':meeting-minutes'))).toEqual([
       'builtin:meeting-minutes',
@@ -310,10 +310,10 @@ describe('the list', () => {
         },
       ]),
     )
-    skill(join(home, '.ieumoffice', 'skills'), 'from-github', {
-      files: { '.ieum-source.json': '{"kind":"github"}' },
+    skill(join(home, '.ttokttak', 'skills'), 'from-github', {
+      files: { '.ttok-source.json': '{"kind":"github"}' },
     })
-    skill(join(home, '.ieumoffice', 'skills'), 'local')
+    skill(join(home, '.ttokttak', 'skills'), 'local')
     const skills = await listUserSkills({ homeDir: home, builtinDir: builtin })
     const by = (id: string) => skills.find((entry) => entry.id === id)
     expect(by('builtin:find-skills')?.agentOnly).toBe(true)
@@ -334,7 +334,7 @@ describe('one skill folder', () => {
     const base = temp()
     expect(await readUserSkillFolder(skill(base, 'GenOffice'), { source: 'app' })).toBeUndefined()
     expect(
-      await readUserSkillFolder(skill(base, 'x', { name: 'ieumoffice' }), { source: 'app' }),
+      await readUserSkillFolder(skill(base, 'x', { name: 'ttokttak' }), { source: 'app' }),
     ).toBeUndefined()
   })
 
@@ -342,7 +342,7 @@ describe('one skill folder', () => {
     const base = temp()
     const dir = skill(base, 'home-letter', {
       frontmatter:
-        '---\nname: home-letter\ndescription: |\n  Writes a letter home.\n  Two lines.\nmetadata:\n  ieum-title: 가정통신문\n  ieum-template: assets/양식.hwpx\n---\n',
+        '---\nname: home-letter\ndescription: |\n  Writes a letter home.\n  Two lines.\nmetadata:\n  ttok-title: 가정통신문\n  ttok-template: assets/양식.hwpx\n---\n',
       files: { 'assets/양식.hwpx': 'binary' },
     })
     const read = await readOne(dir, { source: 'app' })
@@ -361,7 +361,7 @@ describe('one skill folder', () => {
   it('falls back to the name for the title and notes a template file that is missing', async () => {
     const dir = skill(temp(), 'plain', {
       frontmatter:
-        '---\nname: plain\ndescription: d\nmetadata:\n  ieum-template: assets/gone.docx\n---\n',
+        '---\nname: plain\ndescription: d\nmetadata:\n  ttok-template: assets/gone.docx\n---\n',
     })
     const read = await readOne(dir, { source: 'app' })
     expect(read).toMatchObject({
@@ -374,7 +374,7 @@ describe('one skill folder', () => {
   it('ignores a template path outside assets/', async () => {
     for (const path of ['../x.docx', 'x.docx', 'assets/../../x.docx', '/abs/assets/x.docx']) {
       const dir = skill(temp(), 'tpl', {
-        frontmatter: `---\nname: tpl\ndescription: d\nmetadata:\n  ieum-template: ${path}\n---\n`,
+        frontmatter: `---\nname: tpl\ndescription: d\nmetadata:\n  ttok-template: ${path}\n---\n`,
       })
       const read = await readOne(dir, { source: 'app' })
       expect(read.template).toBeUndefined()

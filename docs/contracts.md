@@ -4,13 +4,13 @@
 
 ## 공통
 
-- 모든 바깥 이름은 `ieumoffice`다. 명령어, MCP 등록 이름, 에이전트 스킬 이름과 폴더, 홈 폴더 아래 `.ieumoffice`.
+- 모든 바깥 이름은 `ttokttak`다. 명령어, MCP 등록 이름, 에이전트 스킬 이름과 폴더, 홈 폴더 아래 `.ttokttak`.
 - 원본이 쓰는 이름(`genoffice` 명령어, `~/.genoffice`, `genoffice` 연동 항목과 스킬 폴더)은 읽지도 쓰지도 않는다. 두 프로그램은 한 PC에 함께 있을 수 있다.
 - 문서 명령은 PC 안에서 끝난다. 밖으로 무언가를 보내는 명령은 `search`, `image`, `media`, `read-url`, `pdf ai-read`, `pdf translate`, `epub translate` 일곱뿐이다. 뒤의 셋은 `--yes`가 있을 때만 보낸다.
 
-## 터미널 명령어 `ieumoffice`
+## 터미널 명령어 `ttokttak`
 
-**부르는 법.** 설치본은 명령어 폴더(`<설치 폴더>\resources\cli`)를 사용자 PATH에 넣는다. PATH에 없어도 `~/.ieumoffice/launcher`에 그 폴더의 위치가 적혀 있다. 전체 명령 목록은 `ieumoffice help`.
+**부르는 법.** 설치본은 명령어 폴더(`<설치 폴더>\resources\cli`)를 사용자 PATH에 넣는다. PATH에 없어도 `~/.ttokttak/launcher`에 그 폴더의 위치가 적혀 있다. 전체 명령 목록은 `ttokttak help`.
 
 **출력.**
 
@@ -25,7 +25,7 @@
 - `GENOFFICE_ALLOWED_ROOTS`가 있으면 그 폴더들 밖의 파일은 읽지도 쓰지도 않는다. 심볼릭 링크는 풀어서 본다. 벗어나면 종료 코드 2와 `detail.allowed_roots`.
 - 이미 있는 다른 파일 위에 쓰려면 `--force`가 필요하다. 제자리 편집에는 필요 없다. 모르는 옵션은 무시하지 않고 거절한다.
 - 앱의 탭에 열려 있는 파일은 제자리에서 고치지 않는다(종료 코드 2, `detail.gui_pid`). `--force`면 쓴다.
-- 실행한 명령마다 `~/.ieumoffice/cli-audit.jsonl`에 한 줄을 남긴다(`ts`, `pid`, `command`, `argv`, `status`, `code`, `output_path`, `ms`, `cwd`). 2MB에서 돌린다.
+- 실행한 명령마다 `~/.ttokttak/cli-audit.jsonl`에 한 줄을 남긴다(`ts`, `pid`, `command`, `argv`, `status`, `code`, `output_path`, `ms`, `cwd`). 2MB에서 돌린다.
 
 **ODT(`.odt`).**
 
@@ -142,7 +142,7 @@
 
 ## 웹 페이지 읽기 (`read-url`)
 
-`ieumoffice read-url <url> [--offset <n>]`은 http(s) 주소 하나를 그 사이트에서 받아 읽을 수 있는 글로 돌려준다. HTML은 글자로 바꾸고, GitHub `blob` 주소는 raw 주소로 바꿔 읽는다. 주소는 `fetchWithSsrfGuard`를 지나며 사설·루프백 주소와 그런 곳으로 가는 리다이렉트는 거절한다. 한 번에 50,000자를 주고, 이어 읽기는 `--offset`(기본 0)으로 한다. 제공자·구독·자동 호출 장부를 쓰지 않는다. 비공개 GitHub 파일은 설정의 읽기 토큰을 쓰며, 그 토큰은 `api.github.com` 요청에만 실린다.
+`ttokttak read-url <url> [--offset <n>]`은 http(s) 주소 하나를 그 사이트에서 받아 읽을 수 있는 글로 돌려준다. HTML은 글자로 바꾸고, GitHub `blob` 주소는 raw 주소로 바꿔 읽는다. 주소는 `fetchWithSsrfGuard`를 지나며 사설·루프백 주소와 그런 곳으로 가는 리다이렉트는 거절한다. 한 번에 50,000자를 주고, 이어 읽기는 `--offset`(기본 0)으로 한다. 제공자·구독·자동 호출 장부를 쓰지 않는다. 비공개 GitHub 파일은 설정의 읽기 토큰을 쓰며, 그 토큰은 `api.github.com` 요청에만 실린다.
 
 - 성공 요약: `<host>: characters <offset>..<end> of <totalChars> (continue with --offset <next>)`. 더 읽을 글이 없으면 끝에 `(end)`가 붙는다.
 - 성공 `detail`: `{ url, title?, text, offset, totalChars, truncated, nextOffset? }`. `url`은 리다이렉트를 따른 최종 주소, `title`은 페이지 제목이 있을 때, `text`는 이번에 준 글, `offset`은 그 글의 시작 위치, `totalChars`는 글 전체 길이, `truncated`는 뒤에 더 있을 때 참, `nextOffset`은 다음 시작 위치(뒤에 더 있을 때만)다.
@@ -176,7 +176,7 @@
 - 사용자가 허용하고 직접 고른 종량 로그인은 구독이 아니라 키 경로로 친다.
 - 구독에 로그인된 계정(이메일)과 프로그램의 모델 목록은 이 명령들의 출력 어디에도 나오지 않는다. `capabilities`의 답, 도구 결과, 실행 기록(`cli-audit.jsonl`) 모두 같다. 계정은 앱의 설정 화면에만 보인다.
 
-**`ieumoffice capabilities --json`** 은 모델을 부르지 않고, 위 세 명령이 지금 무엇을 할지 알려 준다. `detail`:
+**`ttokttak capabilities --json`** 은 모델을 부르지 않고, 위 세 명령이 지금 무엇을 할지 알려 준다. `detail`:
 
 | 항목                                                                                               | 값                                                                                             |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -206,18 +206,18 @@
 | `auth`                                                                                                                                                | GitHub가 읽기 토큰을 거절함(`read-url`)                           | 설정의 GitHub 읽기 토큰을 확인     |
 | `not-connected`, `signed-out`, `not-installed`, `metered-not-accepted`, `needs-update`, `unsafe-tools`, `timeout`, `network`, `overloaded`, `credits` | 실행이 그 이유로 실패                                             | 이유에 따라                        |
 
-## MCP 서버 (`ieumoffice mcp`)
+## MCP 서버 (`ttokttak mcp`)
 
 - 표준 입출력으로 같은 명령들을 도구로 내놓는다. `--http <포트>`를 주면 Streamable HTTP로 내놓는다(`--host`, `--token`).
-- 등록 예: `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`. `ieumoffice mcp install <에이전트|all>`이 각 에이전트의 설정 파일에 `ieumoffice` 항목만 쓴다. 같은 이름의 항목이 다른 프로그램을 가리키면 `occupied`로 알리고 `--force` 없이는 건드리지 않는다.
+- 등록 예: `claude mcp add --transport stdio ttokttak -- ttokttak mcp`. `ttokttak mcp install <에이전트|all>`이 각 에이전트의 설정 파일에 `ttokttak` 항목만 쓴다. 같은 이름의 항목이 다른 프로그램을 가리키면 `occupied`로 알리고 `--force` 없이는 건드리지 않는다.
 - 도구는 명령 동사마다 하나다(`docs_read`, `docs_apply`, `sheet_apply`, `slides_render`, `convert`, `read_url`, `pdf_read`, `pdf_images`, `pdf_ai_read`, `pdf_translate`, `pdf_status`, `epub_translate`, `epub_status` 등). 매개변수는 명령의 옵션 목록에서 그대로 나온다(`allow-paid`는 `allow_paid`, `no-cover`는 `no_cover`). 두 표면이 어긋나지 않는다.
 - `pdf_ai_read`·`pdf_translate`·`epub_translate`는 `yes`가 없으면 명령처럼 예상만 답한다. `yes`가 있으면 작업을 MCP 서버 프로세스 안에서 띄우고 바로 답한다(`detail.started: true`, `detail.estimate`). 진행, 멈춘 이유, `resetsAt`, 결과 파일 경로는 `pdf_status`(EPUB은 `epub_status`)의 `job`으로 본다. 이어하기는 같은 도구를 다시 부르면 된다.
 - 그 결과 파일은 작업이 끝날 때 쓴다. `partial: true`로 부른 작업은 멈출 때 끝난 부분만 반영해 쓴다. 위치 규칙은 명령어와 같고, 경로는 `job.outputs`로 알려 준다.
 - 서버가 끝나면 그 작업도 멈춘다(`last_error: "interrupted"`). 보관된 결과는 남는다.
 - 결과는 `--json`이 내는 것과 같은 객체다. 실패는 `isError`와 같은 `error` 이유로 온다.
 - 환경변수 `GENOFFICE_MCP_COMPACT_SCHEMAS`는 예전 철자를 유지한다. `--http`의 토큰은 `--token`, 없으면 `GENOFFICE_MCP_TOKEN`에서 읽고, 둘 다 없으면 인증 없이 받는다. 인증 없이 받는 것은 이 PC 주소(`127.0.0.1`, `localhost`, `::1`)에서 열 때뿐이다. 그 밖의 `--host`에 토큰이 없으면 서버를 열지 않고 종료 코드 1, `error: "invalid_argument"`로 끝난다. 에이전트 설정 폴더를 찾을 때의 홈 폴더는 `GENOFFICE_HOME`으로 바꿀 수 있다.
-- 안내 자료는 리소스로도 내놓는다(`ieumoffice://guide/docs`, `…/sheets`, `…/slides`, `…/slides/design`, `…/slides/spec`, `…/slides/templates`, 내장 템플릿마다 `…/slides/templates/<id>`).
-- 내장 디자인 템플릿은 `ieumoffice guide slides templates [<id>]`로 고른다. 목록의 `--json`은 `detail.templates`(`[{ id, name, scheme, description, fonts }]`, 정해진 순서), 템플릿 하나는 `detail`(`{ id, name, scheme, description, fonts, styleSheet }`)이다. 모르는 id는 종료 코드 1, `error: "invalid_argument"`, `detail.templates`에 쓸 수 있는 id 목록이다. MCP `guide` 도구는 세 번째 위치 인자 `name`으로 id를 받는다.
+- 안내 자료는 리소스로도 내놓는다(`ttokttak://guide/docs`, `…/sheets`, `…/slides`, `…/slides/design`, `…/slides/spec`, `…/slides/templates`, 내장 템플릿마다 `…/slides/templates/<id>`).
+- 내장 디자인 템플릿은 `ttokttak guide slides templates [<id>]`로 고른다. 목록의 `--json`은 `detail.templates`(`[{ id, name, scheme, description, fonts }]`, 정해진 순서), 템플릿 하나는 `detail`(`{ id, name, scheme, description, fonts, styleSheet }`)이다. 모르는 id는 종료 코드 1, `error: "invalid_argument"`, `detail.templates`에 쓸 수 있는 id 목록이다. MCP `guide` 도구는 세 번째 위치 인자 `name`으로 id를 받는다.
 - 앱의 설정 → 연동 화면이 지금 설치본에 맞는 등록 예시를 보여 준다.
 
 ## 앱 안 MCP 서버
@@ -226,8 +226,8 @@
 
 - 설정 → 연동에서 켠다. 기본은 꺼짐이다. 기본 포트는 3093이고 이 PC(`127.0.0.1`)에서만 닿는다. 인증은 없고, 요청의 Host·Origin이 이 PC의 것이 아니면 거절한다.
 - 도구: `get_app_info`, `open_documents`, `open_in_genoffice`(이 이름은 예전 철자를 유지한다), `create_session`, `save_session`, `read_document`, `read_docx`, `read_sheet`, `read_deck`, `read_pdf`, `create_docx`, `create_xlsx`, `create_pptx`, `apply_ops`, `apply_sheet_ops`, `apply_slide_ops`, `insert_content`, `replace_blocks`.
-- 열린 ODT 탭은 워드 문서로 다룬다(`open_documents`의 `format`이 `odt`). `read_docx`는 `.odt` 파일도 읽는다. `save_session`은 탭의 형식으로만 저장한다. 다른 확장자의 경로를 주면 거절하고 `ieumoffice convert`를 쓰라고 안내한다. 대화 상자가 없는 경로에서 형식이 조용히 바뀌지 않게 하기 위해서다.
-- 에이전트 설정에 넣는 항목 이름은 `ieumoffice-editor`다. 명령어 쪽 서버의 `ieumoffice`와 겹치지 않는다.
+- 열린 ODT 탭은 워드 문서로 다룬다(`open_documents`의 `format`이 `odt`). `read_docx`는 `.odt` 파일도 읽는다. `save_session`은 탭의 형식으로만 저장한다. 다른 확장자의 경로를 주면 거절하고 `ttokttak convert`을 쓰라고 안내한다. 대화 상자가 없는 경로에서 형식이 조용히 바뀌지 않게 하기 위해서다.
+- 에이전트 설정에 넣는 항목 이름은 `ttokttak-editor`다. 명령어 쪽 서버의 `ttokttak`과 겹치지 않는다.
 - 에이전트 모드(결정 0032)의 세션 MCP 서버는 이것과 별개다. 앱이 띄운 프로그램만 쓰고, 세션마다 운영체제가 고른 포트와 새 토큰(`Authorization: Bearer`)을 요구하며, 도구는 `open_documents`(`list`·`read`만), `read_document`, `insert_content`, `replace_blocks`, `apply_ops`, `read_sheet`, `apply_sheet_ops`, `read_deck`, `apply_slide_ops`, `read_hwp`, `read_pdf`다. 읽기는 가린 자리를 `{{이름}}`으로 내보내고, `read_hwp`·`read_pdf`는 프로젝트 폴더 안만 읽는다. 결정 0048·0049로 `propose_skill`(에이전트 창에 스킬 카드를 띄움)과 `propose_skill_install`(깃허브 설치 미리보기를 띄움)이 더해져 13개다. 둘 다 파일을 쓰지 않는다. 바깥 호출자에게 약속하는 출력이 아니다. 위 서버의 출력은 바뀌지 않는다.
 - `open_documents`의 목록에 마인드맵 탭이 `kind: "mindmap"`, `type: "mind map"`으로 나온다(떼어 낸 창도 같다). `read`의 `content`는 지금 지도의 개요 글 문자열이고 저장하지 않은 편집이 들어 있다. 마크다운·HTML 탭의 읽기와 같은 모양이다. `close`의 저장은 편집기의 저장과 같은 길을 지나고, 한 번도 저장하지 않은 지도는 기본 저장 폴더에 겹치지 않는 이름의 `.xmind`로 저장된다. `ok`로 열리지 않은 지도는 어떤 경우에도 쓰지 않는다. 지도를 만들거나 고치는 도구는 없다.
 - **갑자기 꺼진 뒤 되살린 탭(결정 0061).** 처음 누를 때까지 편집기 화면이 없는 탭도 `open_documents`의 목록에 보통 탭과 같은 필드로 나온다(저장하지 않은 변경은 없음으로). 도구가 그 탭을 대상으로 하면(`read`, `save`, `close`의 저장, 내용 도구의 열린 문서 대상) 앱이 그 탭을 앞에 내지 않고 불러와 편집기 화면이 다 뜰 때까지 기다린 뒤 이어 간다. 기다리는 것은 화면이 뜨는 것까지이고, 문서 내용을 다 읽는 것까지는 아니다. 시작 목록에 아직 답하지 않았거나, 파일 탭의 문서에 풀리지 않은 복구 사본이 있어 문서별 물음을 거쳐야 하면, 탭을 불러오지 않고 바로 실패로 돌아온다. 사람이 탭을 눌러 화면이 아직 뜨는 중일 때도 같다. 실패 글에는 `the user must open this document in the app first`가 들어 있다(`"<제목>" has recovered changes to decide on: …`). 화면이 다 뜬 뒤에 편집기가 문서별 물음을 띄우면 그 물음에는 사람이 답하고, 그동안 도구는 아직 열리는 중인 다른 문서에서와 같이 움직인다. 저장 없이 닫기(`unsaved: "discard"`)는 불러오지 않은 탭을 불러오지 않고 닫으며, 그 탭의 복구 사본은 남는다. 출력의 구조와 이름은 바뀌지 않았다.
@@ -237,32 +237,32 @@
 
 ## 에이전트 스킬
 
-- 이름과 폴더는 `ieumoffice`다. 저장소의 `skills/ieumoffice/SKILL.md`가 원본이고, 앱의 설정 → 연동에서 고른 에이전트에 설치한다. 터미널에서는 `npx skills add ARTHONG1/ttokttak-workspace`.
+- 이름과 폴더는 `ttokttak`다. 저장소의 `skills/ttokttak/SKILL.md`가 원본이고, 앱의 설정 → 연동에서 고른 에이전트에 설치한다. 터미널에서는 `npx skills add ARTHONG1/ttokttak-workspace`.
 - 스킬 문서는 사용자의 에이전트 폴더로 복사되고, 문서의 `metadata.version`이 커졌을 때만 새것으로 바뀐다. 본문을 고치고 버전을 올리지 않으면 고친 내용이 아무에게도 닿지 않는다(검사 `npm run check:skill-version`).
-- 스킬과 도움말이 에이전트에게 알려 주는 명령은 모두 `ieumoffice`로 시작한다.
-- 이 스킬은 앱 안의 사용자 스킬 목록에는 나오지 않는다(이름 `ieumoffice`는 어느 출처에서든 읽지 않는다, 결정 0048).
+- 스킬과 도움말이 에이전트에게 알려 주는 명령은 모두 `ttokttak`으로 시작한다.
+- 이 스킬은 앱 안의 사용자 스킬 목록에는 나오지 않는다(이름 `ttokttak`은 어느 출처에서든 읽지 않는다, 결정 0048).
 
 ## 사용자 스킬 (결정 0048)
 
-앱 안에서 쓰는 스킬이다. 위 "에이전트 스킬"(바깥 에이전트에 설치하는 것)과 다르다. 터미널 명령어 `ieumoffice`와 그 MCP 서버는 사용자 스킬을 쓰지 않는다.
+앱 안에서 쓰는 스킬이다. 위 "에이전트 스킬"(바깥 에이전트에 설치하는 것)과 다르다. 터미널 명령어 `ttokttak`과 그 MCP 서버는 사용자 스킬을 쓰지 않는다.
 
-**스킬 폴더 형식.** 공개 표준을 따른다. 폴더 하나에 `SKILL.md`가 있고, 앞머리에 `name`(1~64자)과 `description`이 있어야 한다. 이음오피스는 표준의 `metadata`에 두 값을 쓴다. 다른 프로그램은 이 값을 무시해도 스킬이 동작한다.
+**스킬 폴더 형식.** 공개 표준을 따른다. 폴더 하나에 `SKILL.md`가 있고, 앞머리에 `name`(1~64자)과 `description`이 있어야 한다. 똑딱작업실은 표준의 `metadata`에 두 값을 쓴다. 다른 프로그램은 이 값을 무시해도 스킬이 동작한다.
 
 ```yaml
 ---
 name: home-letter
 description: 가정통신문을 학교 말투로 쓴다.
 metadata:
-  ieum-title: 가정통신문
-  ieum-template: assets/양식.hwpx
+  ttok-title: 가정통신문
+  ttok-template: assets/양식.hwpx
 ---
 ```
 
-- `ieum-title`: 만들 때 적은 제목. 화면과 `/` 목록은 `name`을 보이고, 이름이 앱이 지어 준 무작위 이름(`skill-` 뒤 여섯 글자)일 때만 이 제목을 보인다(결정 0053). 새 스킬에는 쓰지 않고, 고친 스킬은 원래 값을 둔다.
-- `ieum-template`: 스킬 폴더 안 `assets/` 아래 양식 문서의 상대 경로.
-- 이음오피스가 새로 만드는 이름은 소문자·숫자·하이픈만 쓰고, 하이픈으로 시작하거나 끝나지 않으며 `--`가 없다.
+- `ttok-title`: 만들 때 적은 제목. 화면과 `/` 목록은 `name`을 보이고, 이름이 앱이 지어 준 무작위 이름(`skill-` 뒤 여섯 글자)일 때만 이 제목을 보인다(결정 0053). 새 스킬에는 쓰지 않고, 고친 스킬은 원래 값을 둔다.
+- `ttok-template`: 스킬 폴더 안 `assets/` 아래 양식 문서의 상대 경로.
+- 똑딱작업실이 새로 만드는 이름은 소문자·숫자·하이픈만 쓰고, 하이픈으로 시작하거나 끝나지 않으며 `--`가 없다.
 
-**깃허브 출처 기록(`〈스킬 폴더〉/.ieum-source.json`).** 깃허브에서 설치한 스킬에만 있다. 내보내기(zip)에는 들어가지 않는다.
+**깃허브 출처 기록(`〈스킬 폴더〉/.ttok-source.json`).** 깃허브에서 설치한 스킬에만 있다. 내보내기(zip)에는 들어가지 않는다.
 
 ```json
 {
@@ -285,12 +285,12 @@ metadata:
 | `agentSkillNoticeSeen`  | 참/거짓. 에이전트 창의 스킬 안내를 봤는지                                                      | 없음                   |
 | `agentProjectPrefs`     | 프로젝트 폴더 절대 경로 → `{ codexWebSearch: 'cached' \| 'live' \| 'disabled', codexNetwork }` | 없음(`cached`, 거짓)   |
 
-- 식별자는 `〈출처〉:〈이름〉`, 플러그인은 `plugin:〈플러그인〉:〈이름〉`이다. 출처 값은 `builtin`(기본), `app`(`~/.ieumoffice/skills`, 깃허브 포함), `user`(`~/.claude/skills`), `plugin`(설치된 Claude 플러그인), `codex`(`~/.agents/skills`)다. 저장되는 값이라 바꾸지 않는다. 프로젝트 스킬(`project`)은 저장하지 않는다.
+- 식별자는 `〈출처〉:〈이름〉`, 플러그인은 `plugin:〈플러그인〉:〈이름〉`이다. 출처 값은 `builtin`(기본), `app`(`~/.ttokttak/skills`, 깃허브 포함), `user`(`~/.claude/skills`), `plugin`(설치된 Claude 플러그인), `codex`(`~/.agents/skills`)다. 저장되는 값이라 바꾸지 않는다. 프로젝트 스킬(`project`)은 저장하지 않는다.
 - 알 수 없는 값은 무시하고 처음 상태로 읽는다. 처음 상태는 `builtin`·`app`이 켜짐·스스로 쓰기, `user`·`plugin`·`codex`가 꺼짐이다.
 
 ## 설정 파일 (`ai-settings.json`)
 
-데이터 폴더(`%APPDATA%\IeumOffice`, 개발 실행은 `IeumOffice-Dev`)에 있다. 사람이 직접 고칠 수 있고, 명령어와 MCP는 읽기만 한다.
+데이터 폴더(`%APPDATA%\똑딱작업실`, 개발 실행은 `HangulAIWorkbench-Dev`)에 있다. 사람이 직접 고칠 수 있고, 명령어와 MCP는 읽기만 한다.
 
 | 값                                   | 종류                                             | 기본                                                       |
 | ------------------------------------ | ------------------------------------------------ | ---------------------------------------------------------- |
@@ -396,15 +396,15 @@ metadata:
 - 파워포인트 편집기에서 고른 디자인 템플릿은 문서 안이나 곁에 쓰지 않는다. 문서에 남는 것은 평범한 도형·글·글꼴 이름뿐이다.
 - 저장한 스타일 파일(`<데이터 폴더>/style-templates/<이름>.json`)에는 선택 항목 `basedOn`(기본 템플릿의 id)이 붙을 수 있다. 이 값을 모르는 예전 버전은 무시하고 그대로 읽는다.
 - 한글 문서(`.hwp`·`.hwpx`)는 연 형식 그대로 저장한다. 한 탭이 파일을 처음 덮어쓰기 전에 원본을 같은 폴더에 `<파일 이름>.bak`으로 남긴다. 암호가 걸린 문서는 저장하지 않는다. AI는 한글 문서에서 글자를 바꾸고, 문단을 넣고 지우고, 본문에 표를 넣고, 있는 표의 빈 칸을 채우고(글자가 있는 칸은 사용자가 바꾸라고 했을 때만 덮어쓰고, 그림이 든 칸은 쓰지 않는다), 본문의 표에 행과 열을 넣고 빼고, 첨부한 파일(한글·워드·엑셀·파워포인트·PDF·글자 파일·그림)을 참고 자료로 읽고, 사용자가 편집기에서 선택한 부분만 고치고, 글자 모양 일부(굵게·기울임·밑줄·취소선·크기·색·형광펜)와 문단의 정렬·줄 간격을 바꾸고, 누름틀을 채운다. 표·그림·누름틀이 놓인 문단은 지우지 않는다.
-- 한글 문서는 편집기 밖에서 읽기만 한다. 홈의 파일 검색과 지식 자료, 다른 편집기 AI의 첨부, 터미널 명령어(`ieumoffice hwp read`, `info`), MCP(앱의 `read_hwp`, 명령어 쪽의 `hwp_read`)가 글자를 읽는다. 문단은 한 줄로, 표는 행마다 칸을 `|`로 이어 적는다. MCP의 열린 문서 읽기는 한글 탭의 저장하지 않은 내용까지 읽고, 저장은 하지 않는다. 암호가 걸린 문서는 읽지 않는다. 터미널 명령어와 MCP로 한글 문서를 만들거나 고치지 않는다.
-- **한글 메모(결정 0072).** `.hwp`·`.hwpx`의 메모는 본문·표 칸·글상자에서 읽고, 앱의 메모 패널에서 평문으로 넣고 고치고 지운다(한 영역에 새 메모 하나, 서식 있는 메모는 읽기 전용). 작성자는 사용자 이름 설정 → PC 계정 이름 → `IeumOffice`(제품 이름), 새 메모의 날짜는 파일이 담고 있을 때만 보인다. 메모 편집기가 열려 있는 동안 저장은 `메모 작성을 먼저 저장하거나 취소해 주세요.`로 막고, 탭 닫기·종료는 메모를 버리고 닫을지 묻는다. AI는 메모를 읽을 수 있지만 쓰는 도구가 없고, 앵커를 지우는 편집은 그 요청에 한해 사람의 승인을 받는다. 저장은 연 형식 그대로 하고, `.hwpx`에서 실제로 빠진 메모가 있을 때만 수와 함께 HWP 저장을 안내한다. 메모가 없는 문서의 저장 결과는 예전과 같다.
-- **한글 읽기의 메모.** `hwpToText`와 `parseFileToText`는 메모가 있으면 본문과 표 뒤에 `### Comments` 블록을 붙인다. 첫 줄은 `- 작성자 (p.N): 첫 줄`, 이어지는 줄은 두 칸 들여쓰며, 작성자가 없으면 `unknown`, 쪽을 모르면 `(p.N)`을 뺀다. 메모가 없으면 블록을 붙이지 않는다. 같은 읽기를 쓰는 터미널 명령어(`ieumoffice hwp read`, `info`)와 MCP(`read_hwp`, `hwp_read`)의 출력에도 이 블록이 붙는다. 메모를 읽지 못하면 블록 없이 본문만 돌려준다. 이미 색인된 파일의 메모는 그 파일이 바뀌어 다시 색인될 때 검색에 들어간다. `hwpMemosOf`는 저장 검증을 위해 메모를 구조로 돌려주며, 엔진이 모델에 담지 못한 원시 기록은 세지 않는다.
+- 한글 문서는 편집기 밖에서 읽기만 한다. 홈의 파일 검색과 지식 자료, 다른 편집기 AI의 첨부, 터미널 명령어(`ttokttak hwp read`, `info`), MCP(앱의 `read_hwp`, 명령어 쪽의 `hwp_read`)가 글자를 읽는다. 문단은 한 줄로, 표는 행마다 칸을 `|`로 이어 적는다. MCP의 열린 문서 읽기는 한글 탭의 저장하지 않은 내용까지 읽고, 저장은 하지 않는다. 암호가 걸린 문서는 읽지 않는다. 터미널 명령어와 MCP로 한글 문서를 만들거나 고치지 않는다.
+- **한글 메모(결정 0072).** `.hwp`·`.hwpx`의 메모는 본문·표 칸·글상자에서 읽고, 앱의 메모 패널에서 평문으로 넣고 고치고 지운다(한 영역에 새 메모 하나, 서식 있는 메모는 읽기 전용). 작성자는 사용자 이름 설정 → PC 계정 이름 → `똑딱작업실`(제품 이름), 새 메모의 날짜는 파일이 담고 있을 때만 보인다. 메모 편집기가 열려 있는 동안 저장은 `메모 작성을 먼저 저장하거나 취소해 주세요.`로 막고, 탭 닫기·종료는 메모를 버리고 닫을지 묻는다. AI는 메모를 읽을 수 있지만 쓰는 도구가 없고, 앵커를 지우는 편집은 그 요청에 한해 사람의 승인을 받는다. 저장은 연 형식 그대로 하고, `.hwpx`에서 실제로 빠진 메모가 있을 때만 수와 함께 HWP 저장을 안내한다. 메모가 없는 문서의 저장 결과는 예전과 같다.
+- **한글 읽기의 메모.** `hwpToText`와 `parseFileToText`는 메모가 있으면 본문과 표 뒤에 `### Comments` 블록을 붙인다. 첫 줄은 `- 작성자 (p.N): 첫 줄`, 이어지는 줄은 두 칸 들여쓰며, 작성자가 없으면 `unknown`, 쪽을 모르면 `(p.N)`을 뺀다. 메모가 없으면 블록을 붙이지 않는다. 같은 읽기를 쓰는 터미널 명령어(`ttokttak hwp read`, `info`)와 MCP(`read_hwp`, `hwp_read`)의 출력에도 이 블록이 붙는다. 메모를 읽지 못하면 블록 없이 본문만 돌려준다. 이미 색인된 파일의 메모는 그 파일이 바뀌어 다시 색인될 때 검색에 들어간다. `hwpMemosOf`는 저장 검증을 위해 메모를 구조로 돌려주며, 엔진이 모델에 담지 못한 원시 기록은 세지 않는다.
 
 ## 설치본과 업데이트
 
-- 설치 파일 이름은 `IeumOffice-Setup-<버전>.exe`, 설치 식별자는 `io.github.pblsketch.ieumoffice`, 실행 파일은 `IeumOffice.exe`다.
-- 파일 연결의 등록 이름은 `IeumOffice.<종류>` 꼴이다(`IeumOffice.WordDocument` 등).
-- 이음오피스는 Windows 기본 앱 목록에 `RegisteredApplications`의 `IeumOffice`와 `Software\IeumOffice\Capabilities\FileAssociations`로 오른다. 이 등록은 기본 프로그램을 바꾸지 않고, 사용자가 기본 앱에서 이음오피스를 고를 때 앱 실행 파일이 아니라 확장자별 ProgId(문서 아이콘)가 기록되게 한다. `.hwp`·`.hwpx`·`.xmind`·`.odt`는 여기서도 "연결 프로그램" 후보일 뿐이다.
-- `.odt`는 "연결 프로그램" 후보로만 등록한다(`IeumOffice.OpenDocumentText`와 `.odt\OpenWithProgids`의 값 하나, `apps/shell/build/installer.nsh`). 기본 프로그램은 바꾸지 않는다. 지울 때는 그 값과 등록 이름만 지운다.
+- 설치 파일 이름은 `HangulAIWorkbench-Setup-<버전>.exe`, 설치 식별자는 `io.github.arthong1.ttokttak`, 실행 파일은 `HangulAIWorkbench.exe`다.
+- 파일 연결의 등록 이름은 `똑딱작업실.<종류>` 꼴이다(`똑딱작업실.WordDocument` 등).
+- 똑딱작업실은 Windows 기본 앱 목록에 `RegisteredApplications`의 `똑딱작업실`와 `Software\똑딱작업실\Capabilities\FileAssociations`로 오른다. 이 등록은 기본 프로그램을 바꾸지 않고, 사용자가 기본 앱에서 똑딱작업실을 고를 때 앱 실행 파일이 아니라 확장자별 ProgId(문서 아이콘)가 기록되게 한다. `.hwp`·`.hwpx`·`.xmind`·`.odt`는 여기서도 "연결 프로그램" 후보일 뿐이다.
+- `.odt`는 "연결 프로그램" 후보로만 등록한다(`똑딱작업실.OpenDocumentText`와 `.odt\OpenWithProgids`의 값 하나, `apps/shell/build/installer.nsh`). 기본 프로그램은 바꾸지 않는다. 지울 때는 그 값과 등록 이름만 지운다.
 - Windows 설치본은 `.txt`·`.json`·`.xmind`를 이 앱에 연결해 등록하지 않는다. 설치해도 그 파일들의 기본 프로그램이 바뀌지 않는다. 앱 안에서는 열기 창, 끌어다 놓기, 최근 파일, 폴더 나무로 열고, 실행 인자로 경로를 받으면 연다.
 - 자동 업데이트는 `ARTHONG1/ttokttak-workspace`의 GitHub 릴리스에서 `latest.yml`과 설치 파일을 읽는다. 릴리스는 `v<버전>` 태그여야 한다.

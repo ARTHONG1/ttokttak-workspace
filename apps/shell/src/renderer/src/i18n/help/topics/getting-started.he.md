@@ -24,7 +24,7 @@
 
 - תפריט **File ▸ פתיחה** (⌘O/ctrl+O) פותח את בוחר המערכת: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - לחצו על כל פריט ברשימת **האחרונים** של הבית.
-- `ieumoffice <file>` מהטרמינל גם פותח קבצים.
+- `ttokttak <file>` מהטרמינל גם פותח קבצים.
 
 ## מסמכי ODT
 

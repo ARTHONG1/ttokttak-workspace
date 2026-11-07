@@ -1,13 +1,13 @@
 # ttokttak-workspace (똑딱작업실)
 
-> Open-source desktop office app (Electron, TypeScript) that opens and edits Hangul (HWP/HWPX), Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind documents, with an AI panel in each editor that edits the document through the app's own tools. The AI runs on the user's own Claude Code or Codex program. A browser trial edition runs the same desktop app per session on Cloud Run with Gemini. Apache-2.0. Built from several open-source projects (IeumOffice and GenOffice as the app base, rhwp, Univer, Tiptap, PDF.js, EmbedPDF and others); exact attribution is in NOTICE.
+> Open-source desktop office app (Electron, TypeScript) that opens and edits Hangul (HWP/HWPX), Word, Excel, PowerPoint, PDF, Markdown, HTML and XMind documents, with an AI panel in each editor that edits the document through the app's own tools. The AI runs on the user's own Claude Code or Codex program. A browser trial edition runs the same desktop app per session on Cloud Run with Gemini. Apache-2.0. Built from several open-source projects (ttokttak-workspace and GenOffice as the app base, rhwp, Univer, Tiptap, PDF.js, EmbedPDF and others); exact attribution is in NOTICE.
 
 Key facts:
 - Repository: https://github.com/ARTHONG1/ttokttak-workspace
 - Web trial: https://hangul-ai-workbench-545101783843.asia-northeast3.run.app (Google sign-in required)
 - Releases (macOS dmg arm64/x64, Windows Setup exe): https://github.com/ARTHONG1/ttokttak-workspace/releases/latest
 - Install by an AI agent: https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md (scripts in scripts/install/)
-- Command line and MCP server: `ieumoffice`, `ieumoffice mcp`, `ieumoffice mcp install <agent|all>`, `ieumoffice skill install <agent|all>`
+- Command line and MCP server: `ttokttak`, `ttokttak mcp`, `ttokttak mcp install <agent|all>`, `ttokttak skill install <agent|all>`
 - Product name on disk: HangulAIWorkbench (app id io.github.arthong1.hangul-ai-workbench)
 
 ## Docs
@@ -26,8 +26,8 @@ Key facts:
 - apps/shell: desktop shell (tabs, home, settings, school tools), packaging in electron-builder.cjs
 - apps/docs, apps/sheets, apps/slides, apps/pdf, apps/hwp, apps/markdown, apps/html, apps/mindmap, apps/epub: one editor per format
 - packages/ai-provider: AI providers (subscription CLIs, API keys, free tiers, Vertex)
-- packages/cli: the ieumoffice command line and MCP server
-- skills/ieumoffice: the agent skill installed into coding agents
+- packages/cli: the ttokttak command line and MCP server
+- skills/ttokttak: the agent skill installed into coding agents
 - web/: browser edition (fake electron module, gateway, Firebase sign-in, Cloud Run image)
 - scripts/install: agent-run installers for macOS and Windows
 

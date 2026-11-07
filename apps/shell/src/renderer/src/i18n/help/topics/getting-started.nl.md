@@ -24,7 +24,7 @@ Een nieuw document opent zonder titel; het bestand op schijf wordt pas aangemaak
 
 - Menu **Bestand ▸ Openen…** (⌘O/ctrl+O) opent de systeemkiezer: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Klik op een willekeurig item in de lijst **Recent** op Start.
-- Ook `ieumoffice <bestand>` in een terminal opent bestanden.
+- Ook `ttokttak <bestand>` in een terminal opent bestanden.
 
 ## ODT-documenten
 

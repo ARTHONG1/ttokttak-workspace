@@ -6,13 +6,13 @@ Une compétence est un ensemble d’instructions de travail pour l’IA. Notez u
 
 **Paramètres ▸ Compétences** liste les compétences présentes sur ce PC, regroupées selon leur provenance. Chaque compétence apparaît sous son nom, comme dans les agents de programmation. Le champ de recherche en haut permet d’en trouver une par nom ou description.
 
-| Provenance                         | Contenu                                                                   | Au départ   |
-| ---------------------------------- | ------------------------------------------------------------------------- | ----------- |
-| **Intégrées**                      | Les 5 compétences fournies avec GenOffice                                 | Activées    |
-| **Mes compétences**                | Les compétences que vous avez ajoutées ou créées (`~/.ieumoffice/skills`) | Activées    |
-| **Dossier des compétences Claude** | Les compétences de `~/.claude/skills`                                     | Désactivées |
-| **Plugins Claude**                 | Les compétences des plugins Claude installés                              | Désactivées |
-| **Dossier des compétences Codex**  | Les compétences de `~/.agents/skills`                                     | Désactivées |
+| Provenance                         | Contenu                                                                 | Au départ   |
+| ---------------------------------- | ----------------------------------------------------------------------- | ----------- |
+| **Intégrées**                      | Les 5 compétences fournies avec GenOffice                               | Activées    |
+| **Mes compétences**                | Les compétences que vous avez ajoutées ou créées (`~/.ttokttak/skills`) | Activées    |
+| **Dossier des compétences Claude** | Les compétences de `~/.claude/skills`                                   | Désactivées |
+| **Plugins Claude**                 | Les compétences des plugins Claude installés                            | Désactivées |
+| **Dossier des compétences Codex**  | Les compétences de `~/.agents/skills`                                   | Désactivées |
 
 - L’interrupteur active ou désactive une compétence. Le même réglage s’applique au panneau IA de chaque éditeur, à Ask AI dans l’accueil et à la fenêtre de l’agent.
 - Pour une compétence activée, choisissez **L’IA décide** ou **Seulement sur appel**. Au départ, c’est L’IA décide. Avec Seulement sur appel, la compétence n’est utilisée que lorsque vous l’appelez vous-même.

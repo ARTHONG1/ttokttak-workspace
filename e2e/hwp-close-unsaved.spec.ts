@@ -60,7 +60,7 @@ async function openHwp(app: ElectronApplication): Promise<Page> {
   const hwp = await waitForPageWithUrl(app, '://hwp/')
   await hwp.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
   await expect(
-    hwp.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+    hwp.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
   ).toHaveCount(1)
   return hwp
 }

@@ -24,7 +24,7 @@ Dokumen baharu dibuka tanpa tajuk; fail pada cakera hanya dicipta semasa simpana
 
 - Menu **Fail ▸ Buka…** (⌘O/ctrl+O) membuka pemilih sistem: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Klik mana-mana item dalam senarai **Terkini** pada Laman Utama.
-- `ieumoffice <fail>` daripada terminal turut membuka fail.
+- `ttokttak <fail>` daripada terminal turut membuka fail.
 
 ## Dokumen ODT
 

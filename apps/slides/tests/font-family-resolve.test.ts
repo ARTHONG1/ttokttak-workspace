@@ -60,9 +60,9 @@ function fontBytes(familyName: string, styleName = 'Regular'): Buffer {
 beforeAll(() => {
   // File names that spell nothing like the families they carry (like a download folder or a
   // Korean font file name does).
-  writeFileSync(join(store, 'font (3).ttf'), fontBytes('Ieum Probe Family'))
-  writeFileSync(join(store, 'mystery-file.ttf'), fontBytes('Ieum Probe Paperlogy 1 Thin'))
-  writeFileSync(join(store, 'another-file.ttf'), fontBytes('Ieum Probe Eras Bold ITC'))
+  writeFileSync(join(store, 'font (3).ttf'), fontBytes('Ttok Probe Family'))
+  writeFileSync(join(store, 'mystery-file.ttf'), fontBytes('Ttok Probe Paperlogy 1 Thin'))
+  writeFileSync(join(store, 'another-file.ttf'), fontBytes('Ttok Probe Eras Bold ITC'))
   setUserFontDir(store)
   resetFontRegistry()
 })
@@ -75,20 +75,20 @@ afterAll(() => {
 
 describe('resolving installed families by their declared names', () => {
   it('finds a file whose name spells nothing like the family', () => {
-    expect(familyAvailable('Ieum Probe Family')).toBe(true)
+    expect(familyAvailable('Ttok Probe Family')).toBe(true)
   })
 
   it('answers the OS style-word-stripped spelling of a face family', () => {
     // A trailing weight word is dropped by the OS's family enumeration
-    expect(familyAvailable('Ieum Probe Paperlogy 1')).toBe(true)
+    expect(familyAvailable('Ttok Probe Paperlogy 1')).toBe(true)
     // …and the declared spelling itself still resolves
-    expect(familyAvailable('Ieum Probe Paperlogy 1 Thin')).toBe(true)
+    expect(familyAvailable('Ttok Probe Paperlogy 1 Thin')).toBe(true)
     // The same for a style word inside the name ("Eras Bold ITC" → "Eras ITC")
-    expect(familyAvailable('Ieum Probe Eras ITC')).toBe(true)
+    expect(familyAvailable('Ttok Probe Eras ITC')).toBe(true)
   })
 
   it('leaves a family no file declares to the substitute chain', () => {
-    expect(familyAvailable('Ieum Probe Nowhere')).toBe(false)
+    expect(familyAvailable('Ttok Probe Nowhere')).toBe(false)
   })
 })
 

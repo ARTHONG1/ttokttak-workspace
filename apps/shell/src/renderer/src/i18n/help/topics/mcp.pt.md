@@ -15,27 +15,27 @@ O GenOffice fala o Model Context Protocol, por isso um agente de programação c
 A mesma coisa a partir de um terminal — esta é a via avançada, e a que deve usar quando o agente está num sítio onde o painel o não consegue encontrar:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Encontra os agentes de programação desta máquina e escreve a entrada do servidor stdio na configuração de cada um deles, deixando o resto desse ficheiro como o encontrou. A entrada chama-se `ieumoffice`. Feito à mão para o Claude Code, o mesmo registo é `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Encontra os agentes de programação desta máquina e escreve a entrada do servidor stdio na configuração de cada um deles, deixando o resto desse ficheiro como o encontrou. A entrada chama-se `ttokttak`. Feito à mão para o Claude Code, o mesmo registo é `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Um agente instalado num sítio fora do comum precisa de `--dir <path>`; e `--force` reescreve uma entrada que já lá está.
 
-`ieumoffice mcp --help` põe num único ecrã tudo aquilo que o servidor aceita: as formas de instalar, remover e listar, a publicação por HTTP e as duas opções de esquema.
+`ttokttak mcp --help` põe num único ecrã tudo aquilo que o servidor aceita: as formas de instalar, remover e listar, a publicação por HTTP e as duas opções de esquema.
 
 ## Executá-lo sem um assistente
 
 Para um cliente noutra máquina, sirva-o por HTTP:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` muda o endereço onde escuta. Passe o mesmo token ao cliente.
@@ -55,7 +55,7 @@ Cada comando é uma ferramenta. As interessantes:
 
 ## Pesquisa, imagens e multimédia: o que um agente pode usar
 
-Um pedido que chega do comando `ieumoffice` ou de um cliente MCP não foi escrito por si na aplicação, por isso o GenOffice trata-o com cuidado.
+Um pedido que chega do comando `ttokttak` ou de um cliente MCP não foi escrito por si na aplicação, por isso o GenOffice trata-o com cuidado.
 
 - **A pesquisa** funciona sempre e é gratuita por predefinição. A chave de um fornecedor de pesquisa só é usada se tiver selecionado uma.
 - **Gerar uma imagem** precisa da chave de um fornecedor de imagens. Nesta versão, uma assinatura não gera imagens.
@@ -74,16 +74,16 @@ Com o interruptor desligado e sem nenhuma chave configurada, a ferramenta respon
 
 ## Esquemas, e um orçamento mais pequeno
 
-`apply` e `create` anunciam os seus parâmetros `ops`, `cells` e `data` com o esquema tipado de cada operação, gerado a partir de `ieumoffice guide <domain> --json`. É preciso, mas não é pequeno. Um cliente com uma janela de contexto apertada pode pedir matrizes simples em vez disso:
+`apply` e `create` anunciam os seus parâmetros `ops`, `cells` e `data` com o esquema tipado de cada operação, gerado a partir de `ttokttak guide <domain> --json`. É preciso, mas não é pequeno. Um cliente com uma janela de contexto apertada pode pedir matrizes simples em vez disso:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Porque é que a skill
 
-Um agente que não conhece o vocabulário das operações vai adivinhar. A skill traz a referência e os guias de design — o mesmo material que o `ieumoffice guide` imprime —, de modo que o assistente escreve operações cuja especificação leu mesmo. Instale-a a partir do painel acima, ou com `ieumoffice skill` a partir de um terminal.
+Um agente que não conhece o vocabulário das operações vai adivinhar. A skill traz a referência e os guias de design — o mesmo material que o `ttokttak guide` imprime —, de modo que o assistente escreve operações cuja especificação leu mesmo. Instale-a a partir do painel acima, ou com `ttokttak skill` a partir de um terminal.
 
 ## O que consegue alcançar na aplicação
 

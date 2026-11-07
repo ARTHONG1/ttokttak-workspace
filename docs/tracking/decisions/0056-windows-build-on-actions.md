@@ -10,7 +10,7 @@
 
 - **빌드.** `.github/workflows/windows-build.yml`이 GitHub의 Windows 빌드 기계(`windows-2025`)에서 저장소 주인의 손 빌드와 같은 순서로 설치 파일을 만든다. 순서는 `npm ci`, `build:all`, 엑셀 처리 프로그램을 설치 파일 도구가 찾는 자리로 복사, `dist:win`이다. 비밀 값을 쓰지 않는다. Mac·Linux와 같이 `main`에서 손으로 실행하고, 릴리스 태그를 주면 공개된 그 릴리스에 설치 파일·`.blockmap`·`latest.yml`을 붙인다. 빌드한 버전과 태그가 같을 때만 붙인다.
 - **검사.** 묶인 프로그램(엑셀 처리 프로그램, OCR 도우미, 명령어)이 있는지 본다. `latest.yml`의 버전·파일 이름이 설치 파일과 맞는지, 설치 파일에 **서명이 없는지**도 본다. 그다음 빌드한 앱을 창 없이 실행해 Markdown과 CSV를 PDF로 내보낸다.
-- **출처 증명.** 손으로 실행한 빌드는 설치 파일과 `latest.yml`에 GitHub의 빌드 출처 증명(`actions/attest-build-provenance`)을 붙인다. 누구나 `gh attestation verify IeumOffice-Setup-<버전>.exe --repo pblsketch/openoffice`로 "이 저장소의 이 커밋을 이 워크플로가 만들었다"를 확인할 수 있다.
+- **출처 증명.** 손으로 실행한 빌드는 설치 파일과 `latest.yml`에 GitHub의 빌드 출처 증명(`actions/attest-build-provenance`)을 붙인다. 누구나 `gh attestation verify HangulAIWorkbench-Setup-<버전>.exe --repo ARTHONG1/ttokttak-workspace`로 "이 저장소의 이 커밋을 이 워크플로가 만들었다"를 확인할 수 있다.
 - **서명은 하지 않는다.** 서명 프로그램의 조건과 인증서를 유지하는 일은 저장소 주인이 따로 정한다. 정하기 전에 서명된 버전이 실수로 나가지 않도록 워크플로가 서명된 설치 파일을 거절한다.
 - **손 빌드는 남긴다.** Actions 빌드가 실패하거나 GitHub를 쓸 수 없을 때를 위해 `docs/releasing.ko.md` 4번의 손 빌드 절차를 그대로 둔다. 손 빌드로 올린 파일에는 출처 증명이 없다.
 

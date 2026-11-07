@@ -284,7 +284,7 @@ export function registerDriveIpc(deps: DriveIpcDeps): DriveService {
     lang: deps.lang,
     theme: deps.theme,
     list: listEntries,
-    attachDir: () => join(app.getPath('temp'), 'ieumoffice-drive-attach'),
+    attachDir: () => join(app.getPath('temp'), 'ttokttak-drive-attach'),
   })
 
   ipcMain.handle(DRIVE_CHANNELS.connected, (): boolean => connection.connected())

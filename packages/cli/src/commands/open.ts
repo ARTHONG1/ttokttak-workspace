@@ -168,7 +168,7 @@ export function parseTarget(args: ParsedArgs, path: string): ControlTarget | und
     EXIT.usage,
     `targets are supported for pptx, docx, odt, xlsx and pdf files, not ${ext || 'this file'}`,
     { supported: ['.pptx', '.docx', '.odt', '.xlsx', '.pdf'] },
-    { reason: 'unsupported', suggestion: 'run `ieumoffice open <file>` without a target' },
+    { reason: 'unsupported', suggestion: 'run `ttokttak open <file>` without a target' },
   )
 }
 

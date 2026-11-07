@@ -54,8 +54,8 @@ Di bawah **Server HTTP lokal**, aplikasi juga bisa menjalankan server itu sendir
 
 ## Lembar pintasan baris perintah
 
-| Perintah            | Fungsinya                |
-| ------------------- | ------------------------ |
-| `ieumoffice <file>` | membuka sebuah file      |
-| `ieumoffice mcp`    | memulai server MCP lokal |
-| `ieumoffice --help` | semua perintah dan opsi  |
+| Perintah          | Fungsinya                |
+| ----------------- | ------------------------ |
+| `ttokttak <file>` | membuka sebuah file      |
+| `ttokttak mcp`    | memulai server MCP lokal |
+| `ttokttak --help` | semua perintah dan opsi  |

@@ -15,27 +15,27 @@ Việc này làm ở **Cài đặt ▸ Tích hợp**. Bảng đó có hai nửa,
 Cũng làm được từ terminal — đây là đường nâng cao, dùng khi tác nhân nằm ở nơi bảng kia không tìm thấy:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Lệnh này tìm các tác nhân lập trình có trên máy này — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — rồi ghi mục máy chủ stdio vào cấu hình riêng của từng tác nhân, giữ nguyên phần còn lại của tệp đó như cũ. Mục đó có tên `ieumoffice`. Nếu làm bằng tay cho Claude Code, việc đăng ký tương tự là `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Lệnh này tìm các tác nhân lập trình có trên máy này — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf — rồi ghi mục máy chủ stdio vào cấu hình riêng của từng tác nhân, giữ nguyên phần còn lại của tệp đó như cũ. Mục đó có tên `ttokttak`. Nếu làm bằng tay cho Claude Code, việc đăng ký tương tự là `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Một tác nhân bạn cài ở chỗ không mấy quen thuộc cần `--dir <path>`; còn `--force` ghi đè một mục đã có sẵn.
 
-`ieumoffice mcp --help` đưa mọi thứ mà máy chủ nhận vào một màn hình: các dạng đăng ký, gỡ bỏ và liệt kê, phục vụ qua HTTP, cùng hai cờ lược đồ.
+`ttokttak mcp --help` đưa mọi thứ mà máy chủ nhận vào một màn hình: các dạng đăng ký, gỡ bỏ và liệt kê, phục vụ qua HTTP, cùng hai cờ lược đồ.
 
 ## Tự chạy nó
 
 Với một ứng dụng trên máy khác, hãy phục vụ qua HTTP thay thế:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` đổi nơi nó lắng nghe. Hãy truyền cùng mã thông báo đó cho ứng dụng.
@@ -55,7 +55,7 @@ Mỗi lệnh là một công cụ. Những cái đáng chú ý:
 
 ## Tìm kiếm, hình ảnh và phương tiện: tác nhân được dùng những gì
 
-Một yêu cầu đến từ lệnh `ieumoffice` hoặc từ một ứng dụng khách MCP không phải do bạn gõ trong ứng dụng, nên GenOffice thận trọng với nó.
+Một yêu cầu đến từ lệnh `ttokttak` hoặc từ một ứng dụng khách MCP không phải do bạn gõ trong ứng dụng, nên GenOffice thận trọng với nó.
 
 - **Tìm kiếm** lúc nào cũng dùng được và mặc định miễn phí. Khóa của nhà cung cấp tìm kiếm chỉ được dùng nếu bạn đã chọn.
 - **Tạo một hình ảnh** cần khóa của nhà cung cấp hình ảnh. Trong phiên bản này, gói đăng ký không tạo được hình ảnh.
@@ -74,16 +74,16 @@ Khi công tắc tắt và chưa có khóa nào được thiết lập, công c�
 
 ## Lược đồ, và một hạn mức nhỏ hơn
 
-`apply` và `create` công bố các tham số `ops`, `cells` và `data` kèm lược đồ có kiểu cho từng thao tác, sinh từ `ieumoffice guide <domain> --json`. Nó chính xác và không hề nhỏ. Một ứng dụng có cửa sổ ngữ cảnh chật hẹp có thể xin các mảng thuần thay vì thế:
+`apply` và `create` công bố các tham số `ops`, `cells` và `data` kèm lược đồ có kiểu cho từng thao tác, sinh từ `ttokttak guide <domain> --json`. Nó chính xác và không hề nhỏ. Một ứng dụng có cửa sổ ngữ cảnh chật hẹp có thể xin các mảng thuần thay vì thế:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Vì sao cần kỹ năng
 
-Một tác nhân không biết từ vựng thao tác sẽ đoán mò. Kỹ năng mang theo tài liệu tham chiếu và các hướng dẫn thiết kế — đúng những tài liệu mà `ieumoffice guide` in ra —, nên trợ lý viết ra thao tác mà nó đã thực sự đọc đặc tả. Cài nó từ bảng kia ở trên, hoặc bằng `ieumoffice skill` trong terminal.
+Một tác nhân không biết từ vựng thao tác sẽ đoán mò. Kỹ năng mang theo tài liệu tham chiếu và các hướng dẫn thiết kế — đúng những tài liệu mà `ttokttak guide` in ra —, nên trợ lý viết ra thao tác mà nó đã thực sự đọc đặc tả. Cài nó từ bảng kia ở trên, hoặc bằng `ttokttak skill` trong terminal.
 
 ## Nó chạm được gì trong ứng dụng
 

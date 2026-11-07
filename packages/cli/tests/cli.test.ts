@@ -13,11 +13,11 @@ describe('genoffice cli', () => {
   it('prints help and usage errors with the documented exit codes', async () => {
     expect((await run([])).code).toBe(1)
     expect((await run(['--help'])).code).toBe(0)
-    expect((await run(['help', 'convert'])).stdout).toContain('Usage: ieumoffice convert')
+    expect((await run(['help', 'convert'])).stdout).toContain('Usage: ttokttak convert')
     const unknown = await run(['frobnicate', '--json'])
     expect(unknown.code).toBe(1)
     expect(unknown.json()).toMatchObject({ status: 'error', code: 1, command: 'frobnicate' })
-    expect((await run(['--version'])).stdout).toMatch(/^ieumoffice \d/)
+    expect((await run(['--version'])).stdout).toMatch(/^ttokttak \d/)
   })
 
   it('reports a missing file as exit code 2', async () => {

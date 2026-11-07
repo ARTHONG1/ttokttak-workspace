@@ -23,7 +23,7 @@ const SUBCOMMANDS = ['install', 'uninstall', 'list']
 export const mcpCommand: CommandDef = {
   name: 'mcp',
   summary:
-    "Serve every command as a Model Context Protocol tool: on stdio for an MCP client on this machine (`claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`, Cursor, Claude Desktop), or with --http as a Streamable HTTP server that clients on other machines reach by URL. Over HTTP, files travel too: PUT /files/<name> uploads one and every tool takes http(s) URLs in place of paths; outputs come back as download URLs and, when small, as embedded resources. Ops, specs and Markdown are passed inline either way; a new deck goes through deck_start, deck_page and deck_build. `mcp install <agent|all>` registers the stdio server in a coding agent's MCP config (Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf); `mcp uninstall <agent>` removes it; `mcp list` shows where each agent stands. The ops, cells and data parameters of the apply and create tools are advertised with the typed per-op schema of `guide <domain> --json`; --compact-schemas (or GENOFFICE_MCP_COMPACT_SCHEMAS=1) advertises them as plain arrays for clients with a small context budget.",
+    "Serve every command as a Model Context Protocol tool: on stdio for an MCP client on this machine (`claude mcp add --transport stdio ttokttak -- ttokttak mcp`, Cursor, Claude Desktop), or with --http as a Streamable HTTP server that clients on other machines reach by URL. Over HTTP, files travel too: PUT /files/<name> uploads one and every tool takes http(s) URLs in place of paths; outputs come back as download URLs and, when small, as embedded resources. Ops, specs and Markdown are passed inline either way; a new deck goes through deck_start, deck_page and deck_build. `mcp install <agent|all>` registers the stdio server in a coding agent's MCP config (Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf); `mcp uninstall <agent>` removes it; `mcp list` shows where each agent stands. The ops, cells and data parameters of the apply and create tools are advertised with the typed per-op schema of `guide <domain> --json`; --compact-schemas (or GENOFFICE_MCP_COMPACT_SCHEMAS=1) advertises them as plain arrays for clients with a small context budget.",
   usage:
     'mcp [--http <port> [--host <addr>] [--token <secret>]] [--compact-schemas] | mcp install <agent|all> [--dir <path>] [--force] | mcp uninstall <agent|all> [--dir <path>] [--force] | mcp list',
   quiet: (args) => args.positionals.length === 0,
@@ -59,7 +59,7 @@ export const mcpCommand: CommandDef = {
     {
       name: 'force',
       description:
-        'install/uninstall: also write when the agent is not detected or the ieumoffice entry starts another program',
+        'install/uninstall: also write when the agent is not detected or the ttokttak entry starts another program',
     },
   ],
   async run(args, ctx) {
@@ -183,7 +183,7 @@ interface AgentRow {
   detected: boolean
   config: string
   registered: boolean
-  /** what the existing ieumoffice entry starts, when there is one */
+  /** what the existing ttokttak entry starts, when there is one */
   command: string | null
 }
 
@@ -201,7 +201,7 @@ function home(env: NodeJS.ProcessEnv): string {
 /** The entry every config gets: the absolute launcher, or on Windows the app run as Node on the bundle. */
 function launcher(): { launcher: string; launch: McpLaunch } {
   const path = launcherPath()
-  if (!path) throw new CliError(EXIT.app, 'cannot locate the ieumoffice launcher')
+  if (!path) throw new CliError(EXIT.app, 'cannot locate the ttokttak launcher')
   return {
     launcher: path,
     launch: mcpLaunchFromLauncher(path, { platform: process.platform, exists: existsSync }),
@@ -230,7 +230,7 @@ function list(ctx: CommandContext) {
   const found = agents.filter((a) => a.detected)
   return {
     summary: found.length
-      ? `${found.length} agent(s) detected, ${found.filter((a) => a.registered).length} with ieumoffice registered: ${found
+      ? `${found.length} agent(s) detected, ${found.filter((a) => a.registered).length} with ttokttak registered: ${found
           .map((a) => `${a.agent} ${a.status}`)
           .join(', ')}`
       : 'no coding agent detected on this machine',
@@ -313,7 +313,7 @@ function edit(
   const manualHint =
     verb === 'install'
       ? 'paste detail.snippet into the file yourself'
-      : 'remove the ieumoffice entry from the file yourself'
+      : 'remove the ttokttak entry from the file yourself'
 
   const warnings: Warning[] = []
   const rows: Array<AgentRow & { status: InstallStatus | UninstallStatus; snippet?: string }> = []
@@ -340,7 +340,7 @@ function edit(
         code: status === 'occupied' ? 'entry_occupied' : 'manual_edit_needed',
         message:
           status === 'occupied'
-            ? `${t.id}: the ieumoffice entry in ${t.file} starts ${before.command ?? 'something else'}`
+            ? `${t.id}: the ttokttak entry in ${t.file} starts ${before.command ?? 'something else'}`
             : `${t.id}: ${t.file} could not be edited; ${verb === 'install' ? 'add' : 'remove'} the entry by hand`,
         suggestion:
           status === 'occupied'
@@ -356,7 +356,7 @@ function edit(
     throw new CliError(
       EXIT.file,
       r.status === 'occupied'
-        ? `${single.id}: the ieumoffice entry in ${single.file} starts ${r.command ?? 'something else'}; not ${verb === 'install' ? 'replacing' : 'removing'} it`
+        ? `${single.id}: the ttokttak entry in ${single.file} starts ${r.command ?? 'something else'}; not ${verb === 'install' ? 'replacing' : 'removing'} it`
         : `${single.id}: ${single.file} could not be edited safely`,
       {
         agent: single.id,
@@ -381,13 +381,13 @@ function edit(
     .join(', ')
   const nothing = verb === 'install' ? 'nothing registered' : 'nothing removed'
   const summary = changed.length
-    ? `${verb === 'install' ? 'registered ieumoffice mcp for' : 'removed ieumoffice mcp from'} ${changed
+    ? `${verb === 'install' ? 'registered ttokttak mcp for' : 'removed ttokttak mcp from'} ${changed
         .map((r) => `${r.agent} (${r.status})`)
         .join(', ')}${tail ? `; ${tail}` : ''}`
     : rows.some((r) => r.status === 'unchanged')
-      ? `ieumoffice mcp already registered${tail ? `; ${tail}` : ''}`
+      ? `ttokttak mcp already registered${tail ? `; ${tail}` : ''}`
       : rows.some((r) => r.status === 'absent')
-        ? `ieumoffice mcp was not registered${tail ? `; ${tail}` : ''}`
+        ? `ttokttak mcp was not registered${tail ? `; ${tail}` : ''}`
         : blocked
           ? `${nothing}: ${tail}`
           : `${nothing}: no coding agent detected on this machine`

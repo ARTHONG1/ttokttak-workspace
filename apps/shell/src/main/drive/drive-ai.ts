@@ -164,7 +164,7 @@ export class DriveAi {
     // the download lives only as long as the parse
     let dir: string | null = null
     try {
-      dir = await mkdtemp(join(tmpdir(), 'ieumoffice-drive-'))
+      dir = await mkdtemp(join(tmpdir(), 'ttokttak-drive-'))
       const path = join(dir, localFileName(file.name, plan.extension))
       await writeFile(path, got.bytes)
       const parsed = await this.deps.parse(path)

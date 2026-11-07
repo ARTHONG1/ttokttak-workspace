@@ -3,10 +3,10 @@ import { APP_BINARY_NAME, CLI_BUNDLE_FILE, CLI_COMMAND } from './names'
 export { MCP_SERVER_NAME, SKILL_NAME } from './names'
 
 /**
- * How an MCP client starts `ieumoffice mcp`. Shared by the app's Settings snippet
- * and `ieumoffice mcp install` so the two cannot drift. Clients spawn without a
- * shell, so on Windows neither ieumoffice.cmd nor `cmd /c` is safe (a path with
- * a space splits); the entry does what ieumoffice.cmd does instead: the app
+ * How an MCP client starts `ttokttak mcp`. Shared by the app's Settings snippet
+ * and `ttokttak mcp install` so the two cannot drift. Clients spawn without a
+ * shell, so on Windows neither ttokttak.cmd nor `cmd /c` is safe (a path with
+ * a space splits); the entry does what ttokttak.cmd does instead: the app
  * binary as Node on the bundled CLI. Pure string code: the renderer imports it.
  */
 export interface McpLaunch {
@@ -17,7 +17,7 @@ export interface McpLaunch {
 
 const isWindowsPath = (p: string) => p.includes('\\')
 
-/** The app's snippet: the bare name once ieumoffice is on the PATH, else the launcher itself. */
+/** The app's snippet: the bare name once ttokttak is on the PATH, else the launcher itself. */
 export function mcpLaunch(cli: {
   status: string
   launcherDir: string
@@ -47,7 +47,7 @@ export interface LauncherLaunchOptions {
  * `mcp install`: always the absolute launcher, never the bare name. On Windows
  * the packaged app is run as Node (same entry as the app's snippet); a checkout
  * has no HangulAIWorkbench.exe beside it and runs the bundle on the system node, as the
- * bin/ieumoffice script does. An upstream GenOffice.exe is never started.
+ * bin/ttokttak script does. An upstream GenOffice.exe is never started.
  */
 export function mcpLaunchFromLauncher(
   launcher: string,

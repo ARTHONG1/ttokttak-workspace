@@ -1,6 +1,6 @@
 # Headless PDF export
 
-Every "export to PDF" path in IeumOffice can be driven without a visible
+Every "export to PDF" path in ttokttak-workspace can be driven without a visible
 editor window, behind one entry point:
 
 ```
@@ -12,7 +12,7 @@ one line to stdout and exits. It does **not** take the single-instance lock,
 so it runs happily alongside a GUI instance.
 
 ```
-$ IeumOffice --headless-export report.docx --to pdf --out report.pdf --json
+$ ttokttak-workspace --headless-export report.docx --to pdf --out report.pdf --json
 {"status":"ok","summary":"Exported /w/report.docx to /w/report.pdf","output_path":"/w/report.pdf"}
 ```
 

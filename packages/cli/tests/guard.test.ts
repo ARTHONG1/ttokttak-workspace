@@ -182,7 +182,7 @@ describe('audit log', () => {
   })
 
   it('defaults under ~/.genoffice and honours GENOFFICE_AUDIT_LOG', () => {
-    expect(auditLogPath({})).toMatch(/[\\/]\.ieumoffice[\\/]cli-audit\.jsonl$/)
+    expect(auditLogPath({})).toMatch(/[\\/]\.ttokttak[\\/]cli-audit\.jsonl$/)
     expect(auditLogPath({ GENOFFICE_AUDIT_LOG: 'off' })).toBeNull()
     expect(auditLogPath({ GENOFFICE_AUDIT_LOG: '/x/y.jsonl' })).toBe('/x/y.jsonl')
   })

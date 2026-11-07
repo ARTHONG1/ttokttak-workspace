@@ -9,8 +9,8 @@
  * look until Hangul is closed, and applies it as one undo step.
  *
  * This module fills that gap from the app's side. The studio's edit command
- * calls ieumFormatCopy/ieumFormatPaste (see the studio-format-copy patch), and
- * its hasCopiedFormat asks ieumHasCopiedFormat so the existing Paste Format
+ * calls ttokFormatCopy/ttokFormatPaste (see the studio-format-copy patch), and
+ * its hasCopiedFormat asks ttokHasCopiedFormat so the existing Paste Format
  * menu entry is enabled at the right times. Nothing here imports the studio:
  * the caller passes the modal dialog, the undo commands, the cell-block helpers
  * and the locale. Changes go through the editor's own command history, so one
@@ -18,7 +18,7 @@
  */
 
 /** Module specifier the studio-format-copy patches import; build-studio.mjs aliases it. */
-export const FORMAT_COPY_MODULE = '@ieum/format-copy'
+export const FORMAT_COPY_MODULE = '@ttok/format-copy'
 
 const VERSION = 1
 /** Cells one apply may touch. */
@@ -1516,14 +1516,14 @@ function openCopy(services, studio, ih, described) {
       body.appendChild(heading(ko ? '본문 모양 복사' : 'Text format'))
       const nested = described.source.nested === true
       body.appendChild(
-        radio('ieum-format-copy-body', 'chars', ko ? '글자 모양' : 'Character format'),
+        radio('ttok-format-copy-body', 'chars', ko ? '글자 모양' : 'Character format'),
       )
       body.appendChild(
-        radio('ieum-format-copy-body', 'paragraph', ko ? '문단 모양' : 'Paragraph format', nested),
+        radio('ttok-format-copy-body', 'paragraph', ko ? '문단 모양' : 'Paragraph format', nested),
       )
       body.appendChild(
         radio(
-          'ieum-format-copy-body',
+          'ttok-format-copy-body',
           'both',
           ko ? '글자 모양과 문단 모양 둘 다' : 'Character and paragraph formats',
           nested,
@@ -1531,7 +1531,7 @@ function openCopy(services, studio, ih, described) {
       )
       body.appendChild(
         radio(
-          'ieum-format-copy-body',
+          'ttok-format-copy-body',
           'charStyle',
           ko ? '글자 스타일' : 'Character style',
           !described.charStyle,
@@ -1539,7 +1539,7 @@ function openCopy(services, studio, ih, described) {
       )
       body.appendChild(
         radio(
-          'ieum-format-copy-body',
+          'ttok-format-copy-body',
           'paragraphStyle',
           ko ? '문단 스타일' : 'Paragraph style',
           nested,
@@ -1578,7 +1578,7 @@ function openCopy(services, studio, ih, described) {
           wrap.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0'
           const input = doc.createElement('input')
           input.type = 'radio'
-          input.name = 'ieum-format-copy-target'
+          input.name = 'ttok-format-copy-target'
           input.value = value
           input.checked = this.options.cell?.target === value
           input.addEventListener('change', () => {
@@ -1633,7 +1633,7 @@ function openCopy(services, studio, ih, described) {
 }
 
 /** The editor's edit command: copy a look, or apply the copied one to the block. */
-export function ieumFormatCopy(services, studio = {}) {
+export function ttokFormatCopy(services, studio = {}) {
   const ih = services?.getInputHandler?.()
   const refusal = placeRefusal(ih)
   if (refusal) {
@@ -1658,7 +1658,7 @@ export function ieumFormatCopy(services, studio = {}) {
 }
 
 /** The editor's paste command: apply the copied look to the current block. */
-export function ieumFormatPaste(services, studio = {}) {
+export function ttokFormatPaste(services, studio = {}) {
   const ih = services?.getInputHandler?.()
   const refusal = placeRefusal(ih)
   if (refusal) {
@@ -1674,7 +1674,7 @@ export function ieumFormatPaste(services, studio = {}) {
 }
 
 /** Whether this editor has a copied look; the studio's Paste Format enablement asks this. */
-export function ieumHasCopiedFormat(ih) {
+export function ttokHasCopiedFormat(ih) {
   return !!ih && copiedFormats.has(ih)
 }
 

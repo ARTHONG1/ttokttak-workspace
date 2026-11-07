@@ -1,19 +1,19 @@
 # Příkazová řádka a agenti
 
-Každá instalace obsahuje příkaz `ieumoffice`, který používá stejné enginy jako okno — stejné parsery, stejný zapisovač, stejný vykreslovač. Soubor, který aplikace uloží, a soubor, který zapíše příkaz, je stejný soubor, a kontrola, kterou projde panel AI v aplikaci, projde i příkaz.
+Každá instalace obsahuje příkaz `ttokttak`, který používá stejné enginy jako okno — stejné parsery, stejný zapisovač, stejný vykreslovač. Soubor, který aplikace uloží, a soubor, který zapíše příkaz, je stejný soubor, a kontrola, kterou projde panel AI v aplikaci, projde i příkaz.
 
 ```sh
-ieumoffice --help          # every command
-ieumoffice guide slides    # the op reference, for writing your own
+ttokttak --help          # every command
+ttokttak guide slides    # the op reference, for writing your own
 ```
 
-`ieumoffice --help` ukáže celou plochu na jedné obrazovce: každý příkaz s řádkem, který říká, co dělá, a pak globální přepínače a návratové kódy.
+`ttokttak --help` ukáže celou plochu na jedné obrazovce: každý příkaz s řádkem, který říká, co dělá, a pak globální přepínače a návratové kódy.
 
 ## Získání příkazu
 
-Příkaz se dodává uvnitř aplikace. Chcete-li ho volat jménem, spusťte jednou `ieumoffice install-cli`: ve Windows přidá složku s příkazem do vaší uživatelské `PATH` a terminály, které otevřete potom, ho už najdou. **Nastavení ▸ Integrace** ukazuje, zda váš terminál příkaz už najde, a pokud ne, přesný řádek, který máte spustit.
+Příkaz se dodává uvnitř aplikace. Chcete-li ho volat jménem, spusťte jednou `ttokttak install-cli`: ve Windows přidá složku s příkazem do vaší uživatelské `PATH` a terminály, které otevřete potom, ho už najdou. **Nastavení ▸ Integrace** ukazuje, zda váš terminál příkaz už najde, a pokud ne, přesný řádek, který máte spustit.
 
-Programoví agenti tento krok nepotřebují. Aplikace zapisuje umístění příkazu do `~/.ieumoffice/launcher` a tam ho najdou.
+Programoví agenti tento krok nepotřebují. Aplikace zapisuje umístění příkazu do `~/.ttokttak/launcher` a tam ho najdou.
 
 ## Příkazy, které stojí za to znát
 
@@ -32,18 +32,18 @@ Programoví agenti tento krok nepotřebují. Aplikace zapisuje umístění pří
 | `merge`           | Vyplní zástupné značky `{{key}}` v šabloně `.docx`, `.pptx` nebo `.xlsx`.                                                                                                                                     |
 | `capabilities`    | Hlásí, které funkce AI (vyhledávání, generování obrázků, analýza obrázků a videí) jsou na tomto počítači dostupné a jakou cestou.                                                                             |
 | `guide`           | Referenční příručka op a návrhové průvodce, vygenerované ze stejných definic, proti kterým executor validuje — takže se nemůže rozejít s tím, co přijímá `apply`. `--json` ji vrátí se schématem každé op.    |
-| `install-cli`     | Umístí `ieumoffice` do `PATH`.                                                                                                                                                                                |
+| `install-cli`     | Umístí `ttokttak` do `PATH`.                                                                                                                                                                                  |
 | `skill`           | Vypíše programové agenty nalezené na tomto počítači a nainstaluje do nich nebo v nich aktualizuje dovednost GenOffice.                                                                                        |
 | `mcp`             | Vystaví každý příkaz jako nástroj Model Context Protocol. Viz **Připojení programového agenta**.                                                                                                              |
 
 ## Úpravy: Docs, Sheets, Slides
 
-`ieumoffice docs`, `ieumoffice sheet` a `ieumoffice slides` čtou a upravují stejnou cestou zápisu, jakou používá aplikace, a sdílejí jednu slovní zásobu: **op** je jediná úprava a **spec** je seznam op aplikovaných v pořadí.
+`ttokttak docs`, `ttokttak sheet` a `ttokttak slides` čtou a upravují stejnou cestou zápisu, jakou používá aplikace, a sdílejí jednu slovní zásobu: **op** je jediná úprava a **spec** je seznam op aplikovaných v pořadí.
 
 ```sh
-ieumoffice sheet read report.xlsx
-ieumoffice slides apply deck.pptx --ops ops.json --dry-run
-ieumoffice docs apply brief.docx --ops ops.json
+ttokttak sheet read report.xlsx
+ttokttak slides apply deck.pptx --ops ops.json --dry-run
+ttokttak docs apply brief.docx --ops ops.json
 ```
 
 `--dry-run` hlásí, co by dávka udělala, a nic nezapíše — to je nejlevnější způsob, jak si spec před použitím ověřit. Panel AI v aplikaci běží přesně na těchto op, takže všechno, co mu můžete zadat, můžete i zapsat skriptem.
@@ -57,7 +57,7 @@ ieumoffice docs apply brief.docx --ops ops.json
 - `media` u obrázku používá poskytovatele s klíčem, pokud je nastaven. Vaše předplatné Claude nebo Codex použije jen tehdy, když jste to povolili, a to je ve výchozím stavu **vypnuté**; přepínač a jeho omezení popisuje [Připojení programového agenta](help://mcp).
 - `media` u videa nebo zvuku potřebuje poskytovatele s klíčem, který podporuje video.
 
-`ieumoffice capabilities --json` tohle všechno ohlásí, aniž by volal jakoukoli AI. Jeho `detail` obsahuje:
+`ttokttak capabilities --json` tohle všechno ohlásí, aniž by volal jakoukoli AI. Jeho `detail` obsahuje:
 
 | Pole                                                                             | Co říká                                                                                                                                                                                                                                          |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -71,15 +71,15 @@ Když `image` nebo `media` nelze spustit, příkaz skončí s kódem 4 a `error:
 
 ## Co uchovává v tomto počítači
 
-Oba soubory jsou ve složce `.ieumoffice` ve vaší uživatelské složce:
+Oba soubory jsou ve složce `.ttokttak` ve vaší uživatelské složce:
 
-- `~/.ieumoffice/launcher` zaznamenává, kde je příkaz aplikace, takže ho programový agent najde, i když není ve vaší `PATH`.
-- `~/.ieumoffice/cli-audit.jsonl` dostane jeden řádek za každý spuštěný příkaz — příkaz, jeho argumenty a výsledek — takže se později můžete podívat, co agent udělal.
+- `~/.ttokttak/launcher` zaznamenává, kde je příkaz aplikace, takže ho programový agent najde, i když není ve vaší `PATH`.
+- `~/.ttokttak/cli-audit.jsonl` dostane jeden řádek za každý spuštěný příkaz — příkaz, jeho argumenty a výsledek — takže se později můžete podívat, co agent udělal.
 
 ## Model Context Protocol
 
-`ieumoffice mcp` vystaví každý příkaz jako nástroj MCP a `ieumoffice mcp install <agent|all>` jej zaregistruje ve vlastní konfiguraci programového agenta. Této části se týká kapitola **Připojení programového agenta**.
+`ttokttak mcp` vystaví každý příkaz jako nástroj MCP a `ttokttak mcp install <agent|all>` jej zaregistruje ve vlastní konfiguraci programového agenta. Této části se týká kapitola **Připojení programového agenta**.
 
 ## Co příkaz neumí
 
-Čte a zapisuje soubor. Není to aplikace: není tu okno a dialog aktualizace v aplikaci zde neplatí. Všechno, co potřebuje okno — panel AI, kontrolu kvality vykreslené snímku — musí počkat, než soubor otevřete. `ieumoffice render` vám dá pixely bez něj a `ieumoffice slides` prověří rozvržení prezentace sám.
+Čte a zapisuje soubor. Není to aplikace: není tu okno a dialog aktualizace v aplikaci zde neplatí. Všechno, co potřebuje okno — panel AI, kontrolu kvality vykreslené snímku — musí počkat, než soubor otevřete. `ttokttak render` vám dá pixely bez něj a `ttokttak slides` prověří rozvržení prezentace sám.

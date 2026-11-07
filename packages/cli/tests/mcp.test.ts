@@ -281,7 +281,7 @@ describe('mcp server', () => {
     const bytes = JSON.stringify(list).length
     // 90 KiB before the four PDF document tools (pdf_images, pdf_ai_read, pdf_translate, pdf_status)
     // and hwp_read (about 1 KiB) joined the catalog; 97 KiB before epub_translate and epub_status
-    // (about 2 KiB); 99 KiB before the product name in the descriptions grew from IeumOffice to
+    // (about 2 KiB); 99 KiB before the product name in the descriptions grew from the earlier name to
     // HangulAIWorkbench (about 0.1 KiB)
     expect(bytes).toBeLessThanOrEqual(100 * 1024)
     expect(bytes).toBeGreaterThan(60 * 1024)
@@ -456,8 +456,8 @@ describe('mcp server', () => {
     expect(r.text).toContain('Word ops')
     expect(() => r.json()).toThrow()
     const { resources } = await client.listResources()
-    expect(resources.map((x) => x.uri)).toContain('ieumoffice://guide/slides/spec')
-    const spec = await client.readResource({ uri: 'ieumoffice://guide/slides/spec' })
+    expect(resources.map((x) => x.uri)).toContain('ttokttak://guide/slides/spec')
+    const spec = await client.readResource({ uri: 'ttokttak://guide/slides/spec' })
     expect((spec.contents[0] as { text: string }).text.length).toBeGreaterThan(200)
   })
 

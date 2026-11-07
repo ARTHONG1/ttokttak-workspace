@@ -9,7 +9,7 @@ import { brandText, PRODUCT_NAME } from '@genoffice/i18n'
  */
 
 /** the terminal command, and the launcher file in <resources>/cli (Windows: `<name>.cmd`) */
-export const CLI_COMMAND = 'ieumoffice'
+export const CLI_COMMAND = 'ttokttak'
 
 /** the bundled CLI entry beside the launchers: a file inside the app, not a registered name */
 export const CLI_BUNDLE_FILE = 'genoffice.cjs'

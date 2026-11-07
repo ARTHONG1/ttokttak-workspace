@@ -54,8 +54,8 @@ Under **Local HTTP server** the app can run the server itself — an enable swit
 
 ## Command-line cheat sheet
 
-| Command             | What it does               |
-| ------------------- | -------------------------- |
-| `ieumoffice <file>` | open a file                |
-| `ieumoffice mcp`    | start the local MCP server |
-| `ieumoffice --help` | every command and flag     |
+| Command           | What it does               |
+| ----------------- | -------------------------- |
+| `ttokttak <file>` | open a file                |
+| `ttokttak mcp`    | start the local MCP server |
+| `ttokttak --help` | every command and flag     |

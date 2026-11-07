@@ -88,7 +88,7 @@ Install ttokttak-workspace on my computer and finish the setup.
 Read https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md and follow it exactly.
 ```
 
-The agent picks the right file for your OS and CPU, downloads it from the official release only, checks it against the release's SHA-512, installs the app, puts a 똑딱작업실 shortcut on the Desktop, links the `ieumoffice` command, and registers the MCP server and the document skill with the coding agents on the PC. See [INSTALL.md](INSTALL.md) and `scripts/install/`.
+The agent picks the right file for your OS and CPU, downloads it from the official release only, checks it against the release's SHA-512, installs the app, puts a 똑딱작업실 shortcut on the Desktop, links the `ttokttak` command, and registers the MCP server and the document skill with the coding agents on the PC. See [INSTALL.md](INSTALL.md) and `scripts/install/`.
 
 ## What it does
 
@@ -96,7 +96,7 @@ The agent picks the right file for your OS and CPU, downloads it from the offici
 - An AI panel in every editor that reads, edits, marks the changes and undoes them in one step.
 - HWPX saves that Hancom Hangul opens, checked before anything overwrites the original.
 - School work tools: a purchase request generator, a quiz maker (Blooket CSV, QuizN XLSX, PDF, video), a word-search worksheet maker, 똑딱서명, which signs a document with a drawn or uploaded signature, and 문서 변환, which turns an uploaded document into the format you pick.
-- A command line and MCP server (`ieumoffice`, `ieumoffice mcp`) for Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode and Windsurf.
+- A command line and MCP server (`ttokttak`, `ttokttak mcp`) for Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode and Windsurf.
 - The app runs the Claude Code or Codex program you signed in to; it never reads or stores those logins.
 
 ## Privacy
@@ -109,7 +109,7 @@ ttokttak-workspace is not written from scratch. It joins several open-source pro
 
 | Area                 | Open source                                                                                                                                                                                               | Role                                                                                  | Licence          |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------- |
-| App base             | [IeumOffice](https://github.com/pblsketch/openoffice) · [GenOffice](https://github.com/genspark-ai/genoffice)                                                                                             | Tabbed editors, an AI panel in each editor, subscription connection, document engines | Apache-2.0       |
+| App base             | Open source in the [GenOffice](https://github.com/genspark-ai/genoffice) family (full attribution in [NOTICE](NOTICE))                                                                                    | Tabbed editors, an AI panel in each editor, subscription connection, document engines | Apache-2.0       |
 | Hangul documents     | [rhwp](https://github.com/edwardkim/rhwp)                                                                                                                                                                 | Reading, writing and rendering HWP/HWPX                                               | MIT              |
 | Spreadsheets         | [Univer](https://github.com/dream-num/univer) · [calamine](https://github.com/tafia/calamine)                                                                                                             | Calculation and grid, reading Excel files                                             | Apache-2.0 · MIT |
 | Word and Markdown    | [Tiptap](https://github.com/ueberdosis/tiptap) · [ProseMirror](https://prosemirror.net)                                                                                                                   | Document editing                                                                      | MIT              |
@@ -135,10 +135,10 @@ Node 22.12+ (npm 10+) and Rust (`cargo` on the PATH) are required. See [CONTRIBU
 
 ## License and acknowledgement
 
-Licensed under the [Apache License 2.0](LICENSE). The code in this repository is a modified version of [IeumOffice](https://github.com/pblsketch/openoffice) 0.12.5 (commit `4e4e9cc`), which is based on [GenOffice](https://github.com/genspark-ai/genoffice); both are Apache-2.0 and their copyright notices are kept as written. Attribution and the summary of changes are in [NOTICE](NOTICE); every change is in the history. ttokttak-workspace is an independent project and is not affiliated with, sponsored or endorsed by the IeumOffice maintainers, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, Hancom, Adobe, XMind or Google. "IeumOffice", "이음오피스", "GenOffice" and "Genspark" belong to their owners, and the licence grants no trademark rights (section 6). "한글", "한컴", "HWP" and "HWPX" are registered trademarks of Hancom Inc.; other product names belong to their owners and are used only to say what this program opens and works with.
+Licensed under the [Apache License 2.0](LICENSE). The code in this repository is a modified version of Apache-2.0 open source in the [GenOffice](https://github.com/genspark-ai/genoffice) family; the original copyright notices are kept as written. Attribution and the summary of changes are in [NOTICE](NOTICE); every change is in the history. ttokttak-workspace is an independent project and is not affiliated with, sponsored or endorsed by the maintainers of the base open-source projects, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, Hancom, Adobe, XMind or Google. "GenOffice" and "Genspark" belong to their owners, and the licence grants no trademark rights (section 6). "한글", "한컴", "HWP" and "HWPX" are registered trademarks of Hancom Inc.; other product names belong to their owners and are used only to say what this program opens and works with.
 
 > 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
 
-The rabbit in the app icon is the mascot of ACE 연구회, used with its permission in place of the IeumOffice icon and logo. The mascot artwork is not covered by the Apache License 2.0; redistributions must replace the icon.
+The rabbit in the app icon is the mascot of ACE 연구회, used with its permission; the base project’s name, icon and logo are not used. The mascot artwork is not covered by the Apache License 2.0; redistributions must replace the icon.
 
 Made by 홍찬우 (Incheon Bongsu Elementary School), who runs the teachers' edtech group [클래스똑딱](https://classddok.com). Issues: [https://github.com/ARTHONG1/ttokttak-workspace/issues](https://github.com/ARTHONG1/ttokttak-workspace/issues).

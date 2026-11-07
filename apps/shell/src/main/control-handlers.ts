@@ -65,7 +65,7 @@ export function controlHandler(host: ControlHost): (req: ControlRequest) => Prom
     const tab = host.findTab(req.path)
     if (!tab) {
       return fail('file_not_open_in_gui', `${PRODUCT_NAME} does not have ${req.path} open`, {
-        suggestion: `ieumoffice open ${req.path}`,
+        suggestion: `ttokttak open ${req.path}`,
       })
     }
     return ask(tab.webContents, { cmd: 'selection' }, host.readyTimeoutMs)

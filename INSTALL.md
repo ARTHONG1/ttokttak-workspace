@@ -66,27 +66,27 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ## 5단계. 한 번 실행해 설정 폴더 만들기
 
-앱을 한 번 열었다가 닫으면 터미널 명령어 `ieumoffice`가 PATH에 연결됩니다.
+앱을 한 번 열었다가 닫으면 터미널 명령어 `ttokttak`이 PATH에 연결됩니다.
 
 - macOS: `open -a <앱 경로>`, 10초 기다린 뒤 `osascript -e 'quit app "HangulAIWorkbench"'`
 - Windows: 바로 가기를 실행한 뒤 창을 닫습니다.
 
 앱을 열지 않고 바로 연결하려면 앱 안의 명령어를 직접 씁니다.
 
-- macOS: `<앱 경로>/Contents/Resources/cli/ieumoffice install-cli`
-- Windows: `%LOCALAPPDATA%\Programs\HangulAIWorkbench\resources\cli\ieumoffice.cmd install-cli`
+- macOS: `<앱 경로>/Contents/Resources/cli/ttokttak install-cli`
+- Windows: `%LOCALAPPDATA%\Programs\HangulAIWorkbench\resources\cli\ttokttak.cmd install-cli`
 
 ## 6단계. 내 AI 에이전트와 연결
 
-`ieumoffice`는 문서를 읽고 만들고 고치는 명령어이자 MCP 서버입니다. 이 PC에 있는 에이전트에 등록합니다.
+`ttokttak`은 문서를 읽고 만들고 고치는 명령어이자 MCP 서버입니다. 이 PC에 있는 에이전트에 등록합니다.
 
 ```bash
-ieumoffice mcp install all     # Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf 중 설치된 것에 MCP 서버 등록
-ieumoffice skill install all   # 같은 에이전트들에 문서 작업 스킬 설치
-ieumoffice mcp list            # 등록 결과 확인
+ttokttak mcp install all     # Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, Windsurf 중 설치된 것에 MCP 서버 등록
+ttokttak skill install all   # 같은 에이전트들에 문서 작업 스킬 설치
+ttokttak mcp list            # 등록 결과 확인
 ```
 
-- 이미 같은 이름(`ieumoffice`)으로 다른 프로그램이 등록되어 있으면 `occupied`로 알려 주고 건드리지 않습니다. 이 경우 사용자에게 알리기만 합니다.
+- 이미 같은 이름(`ttokttak`)으로 다른 프로그램이 등록되어 있으면 `occupied`로 알려 주고 건드리지 않습니다. 이 경우 사용자에게 알리기만 합니다.
 - 등록한 뒤에는 에이전트를 다시 시작해야 새 도구가 보입니다.
 
 ## 7단계. 앱 안의 AI 연결
@@ -104,14 +104,14 @@ ieumoffice mcp list            # 등록 결과 확인
 
 - [ ] 앱 파일이 있다 (macOS `/Applications/HangulAIWorkbench.app` 또는 `~/Applications/...`, Windows `%LOCALAPPDATA%\Programs\HangulAIWorkbench\HangulAIWorkbench.exe`)
 - [ ] 바탕화면에 `똑딱작업실` 바로 가기가 있다
-- [ ] `ieumoffice --version`이 앱 버전을 출력한다 (새 터미널에서)
-- [ ] `ieumoffice mcp list`에 이 PC의 에이전트가 `registered`로 나온다
+- [ ] `ttokttak --version`이 앱 버전을 출력한다 (새 터미널에서)
+- [ ] `ttokttak mcp list`에 이 PC의 에이전트가 `registered`로 나온다
 - [ ] 앱을 열면 홈 화면이 보인다
 
 ## 지우기
 
-- macOS: 앱을 휴지통으로 옮기고, 바탕화면 바로 가기를 지웁니다. `ieumoffice mcp uninstall all`로 에이전트 등록도 뺍니다.
-- Windows: 설정 → 앱에서 "HangulAIWorkbench"를 제거합니다. 먼저 `ieumoffice mcp uninstall all`을 실행합니다.
+- macOS: 앱을 휴지통으로 옮기고, 바탕화면 바로 가기를 지웁니다. `ttokttak mcp uninstall all`으로 에이전트 등록도 뺍니다.
+- Windows: 설정 → 앱에서 "HangulAIWorkbench"를 제거합니다. 먼저 `ttokttak mcp uninstall all`을 실행합니다.
 
 ## 문제가 생기면
 

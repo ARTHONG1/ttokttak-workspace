@@ -8,9 +8,9 @@ import type { Dirent } from 'node:fs'
 import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import {
-  IEUM_SOURCE_FILE,
-  IEUM_TEMPLATE_KEY,
-  IEUM_TITLE_KEY,
+  TTOK_SOURCE_FILE,
+  TTOK_TEMPLATE_KEY,
+  TTOK_TITLE_KEY,
   MAX_USER_SKILL_BYTES,
   MAX_USER_SKILL_FILES,
   SKILL_SCRIPTS_FOLDER,
@@ -169,8 +169,8 @@ export async function readUserSkillFolder(
   if (!frontName || !isValidUserSkillName(frontName)) unreadable ??= 'bad-name'
 
   const name = frontName && isValidUserSkillName(frontName) ? frontName : folderName
-  const template = normalizeSkillTemplatePath(parsed?.metadata[IEUM_TEMPLATE_KEY])
-  const title = parsed?.metadata[IEUM_TITLE_KEY]?.trim() || name
+  const template = normalizeSkillTemplatePath(parsed?.metadata[TTOK_TEMPLATE_KEY])
+  const title = parsed?.metadata[TTOK_TITLE_KEY]?.trim() || name
   const files = listed?.files ?? []
   return {
     id: userSkillId(options.source, name, options.plugin),
@@ -184,7 +184,7 @@ export async function readUserSkillFolder(
     template,
     templateExists: template !== undefined && files.some((file) => file.rel === template),
     hasScripts: files.some((file) => isSkillScriptPath(file.rel)),
-    github: options.source === 'app' && files.some((file) => file.rel === IEUM_SOURCE_FILE),
+    github: options.source === 'app' && files.some((file) => file.rel === TTOK_SOURCE_FILE),
     agentOnly:
       options.source === 'builtin' &&
       (options.agentOnlyNames?.has(name) === true ||
@@ -205,7 +205,7 @@ export async function skillContentHash(dir: string): Promise<string> {
   if (!listed) throw new Error(`Cannot read the skill folder: ${dir}`)
   const hash = createHash('sha256')
   for (const file of listed.files) {
-    if (file.rel === IEUM_SOURCE_FILE) continue
+    if (file.rel === TTOK_SOURCE_FILE) continue
     const content = await readFile(file.path)
     hash.update(`${file.rel}\0${content.length}\0`)
     hash.update(content)

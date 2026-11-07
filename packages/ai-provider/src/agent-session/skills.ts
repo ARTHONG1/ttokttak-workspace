@@ -26,8 +26,8 @@ import { createHash } from 'node:crypto'
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import {
-  IEUM_TEMPLATE_KEY,
-  IEUM_TITLE_KEY,
+  TTOK_TEMPLATE_KEY,
+  TTOK_TITLE_KEY,
   MAX_USER_SKILL_BYTES,
   MAX_USER_SKILL_FILES,
   USER_SKILL_NAME,
@@ -86,8 +86,8 @@ export interface AgentSkillBundle {
   }>
 }
 
-export const AGENT_SKILL_PLUGIN_NAME = 'ieum-skills'
-const MANIFEST_FILE = '.ieum-skills.json'
+export const AGENT_SKILL_PLUGIN_NAME = 'ttok-skills'
+const MANIFEST_FILE = '.ttok-skills.json'
 export const MAX_AGENT_SKILL_BYTES = MAX_USER_SKILL_BYTES
 /** The longest name in the copy */
 export const MAX_AGENT_SKILL_NAME = 64
@@ -197,8 +197,8 @@ async function adjustSkillMd(to: string, name: string, invoke: UserSkillInvoke):
       {
         name,
         description: parsed.description ?? '',
-        title: parsed.metadata[IEUM_TITLE_KEY],
-        template: parsed.metadata[IEUM_TEMPLATE_KEY],
+        title: parsed.metadata[TTOK_TITLE_KEY],
+        template: parsed.metadata[TTOK_TEMPLATE_KEY],
         body: parsed.body,
         fields,
       },

@@ -323,10 +323,10 @@ function thirdPartyNoticeProblems() {
 
 function ensureThirdPartyNotices() {
   if (thirdPartyNoticeProblems().length > 0) {
-    // IEUM_RELEASE makes the generator fail on a gap instead of degrading
+    // TTOK_RELEASE makes the generator fail on a gap instead of degrading
     execFileSync(process.execPath, [join(__dirname, '../../tools/gen-third-party-notices.mjs')], {
       stdio: 'inherit',
-      env: { ...process.env, IEUM_RELEASE: '1' },
+      env: { ...process.env, TTOK_RELEASE: '1' },
     })
   }
   const problems = thirdPartyNoticeProblems()
@@ -617,12 +617,12 @@ const config = {
       to: 'cli/genoffice.cjs',
     },
     {
-      from: '../../packages/cli/bin/ieumoffice',
-      to: 'cli/ieumoffice',
+      from: '../../packages/cli/bin/ttokttak',
+      to: 'cli/ttokttak',
     },
     {
-      from: '../../packages/cli/bin/ieumoffice.cmd',
-      to: 'cli/ieumoffice.cmd',
+      from: '../../packages/cli/bin/ttokttak.cmd',
+      to: 'cli/ttokttak.cmd',
     },
     // Chrome native messaging host for the 똑딱작업실 extension (registered by
     // build/installer.nsh on Windows and by the app at start; see packages/cli/src/edufine-register.ts)
@@ -641,8 +641,8 @@ const config = {
       to: 'cli/package.json',
     },
     {
-      from: '../../skills/ieumoffice/SKILL.md',
-      to: 'cli/skills/ieumoffice/SKILL.md',
+      from: '../../skills/ttokttak/SKILL.md',
+      to: 'cli/skills/ttokttak/SKILL.md',
     },
     // runtime deps the genoffice bundle leaves external (jsdom for the Word/Markdown
     // paths); collected by packages/cli/collect-deps.mjs during its build
@@ -692,8 +692,8 @@ const config = {
     // Two separate arch packages (NOT universal): arm64 keeps the exact
     // artifact names and update-feed entries it always had, x64 (via
     // GENOFFICE_MAC_X64=1, see includeMacX64 above) adds the Intel package:
-    // IeumOffice-<v>-x64.dmg (config.dmg.artifactName below) and the
-    // arch-less IeumOffice-<v>-mac.zip. Both zips land in one latest-mac.yml,
+    // HangulAIWorkbench-<v>-x64.dmg (config.dmg.artifactName below) and the
+    // arch-less HangulAIWorkbench-<v>-mac.zip. Both zips land in one latest-mac.yml,
     // which a Mac install only reads for the version. Dual-arch packs ship the
     // same lipo fat xlsx-sidecar (see assertUniversalSidecar above).
     target: [
@@ -780,22 +780,22 @@ const config = {
     fileAssociations: FILE_ASSOCIATIONS,
     // Icon SET directory, not the single 1024px png: electron-builder does
     // not resize a lone png, so deb/rpm would install only
-    // hicolor/1024x1024/apps/ieumoffice.png — a size absent from the hicolor
+    // hicolor/1024x1024/apps/ttokttak.png — a size absent from the hicolor
     // theme index, leaving GNOME/KDE launchers on the generic fallback icon
     // (upstream issue #90). The set ships every standard raster size.
     icon: 'build/icons',
     // mac and win name the binary from productName; linux instead derives it
     // from package.json "name", and "@genoffice/shell" sanitizes to the
     // invalid "@genofficeshell". Setting it explicitly also makes the
-    // generated ieumoffice.desktop match the WM_CLASS Electron reports (it
+    // generated ttokttak.desktop match the WM_CLASS Electron reports (it
     // takes that from the executable basename), so the running window links
     // back to its launcher entry.
     executableName: PACKAGED_APP_NAME,
     // Electron takes its X11 app_id from package.json "desktopName"
-    // (ieumoffice.desktop); syncDesktopName makes electron-builder name the
+    // (ttokttak.desktop); syncDesktopName makes electron-builder name the
     // .desktop file and its StartupWMClass from the same value. Without it
-    // StartupWMClass falls back to productName ("IeumOffice"), which does not
-    // match the "ieumoffice" WM_CLASS the window actually reports — and X11
+    // StartupWMClass falls back to productName ("HangulAIWorkbench"), which does not
+    // match the "ttokttak" WM_CLASS the window actually reports — and X11
     // compares case-sensitively, so the taskbar shows an unlinked window.
     syncDesktopName: true,
     extraResources: [
@@ -808,11 +808,11 @@ const config = {
   // Same "@genoffice/shell" problem as executableName above: the default deb
   // artifact name derives from package.json "name", and the scope's "/" makes
   // fpm treat "@genoffice" as a directory. Spell the published name out
-  // (ieumoffice_<version>_amd64.deb) and pin the control Package field so apt
+  // (ttokttak_<version>_amd64.deb) and pin the control Package field so apt
   // treats successive releases as upgrades of the same package and never
   // collides with an upstream genoffice deb install.
   deb: {
-    artifactName: 'ieumoffice_${version}_${arch}.deb',
+    artifactName: 'ttokttak_${version}_${arch}.deb',
     packageName: PACKAGED_APP_NAME,
     // Ubuntu 24.04 (and Debian 13) rebuilt part of the X/GTK stack for 64-bit
     // time_t and renamed those packages with a "t64" suffix: where the old
@@ -836,7 +836,7 @@ const config = {
       'libuuid1',
       'libsecret-1-0 | libsecret-1-0t64',
     ],
-    // expose the ieumoffice command line shipped inside the app
+    // expose the ttokttak command line shipped inside the app
     afterInstall: 'build/linux-after-install.sh',
     afterRemove: 'build/linux-after-remove.sh',
   },
@@ -851,7 +851,7 @@ const config = {
   // the rpm is a GitHub-Release download only, so latest-linux.yml lists
   // AppImage + deb.
   rpm: {
-    artifactName: 'ieumoffice-${version}.${arch}.rpm',
+    artifactName: 'ttokttak-${version}.${arch}.rpm',
     packageName: PACKAGED_APP_NAME,
     publish: null,
     afterInstall: 'build/linux-after-install.sh',

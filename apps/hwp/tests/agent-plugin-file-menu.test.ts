@@ -66,26 +66,26 @@ describe('the File menu of the embedded editor', () => {
     const { plugin, commands, menu } = editor()
     expect(plugin.installFileMenu(LABELS)).toEqual({ ok: true })
     expect(menu).toEqual([
-      'ext:ieum-save',
-      'ext:ieum-save-as',
-      'ext:ieum-export-pdf',
-      'ext:ieum-print',
+      'ext:ttok-save',
+      'ext:ttok-save-as',
+      'ext:ttok-export-pdf',
+      'ext:ttok-print',
       'file:page-setup',
       'file:about',
     ])
-    expect(commands.get('ext:ieum-save')).toMatchObject({ label: '저장', shortcutLabel: 'Ctrl+S' })
-    expect(commands.get('ext:ieum-save-as')).toMatchObject({ shortcutLabel: 'Ctrl+Shift+S' })
-    expect(commands.get('ext:ieum-export-pdf')?.shortcutLabel).toBeUndefined()
+    expect(commands.get('ext:ttok-save')).toMatchObject({ label: '저장', shortcutLabel: 'Ctrl+S' })
+    expect(commands.get('ext:ttok-save-as')).toMatchObject({ shortcutLabel: 'Ctrl+Shift+S' })
+    expect(commands.get('ext:ttok-export-pdf')?.shortcutLabel).toBeUndefined()
   })
 
   it('hands each command to the app as an event on the editor window', () => {
     const { plugin, commands } = editor()
     plugin.installFileMenu(LABELS)
     for (const id of [
-      'ext:ieum-save',
-      'ext:ieum-save-as',
-      'ext:ieum-export-pdf',
-      'ext:ieum-print',
+      'ext:ttok-save',
+      'ext:ttok-save-as',
+      'ext:ttok-export-pdf',
+      'ext:ttok-print',
     ]) {
       commands.get(id)?.execute(undefined as never)
     }

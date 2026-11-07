@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   __formatCopyTest as t,
   clearCopiedFormat,
-  ieumFormatCopy,
-  ieumFormatPaste,
-  ieumHasCopiedFormat,
+  ttokFormatCopy,
+  ttokFormatPaste,
+  ttokHasCopiedFormat,
 } from '../studio-plugin/format-copy.mjs'
 
 const FAMILIES = ['맑은 고딕', 'Arial', 'SimSun', 'Arial', 'Arial', 'Arial', 'Arial']
@@ -736,26 +736,26 @@ describe('format copy commands and state', () => {
     const api = services(wasm, ih)
     const toast = vi.fn()
     const studioWithToast = { ...studio, showToast: toast }
-    expect(ieumFormatCopy(api, studioWithToast).ok).toBe(true)
-    expect(ieumHasCopiedFormat(ih)).toBe(true)
+    expect(ttokFormatCopy(api, studioWithToast).ok).toBe(true)
+    expect(ttokHasCopiedFormat(ih)).toBe(true)
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ message: '모양을 복사했습니다.' }))
     ih.setSelection(bodySelection())
-    const result = ieumFormatPaste(api, studioWithToast)
+    const result = ttokFormatPaste(api, studioWithToast)
     expect(result.ok).toBe(true)
     expect(wasm.calls.some((call) => call[0] === 'applyCharFormat')).toBe(true)
     expect(wasm.calls.some((call) => call[0] === 'applyParaFormat')).toBe(true)
     expect(ih.ops).toHaveLength(1)
     // the copied look lasts until it is overwritten, as in Hangul
-    expect(ieumHasCopiedFormat(ih)).toBe(true)
+    expect(ttokHasCopiedFormat(ih)).toBe(true)
     clearCopiedFormat(ih)
-    expect(ieumHasCopiedFormat(ih)).toBe(false)
+    expect(ttokHasCopiedFormat(ih)).toBe(false)
   })
 
   it('says when there is nothing to paste', () => {
     const wasm = fakeWasm()
     const ih = fakeIh()
     const toast = vi.fn()
-    const result = ieumFormatPaste(services(wasm, ih), { ...studio, showToast: toast })
+    const result = ttokFormatPaste(services(wasm, ih), { ...studio, showToast: toast })
     expect(result.reason).toBe('noFormat')
     expect(toast).toHaveBeenCalledWith(
       expect.objectContaining({ message: '복사한 모양이 없습니다.' }),

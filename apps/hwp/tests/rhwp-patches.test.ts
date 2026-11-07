@@ -303,7 +303,7 @@ describe('rhwp memo menu patches', () => {
     expect(patched).toContain("    id: 'insert:comment',")
     expect(patched).toContain("    icon: 'icon-comment',")
     expect(patched).toContain('canExecute: (ctx) => ctx.hasDocument && !ctx.isFormMode')
-    expect(patched).toContain("globalThis.dispatchEvent(new CustomEvent('ieum:memo-insert'))")
+    expect(patched).toContain("globalThis.dispatchEvent(new CustomEvent('ttok:memo-insert'))")
     // no shortcut: the menu shows none for the memo
     const command = patched.slice(
       patched.indexOf("    id: 'insert:comment',"),

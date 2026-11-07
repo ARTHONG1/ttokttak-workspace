@@ -109,12 +109,12 @@ describe('instructions', () => {
     const claude = await agentInstructions('claude-code', project, 'ko', true)
     expect(claude).toContain('Use formal Korean.')
     expect(claude).toContain('Agents file.')
-    expect(claude).toContain('ieumoffice-editor')
+    expect(claude).toContain('ttokttak-editor')
     expect(claude).toContain('"ko"')
     const codex = await agentInstructions('codex', project, 'ko', false)
     expect(codex).toContain('Use formal Korean.')
     expect(codex).not.toContain('Agents file.')
-    expect(codex).not.toContain('ieumoffice-editor')
+    expect(codex).not.toContain('ttokttak-editor')
   })
 
   it('points to the two skill tools only when the app tools are there', async () => {
@@ -527,12 +527,12 @@ describe('the window log', () => {
     log = agentLogWith(log, { type: 'tool', action: started, status: 'running' })
     log = agentLogWith(log, {
       type: 'tool',
-      action: { ...started, target: 'pblsketch openoffice' },
+      action: { ...started, target: 'arthong1 ttokttak-workspace' },
       status: 'done',
     })
     expect(log.entries[1]).toEqual({
       kind: 'tool',
-      action: { ...started, target: 'pblsketch openoffice' },
+      action: { ...started, target: 'arthong1 ttokttak-workspace' },
       status: 'done',
     })
   })

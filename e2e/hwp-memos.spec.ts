@@ -50,7 +50,7 @@ async function hwpPage(app: ElectronApplication): Promise<Page> {
   const page = await waitForPageWithUrl(app, '://hwp/')
   await page.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
   await expect(
-    page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+    page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
   ).toHaveCount(1)
   return page
 }
@@ -78,7 +78,7 @@ const memoCards = (page: Page) => page.locator('.memo-card')
 async function fileCommand(page: Page, command: 'save' | 'saveAs'): Promise<void> {
   await page.evaluate((detail) => {
     const frame = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement | null
-    frame?.contentWindow?.dispatchEvent(new CustomEvent('ieum:file-command', { detail }))
+    frame?.contentWindow?.dispatchEvent(new CustomEvent('ttok:file-command', { detail }))
   }, command)
 }
 

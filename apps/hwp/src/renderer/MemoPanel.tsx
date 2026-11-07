@@ -25,11 +25,11 @@ import { useI18n, type StringKey } from './i18n/locale'
 /** The longest memo body the engine takes, in UTF-16 units (spec 3.3). */
 export const MAX_MEMO_TEXT = 100_000
 /** The channel every HWP editor instance listens on while a memo modal is open. */
-export const MEMO_LOCK_CHANNEL = 'ieum:hwp-memo-lock'
+export const MEMO_LOCK_CHANNEL = 'ttok:hwp-memo-lock'
 /** How often a tab locked by another one asks main whether that modal is still open. */
 export const MEMO_LOCK_RECHECK_MS = 5000
 /** The editor's own Insert > Memo menu (T4) asks the app to open the memo editor. */
-export const MEMO_INSERT_EVENT = 'ieum:memo-insert'
+export const MEMO_INSERT_EVENT = 'ttok:memo-insert'
 /** A document change is followed after this pause: typing does not re-read the list per key. */
 export const MEMO_DOC_CHANGE_DEBOUNCE_MS = 350
 /**

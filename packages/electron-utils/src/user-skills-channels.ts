@@ -70,7 +70,7 @@ export interface UserSkillView {
   source: UserSkillSourceValue
   plugin: string | undefined
   name: string
-  /** `metadata.ieum-title`, else the name */
+  /** `metadata.ttok-title`, else the name */
   title: string
   description: string
   enabled: boolean
@@ -88,7 +88,7 @@ export interface UserSkillView {
   bytes: number
   /** installed from GitHub: where from */
   github: { repo: string; ref: string; path: string; commit: string } | undefined
-  /** the skill lives in the app's own folder (`~/.ieumoffice/skills`) */
+  /** the skill lives in the app's own folder (`~/.ttokttak/skills`) */
   owned: boolean
   /** what the more-menu offers (spec 5.1) */
   can: {

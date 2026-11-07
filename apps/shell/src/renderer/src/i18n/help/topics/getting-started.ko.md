@@ -24,7 +24,7 @@ GenOffice는 내 컴퓨터에서 돌아가는 오피스 프로그램입니다. �
 
 - 메뉴 **파일 ▸ 열기**(⌘O/ctrl+O)는 시스템 선택 창을 엽니다. .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html을 지원합니다.
 - 홈의 **최근 사용** 목록에서 아무 항목이나 누릅니다.
-- 터미널에서 `ieumoffice <file>`을 실행해도 열 수 있습니다.
+- 터미널에서 `ttokttak <file>`을 실행해도 열 수 있습니다.
 
 ## ODT 문서
 

@@ -121,6 +121,7 @@ import { OPEN_DOCUMENTS_FILE, clearOpenDocuments, publishOpenDocuments } from '.
 import { startControlServer, type ControlServer } from './control-server'
 import { controlHandler } from './control-handlers'
 import { installCliLinkBestEffort } from './cli-link'
+import { migrateLegacyNames } from './legacy-names'
 import { createDefaultAppService, execFileRunner } from './default-app'
 import { registerIntegrationsIpc } from './integrations-ipc'
 import { registerResultStoreIpc } from './result-store-ipc'
@@ -8616,8 +8617,8 @@ registerIntegrationsIpc({
     ? join(process.resourcesPath, 'cli')
     : join(APPS_ROOT, '..', 'packages', 'cli', 'bin'),
   skillPath: app.isPackaged
-    ? join(process.resourcesPath, 'cli', 'skills', 'ieumoffice', 'SKILL.md')
-    : join(APPS_ROOT, '..', 'skills', 'ieumoffice', 'SKILL.md'),
+    ? join(process.resourcesPath, 'cli', 'skills', 'ttokttak', 'SKILL.md')
+    : join(APPS_ROOT, '..', 'skills', 'ttokttak', 'SKILL.md'),
   cliPackageJson: app.isPackaged
     ? join(process.resourcesPath, 'cli', 'package.json')
     : join(APPS_ROOT, '..', 'packages', 'cli', 'package.json'),
@@ -8641,7 +8642,7 @@ registerPdfConvertUiIpc({
 
 // The person's skills (settings → skills, the AI windows' `/` list and skill
 // reads, skill cards, the agent session's skills). Writes go only to
-// ~/.ieumoffice/skills; removing is the OS trash; GitHub only on request.
+// ~/.ttokttak/skills; removing is the OS trash; GitHub only on request.
 const builtinSkillsDir = (): string =>
   builtinSkillsDirFor({
     isPackaged: app.isPackaged,
@@ -8652,7 +8653,7 @@ const userSkills = createUserSkillsService({
   homeDir: () => homedir(),
   builtinDir: builtinSkillsDir,
   settingsPath: APP_SETTINGS_PATH,
-  tempDir: () => join(tmpdir(), 'ieumoffice-skills'),
+  tempDir: () => join(tmpdir(), 'ttokttak-skills'),
   trash: (path) => shell.trashItem(path),
   // Node's fetch: no browser cookies; the core sets no-redirect and no-credentials per request
   fetch: (url, init) => fetch(url, init),
@@ -8684,7 +8685,7 @@ registerUserSkillsIpc({
 // through its own send gate. The skill folder is only read here.
 const templateTabs = createTemplateTabs({
   makeCopyDir: async () => {
-    const dir = join(app.getPath('temp'), 'ieumoffice-template-copies', randomUUID())
+    const dir = join(app.getPath('temp'), 'ttokttak-template-copies', randomUUID())
     mkdirSync(dir, { recursive: true })
     return dir
   },
@@ -8935,6 +8936,21 @@ app.whenReady().then(async () => {
   currentLang()
   // native menus/dialogs/scrollbars follow the persisted theme from first paint
   nativeTheme.themeSource = currentTheme()
+  // releases up to 0.16.2 registered the base project's command name; move it
+  // before the launcher record below is written under the current name
+  if (app.isPackaged) {
+    try {
+      const moved = migrateLegacyNames({
+        home: homedir(),
+        settingsPath: APP_SETTINGS_PATH(),
+        cliDir: join(process.resourcesPath, 'cli'),
+        skillPath: join(process.resourcesPath, 'cli', 'skills', 'ttokttak', 'SKILL.md'),
+      })
+      if (moved) console.log('[genoffice] legacy names moved:', JSON.stringify(moved))
+    } catch (err) {
+      console.warn('[genoffice] legacy name move failed:', err instanceof Error ? err.message : err)
+    }
+  }
   // off the startup path: a symlink / registry write nobody is waiting for
   setTimeout(() => installCliLinkBestEffort(APP_SETTINGS_PATH()), 3000)
   startSheetsCaptureServer()

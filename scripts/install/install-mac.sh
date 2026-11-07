@@ -145,9 +145,9 @@ if [ -z "${TTOKTTAK_NO_DESKTOP:-}" ]; then
 fi
 
 STEP="cli"
-CLI="$APP_PATH/Contents/Resources/cli/ieumoffice"
+CLI="$APP_PATH/Contents/Resources/cli/ttokttak"
 [ -x "$CLI" ] || fail "앱 안의 명령어를 찾지 못했습니다: $CLI"
-"$CLI" install-cli >&2 || say "경고: ieumoffice를 PATH에 연결하지 못했습니다. 앱 안의 경로로 계속합니다"
+"$CLI" install-cli >&2 || say "경고: ttokttak을 PATH에 연결하지 못했습니다. 앱 안의 경로로 계속합니다"
 
 STEP="agents"
 if [ -z "${TTOKTTAK_NO_AGENTS:-}" ]; then
@@ -155,7 +155,7 @@ if [ -z "${TTOKTTAK_NO_AGENTS:-}" ]; then
     AGENTS="registered"
   else
     AGENTS="partial"
-    say "경고: 일부 에이전트에 등록하지 못했습니다. ieumoffice mcp list로 확인하세요"
+    say "경고: 일부 에이전트에 등록하지 못했습니다. ttokttak mcp list으로 확인하세요"
   fi
 fi
 

@@ -98,7 +98,7 @@ export interface PrintPage {
 
 /**
  * The pages of the document for printing. A picture the pages use is in `images` once
- * (a data URL), and the pages point at it as `href="ieum-image:N"`.
+ * (a data URL), and the pages point at it as `href="ttok-image:N"`.
  */
 export interface PrintJob {
   mode: PrintMode

@@ -31,7 +31,7 @@ export const hwpCommand: CommandDef = {
     if (verb !== 'read') {
       throw new CliError(EXIT.usage, 'expected "hwp read <file.hwp|file.hwpx>"', undefined, {
         reason: verb === undefined ? 'missing_argument' : 'invalid_argument',
-        suggestion: 'run `ieumoffice help hwp`',
+        suggestion: 'run `ttokttak help hwp`',
       })
     }
     return read(file, args, ctx)

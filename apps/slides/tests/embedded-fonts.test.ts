@@ -86,43 +86,43 @@ describe('"Family Bold" typefaces draw with the face they were measured with', (
   it('an embedded Bold face registers under the requested name, beside its Regular sibling', () => {
     registerEmbeddedFonts([
       {
-        typeface: 'Ieum Probe Square',
+        typeface: 'Ttok Probe Square',
         style: 'regular',
-        sfnt: weightedFont('Ieum Probe Square', 'Regular', 400, 600),
+        sfnt: weightedFont('Ttok Probe Square', 'Regular', 400, 600),
       },
       {
-        typeface: 'Ieum Probe Square Bold',
+        typeface: 'Ttok Probe Square Bold',
         style: 'bold',
-        sfnt: weightedFont('Ieum Probe Square', 'Bold', 700, 700),
+        sfnt: weightedFont('Ttok Probe Square', 'Bold', 700, 700),
       },
     ])
     const m = createSystemFontMetrics()
     // Regular first, so a later Bold-face registration that lands on its slot shows
-    expect(m.displayFamily!(style('Ieum Probe Square'))).toBe('Ieum Probe Square')
+    expect(m.displayFamily!(style('Ttok Probe Square'))).toBe('Ttok Probe Square')
     for (const over of [{}, { bold: true }, { italic: true }, { bold: true, italic: true }])
-      expect(m.displayFamily!(style('Ieum Probe Square Bold', over))).toBe('Ieum Probe Square Bold')
-    expect(m.measure('A', style('Ieum Probe Square Bold'))).toBe(70)
-    expect(m.measure('A', style('Ieum Probe Square'))).toBe(60)
-    expect(weightOf('Ieum Probe Square|00')).toBe(400)
-    expect(weightOf('Ieum Probe Square Bold|00')).toBe(700)
-    expect(weightOf('Ieum Probe Square Bold|10')).toBe(700)
+      expect(m.displayFamily!(style('Ttok Probe Square Bold', over))).toBe('Ttok Probe Square Bold')
+    expect(m.measure('A', style('Ttok Probe Square Bold'))).toBe(70)
+    expect(m.measure('A', style('Ttok Probe Square'))).toBe(60)
+    expect(weightOf('Ttok Probe Square|00')).toBe(400)
+    expect(weightOf('Ttok Probe Square Bold|00')).toBe(700)
+    expect(weightOf('Ttok Probe Square Bold|10')).toBe(700)
     // The upright face serves the italic runs undeclared, so Chromium slants it
-    expect(faceIds('Ieum Probe Square Bold')).toEqual([
-      'Ieum Probe Square Bold|00',
-      'Ieum Probe Square Bold|10',
+    expect(faceIds('Ttok Probe Square Bold')).toEqual([
+      'Ttok Probe Square Bold|00',
+      'Ttok Probe Square Bold|10',
     ])
   })
 
   it('a "Bold" name landing on a Regular-weight face keeps the face its own name', () => {
     registerEmbeddedFonts([
       {
-        typeface: 'Ieum Probe Plain Bold',
+        typeface: 'Ttok Probe Plain Bold',
         style: 'regular',
-        sfnt: weightedFont('Ieum Probe Plain', 'Regular', 400, 600),
+        sfnt: weightedFont('Ttok Probe Plain', 'Regular', 400, 600),
       },
     ])
     const m = createSystemFontMetrics()
-    expect(m.displayFamily!(style('Ieum Probe Plain Bold'))).toBe('Ieum Probe Plain')
+    expect(m.displayFamily!(style('Ttok Probe Plain Bold'))).toBe('Ttok Probe Plain')
   })
 
   const nanumBold = 'C:\\Windows\\Fonts\\NanumSquareB.ttf'

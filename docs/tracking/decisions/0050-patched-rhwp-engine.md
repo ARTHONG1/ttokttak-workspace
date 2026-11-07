@@ -50,7 +50,7 @@ npm 최신판은 여전히 0.8.7이다(10월 6일). 상위 개발 가지(`devel`
 
   4~9번은 새로 고친 것이다. 4·8번은 합쳐 상위에 PR로 냈고([#8144](https://github.com/edwardkim/rhwp/pull/8144), #8121 위에 쌓음), 9번도 냈다([#8145](https://github.com/edwardkim/rhwp/pull/8145)). 상위 `devel`에는 쪽 기준 가로 전폭 표의 상단 예약(#7699)이 있어, #8144는 그 예약이 맡는 표를 쪽 시작 판정에서 뺀다. 0.8.7에는 그 예약이 없으므로 앱의 4번 패치는 그대로다. 5·6·7번은 아직 내지 않았다. 10·11번도 새로 고친 것이다. 상위 `devel`에도 같은 결함이 있어 두 커밋을 한 PR로 냈다([#8165](https://github.com/edwardkim/rhwp/pull/8165)). 14번의 쪽 번호 넣기 호출은 상위 `devel`에도 없고, 줄표 없는 HWPX 쪽 번호의 결함도 남아 있다.
 
-- `apps/hwp`와 `packages/file-parse`가 `@rhwp/core`를 `file:../../vendor/rhwp-core`로 받는다. 이름이 그대로라 편집기 빌드, 파일 읽기, 명령줄, 설치본(`resources/wasm`)이 모두 이 엔진을 쓴다. 버전은 `0.8.7-ieum.N`이다.
+- `apps/hwp`와 `packages/file-parse`가 `@rhwp/core`를 `file:../../vendor/rhwp-core`로 받는다. 이름이 그대로라 편집기 빌드, 파일 읽기, 명령줄, 설치본(`resources/wasm`)이 모두 이 엔진을 쓴다. 버전은 `0.8.7-ttok.N`이다.
 - 다시 빌드하는 것은 `node tools/build-rhwp-core.mjs` 하나다. 태그를 받아 커밋을 확인하고, 패치를 적용하고, 상위 배포와 같은 `wasm-pack build --target web --release`로 만든다. 빌드한 PC의 경로가 WASM에 남지 않게 `--remap-path-prefix`를 건다. 앱 빌드에는 Rust가 필요 없다.
 - 편집기(rhwp-studio)는 엔진 패키지의 `rhwp.tag`가 가리키는 태그에서 빌드한다. 엔진 WASM이 바뀌면 편집기도 다시 빌드한다(`build-studio.mjs`의 확인 값에 WASM이 들어간다).
 

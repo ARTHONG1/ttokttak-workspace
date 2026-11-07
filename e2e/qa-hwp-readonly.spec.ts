@@ -53,7 +53,7 @@ test('a master-page HWPX save preserves its sections or safely rejects the write
     const page = await waitForPageWithUrl(launched.app, '://hwp/', 60_000)
     await expect(page.locator('.hwp-app[data-phase="ready"]')).toBeVisible({ timeout: 60_000 })
     await expect(
-      page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+      page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
     ).toHaveCount(1)
     // A clean document deliberately skips Save. Make a real edit so the
     // pre-overwrite guard is exercised against this master-page fixture.
@@ -62,7 +62,7 @@ test('a master-page HWPX save preserves its sections or safely rejects the write
     await page.keyboard.type('QA section preservation', { delay: 10 })
     await page.evaluate(() => {
       const frame = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement | null
-      frame?.contentWindow?.dispatchEvent(new CustomEvent('ieum:file-command', { detail: 'save' }))
+      frame?.contentWindow?.dispatchEvent(new CustomEvent('ttok:file-command', { detail: 'save' }))
     })
     let outcome = 'pending'
     await expect

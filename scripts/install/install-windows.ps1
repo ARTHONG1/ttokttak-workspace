@@ -104,17 +104,17 @@ try {
   }
 
   $State.step = 'cli'
-  $cli = Join-Path $dir 'resources\cli\ieumoffice.cmd'
+  $cli = Join-Path $dir 'resources\cli\ttokttak.cmd'
   if (-not (Test-Path $cli)) { Fail "앱 안의 명령어를 찾지 못했습니다: $cli" }
   & $cli install-cli
-  if ($LASTEXITCODE -ne 0) { Say '경고: ieumoffice를 PATH에 연결하지 못했습니다. 앱 안의 경로로 계속합니다' }
+  if ($LASTEXITCODE -ne 0) { Say '경고: ttokttak을 PATH에 연결하지 못했습니다. 앱 안의 경로로 계속합니다' }
 
   $State.step = 'agents'
   if (-not $env:TTOKTTAK_NO_AGENTS) {
     & $cli mcp install all; $a = $LASTEXITCODE
     & $cli skill install all; $b = $LASTEXITCODE
     $State.agents = if ($a -eq 0 -and $b -eq 0) { 'registered' } else { 'partial' }
-    if ($State.agents -ne 'registered') { Say '경고: 일부 에이전트에 등록하지 못했습니다. ieumoffice mcp list로 확인하세요' }
+    if ($State.agents -ne 'registered') { Say '경고: 일부 에이전트에 등록하지 못했습니다. ttokttak mcp list으로 확인하세요' }
   }
 
   $State.step = 'done'

@@ -57,7 +57,7 @@ Editor e-knih otevírá knihy EPUB (`.epub`) na kartě. Knihu můžete číst, o
 - Kniha psaná svisle se změní na vodorovnou, pokud se nepřekládá do japonštiny, čínštiny nebo korejštiny. Překlady do arabštiny a hebrejštiny se čtou zprava doleva.
 - Co už je přeložené, se uchovává. Když překlad zastavíte, zvolte **Exportovat dosud přeložené** (zbytek zůstane v původním jazyce) nebo **Pokračovat později**. Když otevřete knihu s nedokončeným překladem, GenOffice nabídne, že v něm bude pokračovat. **Přeložit znovu od začátku** nejprve smaže uchovaný překlad do daného jazyka.
 - Uchované překlady se započítávají v Nastavení ▸ Obecné ▸ **Uložené výsledky AI** spolu s výsledky dokumentů PDF a **Smazat vše** odstraní i je.
-- Stejný překlad lze spustit i z [příkazů terminálu](help://cli) jako `ieumoffice epub translate`.
+- Stejný překlad lze spustit i z [příkazů terminálu](help://cli) jako `ttokttak epub translate`.
 
 ## Zatím nepodporováno
 

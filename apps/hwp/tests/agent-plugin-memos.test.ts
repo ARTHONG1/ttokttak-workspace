@@ -204,7 +204,7 @@ function openEditor(doc: HwpDocument) {
 
 /** The anchor boxes the plugin drew, as page rectangles again. */
 function anchorsOnPage(): { rect: Rect; selected: boolean; caret: boolean }[] {
-  return [...document.querySelectorAll<HTMLElement>('.ieum-memo-anchors > div')].map((box) => {
+  return [...document.querySelectorAll<HTMLElement>('.ttok-memo-anchors > div')].map((box) => {
     const top = parseFloat(box.style.top)
     const pageIndex = Math.floor(top / PAGE_GAP)
     return {
@@ -469,7 +469,7 @@ describe('inserting, editing and removing a memo', () => {
     expect(anchor.ok).toBe(true)
     if (!anchor.ok) return
     editor.plugin.showMemoAnchors(true)
-    expect(document.querySelectorAll('.ieum-memo-anchors > div')).toHaveLength(0)
+    expect(document.querySelectorAll('.ttok-memo-anchors > div')).toHaveLength(0)
 
     const made = editor.plugin.insertMemo(anchor.anchor, 'tester', '첫 줄\n둘째 줄')
     expect(made.ok).toBe(true)
@@ -477,7 +477,7 @@ describe('inserting, editing and removing a memo', () => {
     expect(editor.labels).toEqual(['memo-insert'])
     expect(editor.steps()).toBe(1)
     // the new anchor is drawn without the panel asking again
-    expect(document.querySelectorAll('.ieum-memo-anchors > div').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('.ttok-memo-anchors > div').length).toBeGreaterThan(0)
     expect(editor.plugin.listMemos().memos[0]).toMatchObject({
       id: made.id,
       index: made.index,
@@ -600,7 +600,7 @@ describe('the anchors on the pages', () => {
     insertBodyMemo(doc, 1, 0, 3)
     const { plugin } = openEditor(doc)
 
-    expect(document.querySelector('.ieum-memo-anchors')).toBeNull()
+    expect(document.querySelector('.ttok-memo-anchors')).toBeNull()
     plugin.showMemoAnchors(true)
     const listed = plugin.listMemos()
     expect(anchorsOnPage().map((box) => box.rect)).toEqual([
@@ -609,7 +609,7 @@ describe('the anchors on the pages', () => {
     ])
 
     plugin.showMemoAnchors(false)
-    expect(document.querySelector('.ieum-memo-anchors')).toBeNull()
+    expect(document.querySelector('.ttok-memo-anchors')).toBeNull()
   })
 
   it('makes the selected memo stronger and marks a caret anchor with a small bar', () => {
@@ -657,7 +657,7 @@ describe('the anchors on the pages', () => {
       editor.plugin.showMemoAnchors(false)
       editor.plugin.showMemoAnchors(true)
       const first = () =>
-        document.querySelector<HTMLElement>('.ieum-memo-anchors > div') as HTMLElement
+        document.querySelector<HTMLElement>('.ttok-memo-anchors > div') as HTMLElement
       const base = parseFloat(first().style.left)
       const baseWidth = parseFloat(first().style.width)
       zoom = 3
@@ -693,24 +693,24 @@ describe('the lock a memo modal holds', () => {
   it('exposes the list, selection and lock as the editor commands the app names', () => {
     const { plugin, commands } = openEditor(blank(['본문']))
     for (const id of [
-      'ext:ieum-memo-list',
-      'ext:ieum-memo-selection',
-      'ext:ieum-memo-insert',
-      'ext:ieum-memo-set',
-      'ext:ieum-memo-remove',
-      'ext:ieum-memo-lock',
-      'ext:ieum-memo-unlock',
+      'ext:ttok-memo-list',
+      'ext:ttok-memo-selection',
+      'ext:ttok-memo-insert',
+      'ext:ttok-memo-set',
+      'ext:ttok-memo-remove',
+      'ext:ttok-memo-lock',
+      'ext:ttok-memo-unlock',
     ]) {
       expect(commands.has(id)).toBe(true)
     }
 
-    commands.get('ext:ieum-memo-lock')!(null)
+    commands.get('ext:ttok-memo-lock')!(null)
     expect(fire('keydown').defaultPrevented).toBe(true)
-    commands.get('ext:ieum-memo-unlock')!(null)
+    commands.get('ext:ttok-memo-unlock')!(null)
     expect(fire('keydown').defaultPrevented).toBe(false)
     expect(plugin.listMemos()).toEqual({ count: 0, memos: [], supported: true })
 
-    commands.get('ext:ieum-memo-insert')!(null, {
+    commands.get('ext:ttok-memo-insert')!(null, {
       anchor: {
         place: 'body',
         sectionIndex: 0,
@@ -723,7 +723,7 @@ describe('the lock a memo modal holds', () => {
       text: 'command note',
     })
     expect(plugin.listMemos().count).toBe(1)
-    commands.get('ext:ieum-memo-remove')!(null, { id: plugin.listMemos().memos[0]!.id })
+    commands.get('ext:ttok-memo-remove')!(null, { id: plugin.listMemos().memos[0]!.id })
     expect(plugin.listMemos().count).toBe(0)
   })
 })

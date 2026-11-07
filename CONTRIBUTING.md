@@ -10,7 +10,7 @@ Development happens in this repository,
 [ARTHONG1/ttokttak-workspace](https://github.com/ARTHONG1/ttokttak-workspace). Pull requests,
 issues and feature requests are all handled here.
 
-ttokttak-workspace is a modified version of IeumOffice, itself based on GenOffice (see
+ttokttak-workspace is a modified version of Apache-2.0 open source based on GenOffice (see
 [License and acknowledgement](README.en.md#license-and-acknowledgement)) and
 keeps taking engine fixes from it, which shapes two rules:
 
@@ -23,7 +23,7 @@ keeps taking engine fixes from it, which shapes two rules:
   upstream spelling. Only names a user sees or that are registered on a PC are
   the product's own: the product name comes from `packages/i18n/src/product.ts`
   and the command, MCP entry, skill and home folder from
-  `packages/cli/src/names.ts` (`ieumoffice`). Identifiers written into saved
+  `packages/cli/src/names.ts` (`ttokttak`). Identifiers written into saved
   documents, and the names of sidecar files stored beside them, never change.
 
 A bug in code the two projects share (the document engines, for example) is
@@ -63,7 +63,7 @@ All pure TypeScript, no Electron dependency, unit-tested (except the UI kit):
   (`src/subscription`, `claude-code-cli.ts`, `codex-app-server.ts`).
 - `packages/ai-search` — web/image search, image generation and media analysis
   tools, and the routing between the free, key and subscription routes.
-- `packages/cli` — the `ieumoffice` command line and MCP server
+- `packages/cli` — the `ttokttak` command line and MCP server
   ([packages/cli/README.md](packages/cli/README.md)).
 - `packages/i18n`, `packages/ui`, `packages/project-store`,
   `packages/electron-utils` — shared i18n core, React UI kit, recent-files
@@ -182,7 +182,7 @@ macOS because of the hidden `._` AppleDouble files the OS writes next to the
 build output — point the output directory at an APFS path:
 
 ```bash
-BUILD_DIR=/tmp/ieumoffice-release npm run dist:mac
+BUILD_DIR=/tmp/ttokttak-release npm run dist:mac
 ```
 
 ## Environment variables
@@ -254,7 +254,7 @@ default (Parallel's free Search MCP, then DuckDuckGo).
 
 ## Recognition
 
-Contributors are listed in [CONTRIBUTORS.md](CONTRIBUTORS.md) and in release
+Contributors are credited in release
 notes. We list GitHub handles only, not real names or email addresses; tell us
 if you would rather not be listed.
 

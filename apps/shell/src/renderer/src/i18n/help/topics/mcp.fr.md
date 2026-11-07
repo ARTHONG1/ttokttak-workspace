@@ -15,27 +15,27 @@ C’est dans **Paramètres ▸ Intégrations** qu’on fait cela. Le panneau a d
 La même chose depuis un terminal — c’est la voie avancée, celle qu’il faut prendre quand l’agent se trouve là où le panneau ne peut pas le trouver :
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Il trouve les agents de programmation présents sur cette machine et écrit l’entrée du serveur stdio dans la configuration de chacun, en laissant le reste du fichier tel qu’il l’a trouvé. L’entrée s’appelle `ieumoffice`. Faite à la main pour Claude Code, la même inscription s’écrit `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Il trouve les agents de programmation présents sur cette machine et écrit l’entrée du serveur stdio dans la configuration de chacun, en laissant le reste du fichier tel qu’il l’a trouvé. L’entrée s’appelle `ttokttak`. Faite à la main pour Claude Code, la même inscription s’écrit `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Un agent installé ailleurs demande `--dir <path>` ; `--force` réécrit une entrée déjà présente.
 
-`ieumoffice mcp --help` réunit sur un seul écran tout ce que le serveur accepte : les formes d’enregistrement, de retrait et de liste, le service en HTTP, et les deux options de schéma.
+`ttokttak mcp --help` réunit sur un seul écran tout ce que le serveur accepte : les formes d’enregistrement, de retrait et de liste, le service en HTTP, et les deux options de schéma.
 
 ## L’exécuter sans assistant
 
 Pour un client sur une autre machine, servez-le plutôt en HTTP :
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` change le point d’écoute. Passez le même jeton au client.
@@ -55,7 +55,7 @@ Chaque commande est un outil. Les plus intéressantes :
 
 ## Recherche, images et médias : ce qu’un agent peut utiliser
 
-Une requête venue de la commande `ieumoffice` ou d’un client MCP n’a pas été saisie par vous dans l’application : GenOffice la traite donc avec prudence.
+Une requête venue de la commande `ttokttak` ou d’un client MCP n’a pas été saisie par vous dans l’application : GenOffice la traite donc avec prudence.
 
 - **La recherche** fonctionne toujours et est gratuite par défaut. La clé d’un fournisseur de recherche n’est utilisée que si vous en avez sélectionné une.
 - **Générer une image** demande la clé d’un fournisseur d’images. Dans cette version, un abonnement ne génère pas d’images.
@@ -74,16 +74,16 @@ Lorsque le réglage est désactivé et qu’aucune clé n’est configurée, l�
 
 ## Schémas et budget plus serré
 
-`apply` et `create` annoncent leurs paramètres `ops`, `cells` et `data` avec le schéma typé de chaque op, généré à partir de `ieumoffice guide <domain> --json`. C’est précis, et ce n’est pas petit. Un client dont la fenêtre de contexte est serrée peut demander de simples tableaux à la place :
+`apply` et `create` annoncent leurs paramètres `ops`, `cells` et `data` avec le schéma typé de chaque op, généré à partir de `ttokttak guide <domain> --json`. C’est précis, et ce n’est pas petit. Un client dont la fenêtre de contexte est serrée peut demander de simples tableaux à la place :
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Pourquoi la compétence
 
-Un agent qui ne connaît pas le vocabulaire des ops devine. La compétence embarque la référence et les guides de conception — le même contenu que celui qu’imprime `ieumoffice guide` —, si bien que l’assistant écrit des ops dont il a réellement lu la spécification. Installez-la depuis le panneau ci-dessus, ou avec `ieumoffice skill` depuis un terminal.
+Un agent qui ne connaît pas le vocabulaire des ops devine. La compétence embarque la référence et les guides de conception — le même contenu que celui qu’imprime `ttokttak guide` —, si bien que l’assistant écrit des ops dont il a réellement lu la spécification. Installez-la depuis le panneau ci-dessus, ou avec `ttokttak skill` depuis un terminal.
 
 ## Ce qu’il atteint dans l’application
 

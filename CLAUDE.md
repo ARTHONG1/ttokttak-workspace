@@ -1,4 +1,4 @@
-# 이음오피스 (IeumOffice)
+# 똑딱작업실 (똑딱작업실)
 
 워드·엑셀·파워포인트·PDF·마크다운·HTML·한글(HWP) 문서와 마인드맵(XMind 파일 `.xmind`)을 한 창에서 열고 고치는 데스크톱 오피스 프로그램이다. AI가 문서를 직접 고친다. 누구나 무료로 쓰도록 배포하며, 특정 직업군용이 아니다.
 
@@ -9,7 +9,7 @@ AI는 쓰는 사람이 이미 내고 있는 **Claude 또는 Codex 구독**으로
 ## 프로젝트 구조
 
 ```
-openoffice/
+program/
 ├── AGENTS.md                      ← Codex 등이 읽는 진입점
 ├── CLAUDE.md                      ← Claude Code가 읽는 진입점. 내용은 AGENTS.md와 같다
 ├── README.md / README.en.md       ← 사용자용 소개(한국어 / 영어)
@@ -57,7 +57,7 @@ openoffice/
 │   ├── agent-core/AGENTS.md       ← AI 실행 반복, 화면↔뒷단 전송, 가리기
 │   ├── ui/AGENTS.md               ← 편집기 공용 AI 화면 부품과 문구
 │   ├── i18n/AGENTS.md             ← 화면 언어 목록, 제품 이름 정의
-│   ├── cli/AGENTS.md              ← 터미널 명령어 `ieumoffice`, MCP 도구
+│   ├── cli/AGENTS.md              ← 터미널 명령어 `ttokttak`, MCP 도구
 │   ├── electron-utils/AGENTS.md   ← 뒷단 공용 도구
 │   ├── docx-engine/AGENTS.md      ← 워드 문서 엔진
 │   ├── odt-engine/AGENTS.md       ← ODT 열기·되돌려 쓰기·docx → ODT
@@ -76,8 +76,8 @@ openoffice/
 │   ├── font-metrics/AGENTS.md     ← 글꼴 치수
 │   ├── pipelines/AGENTS.md        ← 슬라이드 생성 단계
 │   └── project-store/AGENTS.md    ← 프로젝트와 대화 기록 저장
-├── skills/ieumoffice/SKILL.md     ← 코딩 에이전트에 설치되는 스킬
-├── .claude/skills/release-ieumoffice/SKILL.md ← 릴리스 작업 스킬(에이전트용)
+├── skills/ttokttak/SKILL.md     ← 코딩 에이전트에 설치되는 스킬
+├── .claude/skills/release-ttokttak/SKILL.md ← 릴리스 작업 스킬(에이전트용)
 └── tools/                         ← 검사 도구(`check-*.mjs`), 브랜드 그림·도움말 그림 생성기
 ```
 
@@ -115,8 +115,7 @@ openoffice/
 | AI를 실제 구독으로 돌려 확인한다                       | `docs/operations.md`의 "실제 구독으로 확인하기". 사용자의 한도를 쓴다                                    |
 | 새 버전을 낸다                                         | `docs/releasing.ko.md`. 첫 항목은 저장소 주인의 약관 동의다                                              |
 
-- **릴리스 본문은 사용자가 앱 안에서 그대로 읽는다.** 첫 문단 요약 → 새로 들어간 것 → 고친 것 → 설치 안내(맨 아래) 순서와 humanize-korean 윤문은 `docs/releasing.ko.md` 6번이 정한다. 에이전트는 `.claude/skills/release-ieumoffice/SKILL.md`도 함께 읽는다.
-- **새 버전을 공개하면 소개 사이트에 업데이트 소식을 올린다.** https://ieumoffice.com 의 내려받기 버튼은 저절로 바뀌지만, 업데이트 페이지(`/updates`)의 새 항목과 메인의 한 줄 안내는 손으로 더한다. 사이트의 질문 도우미는 최신 릴리스 태그의 한국어 도움말·README·PRIVACY.md로 답하고, 그 지식베이스는 사이트 저장소의 Actions가 다시 만드니 실행이 초록인지 본다. 절차는 `docs/releasing.ko.md` 13번과 사이트 저장소(`E:\github\ieumoffice-site`) `README.md`의 "새 버전을 낸 뒤"에 있다.
+- **릴리스 본문은 사용자가 앱 안에서 그대로 읽는다.** 첫 문단 요약 → 새로 들어간 것 → 고친 것 → 설치 안내(맨 아래) 순서와 humanize-korean 윤문은 `docs/releasing.ko.md` 6번이 정한다. 에이전트는 `.claude/skills/release-ttokttak/SKILL.md`도 함께 읽는다.
 
 ## 문제가 생기면
 

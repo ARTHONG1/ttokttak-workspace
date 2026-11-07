@@ -248,7 +248,7 @@ export async function buildGatewayPayloads(input: GatewayBuildInput): Promise<Ga
       { failures: [classifyOpError(index, op, message)] },
       {
         reason: 'op_rejected',
-        suggestion: 'fix the op against `ieumoffice guide sheets`, then resend the whole batch',
+        suggestion: 'fix the op against `ttokttak guide sheets`, then resend the whole batch',
       },
     )
   }
@@ -481,7 +481,7 @@ export async function buildGatewayPayloads(input: GatewayBuildInput): Promise<Ga
           reject(
             i,
             op.op,
-            'chartPath must be a chart part of the file (xl/charts/chartN.xml); `ieumoffice info` lists them',
+            'chartPath must be a chart part of the file (xl/charts/chartN.xml); `ttokttak info` lists them',
           )
         }
         if (op.seriesData !== undefined) {

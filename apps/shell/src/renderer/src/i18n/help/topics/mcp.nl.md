@@ -15,27 +15,27 @@ GenOffice spreekt het Model Context Protocol, zodat een coding agent je document
 Hetzelfde vanaf een terminal — dit is de geavanceerde route, en degene om naar te grijpen wanneer de agent ergens staat waar het paneel hem niet kan vinden:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Het vindt de coding agents op deze computer en schrijft de stdio-serververmelding in elk van hun eigen configuraties, en laat de rest van dat bestand met rust. De vermelding heet `ieumoffice`. Met de hand voor Claude Code is dezelfde registratie `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Het vindt de coding agents op deze computer en schrijft de stdio-serververmelding in elk van hun eigen configuraties, en laat de rest van dat bestand met rust. De vermelding heet `ttokttak`. Met de hand voor Claude Code is dezelfde registratie `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Een agent die je op een ongebruikelijke plek hebt geïnstalleerd, heeft `--dir <path>` nodig; `--force` herschrijft een vermelding die er al staat.
 
-`ieumoffice mcp --help` zet alles wat de server accepteert op één scherm: de vormen om te registreren, te verwijderen en op te sommen, het aanbieden via HTTP, en de twee schema-opties.
+`ttokttak mcp --help` zet alles wat de server accepteert op één scherm: de vormen om te registreren, te verwijderen en op te sommen, het aanbieden via HTTP, en de twee schema-opties.
 
 ## Zonder assistent uitvoeren
 
 Voor een client op een andere computer bied je die in plaats daarvan via HTTP aan:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` bepaalt waar hij luistert. Geef de client hetzelfde token.
@@ -55,7 +55,7 @@ Elke opdracht is een tool. De interessantste:
 
 ## Zoeken, afbeeldingen en media: wat een agent mag gebruiken
 
-Een verzoek van de opdracht `ieumoffice` of van een MCP-client heb je niet zelf in de app getypt, dus GenOffice gaat er voorzichtig mee om.
+Een verzoek van de opdracht `ttokttak` of van een MCP-client heb je niet zelf in de app getypt, dus GenOffice gaat er voorzichtig mee om.
 
 - **Zoeken** werkt altijd en is standaard gratis. Een sleutel van een zoekprovider wordt alleen gebruikt als je er een hebt geselecteerd.
 - **Een afbeelding genereren** vraagt een sleutel van een afbeeldingsprovider. In deze versie genereert een abonnement geen afbeeldingen.
@@ -74,16 +74,16 @@ Staat de schakelaar uit en is er geen sleutel ingesteld, dan antwoordt de tool d
 
 ## Schema's en een kleinere budget
 
-`apply` en `create` geven hun parameters `ops`, `cells` en `data` aan met het getypte schema per op, gegenereerd uit `ieumoffice guide <domain> --json`. Dat is nauwkeurig en niet klein. Een client met een krap contextvenster kan in plaats daarvan om gewone arrays vragen:
+`apply` en `create` geven hun parameters `ops`, `cells` en `data` aan met het getypte schema per op, gegenereerd uit `ttokttak guide <domain> --json`. Dat is nauwkeurig en niet klein. Een client met een krap contextvenster kan in plaats daarvan om gewone arrays vragen:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Waarom de skill
 
-Een agent die de op-woordenlijst niet kent, gaat gokken. De skill neemt de referentie en de ontwerphoogedelen mee — hetzelfde materiaal als `ieumoffice guide` afdrukt —, zodat de assistent ops schrijft waarvan hij de specificatie echt heeft gelezen. Installeer hem vanuit het paneel hierboven, of met `ieumoffice skill` vanaf een terminal.
+Een agent die de op-woordenlijst niet kent, gaat gokken. De skill neemt de referentie en de ontwerphoogedelen mee — hetzelfde materiaal als `ttokttak guide` afdrukt —, zodat de assistent ops schrijft waarvan hij de specificatie echt heeft gelezen. Installeer hem vanuit het paneel hierboven, of met `ttokttak skill` vanaf een terminal.
 
 ## Wat hij in de app kan bereiken
 

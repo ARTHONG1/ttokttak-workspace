@@ -7,7 +7,7 @@
  * Where a skill comes from. Stored in the settings file as the first part of
  * an identifier, so the values never change:
  * - `builtin`: shipped with the app
- * - `app`: `~/.ieumoffice/skills` (also the ones installed from GitHub)
+ * - `app`: `~/.ttokttak/skills` (also the ones installed from GitHub)
  * - `user`: Claude's skill folder, `~/.claude/skills`
  * - `plugin`: the `skills` folder of an installed Claude plugin
  * - `codex`: the shared agents folder, `~/.agents/skills`
@@ -37,10 +37,10 @@ export interface UserSkill {
   folderName: string
   /** the skill folder, absolute when the source was */
   dir: string
-  /** `metadata.ieum-title`, else the name */
+  /** `metadata.ttok-title`, else the name */
   title: string
   description: string
-  /** `metadata.ieum-template` when it names a file under `assets/` */
+  /** `metadata.ttok-template` when it names a file under `assets/` */
   template: string | undefined
   templateExists: boolean
   hasScripts: boolean

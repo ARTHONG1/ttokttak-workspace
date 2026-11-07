@@ -6,13 +6,13 @@ Dovednost je sada pracovních pokynů pro AI. Jednou si zapište, co děláte st
 
 **Nastavení ▸ Dovednosti** ukazuje dovednosti na tomto počítači, seskupené podle původu. Každá dovednost se zobrazuje pod svým jménem, stejně jako ji ukazují agenti pro programování. Pomocí vyhledávacího pole nahoře najdete dovednost podle jména nebo popisu.
 
-| Původ                        | Co obsahuje                                                            | Na začátku |
-| ---------------------------- | ---------------------------------------------------------------------- | ---------- |
-| **Vestavěné**                | 5 dovedností dodávaných s GenOffice                                    | Zapnuté    |
-| **Moje dovednosti**          | Dovednosti, které jste přidali nebo vytvořili (`~/.ieumoffice/skills`) | Zapnuté    |
-| **Složka dovedností Claude** | Dovednosti v `~/.claude/skills`                                        | Vypnuté    |
-| **Pluginy Claude**           | Dovednosti nainstalovaných pluginů Claude                              | Vypnuté    |
-| **Složka dovedností Codex**  | Dovednosti v `~/.agents/skills`                                        | Vypnuté    |
+| Původ                        | Co obsahuje                                                          | Na začátku |
+| ---------------------------- | -------------------------------------------------------------------- | ---------- |
+| **Vestavěné**                | 5 dovedností dodávaných s GenOffice                                  | Zapnuté    |
+| **Moje dovednosti**          | Dovednosti, které jste přidali nebo vytvořili (`~/.ttokttak/skills`) | Zapnuté    |
+| **Složka dovedností Claude** | Dovednosti v `~/.claude/skills`                                      | Vypnuté    |
+| **Pluginy Claude**           | Dovednosti nainstalovaných pluginů Claude                            | Vypnuté    |
+| **Složka dovedností Codex**  | Dovednosti v `~/.agents/skills`                                      | Vypnuté    |
 
 - Přepínač dovednost zapíná nebo vypíná. Stejné nastavení platí pro panel AI každého editoru, pro Ask AI na stránce Domů i pro okno agenta.
 - U zapnuté dovednosti zvolte **Rozhoduje AI** nebo **Jen na vyvolání**. Na začátku je nastaveno Rozhoduje AI. S volbou Jen na vyvolání se dovednost použije jen tehdy, když ji vyvoláte sami.

@@ -54,8 +54,8 @@ Unter **Lokaler HTTP-Server** kann die App den Server auch selbst betreiben — 
 
 ## Spickzettel für die Kommandozeile
 
-| Befehl              | Was er bewirkt             |
-| ------------------- | -------------------------- |
-| `ieumoffice <file>` | eine Datei öffnen          |
-| `ieumoffice mcp`    | lokalen MCP-Server starten |
-| `ieumoffice --help` | alle Befehle und Optionen  |
+| Befehl            | Was er bewirkt             |
+| ----------------- | -------------------------- |
+| `ttokttak <file>` | eine Datei öffnen          |
+| `ttokttak mcp`    | lokalen MCP-Server starten |
+| `ttokttak --help` | alle Befehle und Optionen  |

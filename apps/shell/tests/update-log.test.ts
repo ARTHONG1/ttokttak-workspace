@@ -10,7 +10,7 @@ let dir = ''
 const fixedNow = () => new Date('2026-10-26T01:02:03.000Z')
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'ieum-update-log-'))
+  dir = mkdtempSync(join(tmpdir(), 'ttok-update-log-'))
 })
 
 afterEach(() => {

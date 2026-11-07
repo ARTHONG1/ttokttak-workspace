@@ -139,12 +139,12 @@ describe('coexistence with the upstream app on one machine', () => {
     expect(loadBuilderConfig({ GENOFFICE_WIN_ARM64: '1' }).nsis.artifactName).toBe(
       '${productName}-Setup-${version}-arm64.${ext}',
     )
-    expect(shellPackage.desktopName).toBe('ieumoffice.desktop')
+    expect(shellPackage.desktopName).toBe('ttokttak.desktop')
     expect(config.linux.executableName).toBe('hangul-ai-workbench')
     expect(config.deb.packageName).toBe('hangul-ai-workbench')
-    expect(config.deb.artifactName).toBe('ieumoffice_${version}_${arch}.deb')
+    expect(config.deb.artifactName).toBe('ttokttak_${version}_${arch}.deb')
     expect(config.rpm.packageName).toBe('hangul-ai-workbench')
-    expect(config.rpm.artifactName).toBe('ieumoffice-${version}.${arch}.rpm')
+    expect(config.rpm.artifactName).toBe('ttokttak-${version}.${arch}.rpm')
   })
 
   it('keeps its settings and data in its own folders', () => {

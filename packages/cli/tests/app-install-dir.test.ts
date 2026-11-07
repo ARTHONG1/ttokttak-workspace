@@ -19,13 +19,16 @@ describe('appBinaryForResources', () => {
 
   it('finds the app in a custom macOS bundle location', () => {
     expect(
-      appBinaryForResources(join('/Volumes/Work/HangulAIWorkbench.app/Contents/Resources'), 'darwin'),
+      appBinaryForResources(
+        join('/Volumes/Work/HangulAIWorkbench.app/Contents/Resources'),
+        'darwin',
+      ),
     ).toBe(join('/Volumes/Work/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench'))
   })
 
   it('finds the app in a custom Linux prefix', () => {
-    expect(appBinaryForResources(join('/opt/ieumoffice-custom/resources'), 'linux')).toBe(
-      join('/opt/ieumoffice-custom/ieumoffice'),
+    expect(appBinaryForResources(join('/opt/ttokttak-custom/resources'), 'linux')).toBe(
+      join('/opt/ttokttak-custom/ttokttak'),
     )
   })
 })

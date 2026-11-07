@@ -15,27 +15,27 @@ GenOffice 说 Model Context Protocol，所以编程代理可以通过应用所�
 同样的事，在终端里也能做——这是高级路径，当代理装在面板找不到的地方，就该用它：
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-它会找出本机上的编程代理，把 stdio 服务器条目写进各自的配置文件，其余部分保持原样。条目的名字是 `ieumoffice`。如果为 Claude Code 手动注册，同样的操作是 `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`。
+它会找出本机上的编程代理，把 stdio 服务器条目写进各自的配置文件，其余部分保持原样。条目的名字是 `ttokttak`。如果为 Claude Code 手动注册，同样的操作是 `claude mcp add --transport stdio ttokttak -- ttokttak mcp`。
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 装在不常见位置的代理要加上 `--dir <path>`；`--force` 会重写已经存在的条目。
 
-`ieumoffice mcp --help` 会把服务器能接受的东西都列在一屏之内：注册、移除与列举这三种形式，用 HTTP 提供服务，以及两个 schema 开关。
+`ttokttak mcp --help` 会把服务器能接受的东西都列在一屏之内：注册、移除与列举这三种形式，用 HTTP 提供服务，以及两个 schema 开关。
 
 ## 不用助手，自行运行
 
 如果客户端在另一台机器上，就改用 HTTP 提供服务：
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` 决定它监听的地址。把同一个令牌传给客户端。
@@ -55,7 +55,7 @@ ieumoffice mcp --http 8765 --token <secret>
 
 ## 搜索、图片与媒体：代理可以使用什么
 
-来自 `ieumoffice` 命令或 MCP 客户端的请求不是你在应用里亲手输入的，所以 GenOffice 对它们格外谨慎。
+来自 `ttokttak` 命令或 MCP 客户端的请求不是你在应用里亲手输入的，所以 GenOffice 对它们格外谨慎。
 
 - **搜索**始终可用，默认免费。只有在你选中了某个搜索服务商的密钥时才会用到它。
 - **生成图片**需要生图服务商的密钥。在这个版本里，订阅不能生成图片。
@@ -74,16 +74,16 @@ ieumoffice mcp --http 8765 --token <secret>
 
 ## Schema 与更小的预算
 
-`apply` 和 `create` 会用逐 op 的类型化 schema 来声明它们的 `ops`、`cells` 和 `data` 参数，schema 由 `ieumoffice guide <domain> --json` 生成。这样很精确，但体积不小。上下文窗口吃紧的客户端可以改要朴素数组：
+`apply` 和 `create` 会用逐 op 的类型化 schema 来声明它们的 `ops`、`cells` 和 `data` 参数，schema 由 `ttokttak guide <domain> --json` 生成。这样很精确，但体积不小。上下文窗口吃紧的客户端可以改要朴素数组：
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## 为什么要技能
 
-不了解 op 词汇表的代理只能靠猜。技能里带着参考手册和设计指南——和 `ieumoffice guide` 打印出来的是同一份材料——这样助手写下的 op，它的规格是真的读过的。可以从上面那个面板安装，也可以用终端里的 `ieumoffice skill`。
+不了解 op 词汇表的代理只能靠猜。技能里带着参考手册和设计指南——和 `ttokttak guide` 打印出来的是同一份材料——这样助手写下的 op，它的规格是真的读过的。可以从上面那个面板安装，也可以用终端里的 `ttokttak skill`。
 
 ## 它在应用里能触达什么
 

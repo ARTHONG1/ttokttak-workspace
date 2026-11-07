@@ -982,7 +982,7 @@ export async function editorTakes(
   if (!frame) return false
   try {
     const taken = await frame.executeJavaScript(
-      `typeof window.__ieumHancomKey === 'function' && window.__ieumHancomKey(${JSON.stringify(key)}) === true`,
+      `typeof window.__ttokHancomKey === 'function' && window.__ttokHancomKey(${JSON.stringify(key)}) === true`,
     )
     return taken === true
   } catch {

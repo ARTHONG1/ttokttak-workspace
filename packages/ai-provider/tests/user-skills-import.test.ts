@@ -19,7 +19,7 @@ import { dirname, join } from 'node:path'
 import JSZip from 'jszip'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  IEUM_SOURCE_FILE,
+  TTOK_SOURCE_FILE,
   SKILL_STAGING_PREFIX,
   SkillImportError,
   disposeSkillImport,
@@ -87,7 +87,7 @@ interface Setup {
 function setup(): Setup {
   const base = temp()
   const home = join(base, 'home')
-  const app = join(home, '.ieumoffice', 'skills')
+  const app = join(home, '.ttokttak', 'skills')
   const tmp = join(base, 'tmp')
   mkdirSync(app, { recursive: true })
   return { base, home, app, tmp }
@@ -160,7 +160,7 @@ describe('prepareFolderImport', () => {
       'two/SKILL.md': skillMd('two'),
       'two/tool.ps1': 'Write-Host hi',
       'broken/SKILL.md': 'no front matter',
-      'ieumoffice/SKILL.md': skillMd('ieumoffice'),
+      'ttokttak/SKILL.md': skillMd('ttokttak'),
     })
     writeTree(app, { 'two/SKILL.md': skillMd('two') })
     const imported = await prepareFolderImport({ folder, appSkillsDir: app, homeDir: home })
@@ -227,7 +227,7 @@ describe('installImportedSkills', () => {
     writeTree(folder, {
       'one/SKILL.md': skillMd('one'),
       'one/assets/form.docx': 'doc',
-      [`one/${IEUM_SOURCE_FILE}`]: '{"kind":"github"}',
+      [`one/${TTOK_SOURCE_FILE}`]: '{"kind":"github"}',
       'two/SKILL.md': skillMd('two'),
     })
     const imported = await prepareFolderImport({ folder, appSkillsDir: app, homeDir: home })
@@ -427,7 +427,7 @@ describe('prepareGitHubImport', () => {
     })
     const dir = result.installed[0]!.dir
     expect(dir).toBe(join(app, 'minutes'))
-    const recordText = readFileSync(join(dir, IEUM_SOURCE_FILE), 'utf8')
+    const recordText = readFileSync(join(dir, TTOK_SOURCE_FILE), 'utf8')
     const record = JSON.parse(recordText) as Record<string, string>
     expect(Object.keys(record)).toEqual([
       'kind',
@@ -471,7 +471,7 @@ describe('prepareGitHubImport', () => {
       tempDir: tmp,
     })
     await installImportedSkills(top, { appSkillsDir: app, selected: ['.'] })
-    const record = JSON.parse(readFileSync(join(app, 'root-skill', IEUM_SOURCE_FILE), 'utf8'))
+    const record = JSON.parse(readFileSync(join(app, 'root-skill', TTOK_SOURCE_FILE), 'utf8'))
     expect(record.path).toBe('')
     await disposeSkillImport(top)
   })

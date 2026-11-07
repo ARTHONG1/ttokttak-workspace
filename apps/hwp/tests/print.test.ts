@@ -92,7 +92,7 @@ describe('the pages for print', () => {
     expect(progress).toEqual([2, 4, 5])
     expect(job.pages).toHaveLength(5)
     expect(job.images).toEqual([logo])
-    for (const page of job.pages) expect(page.svg).toContain('href="ieum-image:0"')
+    for (const page of job.pages) expect(page.svg).toContain('href="ttok-image:0"')
   })
 
   it('stop when the document changes under them', async () => {
@@ -119,10 +119,10 @@ describe('sharing pictures', () => {
     const a = 'data:image/png;base64,AAAA'
     const b = 'data:image/jpeg;base64,BBBB'
     expect(sharePictures(`<image href="${a}"/><image href="${b}"/>`, images, known)).toBe(
-      '<image href="ieum-image:0"/><image href="ieum-image:1"/>',
+      '<image href="ttok-image:0"/><image href="ttok-image:1"/>',
     )
     expect(sharePictures(`<image href="${b}"/>`, images, known)).toBe(
-      '<image href="ieum-image:1"/>',
+      '<image href="ttok-image:1"/>',
     )
     expect(images).toEqual([a, b])
     // links are not pictures
@@ -154,7 +154,7 @@ describe('the printable HTML', () => {
   it('sizes each page on its own and points the pictures at their files', () => {
     const html = printableHtml(
       [
-        { svg: '<svg id="a"><image href="ieum-image:0"/></svg>', width: 793.7, height: 1122.5 },
+        { svg: '<svg id="a"><image href="ttok-image:0"/></svg>', width: 793.7, height: 1122.5 },
         { svg: '<svg id="a"></svg>', width: 1122.5, height: 793.7 },
       ],
       (index) => `image-${index}.png`,

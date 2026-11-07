@@ -11,7 +11,7 @@ Intel판을 묶는 장치는 원본에서 받은 그대로 저장소에 있다. 
 - **대상.** Mac판은 Apple Silicon용과 Intel용 두 dmg로 낸다. 같은 Mac 빌드 기계(Apple Silicon)에서 한 번에 만들고 같은 릴리스에 올린다. 둘 다 macOS 12 이상이다.
 - **서명과 업데이트.** Intel판도 0031과 같다. ad hoc 서명, 공증 없음, hardened runtime 끔, 스스로 업데이트하지 않고 새 버전을 알려 다운로드 페이지를 연다.
 - **빌드.** `mac-build.yml`이 `GENOFFICE_MAC_X64=1`로 묶는다. 엑셀 처리 프로그램은 `native:build:universal`로 두 CPU를 담는다. 빌드는 두 앱 각각의 서명과, 들어 있는 프로그램이 그 앱의 CPU를 담는지 검사한다. 그리고 두 앱을 창 없이 띄워 Markdown·CSV 파일을 PDF로 내보낸다. Intel판은 Rosetta로 띄운다. 손으로 만드는 `dist:mac`은 지금처럼 Apple Silicon 하나다.
-- **파일 이름.** dmg는 CPU를 이름에 적는다(`IeumOffice-<버전>-arm64.dmg`, `IeumOffice-<버전>-x64.dmg`). electron-builder는 x64 이름에서 CPU를 빼므로 `config.dmg.artifactName`으로 정한다. Apple Silicon dmg의 이름은 전과 같아 사이트와 README의 링크가 그대로 맞는다. zip은 기본 이름(Intel은 `IeumOffice-<버전>-mac.zip`)이고 `latest-mac.yml` 하나에 둘이 함께 적힌다.
+- **파일 이름.** dmg는 CPU를 이름에 적는다(`HangulAIWorkbench-<버전>-arm64.dmg`, `HangulAIWorkbench-<버전>-x64.dmg`). electron-builder는 x64 이름에서 CPU를 빼므로 `config.dmg.artifactName`으로 정한다. Apple Silicon dmg의 이름은 전과 같아 사이트와 README의 링크가 그대로 맞는다. zip은 기본 이름(Intel은 `HangulAIWorkbench-<버전>-mac.zip`)이고 `latest-mac.yml` 하나에 둘이 함께 적힌다.
 
 ## 택하지 않은 것
 

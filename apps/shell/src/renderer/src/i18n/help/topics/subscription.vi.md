@@ -109,4 +109,4 @@ Bất cứ thứ gì bạn đã ẩn bằng **Ẩn vùng chọn khỏi AI** đ�
 - **Gói ChatGPT miễn phí.** Gói này hiển thị là "Đã kết nối", nhưng giới hạn của nó nhỏ nên yêu cầu sẽ dừng sớm hơn. Dòng mức sử dụng không xuất hiện với gói này.
 - **Tạo hình ảnh.** Trong phiên bản này, gói đăng ký không tạo được hình ảnh, dù là gói nào. Việc đó cần khóa của nhà cung cấp hình ảnh; xem [Mô hình AI và cài đặt](help://ai-models).
 - **Proxy.** Claude Code và Codex không nhận cài đặt proxy từ GenOffice. Chúng dùng proxy được thiết lập cho máy tính này, chẳng hạn biến môi trường `HTTPS_PROXY`, giống hệt như khi bạn chạy chúng trong terminal. Nếu chúng không kết nối được trong terminal thì ở đây cũng không kết nối được.
-- **Lệnh và các chương trình khác.** Một yêu cầu đến từ lệnh `ieumoffice` hoặc từ một tác nhân lập trình đã kết nối sẽ không dùng gói đăng ký của bạn trừ khi bạn cho phép. Xem [Kết nối tác nhân lập trình](help://mcp).
+- **Lệnh và các chương trình khác.** Một yêu cầu đến từ lệnh `ttokttak` hoặc từ một tác nhân lập trình đã kết nối sẽ không dùng gói đăng ký của bạn trừ khi bạn cho phép. Xem [Kết nối tác nhân lập trình](help://mcp).

@@ -35,4 +35,4 @@ Comme l’installeur n’est pas signé, n’exécutez que celui que vous avez t
 
 ## La ligne de commande est incluse
 
-Chaque installation livre une commande `ieumoffice` qui parle aux mêmes moteurs que la fenêtre : les deux ne peuvent donc pas se contredire sur un fichier. `ieumoffice install-cli` la met sur votre `PATH`. Pour ce qu’elle sait faire, voir [Ligne de commande et agents](help://cli).
+Chaque installation livre une commande `ttokttak` qui parle aux mêmes moteurs que la fenêtre : les deux ne peuvent donc pas se contredire sur un fichier. `ttokttak install-cli` la met sur votre `PATH`. Pour ce qu’elle sait faire, voir [Ligne de commande et agents](help://cli).

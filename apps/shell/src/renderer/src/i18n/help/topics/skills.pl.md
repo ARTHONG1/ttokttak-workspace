@@ -6,13 +6,13 @@ Umiejętność to zestaw instrukcji roboczych dla AI. Zapisz raz to, co robisz w
 
 **Ustawienia ▸ Umiejętności** pokazuje umiejętności na tym komputerze, pogrupowane według pochodzenia. Każda umiejętność jest pokazana pod swoją nazwą, tak jak w agentach programistycznych. Polem wyszukiwania u góry znajdziesz umiejętność po nazwie lub opisie.
 
-| Pochodzenie                    | Co zawiera                                                              | Na początku |
-| ------------------------------ | ----------------------------------------------------------------------- | ----------- |
-| **Wbudowane**                  | 5 umiejętności dostarczanych z GenOffice                                | Włączone    |
-| **Moje umiejętności**          | Umiejętności dodane lub utworzone przez ciebie (`~/.ieumoffice/skills`) | Włączone    |
-| **Folder umiejętności Claude** | Umiejętności z `~/.claude/skills`                                       | Wyłączone   |
-| **Wtyczki Claude**             | Umiejętności zainstalowanych wtyczek Claude                             | Wyłączone   |
-| **Folder umiejętności Codex**  | Umiejętności z `~/.agents/skills`                                       | Wyłączone   |
+| Pochodzenie                    | Co zawiera                                                            | Na początku |
+| ------------------------------ | --------------------------------------------------------------------- | ----------- |
+| **Wbudowane**                  | 5 umiejętności dostarczanych z GenOffice                              | Włączone    |
+| **Moje umiejętności**          | Umiejętności dodane lub utworzone przez ciebie (`~/.ttokttak/skills`) | Włączone    |
+| **Folder umiejętności Claude** | Umiejętności z `~/.claude/skills`                                     | Wyłączone   |
+| **Wtyczki Claude**             | Umiejętności zainstalowanych wtyczek Claude                           | Wyłączone   |
+| **Folder umiejętności Codex**  | Umiejętności z `~/.agents/skills`                                     | Wyłączone   |
 
 - Przełącznik włącza lub wyłącza umiejętność. To samo ustawienie obowiązuje w panelu AI każdego edytora, w Ask AI na stronie głównej i w oknie agenta.
 - Dla włączonej umiejętności wybierz **Decyduje AI** lub **Tylko na wezwanie**. Na początku ustawione jest Decyduje AI. Przy Tylko na wezwanie umiejętność jest używana tylko wtedy, gdy sam ją wywołasz.

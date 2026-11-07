@@ -2,7 +2,7 @@
 
 ## 맥락
 
-이음오피스에 없는 변환이 남아 있다. 한글 문서를 워드(DOCX)로 내보내기, 워드·PDF·HTML을 한글(HWPX)로 만들기, HEIC·카메라 RAW 같은 그림 바꾸기, EPUB을 PDF로 바꾸기 같은 것이다. 지금 있는 것은 PDF→워드·PPT·엑셀, ODT 다리, PDF 도구 모음, 한글 편집기의 저장과 PDF 내보내기뿐이다.
+똑딱작업실에 없는 변환이 남아 있다. 한글 문서를 워드(DOCX)로 내보내기, 워드·PDF·HTML을 한글(HWPX)로 만들기, HEIC·카메라 RAW 같은 그림 바꾸기, EPUB을 PDF로 바꾸기 같은 것이다. 지금 있는 것은 PDF→워드·PPT·엑셀, ODT 다리, PDF 도구 모음, 한글 편집기의 저장과 PDF 내보내기뿐이다.
 
 Filee는 이 빈 자리를 대부분 채울 수 있는 한국 오픈소스 파일 변환기다(MIT, .NET/Avalonia, 244가지 형식, 오프라인·업로드 없음, Windows 정식·Mac/Linux 미리보기). 명령줄(`filee convert … --json`, 종료코드 0~3)이 있어 앱이 부려 쓰기 좋고, HWP 엔진으로 이 앱과 같은 rhwp를 안고 있다(분석 시점 양쪽 모두 0.8.7). 한컴 없이 HWP→PDF, HWP↔HWPX, DOCX→HWPX, PDF→DOCX 같은 변환을 한다.
 
@@ -17,13 +17,13 @@ Filee는 이 빈 자리를 대부분 채울 수 있는 한국 오픈소스 파�
 
 ## 결정
 
-**앱은 Filee를 찾지도 실행하지도 않는다.** 설치 파일·`ieumoffice convert`·MCP 도구·PDF 도구 창에 Filee를 부르는 경로를 만들지 않는다. 이 결정으로 바뀌는 코드는 없다. 겹치는 변환(PDF→워드·PPT·엑셀, ODT, PDF 도구)은 지금처럼 자체 엔진이 맡는다.
+**앱은 Filee를 찾지도 실행하지도 않는다.** 설치 파일·`ttokttak convert`·MCP 도구·PDF 도구 창에 Filee를 부르는 경로를 만들지 않는다. 이 결정으로 바뀌는 코드는 없다. 겹치는 변환(PDF→워드·PPT·엑셀, ODT, PDF 도구)은 지금처럼 자체 엔진이 맡는다.
 
 **참고할 것을 여기 적어 둔다.** 같은 조사를 다시 하지 않도록, 관련 작업을 할 때 먼저 보는 자리다.
 
 - **HWPX writer 문서** — 한글이 스키마와 다르게 저장하는 부분(문단 여백과 고정 줄 간격을 두 배로 겹쳐 쓰기(`hp:case`), 용지 크기는 세로 값을 쓰고 `landscape="NARROWLY"`로 돌리기, 개체 오프셋은 부호 없이 쓰기 등)을 정리한, 사실상의 한글 호환 사양서다. Filee의 항목 다섯과 이 저장소가 결정 0024·0026·0027·0028에서 바로잡은 것을 한 표로 합쳐 `docs/engineering-notes.md`의 "한글(HWP·HWPX) 호환"에 두었다. 발동 조건: rhwp 버전 업, 저장 직렬화 변경, HWPX 쓰기 기능 신설. https://github.com/KnifeLemon/Filee/blob/v1.11.0/docs/ENGINES.md
 - **engines.json 고정 패턴** — 선택 엔진을 URL·SHA-256·크기로 고정하고, 스테이징 폴더에 풀어 검증한 뒤에 갈아 끼우며, 앱 폴더 안의 사용자 폴더(`%LOCALAPPDATA%\Filee\engines`)에 둔다. 발동 조건: 앱이 선택 엔진을 처음 내려받을 때. https://github.com/KnifeLemon/Filee/blob/v1.11.0/src/Filee.Engines/Infrastructure/engines.json
-- **변환 경로 계획과 명령줄 규약** — 여러 단계가 필요한 변환(HWP→HWPX→DOCX)을 최소 비용 경로로 자동으로 잇고(최대 3홉), `--json`과 종료코드(0 없음, 1 일부 실패, 2 인자 오류, 3 변환 대상 없음)로 결과를 돌려준다. 발동 조건: `ieumoffice convert`에 경로를 더할 때. https://github.com/KnifeLemon/Filee/blob/v1.11.0/docs/ARCHITECTURE.md · https://filee.sh/cli/
+- **변환 경로 계획과 명령줄 규약** — 여러 단계가 필요한 변환(HWP→HWPX→DOCX)을 최소 비용 경로로 자동으로 잇고(최대 3홉), `--json`과 종료코드(0 없음, 1 일부 실패, 2 인자 오류, 3 변환 대상 없음)로 결과를 돌려준다. 발동 조건: `ttokttak convert`에 경로를 더할 때. https://github.com/KnifeLemon/Filee/blob/v1.11.0/docs/ARCHITECTURE.md · https://filee.sh/cli/
 
 기준으로 본 것은 Filee 1.11.0(2026-10-17)이고, 위 링크는 그 태그로 고정했다(나중에 문서가 바뀌어도 같은 내용을 본다).
 
@@ -36,6 +36,6 @@ Filee는 이 빈 자리를 대부분 채울 수 있는 한국 오픈소스 파�
 
 ## 결과
 
-- 빈 변환(한글→워드, 문서→HWPX, HEIC, EPUB 등)은 이음오피스가 하지 않는다. 그런 변환이 필요하면 사용자가 자기 PC에서 Filee 같은 도구로 한다.
+- 빈 변환(한글→워드, 문서→HWPX, HEIC, EPUB 등)은 똑딱작업실이 하지 않는다. 그런 변환이 필요하면 사용자가 자기 PC에서 Filee 같은 도구로 한다.
 - 같은 조사를 다시 하지 않는다. 위 참고 목록이 그 자리다.
 - Filee가 조건을 바꾸면(예: 명령줄만 담은 작은 배포물, 코드 서명 완료, 라이선스 구성 정리) 다시 본다. 그때는 이 결정을 대체하는 기록을 쓴다.

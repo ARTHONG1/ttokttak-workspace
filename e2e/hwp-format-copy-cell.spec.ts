@@ -17,7 +17,7 @@ test('the format copy dialog shows the cell parts, with borders on', async () =>
     const hwp = await waitForPageWithUrl(launched.app, '://hwp/')
     await hwp.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
     const frame = hwp.frameLocator('.hwp-editor-host iframe')
-    await expect(frame.locator('[data-cmd="ext:ieum-save"]')).toHaveCount(1)
+    await expect(frame.locator('[data-cmd="ext:ttok-save"]')).toHaveCount(1)
     const box = (await hwp.locator('.hwp-editor-host iframe').boundingBox())!
     const dialog = frame.locator('.modal-overlay')
     let inCell = false
@@ -55,7 +55,7 @@ test('the format copy dialog shows the cell parts, with borders on', async () =>
     const fieldsBefore = await hwp.evaluate(async () => {
       const frame = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
       return await (frame.contentWindow as any).rhwpStudio.plugins.invoke(
-        'ieum-agent',
+        'ttok-agent',
         'listFields',
         [],
       )
@@ -80,7 +80,7 @@ test('the format copy dialog shows the cell parts, with borders on', async () =>
     const fieldsAfter = await hwp.evaluate(async () => {
       const frame = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
       return await (frame.contentWindow as any).rhwpStudio.plugins.invoke(
-        'ieum-agent',
+        'ttok-agent',
         'listFields',
         [],
       )

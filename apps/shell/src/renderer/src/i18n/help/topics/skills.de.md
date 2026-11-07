@@ -6,13 +6,13 @@ Ein Skill ist eine Arbeitsanleitung für die KI. Schreiben Sie einmal auf, was S
 
 **Einstellungen ▸ Skills** listet die Skills auf diesem PC auf, gruppiert nach ihrer Herkunft. Jeder Skill wird mit seinem Namen angezeigt, so wie Coding-Agenten es tun. Über das Suchfeld oben finden Sie einen Skill nach Name oder Beschreibung.
 
-| Herkunft                 | Inhalt                                                                   | Anfangs |
-| ------------------------ | ------------------------------------------------------------------------ | ------- |
-| **Integriert**           | Die 5 Skills, die mit GenOffice geliefert werden                         | Ein     |
-| **Meine Skills**         | Skills, die Sie hinzugefügt oder erstellt haben (`~/.ieumoffice/skills`) | Ein     |
-| **Claude-Skills-Ordner** | Die Skills in `~/.claude/skills`                                         | Aus     |
-| **Claude-Plugins**       | Die Skills installierter Claude-Plugins                                  | Aus     |
-| **Codex-Skills-Ordner**  | Die Skills in `~/.agents/skills`                                         | Aus     |
+| Herkunft                 | Inhalt                                                                 | Anfangs |
+| ------------------------ | ---------------------------------------------------------------------- | ------- |
+| **Integriert**           | Die 5 Skills, die mit GenOffice geliefert werden                       | Ein     |
+| **Meine Skills**         | Skills, die Sie hinzugefügt oder erstellt haben (`~/.ttokttak/skills`) | Ein     |
+| **Claude-Skills-Ordner** | Die Skills in `~/.claude/skills`                                       | Aus     |
+| **Claude-Plugins**       | Die Skills installierter Claude-Plugins                                | Aus     |
+| **Codex-Skills-Ordner**  | Die Skills in `~/.agents/skills`                                       | Aus     |
 
 - Der Schalter schaltet einen Skill ein oder aus. Dieselbe Einstellung gilt für den KI-Bereich jedes Editors, für Ask AI auf der Startseite und für das Agentenfenster.
 - Wählen Sie für einen eingeschalteten Skill **KI entscheidet** oder **Nur auf Aufruf**. Anfangs ist KI entscheidet eingestellt. Bei Nur auf Aufruf wird der Skill nur verwendet, wenn Sie ihn selbst aufrufen.

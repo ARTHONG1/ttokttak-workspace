@@ -35,4 +35,4 @@ Omdat het installatieprogramma niet is ondertekend, voer je alleen een exemplaar
 
 ## De opdrachtregel zit erbij
 
-Elke installatie bevat een `ieumoffice`-commando dat met dezelfde engines praat als het venster, zodat de twee nooit over een bestand het oneens zijn. `ieumoffice install-cli` zet het in je `PATH`. Wat het kan doen, lees je in [Opdrachtregel en agents](help://cli).
+Elke installatie bevat een `ttokttak`-commando dat met dezelfde engines praat als het venster, zodat de twee nooit over een bestand het oneens zijn. `ttokttak install-cli` zet het in je `PATH`. Wat het kan doen, lees je in [Opdrachtregel en agents](help://cli).

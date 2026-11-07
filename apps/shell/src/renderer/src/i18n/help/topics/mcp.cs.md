@@ -15,27 +15,27 @@ Uděláte to v **Nastavení ▸ Integrace**. Panel má dvě poloviny a můžete 
 Totéž z terminálu — to je pokročilá cesta, po které sáhnete, když je agent tam, kde panel nemůže najít:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Najde programové agenty v tomto počítači a zapíše záznam stdio serveru do vlastní konfigurace každého z nich, zatímco zbytek souboru nechá být, jak ho našel. Záznam se jmenuje `ieumoffice`. Ručně pro Claude Code vypadá stejná registrace takto: `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Najde programové agenty v tomto počítači a zapíše záznam stdio serveru do vlastní konfigurace každého z nich, zatímco zbytek souboru nechá být, jak ho našel. Záznam se jmenuje `ttokttak`. Ručně pro Claude Code vypadá stejná registrace takto: `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Agent nainstalovaný na neobvyklém místě vyžaduje `--dir <path>`; `--force` přepíše záznam, který tam už je.
 
-`ieumoffice mcp --help` ukáže na jedné obrazovce všechno, co server přijímá: tvary pro registraci, odebrání a výpis, poskytování přes HTTP a dva přepínače schémat.
+`ttokttak mcp --help` ukáže na jedné obrazovce všechno, co server přijímá: tvary pro registraci, odebrání a výpis, poskytování přes HTTP a dva přepínače schémat.
 
 ## Spuštění vlastníma rukama
 
 Pro klienta v jiném počítači jej místo toho vystavte přes HTTP:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` mění, kde naslouchá. Klientovi předáte stejný token.
@@ -55,7 +55,7 @@ Každý příkaz je nástroj. Zajímavé jsou tyto:
 
 ## Vyhledávání, obrázky a média: co smí agent použít
 
-Požadavek z příkazu `ieumoffice` nebo od klienta MCP jste v aplikaci nenapsali vy, a proto s ním GenOffice zachází opatrně.
+Požadavek z příkazu `ttokttak` nebo od klienta MCP jste v aplikaci nenapsali vy, a proto s ním GenOffice zachází opatrně.
 
 - **Vyhledávání** funguje vždy a ve výchozím stavu je zdarma. Klíč poskytovatele vyhledávání se použije jen tehdy, pokud jste nějaký vybrali.
 - **Generování obrázku** potřebuje klíč poskytovatele obrázků. V této verzi předplatné obrázky negeneruje.
@@ -74,16 +74,16 @@ Je-li přepínač vypnutý a není nastaven žádný klíč, nástroj odpoví, �
 
 ## Schémata a menší rozpočet
 
-`apply` a `create` oznamují své parametry `ops`, `cells` a `data` s typovaným schématem pro každou op, vygenerovaným z `ieumoffice guide <domain> --json`. Je to přesné a ne malé. Klient s úzkým kontextovým oknem si může místo toho požádat o prostá pole:
+`apply` a `create` oznamují své parametry `ops`, `cells` a `data` s typovaným schématem pro každou op, vygenerovaným z `ttokttak guide <domain> --json`. Je to přesné a ne malé. Klient s úzkým kontextovým oknem si může místo toho požádat o prostá pole:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Proč skill
 
-Agent, který nezná slovní zásobu op, bude hádat. Skill přináší referenční příručku a návrhové průvodce — přesně ty materiály, které vypíše `ieumoffice guide` —, takže asistent píše ops, jejichž specifikaci si opravdu přečetl. Nainstalujte ho z panelu nahoře nebo příkazem `ieumoffice skill` z terminálu.
+Agent, který nezná slovní zásobu op, bude hádat. Skill přináší referenční příručku a návrhové průvodce — přesně ty materiály, které vypíše `ttokttak guide` —, takže asistent píše ops, jejichž specifikaci si opravdu přečetl. Nainstalujte ho z panelu nahoře nebo příkazem `ttokttak skill` z terminálu.
 
 ## Čeho se v aplikaci dostane
 

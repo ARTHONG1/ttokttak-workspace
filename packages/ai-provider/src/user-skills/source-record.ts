@@ -1,13 +1,13 @@
 /**
- * The GitHub source record (`.ieum-source.json`) at the top of a skill
+ * The GitHub source record (`.ttok-source.json`) at the top of a skill
  * installed from GitHub: where it came from and what its folder held then.
  * The update check reads it; export leaves it out.
  */
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { IEUM_SOURCE_FILE } from './constants'
+import { TTOK_SOURCE_FILE } from './constants'
 
-export interface IeumSourceRecord {
+export interface TtokSourceRecord {
   kind: 'github'
   /** `owner/repo` */
   repo: string
@@ -28,8 +28,8 @@ export function isoSeconds(date: Date): string {
 }
 
 /** The record as written to disk, keys in the documented order */
-export function renderIeumSourceRecord(record: IeumSourceRecord): string {
-  const ordered: IeumSourceRecord = {
+export function renderTtokSourceRecord(record: TtokSourceRecord): string {
+  const ordered: TtokSourceRecord = {
     kind: 'github',
     repo: record.repo,
     ref: record.ref,
@@ -42,12 +42,12 @@ export function renderIeumSourceRecord(record: IeumSourceRecord): string {
 }
 
 /** Read a skill folder's record; `undefined` when missing or not of the documented shape */
-export async function readIeumSourceRecord(
+export async function readTtokSourceRecord(
   skillDir: string,
-): Promise<IeumSourceRecord | undefined> {
+): Promise<TtokSourceRecord | undefined> {
   let raw: unknown
   try {
-    raw = JSON.parse(await readFile(join(skillDir, IEUM_SOURCE_FILE), 'utf8'))
+    raw = JSON.parse(await readFile(join(skillDir, TTOK_SOURCE_FILE), 'utf8'))
   } catch {
     return undefined
   }

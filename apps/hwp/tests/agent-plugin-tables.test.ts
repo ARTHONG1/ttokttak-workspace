@@ -193,7 +193,7 @@ function openForm(
     doubleClick: (at: Position) => {
       cursor.anchor = null
       cursor.position = at
-      host.automation.execute('ext:ieum-select-word')
+      host.automation.execute('ext:ttok-select-word')
     },
     /** the text of every cell of the first table, by "row.col" */
     cells: () => {

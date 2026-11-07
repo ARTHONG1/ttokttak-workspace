@@ -161,7 +161,7 @@ describe('the main process wiring', () => {
     expect(index.match(/createTemplateTabs\(/g)).toHaveLength(1)
     expect(index).toMatch(/templateFileOf: \(id\) => userSkills\.templateFile\(id\)/)
     // copies go to a temp folder of their own, never next to the skill
-    expect(index).toMatch(/'ieumoffice-template-copies'/)
+    expect(index).toMatch(/'ttokttak-template-copies'/)
     // sheets opens its copy like "New spreadsheet": a backing workbook, first save asks
     expect(index).toMatch(/markSheetsUnsavedNew\(backingPath, suggestedPath, tempDir\)/)
   })

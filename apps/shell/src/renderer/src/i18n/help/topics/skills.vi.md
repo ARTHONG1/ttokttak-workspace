@@ -6,13 +6,13 @@ Kỹ năng là một bộ hướng dẫn làm việc dành cho AI. Hãy viết r
 
 **Cài đặt ▸ Kỹ năng** liệt kê các kỹ năng có trên máy tính này, được nhóm theo nguồn gốc. Mỗi kỹ năng hiển thị bằng tên, giống cách các tác tử lập trình hiển thị. Dùng ô tìm kiếm ở trên cùng để tìm theo tên hoặc mô tả.
 
-| Nguồn                      | Nội dung                                                 | Ban đầu |
-| -------------------------- | -------------------------------------------------------- | ------- |
-| **Có sẵn**                 | 5 kỹ năng đi kèm GenOffice                               | Bật     |
-| **Kỹ năng của tôi**        | Kỹ năng bạn đã thêm hoặc tự tạo (`~/.ieumoffice/skills`) | Bật     |
-| **Thư mục kỹ năng Claude** | Các kỹ năng trong `~/.claude/skills`                     | Tắt     |
-| **Phần bổ trợ Claude**     | Kỹ năng của các phần bổ trợ Claude đã cài                | Tắt     |
-| **Thư mục kỹ năng Codex**  | Các kỹ năng trong `~/.agents/skills`                     | Tắt     |
+| Nguồn                      | Nội dung                                               | Ban đầu |
+| -------------------------- | ------------------------------------------------------ | ------- |
+| **Có sẵn**                 | 5 kỹ năng đi kèm GenOffice                             | Bật     |
+| **Kỹ năng của tôi**        | Kỹ năng bạn đã thêm hoặc tự tạo (`~/.ttokttak/skills`) | Bật     |
+| **Thư mục kỹ năng Claude** | Các kỹ năng trong `~/.claude/skills`                   | Tắt     |
+| **Phần bổ trợ Claude**     | Kỹ năng của các phần bổ trợ Claude đã cài              | Tắt     |
+| **Thư mục kỹ năng Codex**  | Các kỹ năng trong `~/.agents/skills`                   | Tắt     |
 
 - Công tắc dùng để bật hoặc tắt một kỹ năng. Cùng một cài đặt áp dụng cho bảng AI của mọi trình soạn thảo, Hỏi AI ở Trang chủ và cửa sổ tác tử.
 - Với kỹ năng đang bật, hãy chọn **AI tự quyết định** hoặc **Chỉ khi được gọi**. Ban đầu là AI tự quyết định. Với Chỉ khi được gọi, kỹ năng chỉ được dùng khi chính bạn gọi nó.

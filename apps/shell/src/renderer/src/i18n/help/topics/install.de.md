@@ -35,4 +35,4 @@ Weil das Installationsprogramm nicht signiert ist, führen Sie nur eines aus, da
 
 ## Die Kommandozeile ist dabei
 
-Jede Installation bringt den Befehl `ieumoffice` mit, der mit denselben Engines spricht wie das Fenster: Die beiden können sich bei einer Datei also nicht widersprechen. `ieumoffice install-cli` legt ihn in Ihren `PATH`. Was er kann, steht in [Kommandozeile und Agenten](help://cli).
+Jede Installation bringt den Befehl `ttokttak` mit, der mit denselben Engines spricht wie das Fenster: Die beiden können sich bei einer Datei also nicht widersprechen. `ttokttak install-cli` legt ihn in Ihren `PATH`. Was er kann, steht in [Kommandozeile und Agenten](help://cli).

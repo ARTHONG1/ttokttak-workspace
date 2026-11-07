@@ -10,7 +10,7 @@ import { closeAndSaveVideo, launchShell, waitForPageWithUrl, type LaunchedApp } 
  * Agent mode (decision 0032) against the real Claude Code / Codex of this PC.
  *
  * It spends the person's subscription, so it never runs in the normal suite:
- * set IEUM_AGENT_REAL to `claude`, `codex` or `both` (docs/operations.md,
+ * set TTOK_AGENT_REAL to `claude`, `codex` or `both` (docs/operations.md,
  * "실제 구독으로 확인하기"). Claude runs on haiku, the smallest model.
  *
  * What it checks, through the built app and its agent window:
@@ -24,7 +24,7 @@ import { closeAndSaveVideo, launchShell, waitForPageWithUrl, type LaunchedApp } 
  *   app started for it.
  */
 
-const REAL = process.env.IEUM_AGENT_REAL ?? ''
+const REAL = process.env.TTOK_AGENT_REAL ?? ''
 const ASSET = join(__dirname, 'assets', 'justify-pagegap-fr.docx')
 const XLSX_ASSET = join(__dirname, '..', 'apps', 'shell', 'build', 'shell-new', 'blank.xlsx')
 const PPTX_ASSET = join(
@@ -57,10 +57,10 @@ async function setup(
   provider: 'claude-code' | 'codex',
   { mode = 'ask-commands', files = {}, mcpPort }: SetupOptions = {},
 ): Promise<Setup> {
-  const project = await mkdtemp(join(tmpdir(), 'ieum-agent-e2e-'))
+  const project = await mkdtemp(join(tmpdir(), 'ttok-agent-e2e-'))
   await copyFile(ASSET, join(project, 'report.docx'))
   for (const [name, source] of Object.entries(files)) await copyFile(source, join(project, name))
-  const userDataDir = await mkdtemp(join(tmpdir(), 'ieum-agent-e2e-data-'))
+  const userDataDir = await mkdtemp(join(tmpdir(), 'ttok-agent-e2e-data-'))
   await writeFile(
     join(userDataDir, 'ai-settings.json'),
     JSON.stringify({
@@ -192,7 +192,7 @@ async function expectEnded(pids: number[]): Promise<void> {
 }
 
 test('Claude Code: edits an open document, asks before a command, ends on close', async () => {
-  test.skip(REAL !== 'claude' && REAL !== 'both', 'set IEUM_AGENT_REAL=claude or both')
+  test.skip(REAL !== 'claude' && REAL !== 'both', 'set TTOK_AGENT_REAL=claude or both')
   const { launched, project } = await setup('claude-code')
   try {
     const agent = await openAgentWindow(launched)
@@ -206,7 +206,7 @@ test('Claude Code: edits an open document, asks before a command, ends on close'
       .locator('.agent-input')
       .fill(
         'Do exactly these two things, then answer in one short sentence. ' +
-          '1) With the ieumoffice-editor tools, add one new paragraph with exactly the text AGENT-E2E-CLAUDE at the end of the open Word document report.docx. ' +
+          '1) With the ttokttak-editor tools, add one new paragraph with exactly the text AGENT-E2E-CLAUDE at the end of the open Word document report.docx. ' +
           "2) Run this shell command in the project folder: node -e \"require('fs').writeFileSync('agent-cmd.txt','ok')\"",
       )
     await agent.getByRole('button', { name: 'Send' }).click()
@@ -250,9 +250,9 @@ test('Claude Code: edits an open document, asks before a command, ends on close'
 })
 
 test('Codex: edits an open document, keeps allowed commands in its sandbox, ends on close', async () => {
-  test.skip(REAL !== 'codex' && REAL !== 'both', 'set IEUM_AGENT_REAL=codex or both')
+  test.skip(REAL !== 'codex' && REAL !== 'both', 'set TTOK_AGENT_REAL=codex or both')
   const { launched, project } = await setup('codex')
-  const outside = join(homedir(), 'Documents', `ieum-agent-e2e-${Date.now()}.txt`)
+  const outside = join(homedir(), 'Documents', `ttok-agent-e2e-${Date.now()}.txt`)
   try {
     const agent = await openAgentWindow(launched)
     const start = agent.getByRole('button', { name: 'Start' })
@@ -265,7 +265,7 @@ test('Codex: edits an open document, keeps allowed commands in its sandbox, ends
       .locator('.agent-input')
       .fill(
         'Do exactly these two things, then answer in one short sentence. ' +
-          '1) With the ieumoffice-editor tools, add one new paragraph with exactly the text AGENT-E2E-CODEX at the end of the open Word document report.docx. ' +
+          '1) With the ttokttak-editor tools, add one new paragraph with exactly the text AGENT-E2E-CODEX at the end of the open Word document report.docx. ' +
           '2) Run this command in the project folder: cmd /c "echo ok> codex-cmd.txt" ' +
           `3) Run this command: cmd /c "echo x> ${outside}" ` +
           'If a command fails, do not retry it in another form; just say so.',
@@ -356,7 +356,7 @@ async function appMcpCall(port: number, name: string, args: Record<string, unkno
 }
 
 test('Codex: edits an open workbook and deck, and the new file opens in a tab', async () => {
-  test.skip(REAL !== 'codex' && REAL !== 'both', 'set IEUM_AGENT_REAL=codex or both')
+  test.skip(REAL !== 'codex' && REAL !== 'both', 'set TTOK_AGENT_REAL=codex or both')
   const mcpPort = await freePort()
   const { launched, project } = await setup('codex', {
     // trust: nothing asks, so Codex's own check before each app tool must still pass
@@ -377,7 +377,7 @@ test('Codex: edits an open workbook and deck, and the new file opens in a tab', 
     await agent
       .locator('.agent-input')
       .fill(
-        'Do exactly these three things with the ieumoffice-editor tools and your file editing tool, then answer in one short sentence. ' +
+        'Do exactly these three things with the ttokttak-editor tools and your file editing tool, then answer in one short sentence. ' +
           '1) In the open workbook data.xlsx, set cell A1 of the first sheet to the text AGENT-E2E-SHEET. ' +
           '2) In the open presentation deck.pptx, add a text box with exactly the text AGENT-E2E-SLIDE to the first slide. ' +
           '3) Create a new file notes.md in the project folder containing the line AGENT-E2E-NOTE, with your file editing tool (not a shell command).',

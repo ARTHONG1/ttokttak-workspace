@@ -21,7 +21,7 @@
  * ## Why HOME and not just GENOFFICE_USER_DATA
  *
  * userData holds the app's own settings, but the command-line launcher record
- * lives under the home directory (`~/.ieumoffice`), and GENOFFICE_USER_DATA says
+ * lives under the home directory (`~/.ttokttak`), and GENOFFICE_USER_DATA says
  * nothing about that. HOME and `GENOFFICE_AUTH_DIR` keep it inside the scratch
  * profile too, so nothing of the developer's own session is read or written.
  *

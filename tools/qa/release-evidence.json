@@ -102,6 +102,6 @@
     "format": "ai",
     "status": "NOT RUN",
     "severity": "P1",
-    "reason": "No opt-in IEUM_AGENT_REAL=codex|claude real provider calls; do not silently incur cost or transmit files"
+    "reason": "No opt-in TTOK_AGENT_REAL=codex|claude real provider calls; do not silently incur cost or transmit files"
   }
 ]

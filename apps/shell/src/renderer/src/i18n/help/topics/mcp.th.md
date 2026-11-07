@@ -15,27 +15,27 @@ GenOffice สื่อสารด้วย Model Context Protocol เอเจ�
 ทำสิ่งเดียวกันนี้จากเทอร์มินัลได้ นี่คือเส้นทางขั้นสูง ที่ควรใช้เมื่อเอเจนต์ตั้งอยู่ในที่ที่แผงค้นหาไม่พบ
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-คำสั่งนี้จะหาเอเจนต์เขียนโค้ดที่อยู่บนเครื่องนี้ ได้แก่ Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode และ Windsurf แล้วเขียนรายการเซิร์ฟเวอร์แบบ stdio ลงในค่าตั้งของแต่ละตัว ส่วนที่เหลือของไฟล์นั้นจะยังคงเดิม รายการนี้ชื่อ `ieumoffice` ถ้าลงทะเบียนเองสำหรับ Claude Code การลงทะเบียนแบบเดียวกันคือ `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`
+คำสั่งนี้จะหาเอเจนต์เขียนโค้ดที่อยู่บนเครื่องนี้ ได้แก่ Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode และ Windsurf แล้วเขียนรายการเซิร์ฟเวอร์แบบ stdio ลงในค่าตั้งของแต่ละตัว ส่วนที่เหลือของไฟล์นั้นจะยังคงเดิม รายการนี้ชื่อ `ttokttak` ถ้าลงทะเบียนเองสำหรับ Claude Code การลงทะเบียนแบบเดียวกันคือ `claude mcp add --transport stdio ttokttak -- ttokttak mcp`
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 ถ้าติดตั้งเอเจนต์ไว้ในตำแหน่งที่ไม่ปกติ ให้ใช้ `--dir <path>` ส่วน `--force` จะเขียนรายการที่มีอยู่แล้วทับ
 
-`ieumoffice mcp --help` แสดงทุกอย่างที่เซิร์ฟเวอร์รับไว้ในหน้าจอเดียว ทั้งรูปแบบติดตั้ง ถอดออก และแสดงรายการ การให้บริการผ่าน HTTP และสวิตช์สคีมาสองตัว
+`ttokttak mcp --help` แสดงทุกอย่างที่เซิร์ฟเวอร์รับไว้ในหน้าจอเดียว ทั้งรูปแบบติดตั้ง ถอดออก และแสดงรายการ การให้บริการผ่าน HTTP และสวิตช์สคีมาสองตัว
 
 ## รันเองโดยไม่ต้องมีผู้ช่วย
 
 สำหรับไคลเอ็นต์ที่อยู่คนละเครื่อง ให้เปิดเป็น HTTP แทน
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` กำหนดที่ที่เซิร์ฟเวอร์จะรับ และต้องส่งโทเคนเดียวกันนั้นให้ไคลเอ็นต์
@@ -55,7 +55,7 @@ ieumoffice mcp --http 8765 --token <secret>
 
 ## การค้นหา ภาพ และสื่อ: สิ่งที่เอเจนต์ใช้ได้
 
-คำขอที่มาจากคำสั่ง `ieumoffice` หรือจากไคลเอ็นต์ MCP ไม่ใช่สิ่งที่คุณพิมพ์เองในแอป GenOffice จึงระมัดระวังกับคำขอเหล่านี้
+คำขอที่มาจากคำสั่ง `ttokttak` หรือจากไคลเอ็นต์ MCP ไม่ใช่สิ่งที่คุณพิมพ์เองในแอป GenOffice จึงระมัดระวังกับคำขอเหล่านี้
 
 - **การค้นหา** ใช้ได้เสมอและฟรีเป็นค่าเริ่มต้น คีย์ของผู้ให้บริการค้นหาจะถูกใช้เฉพาะเมื่อคุณเลือกไว้
 - **การสร้างภาพ** ต้องใช้คีย์ของผู้ให้บริการสร้างภาพ ในเวอร์ชันนี้การสมัครสมาชิกสร้างภาพไม่ได้
@@ -74,16 +74,16 @@ ieumoffice mcp --http 8765 --token <secret>
 
 ## สคีมาและงบที่เล็กลง
 
-`apply` และ `create` ประกาศพารามิเตอร์ `ops`, `cells` และ `data` พร้อมสคีมาที่มีชนิดของแต่ละ op ซึ่งสร้างจาก `ieumoffice guide <domain> --json` แบบนี้แม่นยำแต่ไม่เล็ก ไคลเอ็นต์ที่หน้าต่างบริบทแคบสามารถขอเป็นอาร์เรย์ธรรมดาแทนได้
+`apply` และ `create` ประกาศพารามิเตอร์ `ops`, `cells` และ `data` พร้อมสคีมาที่มีชนิดของแต่ละ op ซึ่งสร้างจาก `ttokttak guide <domain> --json` แบบนี้แม่นยำแต่ไม่เล็ก ไคลเอ็นต์ที่หน้าต่างบริบทแคบสามารถขอเป็นอาร์เรย์ธรรมดาแทนได้
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## ทำไมต้องมีสกิล
 
-เอเจนต์ที่ไม่รู้จักศัพท์ของ op ก็จะเดา สกิลมีคู่มืออ้างอิงและแนวทางการออกแบบติดไปด้วย ซึ่งเป็นเนื้อหาเดียวกับที่ `ieumoffice guide` พิมพ์ออกมา ผู้ช่วยจึงเขียน op ที่อ่านสเปกของมันจริง ๆ แล้ว ติดตั้งจากแผงด้านบน หรือใช้ `ieumoffice skill` จากเทอร์มินัลก็ได้
+เอเจนต์ที่ไม่รู้จักศัพท์ของ op ก็จะเดา สกิลมีคู่มืออ้างอิงและแนวทางการออกแบบติดไปด้วย ซึ่งเป็นเนื้อหาเดียวกับที่ `ttokttak guide` พิมพ์ออกมา ผู้ช่วยจึงเขียน op ที่อ่านสเปกของมันจริง ๆ แล้ว ติดตั้งจากแผงด้านบน หรือใช้ `ttokttak skill` จากเทอร์มินัลก็ได้
 
 ## ในแอปมันเข้าถึงอะไรได้บ้าง
 

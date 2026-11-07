@@ -104,7 +104,7 @@ const px = (hwpunit: number) => (hwpunit * 96) / 7200
 describe('vendored rhwp engine', () => {
   it('is the build its manifest records', () => {
     const manifest = JSON.parse(readFileSync(join(CORE, 'package.json'), 'utf8'))
-    expect(manifest.version).toMatch(/^0\.8\.7-ieum\.\d+$/)
+    expect(manifest.version).toMatch(/^0\.8\.7-ttok\.\d+$/)
     const wasm = readFileSync(join(CORE, 'rhwp_bg.wasm'))
     expect(createHash('sha256').update(wasm).digest('hex')).toBe(manifest.rhwp.wasmSha256)
   })

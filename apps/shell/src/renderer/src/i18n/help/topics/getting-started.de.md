@@ -24,7 +24,7 @@ Ein neues Dokument öffnet sich ohne Namen; die Datei auf dem Datenträger entst
 
 - Menü **Datei ▸ Öffnen** (⌘O/ctrl+O) öffnet die Systemauswahl: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Klicken Sie auf einen Eintrag in der Liste **Zuletzt verwendet** auf der Startseite.
-- `ieumoffice <file>` in einem Terminal öffnet Dateien ebenfalls.
+- `ttokttak <file>` in einem Terminal öffnet Dateien ebenfalls.
 
 ## ODT-Dokumente
 

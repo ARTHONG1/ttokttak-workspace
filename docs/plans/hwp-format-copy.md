@@ -97,7 +97,7 @@
 | `apps/hwp/studio-plugin/format-copy.mjs` (새 파일)    | 대화상자, 복사 상태, 대상 고르기, 글자·문단·칸 적용, 스타일, 거절 문구                                                                                                                                                                            |
 | `apps/hwp/scripts/rhwp-patches.mjs` (고침)            | `studio-format-copy-safety`(input-handler.ts, 0단계), `studio-format-copy`(edit.ts), `studio-format-copy-state`(input-handler.ts) 패치 추가. 실행부를 새 모듈로 바꾸고, `hasCopiedFormat`이 새 상태를 보게 한다. 새 모듈을 `hancomHooks`에 넣는다 |
 | `apps/hwp/scripts/rhwp-patches.d.mts` (고침)          | 새 모듈 이름과 세 패치 이름 선언                                                                                                                                                                                                                  |
-| `apps/hwp/scripts/build-studio.mjs` (고침)            | `@ieum/format-copy` 별칭, 빌드 스탬프에 새 파일 해시                                                                                                                                                                                              |
+| `apps/hwp/scripts/build-studio.mjs` (고침)            | `@ttok/format-copy` 별칭, 빌드 스탬프에 새 파일 해시                                                                                                                                                                                              |
 | `apps/hwp/tests/format-copy.test.ts` (새 파일)        | 가짜 편집기로 선택·옵션·상태·묶음·거절 시험                                                                                                                                                                                                       |
 | `apps/hwp/tests/format-copy-engine.test.ts` (새 파일) | 실제 엔진으로 글자·문단·칸·스타일·저장 왕복·양식 칸 보존 시험                                                                                                                                                                                     |
 
@@ -106,13 +106,13 @@
 1. `src/engine/input-handler.ts` (0단계 안전 패치)
    - `FORMAT_COPY_CELL_KEYS`에서 `fieldName`·`editableInForm`을 뺀다. 옛 복사 경로가 양식 칸 필드를 지우지 않게 한다.
 2. `src/command/commands/edit.ts`
-   - `import { ieumFormatCopy, ieumFormatPaste } from '@ieum/format-copy';`
-   - `execute(services) { services.getInputHandler()?.performFormatCopy(); }` → `execute(services) { ieumFormatCopy(services, formatCopyStudio()); }`
-   - `execute(services) { services.getInputHandler()?.performFormatPaste(); }` → `execute(services) { ieumFormatPaste(services, formatCopyStudio()); }`
+   - `import { ttokFormatCopy, ttokFormatPaste } from '@ttok/format-copy';`
+   - `execute(services) { services.getInputHandler()?.performFormatCopy(); }` → `execute(services) { ttokFormatCopy(services, formatCopyStudio()); }`
+   - `execute(services) { services.getInputHandler()?.performFormatPaste(); }` → `execute(services) { ttokFormatPaste(services, formatCopyStudio()); }`
    - `edit:format-copy`의 `canExecute`에 `!ctx.isFormMode`를 더한다.
    - 대화상자 부품은 `edit.ts`가 이미 쓰는 `@/ui/...`처럼 `ModalDialog`와 `showToast`를 새 모듈에 넘긴다. 실행 취소 명령 부품(`ApplyCharFormatCommand`, `ApplyParaFormatCommand`)과 셀 블록 부품(`selectCellIndicesInRange`, `paraFormatTargetsForCellBlock`, `withCellPathTarget`)도 넘긴다. 새 모듈은 편집기 소스를 import하지 않는다.
 3. `src/engine/input-handler.ts` (상태 연결 패치)
-   - `hasCopiedFormat(): boolean { return this.formatCopyState !== null; }` → `return ieumHasCopiedFormat(this);`
+   - `hasCopiedFormat(): boolean { return this.formatCopyState !== null; }` → `return ttokHasCopiedFormat(this);`
    - 그래야 편집 메뉴의 `모양 붙여넣기` 활성 여부가 새 상태를 본다. 기존 `performFormatCopy`/`performFormatPaste`는 더 이상 명령에서 불리지 않는다. 지우지는 않는다(다른 곳에서 부르지 않는 것은 코드 검색으로 확인했다).
 
 `hancomHooks`에 새로 기대는 이름을 적는다: `edit.ts`의 두 실행 줄, `input-handler.ts`의 `hasCopiedFormat`·`getCharProperties`·`getParaProperties`·`getSelection`·`getCursorPosition`·`focus`·`executeOperation`, `cursor`의 선택 API, `engine/command.ts`의 두 명령 클래스, `engine/cell-block-format.ts`의 세 함수, `wasm-bridge`의 엔진 호출 이름. 하나라도 없으면 빌드가 멈춘다.
@@ -122,7 +122,7 @@
 ```
 Alt+C / 도구 줄 / 편집 메뉴
   → edit:format-copy
-  → ieumFormatCopy(services)
+  → ttokFormatCopy(services)
       ├─ 편집 모드가 양식이면 아무것도 하지 않는다
       ├─ 머리말·꼬리말·각주·미주 안이면 "아직 지원하지 않는다"고 알린다
       ├─ 그림·표가 개체로 선택된 상태면 "글자나 표 칸을 골라 주세요"고 알린다
@@ -141,7 +141,7 @@ Alt+C / 도구 줄 / 편집 메뉴
 
 ```
 Alt+C(블록 있음) / 모양 붙여넣기
-  → ieumFormatPaste(services)
+  → ttokFormatPaste(services)
       ├─ 복사한 모양이 없으면 "복사한 모양이 없습니다"고 알린다
       ├─ 대상이 없으면 "적용할 부분을 선택하세요"고 알린다
       ├─ 지원하지 않는 대상이면 이유를 알리고 상태를 지우지 않는다
@@ -288,7 +288,7 @@ Alt+C(블록 있음) / 모양 붙여넣기
 
 1단계는 이 편집기 안에서만 기억한다. 한컴처럼 "한글을 끝낼 때까지, 다른 문서에도"를 하려면 앱 실행 단위의 공유 저장소가 필요하다. 후보는 둘이다.
 
-- **localStorage + 앱 실행 토큰(권장)**: 앱이 실행될 때마다 하나의 임의 토큰을 만들고, 각 한글 편집기의 주소에 `&session=<토큰>`으로 붙인다. 새 모듈은 `ieum-format-copy:<토큰>` 키로만 읽고 쓴다. 앱을 다시 켜면 토큰이 달라져 지난번 모양은 쓰이지 않는다. 탭·창 사이는 같은 토큰이라 공유된다. 값은 서식뿐이고 문서 글자는 없다. 토큰을 만드는 IPC 한 개와 preload 한 줄이 든다.
+- **localStorage + 앱 실행 토큰(권장)**: 앱이 실행될 때마다 하나의 임의 토큰을 만들고, 각 한글 편집기의 주소에 `&session=<토큰>`으로 붙인다. 새 모듈은 `ttok-format-copy:<토큰>` 키로만 읽고 쓴다. 앱을 다시 켜면 토큰이 달라져 지난번 모양은 쓰이지 않는다. 탭·창 사이는 같은 토큰이라 공유된다. 값은 서식뿐이고 문서 글자는 없다. 토큰을 만드는 IPC 한 개와 preload 한 줄이 든다.
 - **메인 프로세스 저장소**: `hwp:format-copy-get/set` 채널을 만들고 메인 프로세스가 앱이 끝날 때 지운다. 정확하지만 편집기 안 플러그인과 바깥 앱 사이에 비동기 왕복이 생겨, 복사·적용 명령이 지금처럼 한 번에 끝나지 않는다.
 
 1단계에서는 하지 않는다. 화면에도 "다른 문서"를 약속하지 않는다.
@@ -358,7 +358,7 @@ Alt+C(블록 있음) / 모양 붙여넣기
 
 - `apps/hwp/studio-plugin/format-copy.mjs`(새 파일): 한컴식 대화상자, 복사 상태(편집기마다), 글자·문단·칸·스타일 적용, 대상 분류, 거절 이유, 한 실행 취소 단계로 묶는 합성 명령, 글꼴 이름 풀기, 페이지 픽셀 변환.
 - `apps/hwp/scripts/rhwp-patches.mjs`(고침): `studio-format-copy-safety`(양식 칸 이름·편집 가능 여부를 옛 키 목록에서 뺀다), `studio-format-copy`(edit 명령의 실행부를 새 모듈로 바꾸고 양식 모드에서는 끈다), `studio-format-copy-state`(`hasCopiedFormat`이 새 상태를 본다) 패치와 `hancomHooks` 이름.
-- `apps/hwp/scripts/build-studio.mjs`(고침): `@ieum/format-copy` 별칭과 빌드 스탬프 해시.
+- `apps/hwp/scripts/build-studio.mjs`(고침): `@ttok/format-copy` 별칭과 빌드 스탬프 해시.
 - `apps/hwp/scripts/rhwp-patches.d.mts`(고침): 모듈 이름과 세 패치 이름 선언.
 - `apps/hwp/tests/format-copy.test.ts`(새 파일): 상태·대상·계획·합성 명령·셀 필드 보존 단위 시험 23개.
 - `apps/hwp/tests/format-copy-engine.test.ts`(새 파일): 실제 엔진으로 언어별 글꼴, 글자·문단 테두리/배경, 탭, 스타일, 양식 칸 보존, 저장 왕복 시험 5개.

@@ -35,4 +35,4 @@ Vì trình cài đặt chưa được ký, bạn chỉ nên chạy tệp đã t�
 
 ## Dòng lệnh đi kèm luôn
 
-Mọi bản cài đặt đều kèm lệnh `ieumoffice` nói chuyện với đúng những engine mà cửa sổ dùng, nên cả hai không bao giờ bất đồng về một tệp. `ieumoffice install-cli` đưa nó vào `PATH` của bạn. Xem [Dòng lệnh và tác nhân](help://cli) để biết nó làm được gì.
+Mọi bản cài đặt đều kèm lệnh `ttokttak` nói chuyện với đúng những engine mà cửa sổ dùng, nên cả hai không bao giờ bất đồng về một tệp. `ttokttak install-cli` đưa nó vào `PATH` của bạn. Xem [Dòng lệnh và tác nhân](help://cli) để biết nó làm được gì.

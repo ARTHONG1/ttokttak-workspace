@@ -33,7 +33,7 @@ let settingsPath: string
 let trash: ReturnType<typeof vi.fn>
 let service: UserSkillsService
 
-const appDir = () => join(home, '.ieumoffice', 'skills')
+const appDir = () => join(home, '.ttokttak', 'skills')
 
 function skill(dir: string, name: string, description: string, extra = '', body = 'Do it.\n') {
   mkdirSync(dir, { recursive: true })
@@ -57,7 +57,7 @@ beforeEach(() => {
       { name: 'find-skills', agentOnly: true },
     ]),
   )
-  skill(join(appDir(), 'mine'), 'mine', 'My own', 'metadata:\n  ieum-title: Mine\n', 'Body\n')
+  skill(join(appDir(), 'mine'), 'mine', 'My own', 'metadata:\n  ttok-title: Mine\n', 'Body\n')
   writeFileSync(join(appDir(), 'mine', 'notes.md'), 'notes')
   writeFileSync(join(appDir(), 'mine', 'run.py'), 'print(1)')
   skill(join(home, '.claude', 'skills', 'claude-one'), 'claude-one', 'From Claude')
@@ -241,7 +241,7 @@ describe('saving skills', () => {
       reason: 'bad-name',
       problem: 'characters',
     })
-    expect(await service.saveFromCard({ ...card, name: 'ieumoffice' })).toMatchObject({
+    expect(await service.saveFromCard({ ...card, name: 'ttokttak' })).toMatchObject({
       problem: 'reserved',
     })
     expect(await service.saveFromCard({ ...card, description: ' ' })).toMatchObject({
@@ -269,7 +269,7 @@ describe('saving skills', () => {
     expect(parsed).toMatchObject({
       name: 'home-letter',
       description: 'Writes a home letter.',
-      metadata: { 'ieum-title': '가정통신문', 'ieum-template': 'assets/양식.hwpx' },
+      metadata: { 'ttok-title': '가정통신문', 'ttok-template': 'assets/양식.hwpx' },
       body: card.body,
     })
     expect([...readFileSync(join(dir, 'assets', '양식.hwpx'))]).toEqual([...bytes])
@@ -316,7 +316,7 @@ describe('saving skills', () => {
     ).toEqual({ ok: true, id: 'app:home-letter' })
     const parsed = parseSkillMd(readFileSync(join(appDir(), 'home-letter', 'SKILL.md'), 'utf8'))!
     expect(parsed.body).toBe('New steps\n')
-    expect(parsed.metadata['ieum-template']).toBe('assets/a.docx')
+    expect(parsed.metadata['ttok-template']).toBe('assets/a.docx')
     expect((await byId('app:home-letter'))!.invoke).toBe('manual')
   })
 
@@ -364,7 +364,7 @@ describe('saving skills', () => {
     })
     const parsed = parseSkillMd(readFileSync(join(appDir(), 'home-letter', 'SKILL.md'), 'utf8'))!
     expect(parsed.name).toBe('home-letter')
-    expect(parsed.metadata).not.toHaveProperty('ieum-title')
+    expect(parsed.metadata).not.toHaveProperty('ttok-title')
     expect(await byId('app:home-letter')).toMatchObject({ title: 'home-letter' })
   })
 
@@ -373,7 +373,7 @@ describe('saving skills', () => {
       await service.save({ id: 'app:mine', title: '', description: 'D', body: 'New body\n' }),
     ).toEqual({ ok: true, id: 'app:mine' })
     const parsed = parseSkillMd(readFileSync(join(appDir(), 'mine', 'SKILL.md'), 'utf8'))!
-    expect(parsed.metadata['ieum-title']).toBe('Mine')
+    expect(parsed.metadata['ttok-title']).toBe('Mine')
     expect(parsed.body).toBe('New body\n')
     expect(await byId('app:mine')).toMatchObject({ title: 'Mine' })
   })
@@ -404,7 +404,7 @@ describe('saving skills', () => {
     const name = id.slice('app:'.length)
     const parsed = parseSkillMd(readFileSync(join(appDir(), name, 'SKILL.md'), 'utf8'))!
     expect(parsed.name).toBe(name)
-    expect(parsed.metadata).not.toHaveProperty('ieum-title')
+    expect(parsed.metadata).not.toHaveProperty('ttok-title')
   })
 
   it('names a new skill from its title when no name is given', async () => {
@@ -539,7 +539,7 @@ describe('a skill’s template file for its copy (spec 5.7)', () => {
       join(appDir(), name),
       name,
       'Has a template',
-      `metadata:\n  ieum-template: ${template}\n`,
+      `metadata:\n  ttok-template: ${template}\n`,
       'Fill it.\n',
     )
 

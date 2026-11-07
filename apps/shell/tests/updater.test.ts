@@ -361,7 +361,7 @@ beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
   appState.isPackaged = true
-  appState.dataDir = mkdtempSync(join(tmpdir(), 'ieum-updater-'))
+  appState.dataDir = mkdtempSync(join(tmpdir(), 'ttok-updater-'))
   appState.version = CURRENT_VERSION
   appListeners.clear()
   appQuit.mockClear()

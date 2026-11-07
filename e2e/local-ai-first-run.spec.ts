@@ -407,15 +407,15 @@ test('offline AI edits a HWPX paragraph and preserves the rest after save and re
     const ready = async () => {
       await page.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
       await expect(
-        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
       ).toHaveCount(1)
     }
     const readEditorText = async () =>
       page.evaluate(async () => {
         const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
         const studio = (iframe.contentWindow as any).rhwpStudio
-        await studio.plugins.load('ieum-agent')
-        return (await studio.plugins.invoke('ieum-agent', 'readText', [])) as string
+        await studio.plugins.load('ttok-agent')
+        return (await studio.plugins.invoke('ttok-agent', 'readText', [])) as string
       })
     await ready()
     const original = await readEditorText()
@@ -492,7 +492,7 @@ test('offline AI edits a HWPX paragraph and preserves the rest after save and re
     const beforeSave = (await stat(file)).mtimeMs
     await page.evaluate(() => {
       const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
-      iframe.contentWindow?.dispatchEvent(new CustomEvent('ieum:file-command', { detail: 'save' }))
+      iframe.contentWindow?.dispatchEvent(new CustomEvent('ttok:file-command', { detail: 'save' }))
     })
     await expect
       .poll(async () => (await stat(file)).mtimeMs, { timeout: 30_000 })
@@ -574,15 +574,15 @@ test('offline AI writes into a blank HWPX and the actual document persists on di
     const ready = async () => {
       await page.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
       await expect(
-        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
       ).toHaveCount(1)
     }
     const readEditorText = async () =>
       page.evaluate(async () => {
         const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
         const studio = (iframe.contentWindow as any).rhwpStudio
-        await studio.plugins.load('ieum-agent')
-        return (await studio.plugins.invoke('ieum-agent', 'readText', [])) as string
+        await studio.plugins.load('ttok-agent')
+        return (await studio.plugins.invoke('ttok-agent', 'readText', [])) as string
       })
     await ready()
     expect((await readEditorText()).trim()).toBe('')
@@ -618,7 +618,7 @@ test('offline AI writes into a blank HWPX and the actual document persists on di
     const beforeSave = (await stat(file)).mtimeMs
     await page.evaluate(() => {
       const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
-      iframe.contentWindow?.dispatchEvent(new CustomEvent('ieum:file-command', { detail: 'save' }))
+      iframe.contentWindow?.dispatchEvent(new CustomEvent('ttok:file-command', { detail: 'save' }))
     })
     await expect
       .poll(async () => (await stat(file)).mtimeMs, { timeout: 30_000 })
@@ -694,15 +694,15 @@ test('offline AI carries a field-trip topic into "네가 알아서 넣어" and s
     const ready = async () => {
       await page.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
       await expect(
-        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+        page.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
       ).toHaveCount(1)
     }
     const readEditorText = () =>
       page.evaluate(async () => {
         const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
         const studio = (iframe.contentWindow as any).rhwpStudio
-        await studio.plugins.load('ieum-agent')
-        return (await studio.plugins.invoke('ieum-agent', 'readText', [])) as string
+        await studio.plugins.load('ttok-agent')
+        return (await studio.plugins.invoke('ttok-agent', 'readText', [])) as string
       })
     await ready()
     const input = page.locator('.ai-composer textarea')
@@ -752,7 +752,7 @@ test('offline AI carries a field-trip topic into "네가 알아서 넣어" and s
     const beforeSave = (await stat(file)).mtimeMs
     await page.evaluate(() => {
       const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
-      iframe.contentWindow?.dispatchEvent(new CustomEvent('ieum:file-command', { detail: 'save' }))
+      iframe.contentWindow?.dispatchEvent(new CustomEvent('ttok:file-command', { detail: 'save' }))
     })
     await expect
       .poll(async () => (await stat(file)).mtimeMs, { timeout: 30_000 })
@@ -828,7 +828,7 @@ test('cancelled quit keeps local AI usable in the open editor', async () => {
     const editor = await waitForPageWithUrl(launched.app, '://hwp/')
     await editor.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
     await expect(
-      editor.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ieum-save"]'),
+      editor.frameLocator('.hwp-editor-host iframe').locator('[data-cmd="ext:ttok-save"]'),
     ).toHaveCount(1)
     let shell = launched.page
     await expect
@@ -866,8 +866,8 @@ test('cancelled quit keeps local AI usable in the open editor', async () => {
         editor.evaluate(async () => {
           const iframe = document.querySelector('.hwp-editor-host iframe') as HTMLIFrameElement
           const studio = (iframe.contentWindow as any).rhwpStudio
-          await studio.plugins.load('ieum-agent')
-          return studio.plugins.invoke('ieum-agent', 'readText', []) as Promise<string>
+          await studio.plugins.load('ttok-agent')
+          return studio.plugins.invoke('ttok-agent', 'readText', []) as Promise<string>
         }),
       )
       .toContain('x')

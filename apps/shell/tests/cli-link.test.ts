@@ -10,7 +10,7 @@ import { isEphemeralInstall, launcherFilePath, writeLauncherFile } from '../src/
 
 describe('genoffice launcher file', () => {
   it('lives in the genoffice auth directory, overridable like auth.json', () => {
-    expect(launcherFilePath({})).toBe(join(process.env.HOME ?? '', '.ieumoffice', 'launcher'))
+    expect(launcherFilePath({})).toBe(join(process.env.HOME ?? '', '.ttokttak', 'launcher'))
     // the upstream app keeps its own record in ~/.genoffice: never ours to write
     expect(launcherFilePath({})).not.toContain('.genoffice')
     expect(launcherFilePath({ GENOFFICE_AUTH_DIR: '/tmp/x' })).toBe(join('/tmp/x', 'launcher'))

@@ -35,4 +35,4 @@ Ponieważ instalator nie jest podpisany, uruchamiaj tylko taki, który został p
 
 ## Wiersz poleceń jest w zestawie
 
-Każda instalacja zawiera polecenie `ieumoffice`, które komunikuje się z tymi samymi silnikami co okno, więc oba nigdy nie różnią się w ocenie pliku. `ieumoffice install-cli` umieszcza je w `PATH`. Co potrafi, dowiesz się w rozdziale [Wiersz poleceń i agenci](help://cli).
+Każda instalacja zawiera polecenie `ttokttak`, które komunikuje się z tymi samymi silnikami co okno, więc oba nigdy nie różnią się w ocenie pliku. `ttokttak install-cli` umieszcza je w `PATH`. Co potrafi, dowiesz się w rozdziale [Wiersz poleceń i agenci](help://cli).

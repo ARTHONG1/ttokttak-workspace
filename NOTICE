@@ -161,8 +161,8 @@ and license. Only the files listed for each skill were taken.
 - find-skills: https://github.com/vercel-labs/skills, path skills/find-skills
   (SKILL.md), read at commit a80e4c9d12d607631249d4d7d059f835d4b2f13a. MIT
   License, Copyright (c) 2026 Vercel, Inc.; the repository's LICENSE is copied
-  as find-skills/LICENSE. Modified: appended a section for IeumOffice
-  ("In IeumOffice") at the end of SKILL.md.
+  as find-skills/LICENSE. Modified: appended a section for this app
+  ("In ttokttak-workspace") at the end of SKILL.md.
 
 IeumOffice modifications
 
@@ -172,6 +172,10 @@ opening notice refers to. Files of the original work have been changed, added
 and removed by the IeumOffice contributors; the repository history records
 each change. The modifications are licensed under the Apache License, Version
 2.0, like the original work.
+
+IeumOffice contributors credited by that project include @Neosiki
+(https://github.com/Neosiki): CLI, HWP and ODT fixes and reproductions from
+real documents.
 
 IeumOffice is not affiliated with, sponsored by or endorsed by Mainfunc, Inc.
 The names GenOffice and Genspark and their logos belong to their owners and

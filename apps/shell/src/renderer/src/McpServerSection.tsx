@@ -10,11 +10,11 @@ import type { TFunc } from './locale'
 
 /**
  * mcp.json snippet a client needs to reach the local server. Named apart from
- * the stdio `ieumoffice` entry (part A) so both can live in one config file.
+ * the stdio `ttokttak` entry (part A) so both can live in one config file.
  */
 export function mcpConfigExample(port: string): string {
   return JSON.stringify(
-    { mcpServers: { 'ieumoffice-editor': { url: `http://127.0.0.1:${port}/mcp` } } },
+    { mcpServers: { 'ttokttak-editor': { url: `http://127.0.0.1:${port}/mcp` } } },
     null,
     2,
   )

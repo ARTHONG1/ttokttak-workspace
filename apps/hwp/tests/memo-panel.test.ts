@@ -300,7 +300,7 @@ describe('memo events become one-time notices', () => {
   })
 
   it('ignores anything else', () => {
-    expect(memoNoticeOf('ieum:something-else', { count: 1 })).toBeNull()
+    expect(memoNoticeOf('ttok:something-else', { count: 1 })).toBeNull()
   })
 })
 

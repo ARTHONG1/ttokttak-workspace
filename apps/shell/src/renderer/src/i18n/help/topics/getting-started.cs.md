@@ -24,7 +24,7 @@ Nový dokument se otevře bez názvu; soubor na disku vznikne až při prvním u
 
 - Nabídka **Soubor ▸ Otevřít…** (⌘O/ctrl+O) otevře systémový výběr: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Klikněte na cokoliv v seznamu **Nedávné** na domovské stránce.
-- Také `ieumoffice <soubor>` z terminálu soubory otevírá.
+- Také `ttokttak <soubor>` z terminálu soubory otevírá.
 
 ## Dokumenty ODT
 

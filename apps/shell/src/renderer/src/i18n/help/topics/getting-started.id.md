@@ -24,7 +24,7 @@ Dokumen baru terbuka tanpa nama; file di disk baru dibuat saat disimpan pertama 
 
 - Menu **File ▸ Buka…** (⌘O/ctrl+O) membuka pemilih file sistem: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Klik apa pun di daftar **Terbaru** pada Beranda.
-- `ieumoffice <file>` dari terminal juga dapat membuka file.
+- `ttokttak <file>` dari terminal juga dapat membuka file.
 
 ## Dokumen ODT
 

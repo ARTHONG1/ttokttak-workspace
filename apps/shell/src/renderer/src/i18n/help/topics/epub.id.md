@@ -57,7 +57,7 @@ Editor e-book membuka buku EPUB (`.epub`) di sebuah tab. Anda bisa membaca buku,
 - Buku yang ditulis secara vertikal menjadi horizontal, kecuali diterjemahkan ke bahasa Jepang, Tionghoa, atau Korea. Terjemahan bahasa Arab dan Ibrani dibaca dari kanan ke kiri.
 - Bagian yang sudah diterjemahkan disimpan. Jika Anda berhenti, pilih **Ekspor yang sudah diterjemahkan** (sisanya tetap dalam bahasa asli) atau **Lanjutkan nanti**. Saat Anda membuka buku yang terjemahannya belum selesai, GenOffice menawarkan untuk melanjutkannya. **Terjemahkan ulang dari awal** lebih dulu menghapus terjemahan tersimpan untuk bahasa itu.
 - Terjemahan tersimpan dihitung di Pengaturan ▸ Umum ▸ **Hasil AI tersimpan**, bersama hasil dari dokumen PDF, dan **Hapus semua** ikut menghapusnya.
-- Terjemahan yang sama juga dapat dijalankan dari [perintah terminal](help://cli) sebagai `ieumoffice epub translate`.
+- Terjemahan yang sama juga dapat dijalankan dari [perintah terminal](help://cli) sebagai `ttokttak epub translate`.
 
 ## Belum didukung
 

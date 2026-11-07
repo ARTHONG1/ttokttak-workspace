@@ -45,7 +45,7 @@ describe("the easy formulas' keys (Ctrl+Shift+H/V/J/B/K/N in a table)", () => {
     const e = key({ key: 'H', code: 'KeyH', ctrlKey: true, shiftKey: true })
     expect(hancomContextKey(ih, e)).toBe(true)
     expect(e.preventDefault).toHaveBeenCalled()
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:easy-sum-left')
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:easy-sum-left')
   })
 
   it('leave the key to the studio outside a table (document history, plain paste)', () => {
@@ -71,7 +71,7 @@ describe("the easy formulas' keys (Ctrl+Shift+H/V/J/B/K/N in a table)", () => {
     const ih = handler(true)
     const e = key({ key: 'Process', code: 'KeyN', keyCode: 229, ctrlKey: true, shiftKey: true })
     expect(hancomCtrlKey({ ...ih, _hancomChord: null }, e)).toBe(true)
-    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ieum:easy-product-above')
+    expect(ih.dispatcher.dispatch).toHaveBeenCalledWith('ttok:easy-product-above')
   })
 
   it('cover what Hancom Hangul 2024 does: sum, average and product, left and above', () => {
@@ -148,7 +148,7 @@ describe('an easy formula in a cell', () => {
 describe('보통 모양 (Alt+Shift+C)', () => {
   it('takes off what Hancom Hangul 2024 takes off, and keeps size, font, ratio and spacing', () => {
     const emit = vi.fn()
-    command('ieum:normal-shape').execute({ eventBus: { emit } })
+    command('ttok:normal-shape').execute({ eventBus: { emit } })
     expect(emit).toHaveBeenCalledWith('format-char', NORMAL_SHAPE)
     expect(NORMAL_SHAPE).toMatchObject({
       bold: false,
@@ -186,7 +186,7 @@ describe('날짜/시간 문자열 (Ctrl+K,D)', () => {
       focus: vi.fn(),
     }
     const emit = vi.fn()
-    command('ieum:insert-date', { InsertTextCommand }).execute({
+    command('ttok:insert-date', { InsertTextCommand }).execute({
       getInputHandler: () => ih,
       eventBus: { emit },
     })
@@ -239,7 +239,7 @@ describe('쪽 번호 매기기 (Ctrl+N,P)', () => {
     expect(PAGE_NUMBER_FORMATS.map((f) => f.code)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
     // Hancom Hangul 2024 puts 1, 2, 3 at the bottom center with dashes
     expect(PAGE_NUMBER_DEFAULT).toEqual({ format: 0, position: 5, dash: true })
-    expect(CHORDS.n.p).toBe('ieum:page-number')
+    expect(CHORDS.n.p).toBe('ttok:page-number')
   })
 
   it('sets the section page number through the bridge, as one undo step', () => {
@@ -308,7 +308,7 @@ describe('쪽 번호 매기기 (Ctrl+N,P)', () => {
         getInputHandler: () => ih,
         wasm: { getPageNumberPos: () => JSON.stringify({ ok: true, pageNumber: null }) },
       }
-      command('ieum:page-number', { ModalDialog }).execute(services)
+      command('ttok:page-number', { ModalDialog }).execute(services)
       const radios = [...body!.querySelectorAll('input[type=radio]')] as HTMLInputElement[]
       expect(radios).toHaveLength(PAGE_NUMBER_POSITIONS.length)
       expect(radios.find((r) => r.checked)?.value).toBe('5')
@@ -358,7 +358,7 @@ describe('the menu items of the new commands', () => {
 
 describe('keys the main process takes first and hands back (Ctrl+Shift+S, Ctrl+Shift+H)', () => {
   const studio = (enabled: string[], cellBlock: boolean) => {
-    const win: { __ieumHancomKey?: (name: string) => boolean } = {}
+    const win: { __ttokHancomKey?: (name: string) => boolean } = {}
     const dispatcher = {
       isEnabled: vi.fn((id: string) => enabled.includes(id)),
       dispatch: vi.fn(() => true),
@@ -370,28 +370,28 @@ describe('keys the main process takes first and hands back (Ctrl+Shift+S, Ctrl+S
 
   it('runs the block sum for Ctrl+Shift+S in a block of cells', () => {
     const { win, dispatcher } = studio(['table:block-sum'], true)
-    expect(win.__ieumHancomKey!('ctrl-shift-s')).toBe(true)
+    expect(win.__ttokHancomKey!('ctrl-shift-s')).toBe(true)
     expect(dispatcher.dispatch).toHaveBeenCalledWith('table:block-sum')
   })
 
   it('leaves Ctrl+Shift+S to "save as" outside a block of cells', () => {
     const { win, dispatcher } = studio(['table:block-sum'], false)
-    expect(win.__ieumHancomKey!('ctrl-shift-s')).toBe(false)
+    expect(win.__ttokHancomKey!('ctrl-shift-s')).toBe(false)
     expect(dispatcher.dispatch).not.toHaveBeenCalled()
   })
 
   it('runs the horizontal sum for Ctrl+Shift+H in a table cell, and leaves it to "home" elsewhere', () => {
     const inCell = studio([EASY_FORMULAS.h.id], false)
-    expect(inCell.win.__ieumHancomKey!('ctrl-shift-h')).toBe(true)
-    expect(inCell.dispatcher.dispatch).toHaveBeenCalledWith('ieum:easy-sum-left')
+    expect(inCell.win.__ttokHancomKey!('ctrl-shift-h')).toBe(true)
+    expect(inCell.dispatcher.dispatch).toHaveBeenCalledWith('ttok:easy-sum-left')
     const outside = studio([], false)
-    expect(outside.win.__ieumHancomKey!('ctrl-shift-h')).toBe(false)
+    expect(outside.win.__ttokHancomKey!('ctrl-shift-h')).toBe(false)
   })
 
   it('says no to a key it does not know and to an editor that throws', () => {
     const { win } = studio([], false)
-    expect(win.__ieumHancomKey!('ctrl-shift-x')).toBe(false)
-    const broken: { __ieumHancomKey?: (name: string) => boolean } = {}
+    expect(win.__ttokHancomKey!('ctrl-shift-x')).toBe(false)
+    const broken: { __ttokHancomKey?: (name: string) => boolean } = {}
     installHancomMainKeys(
       broken,
       () => {
@@ -399,7 +399,7 @@ describe('keys the main process takes first and hands back (Ctrl+Shift+S, Ctrl+S
       },
       { isEnabled: () => true, dispatch: () => true },
     )
-    expect(broken.__ieumHancomKey!('ctrl-shift-s')).toBe(false)
+    expect(broken.__ttokHancomKey!('ctrl-shift-s')).toBe(false)
   })
 })
 

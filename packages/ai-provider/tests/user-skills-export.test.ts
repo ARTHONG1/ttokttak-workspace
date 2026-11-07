@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path'
 import JSZip from 'jszip'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  IEUM_SOURCE_FILE,
+  TTOK_SOURCE_FILE,
   SkillImportError,
   disposeSkillImport,
   exportSkillZip,
@@ -36,11 +36,11 @@ function writeTree(base: string, files: Record<string, string>): void {
 }
 
 function skill(template?: string): Record<string, string> {
-  const meta = template ? `metadata:\n  ieum-template: ${template}\n` : ''
+  const meta = template ? `metadata:\n  ttok-template: ${template}\n` : ''
   return {
     'SKILL.md': `---\nname: report\ndescription: Weekly report\n${meta}---\nFill it.\n`,
     'ref/notes.md': 'notes',
-    [IEUM_SOURCE_FILE]: '{"kind":"github"}',
+    [TTOK_SOURCE_FILE]: '{"kind":"github"}',
   }
 }
 

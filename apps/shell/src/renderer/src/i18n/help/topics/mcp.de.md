@@ -15,27 +15,27 @@ GenOffice spricht das Model Context Protocol: Ein Coding-Agent kann Ihre Dokumen
 Dasselbe aus einem Terminal — das ist der fortgeschrittene Weg, und der richtige, wenn der Agent dort liegt, wo der Bereich ihn nicht findet:
 
 ```sh
-ieumoffice mcp install all
+ttokttak mcp install all
 ```
 
-Er findet die Coding-Agenten auf diesem Rechner und schreibt den Eintrag für den stdio-Server in die Konfiguration jedes einzelnen; den Rest der Datei lässt er, wie er ihn vorgefunden hat. Der Eintrag heißt `ieumoffice`. Von Hand für Claude Code vorgenommen, lautet dieselbe Registrierung `claude mcp add --transport stdio ieumoffice -- ieumoffice mcp`.
+Er findet die Coding-Agenten auf diesem Rechner und schreibt den Eintrag für den stdio-Server in die Konfiguration jedes einzelnen; den Rest der Datei lässt er, wie er ihn vorgefunden hat. Der Eintrag heißt `ttokttak`. Von Hand für Claude Code vorgenommen, lautet dieselbe Registrierung `claude mcp add --transport stdio ttokttak -- ttokttak mcp`.
 
 ```sh
-ieumoffice mcp list             # where each agent stands
-ieumoffice mcp install cursor    # just one
-ieumoffice mcp uninstall cursor  # take it back out
+ttokttak mcp list             # where each agent stands
+ttokttak mcp install cursor    # just one
+ttokttak mcp uninstall cursor  # take it back out
 ```
 
 Einen Agent, den Sie an einem ungewöhnlichen Ort installiert haben, erreicht man mit `--dir <path>`; `--force` überschreibt einen Eintrag, der schon vorhanden ist.
 
-`ieumoffice mcp --help` zeigt alles, was der Server annimmt, auf einem Bildschirm: die Formen zum Registrieren, Entfernen und Auflisten, das Bereitstellen über HTTP und die beiden Schema-Schalter.
+`ttokttak mcp --help` zeigt alles, was der Server annimmt, auf einem Bildschirm: die Formen zum Registrieren, Entfernen und Auflisten, das Bereitstellen über HTTP und die beiden Schema-Schalter.
 
 ## Ohne Assistenten ausführen
 
 Für einen Client auf einem anderen Rechner: Stattdessen über HTTP bereitstellen:
 
 ```sh
-ieumoffice mcp --http 8765 --token <secret>
+ttokttak mcp --http 8765 --token <secret>
 ```
 
 `--host <addr>` legt fest, wo er lauscht. Geben Sie demselben Client dasselbe Token.
@@ -55,7 +55,7 @@ Jeder Befehl ist ein Werkzeug. Die interessanten:
 
 ## Suche, Bilder und Medien: was ein Agent nutzen darf
 
-Eine Anfrage vom Befehl `ieumoffice` oder von einem MCP-Client haben Sie nicht selbst in der App eingetippt; deshalb geht GenOffice vorsichtig damit um.
+Eine Anfrage vom Befehl `ttokttak` oder von einem MCP-Client haben Sie nicht selbst in der App eingetippt; deshalb geht GenOffice vorsichtig damit um.
 
 - **Die Suche** funktioniert immer und ist standardmäßig kostenlos. Der Schlüssel eines Suchanbieters wird nur verwendet, wenn Sie einen ausgewählt haben.
 - **Ein Bild erzeugen** setzt den Schlüssel eines Bildanbieters voraus. In dieser Version erzeugt ein Abonnement keine Bilder.
@@ -74,16 +74,16 @@ Ist der Schalter aus und kein Schlüssel eingerichtet, antwortet das Werkzeug, d
 
 ## Schemas und ein kleineres Budget
 
-`apply` und `create` geben ihre Parameter `ops`, `cells` und `data` mit dem typisierten Schema pro op bekannt, erzeugt aus `ieumoffice guide <domain> --json`. Das ist präzise und nicht klein. Ein Client mit knappem Kontextfenster kann stattdessen einfache Arrays anfordern:
+`apply` und `create` geben ihre Parameter `ops`, `cells` und `data` mit dem typisierten Schema pro op bekannt, erzeugt aus `ttokttak guide <domain> --json`. Das ist präzise und nicht klein. Ein Client mit knappem Kontextfenster kann stattdessen einfache Arrays anfordern:
 
 ```sh
-ieumoffice mcp --compact-schemas
-GENOFFICE_MCP_COMPACT_SCHEMAS=1 ieumoffice mcp
+ttokttak mcp --compact-schemas
+GENOFFICE_MCP_COMPACT_SCHEMAS=1 ttokttak mcp
 ```
 
 ## Wozu der Skill gut ist
 
-Ein Agent, der das op-Vokabular nicht kennt, wird raten. Der Skill bringt die Referenz und die Design-Leitfäden mit — dasselbe Material, das `ieumoffice guide` ausgibt —, damit der Assistent Ops schreibt, deren Spezifikation er wirklich gelesen hat. Installieren Sie ihn aus dem Bereich oben oder mit `ieumoffice skill` aus einem Terminal.
+Ein Agent, der das op-Vokabular nicht kennt, wird raten. Der Skill bringt die Referenz und die Design-Leitfäden mit — dasselbe Material, das `ttokttak guide` ausgibt —, damit der Assistent Ops schreibt, deren Spezifikation er wirklich gelesen hat. Installieren Sie ihn aus dem Bereich oben oder mit `ttokttak skill` aus einem Terminal.
 
 ## Was er in der App erreichen kann
 

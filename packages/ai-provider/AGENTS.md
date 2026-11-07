@@ -10,8 +10,8 @@
 - 구독 프로그램 공통 계층 `src/subscription/`: 실행 파일 찾기(`locate.ts`), 환경(`env.ts`), 시작·종료와 자식 등록부(`process.ts`), 강제 종료 뒤 정리(`leftovers.ts`), 연결 상태(`status.ts`, `service.ts`), 프로그램의 모델 목록(`models.ts`), 종량제 로그인 동의(`metered.ts`), 로그인·로그아웃·설치 실행(`launch.ts`), IPC 계약과 메인 측 핸들러(`contract.ts`, `ipc.ts`).
 - 두 브리지 `src/claude-code-cli.ts`, `src/codex-app-server.ts`와 키 기반 이미지·미디어 프로토콜(`src/media.ts`, `src/media-protocols.ts`, `src/image-backend.ts`).
 - 에이전트 모드(결정 0032)의 실행부 `src/agent-session/`(진입점 `/agent-session`, Node 전용): 허락 판단 `agentPolicyVerdict`(`policy.ts`), Claude Code 세션(`claude.ts`), Codex 세션(`codex.ts`), 두 프로그램이 같이 받는 스킬 묶음(`skills.ts`, 켜진 스킬과 프로젝트 스킬, 결정 0049), 프로그램에 돌려주는 거절 문장(`messages.ts`).
-- 사용자 스킬의 코어 `src/user-skills/`(Node 전용, 대표 진입점에서 내보냄): 출처 목록과 읽기(`userSkillSources`·`listUserSkills`, `~/.codex`는 읽지 않음, `genoffice`·`ieumoffice` 이름 제외), 한 폴더의 판정(읽을 수 없는 이유, 스크립트 포함, 양식), 식별자(`userSkillId`), 켜기·끄기 상태 합치기(`resolveUserSkillStates`)와 켜진 것 사이의 우선순위(`pickEnabledUserSkills`), 앞머리 읽기·쓰기(`parseSkillMd`·`renderSkillMd`), 새 이름 규칙과 제안, 폴더 내용 해시(`skillContentHash`), 웹 주소 찾기, `builtin-skills.json` 읽기.
-- 사용자 스킬 가져오기·내보내기·업데이트(결정 0048, 같은 폴더): 폴더·zip·깃허브에서 찾아 미리보기를 만들고(`prepareFolderImport`·`prepareZipImport`·`prepareGitHubImport`, `import.ts`), 임시 폴더에 다 쓴 뒤 옮겨 설치하고(`installImportedSkills`), 깃허브 출처 기록(`.ieum-source.json`, `source-record.ts`)으로 업데이트를 확인·적용하고(`update.ts`), zip으로 내보낸다(`export.ts`, 출처 기록 제외). 깃허브 연결은 `github.ts`의 세 호스트(`GITHUB_SKILL_HOSTS`)뿐이고, 압축 풀기는 `archive.ts`가 폭탄 검사와 경로 검사를 거친다.
+- 사용자 스킬의 코어 `src/user-skills/`(Node 전용, 대표 진입점에서 내보냄): 출처 목록과 읽기(`userSkillSources`·`listUserSkills`, `~/.codex`는 읽지 않음, `genoffice`·`ttokttak` 이름 제외), 한 폴더의 판정(읽을 수 없는 이유, 스크립트 포함, 양식), 식별자(`userSkillId`), 켜기·끄기 상태 합치기(`resolveUserSkillStates`)와 켜진 것 사이의 우선순위(`pickEnabledUserSkills`), 앞머리 읽기·쓰기(`parseSkillMd`·`renderSkillMd`), 새 이름 규칙과 제안, 폴더 내용 해시(`skillContentHash`), 웹 주소 찾기, `builtin-skills.json` 읽기.
+- 사용자 스킬 가져오기·내보내기·업데이트(결정 0048, 같은 폴더): 폴더·zip·깃허브에서 찾아 미리보기를 만들고(`prepareFolderImport`·`prepareZipImport`·`prepareGitHubImport`, `import.ts`), 임시 폴더에 다 쓴 뒤 옮겨 설치하고(`installImportedSkills`), 깃허브 출처 기록(`.ttok-source.json`, `source-record.ts`)으로 업데이트를 확인·적용하고(`update.ts`), zip으로 내보낸다(`export.ts`, 출처 기록 제외). 깃허브 연결은 `github.ts`의 세 호스트(`GITHUB_SKILL_HOSTS`)뿐이고, 압축 풀기는 `archive.ts`가 폭탄 검사와 경로 검사를 거친다.
 - 무료 연결: 화면용 규칙과 상수(`src/free-ai.ts`, `/browser`로 내보냄: 무료 모델 목록, 연결·해제한 설정, 카드의 "연결됨" 판정, IPC 채널 이름과 답 판독, 오늘 무료 사용량 소진 판정 `freeLimitOf`)와 뒷단 전용 연결부(`src/free-connect.ts`, `/free-connect`: OpenRouter OAuth PKCE와 루프백 서버, Gemini 키 확인, 무료 모델 고르기, 남은 무료 요청 수).
 
 ## 맡지 않는 것 (경계)
@@ -53,13 +53,13 @@
 - 입력을 말없이 자르지 않는다. Claude 브리지가 줄이는 것은 이미지 100장(`MAX_CLAUDE_CODE_IMAGES`) 초과분뿐이고, 오래된 것부터 빼며 반드시 `onInputTruncated`를 부른다. 글자는 자르지 않는다.
 - 구독 IPC 채널은 프로세스당 한 번, `ensureSubscriptionIpc`로만 등록한다. 패키징된 앱은 여러 에디터의 메인 코드가 한 프로세스에서 돌고 같은 채널을 두 번 등록하면 예외가 나므로 `registerSubscriptionIpc`를 앱에서 직접 부르지 않는다. 등록은 상태 확인을 시작하지 않는다. 첫 `statuses` 요청이 첫 확인을 시작하므로, AI를 보여 주지 않는 프로세스(headless export 등)는 벤더 프로그램을 띄우지 않는다.
 
-- **에이전트 세션은 두뇌 방식의 규칙을 빌려 쓰지 않고 따로 지킨다.** 위의 "도구 0개"와 "Codex 읽기 전용" 규칙은 기본 AI 창의 것이고, 에이전트 세션의 코드를 두뇌 방식 브리지에 섞지 않는다. 대신 이렇게 한다. Claude는 `claudeAgentLaunchArgs`의 고정 인자(`--restricted`, `--setting-sources ""`, `--strict-mcp-config`, `--tools`의 8개, `--permission-prompts host --permission-prompt-tool stdio`)로 띄우고, 시작 보고가 `claudeAgentInitProblem`을 통과해야 진행한다. Codex는 `codexAgentLaunchArgs`(두뇌 방식 덮어쓰기에 스킬 지시문만 켬)로 띄우고, 권한 프로필 `ieumoffice-agent`가 적용됐다는 답과 MCP 목록 확인이 있어야 진행한다. 프로필이 적용되지 않으면 낮춰 돌리지 않고 끝낸다.
+- **에이전트 세션은 두뇌 방식의 규칙을 빌려 쓰지 않고 따로 지킨다.** 위의 "도구 0개"와 "Codex 읽기 전용" 규칙은 기본 AI 창의 것이고, 에이전트 세션의 코드를 두뇌 방식 브리지에 섞지 않는다. 대신 이렇게 한다. Claude는 `claudeAgentLaunchArgs`의 고정 인자(`--restricted`, `--setting-sources ""`, `--strict-mcp-config`, `--tools`의 8개, `--permission-prompts host --permission-prompt-tool stdio`)로 띄우고, 시작 보고가 `claudeAgentInitProblem`을 통과해야 진행한다. Codex는 `codexAgentLaunchArgs`(두뇌 방식 덮어쓰기에 스킬 지시문만 켬)로 띄우고, 권한 프로필 `ttokttak-agent`이 적용됐다는 답과 MCP 목록 확인이 있어야 진행한다. 프로필이 적용되지 않으면 낮춰 돌리지 않고 끝낸다.
 - 에이전트 세션의 모든 권한 요청은 `agentPolicyVerdict`를 거친다. 프로그램의 옵션(`acceptEdits`, 샌드박스)을 믿고 판단을 건너뛰지 않는다. 탭에 열린 문서의 파일 쓰기, 프로젝트 폴더 밖 쓰기, 보호 경로는 어느 허락 방식에서도 거절이다. 판단 규칙을 바꾸면 `tests/agent-session-policy.test.ts`의 표를 함께 고친다.
 - Claude에 `bypassPermissions`·`--dangerously-skip-permissions`를 주지 않는다. "믿고 맡기기"는 Claude Code의 `auto` 모드다. Windows에서 Claude의 명령은 격리되지 않기 때문이다.
 - Codex 에이전트 세션은 MXC 격리(`windows.sandbox="mxc"`)와 `deny`가 든 권한 프로필로만 연다. 승인 정책에 `on-request`를 쓰지 않는다. 그 정책에서 허락한 명령은 격리 밖에서 돈다. `thread/start`의 답에서 프로필과 승인 정책이 요청과 같은지 확인한다. Windows에서는 그 전에 `probeCodexSandbox`(`codex-sandbox-probe.ts`)로 격리가 뜨고 거부를 지키는지 시험하고, 통과하지 못하면 시작하지 않는다.
 - 에이전트 세션도 명령줄에 사용자 글을 올리지 않는다. 설정과 MCP 토큰은 세션 폴더의 파일로, 지시문은 표준 입력(Claude `initialize`의 `appendSystemPrompt`, Codex `developerInstructions`)으로 넘긴다.
 - 스킬은 사용자 설정을 읽게 해서 싣지 않는다(훅이 실행된다). `buildAgentSkillBundle`이 스킬 폴더만 복사한 플러그인 폴더를 만들고, 디렉터리 연결은 쓰지 않는다(연결이 실제 위치로 풀려 작업 폴더 밖으로 막힌다).
-- 사용자 스킬은 `~/.codex` 안을 어떤 경로로도 읽지 않고, 스킬 폴더 밖으로 이어지는 링크를 따라가지 않는다. 이름이 `genoffice`·`ieumoffice`인 스킬은 어느 출처에서든 목록에 넣지 않는다. 파일을 쓰는 곳은 내 스킬 폴더(`~/.ieumoffice/skills`) 하나이고, 깃허브 요청에는 쿠키와 인증 머리글을 싣지 않는다(결정 0048).
+- 사용자 스킬은 `~/.codex` 안을 어떤 경로로도 읽지 않고, 스킬 폴더 밖으로 이어지는 링크를 따라가지 않는다. 이름이 `genoffice`·`ttokttak`인 스킬은 어느 출처에서든 목록에 넣지 않는다. 파일을 쓰는 곳은 내 스킬 폴더(`~/.ttokttak/skills`) 하나이고, 깃허브 요청에는 쿠키와 인증 머리글을 싣지 않는다(결정 0048).
 
 ## 이 모듈의 방식
 

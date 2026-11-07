@@ -26,11 +26,11 @@ import {
 
 export type CodexSandboxProbeResult = 'contained' | 'not-contained' | 'unavailable'
 
-const PROBE_PROFILE = 'ieumoffice-probe'
-const MARKER = 'ieumoffice-sandbox-probe'
+const PROBE_PROFILE = 'ttokttak-probe'
+const MARKER = 'ttokttak-sandbox-probe'
 /** ASCII names: `findstr` prints paths in the console code page, so only the names are compared */
-const READABLE_NAME = 'ieumoffice-probe-readable.txt'
-const DENIED_NAME = 'ieumoffice-probe-denied.txt'
+const READABLE_NAME = 'ttokttak-probe-readable.txt'
+const DENIED_NAME = 'ttokttak-probe-denied.txt'
 const PROBE_TIMEOUT_MS = 60_000
 const OUTPUT_LIMIT = 16_000
 

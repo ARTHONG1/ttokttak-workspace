@@ -6,13 +6,13 @@ Un'abilità è un insieme di istruzioni di lavoro per l'IA. Scrivi una volta sol
 
 **Impostazioni ▸ Abilità** elenca le abilità presenti su questo PC, raggruppate in base alla provenienza. Ogni abilità è mostrata con il suo nome, come fanno gli agenti di programmazione. Con la casella di ricerca in alto puoi trovarne una per nome o descrizione.
 
-| Provenienza                    | Che cosa contiene                                             | All'inizio  |
-| ------------------------------ | ------------------------------------------------------------- | ----------- |
-| **Integrate**                  | Le 5 abilità fornite con GenOffice                            | Attive      |
-| **Le mie abilità**             | Le abilità che hai aggiunto o creato (`~/.ieumoffice/skills`) | Attive      |
-| **Cartella abilità di Claude** | Le abilità in `~/.claude/skills`                              | Disattivate |
-| **Plugin di Claude**           | Le abilità dei plugin Claude installati                       | Disattivate |
-| **Cartella abilità di Codex**  | Le abilità in `~/.agents/skills`                              | Disattivate |
+| Provenienza                    | Che cosa contiene                                           | All'inizio  |
+| ------------------------------ | ----------------------------------------------------------- | ----------- |
+| **Integrate**                  | Le 5 abilità fornite con GenOffice                          | Attive      |
+| **Le mie abilità**             | Le abilità che hai aggiunto o creato (`~/.ttokttak/skills`) | Attive      |
+| **Cartella abilità di Claude** | Le abilità in `~/.claude/skills`                            | Disattivate |
+| **Plugin di Claude**           | Le abilità dei plugin Claude installati                     | Disattivate |
+| **Cartella abilità di Codex**  | Le abilità in `~/.agents/skills`                            | Disattivate |
 
 - L'interruttore attiva o disattiva un'abilità. La stessa impostazione vale per il pannello IA di ogni editor, per Ask AI in Home e per la finestra dell'agente.
 - Per un'abilità attiva, scegli **Decide l'IA** o **Solo se richiamata**. All'inizio è impostata su Decide l'IA. Con Solo se richiamata, l'abilità viene usata solo quando la richiami tu.

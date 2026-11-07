@@ -16,7 +16,7 @@ export const selectionCommand: CommandDef = {
     if (!endpoint) {
       throw new CliError(EXIT.app, `${PRODUCT_NAME} is not running`, undefined, {
         reason: 'app_unavailable',
-        suggestion: `run \`ieumoffice open ${path}\` and ask the user to select something`,
+        suggestion: `run \`ttokttak open ${path}\` and ask the user to select something`,
       })
     }
     const result = await controlRequest(endpoint, { cmd: 'selection', path })

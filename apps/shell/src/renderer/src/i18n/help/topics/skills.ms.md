@@ -6,13 +6,13 @@ Kemahiran ialah satu set arahan kerja untuk AI. Tulis sekali sahaja perkara yang
 
 **Tetapan ▸ Kemahiran** menyenaraikan kemahiran pada PC ini, dikumpulkan mengikut asalnya. Setiap kemahiran dipaparkan dengan namanya, seperti dalam ejen pengekodan. Gunakan kotak carian di bahagian atas untuk mencari mengikut nama atau keterangan.
 
-| Sumber                      | Kandungannya                                                  | Pada mulanya |
-| --------------------------- | ------------------------------------------------------------- | ------------ |
-| **Terbina dalam**           | 5 kemahiran yang disertakan bersama GenOffice                 | Hidup        |
-| **Kemahiran saya**          | Kemahiran yang anda tambah atau buat (`~/.ieumoffice/skills`) | Hidup        |
-| **Folder kemahiran Claude** | Kemahiran dalam `~/.claude/skills`                            | Mati         |
-| **Pemalam Claude**          | Kemahiran daripada pemalam Claude yang dipasang               | Mati         |
-| **Folder kemahiran Codex**  | Kemahiran dalam `~/.agents/skills`                            | Mati         |
+| Sumber                      | Kandungannya                                                | Pada mulanya |
+| --------------------------- | ----------------------------------------------------------- | ------------ |
+| **Terbina dalam**           | 5 kemahiran yang disertakan bersama GenOffice               | Hidup        |
+| **Kemahiran saya**          | Kemahiran yang anda tambah atau buat (`~/.ttokttak/skills`) | Hidup        |
+| **Folder kemahiran Claude** | Kemahiran dalam `~/.claude/skills`                          | Mati         |
+| **Pemalam Claude**          | Kemahiran daripada pemalam Claude yang dipasang             | Mati         |
+| **Folder kemahiran Codex**  | Kemahiran dalam `~/.agents/skills`                          | Mati         |
 
 - Suis menghidupkan atau mematikan kemahiran. Tetapan yang sama terpakai pada panel AI setiap editor, Tanya AI di Laman Utama dan tetingkap ejen.
 - Bagi kemahiran yang hidup, pilih **AI tentukan** atau **Hanya apabila dipanggil**. Pada mulanya ia ditetapkan kepada AI tentukan. Dengan Hanya apabila dipanggil, kemahiran itu digunakan hanya apabila anda sendiri memanggilnya.

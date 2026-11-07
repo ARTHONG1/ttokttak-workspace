@@ -24,7 +24,7 @@ A new document opens untitled; the file on disk is only created at the first sav
 
 - Menu **File ▸ Open** (⌘O/ctrl+O) opens the system picker: .docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html.
 - Click anything in Home's **Recent** list.
-- `ieumoffice <file>` from a terminal also opens files.
+- `ttokttak <file>` from a terminal also opens files.
 
 ## ODT documents
 

@@ -60,9 +60,9 @@ function baseStatus(): IntegrationsStatus {
   return {
     cli: {
       status: 'missing',
-      location: '/usr/local/bin/ieumoffice',
+      location: '/usr/local/bin/ttokttak',
       manual:
-        'sudo ln -sf /Applications/HangulAIWorkbench.app/Contents/Resources/cli/ieumoffice /usr/local/bin/ieumoffice',
+        'sudo ln -sf /Applications/HangulAIWorkbench.app/Contents/Resources/cli/ttokttak /usr/local/bin/ttokttak',
       launcherDir: '/Applications/HangulAIWorkbench.app/Contents/Resources/cli',
       ephemeral: false,
       version: '0.4.0',
@@ -74,7 +74,7 @@ function baseStatus(): IntegrationsStatus {
         id: 'claude-code',
         label: 'Claude Code',
         skillsDir: '/home/u/.claude/skills',
-        state: { status: 'missing', path: '/home/u/.claude/skills/ieumoffice/SKILL.md' },
+        state: { status: 'missing', path: '/home/u/.claude/skills/ttokttak/SKILL.md' },
       },
       {
         id: 'codex',
@@ -82,7 +82,7 @@ function baseStatus(): IntegrationsStatus {
         skillsDir: '/home/u/.codex/skills',
         state: {
           status: 'outdated',
-          path: '/home/u/.codex/skills/ieumoffice/SKILL.md',
+          path: '/home/u/.codex/skills/ttokttak/SKILL.md',
           installedVersion: '2.0.0',
           older: true,
         },
@@ -93,7 +93,7 @@ function baseStatus(): IntegrationsStatus {
         skillsDir: '/home/u/.cursor/skills',
         state: {
           status: 'foreign',
-          path: '/home/u/.cursor/skills/ieumoffice/SKILL.md',
+          path: '/home/u/.cursor/skills/ttokttak/SKILL.md',
           installedVersion: '2.1.0',
         },
       },
@@ -153,12 +153,12 @@ describe('Settings → Integrations', () => {
     // MCP block: the launcher itself while genoffice is not on the PATH, as a command and as JSON
     const mcp = [...host.querySelectorAll('.set-intg-mcp code')].map((c) => c.textContent)
     expect(mcp[0]).toBe(
-      'claude mcp add --transport stdio ieumoffice -- /Applications/HangulAIWorkbench.app/Contents/Resources/cli/ieumoffice mcp',
+      'claude mcp add --transport stdio ttokttak -- /Applications/HangulAIWorkbench.app/Contents/Resources/cli/ttokttak mcp',
     )
     expect(JSON.parse(mcp[1]!)).toEqual({
       mcpServers: {
-        ieumoffice: {
-          command: '/Applications/HangulAIWorkbench.app/Contents/Resources/cli/ieumoffice',
+        ttokttak: {
+          command: '/Applications/HangulAIWorkbench.app/Contents/Resources/cli/ttokttak',
           args: ['mcp'],
         },
       },
@@ -172,7 +172,7 @@ describe('Settings → Integrations', () => {
         status: 'present',
         launcherDir: '/Applications/HangulAIWorkbench.app/Contents/Resources/cli',
       }),
-    ).toEqual({ command: 'ieumoffice', args: ['mcp'] })
+    ).toEqual({ command: 'ttokttak', args: ['mcp'] })
     const winDir =
       'C:\\Users\\Jane Doe\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources\\cli'
     const win = {
@@ -183,13 +183,13 @@ describe('Settings → Integrations', () => {
     expect(mcpLaunch({ status: 'missing', launcherDir: winDir })).toEqual(win)
     expect(mcpLaunch({ status: 'present', launcherDir: winDir })).toEqual(win)
     expect(mcpClaudeCommand(win)).toBe(
-      `claude mcp add -e ELECTRON_RUN_AS_NODE=1 --transport stdio ieumoffice -- "${win.command}" "${win.args[0]}" mcp`,
+      `claude mcp add -e ELECTRON_RUN_AS_NODE=1 --transport stdio ttokttak -- "${win.command}" "${win.args[0]}" mcp`,
     )
-    expect(JSON.parse(mcpConfigJson(win))).toEqual({ mcpServers: { ieumoffice: win } })
+    expect(JSON.parse(mcpConfigJson(win))).toEqual({ mcpServers: { ttokttak: win } })
     expect(
-      mcpClaudeCommand({ command: '/Applications/Gen Office.app/cli/ieumoffice', args: ['mcp'] }),
+      mcpClaudeCommand({ command: '/Applications/Gen Office.app/cli/ttokttak', args: ['mcp'] }),
     ).toBe(
-      'claude mcp add --transport stdio ieumoffice -- "/Applications/Gen Office.app/cli/ieumoffice" mcp',
+      'claude mcp add --transport stdio ttokttak -- "/Applications/Gen Office.app/cli/ttokttak" mcp',
     )
   })
 
@@ -207,7 +207,7 @@ describe('Settings → Integrations', () => {
     const row = host.querySelector('[data-agent="claude-code"]')!
     await click(buttonWithText('Install', row))
     expect(install).not.toHaveBeenCalled()
-    expect(row.textContent).toContain('Will write: /home/u/.claude/skills/ieumoffice/SKILL.md')
+    expect(row.textContent).toContain('Will write: /home/u/.claude/skills/ttokttak/SKILL.md')
 
     await click(buttonWithText('Cancel', row))
     expect(row.querySelector('.set-intg-confirm')).toBeNull()
@@ -225,10 +225,10 @@ describe('Settings → Integrations', () => {
   it('installs into a picked folder and saves the zip through the main process', async () => {
     const install = vi.fn(async () => ({
       status: 'installed' as const,
-      path: '/x/ieumoffice/SKILL.md',
+      path: '/x/ttokttak/SKILL.md',
       installedVersion: '2.1.0',
     }))
-    const saveZip = vi.fn(async () => '/Users/u/Downloads/ieumoffice-skill-2.1.0.zip')
+    const saveZip = vi.fn(async () => '/Users/u/Downloads/ttokttak-skill-2.1.0.zip')
     await openIntegrations({
       status: async () => baseStatus(),
       pickSkillDir: async () => '/x',
@@ -236,13 +236,13 @@ describe('Settings → Integrations', () => {
       saveSkillZip: saveZip,
     })
     await click(buttonWithText('Install into another folder…'))
-    expect(host.textContent).toContain('Will write: /x/ieumoffice/SKILL.md')
+    expect(host.textContent).toContain('Will write: /x/ttokttak/SKILL.md')
     await click(buttonWithText('Confirm'))
     expect(install).toHaveBeenCalledWith({ dir: '/x' })
 
     await click(buttonWithText('Download skill (zip)'))
     expect(saveZip).toHaveBeenCalledWith('Save skill')
-    expect(host.textContent).toContain('Saved to /Users/u/Downloads/ieumoffice-skill-2.1.0.zip')
+    expect(host.textContent).toContain('Saved to /Users/u/Downloads/ttokttak-skill-2.1.0.zip')
   })
 
   it('marks the Integrations entry while a detected assistant holds an older skill', async () => {

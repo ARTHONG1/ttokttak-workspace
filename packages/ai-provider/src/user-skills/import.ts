@@ -22,7 +22,7 @@ import {
 } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { extractSkillArchive } from './archive'
-import { IEUM_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
+import { TTOK_SOURCE_FILE, MAX_USER_SKILL_BYTES, MAX_USER_SKILL_FILES } from './constants'
 import { SkillImportError } from './errors'
 import {
   findSkillUrls,
@@ -41,7 +41,7 @@ import {
   type SkillFetch,
 } from './github'
 import { isReservedUserSkillName } from './names'
-import { isoSeconds, renderIeumSourceRecord, type IeumSourceRecord } from './source-record'
+import { isoSeconds, renderTtokSourceRecord, type TtokSourceRecord } from './source-record'
 import { isInsideCodexHome } from './sources'
 import type { UserSkillUnreadableReason } from './types'
 
@@ -49,7 +49,7 @@ import type { UserSkillUnreadableReason } from './types'
  * Folders made while installing, inside the app's skills folder (so the final
  * rename stays on one disk). They live only while an install runs.
  */
-export const SKILL_STAGING_PREFIX = '.ieum-staging-'
+export const SKILL_STAGING_PREFIX = '.ttok-staging-'
 
 /** How deep the skill search goes below the chosen folder */
 export const SKILL_SEARCH_MAX_DEPTH = 8
@@ -278,7 +278,7 @@ async function describeCandidates(
 
 async function makeWorkDir(tempDir: string): Promise<string> {
   await mkdir(tempDir, { recursive: true })
-  return mkdtemp(join(tempDir, 'ieum-skill-import-'))
+  return mkdtemp(join(tempDir, 'ttok-skill-import-'))
 }
 
 async function removeQuietly(dir: string | undefined): Promise<void> {
@@ -454,7 +454,7 @@ async function copySkillFolder(from: string, to: string, limits: SkillFolderLimi
   if (listed.tooLarge) throw new SkillImportError('too-large', 'A skill folder is too large')
   await mkdir(to, { recursive: true })
   for (const file of listed.files) {
-    if (file.rel === IEUM_SOURCE_FILE) continue
+    if (file.rel === TTOK_SOURCE_FILE) continue
     const target = join(to, ...file.rel.split('/'))
     await mkdir(dirname(target), { recursive: true })
     await copyFile(file.path, target)
@@ -473,7 +473,7 @@ export interface SkillInstallPlan {
   /** existing folders it replaces */
   replaceDirs: string[]
   /** for a GitHub skill: the record to write, without the time and hash */
-  source?: Omit<IeumSourceRecord, 'kind' | 'installedAt' | 'contentHash'> | undefined
+  source?: Omit<TtokSourceRecord, 'kind' | 'installedAt' | 'contentHash'> | undefined
 }
 
 export interface CommitSkillInstallOptions {
@@ -520,13 +520,13 @@ export async function commitSkillInstall(
       const dir = join(stage, `new-${index}`)
       await copySkillFolder(plan.candidate.dir, dir, limits)
       if (plan.source) {
-        const record: IeumSourceRecord = {
+        const record: TtokSourceRecord = {
           kind: 'github',
           ...plan.source,
           installedAt: isoSeconds(now()),
           contentHash: await skillContentHash(dir),
         }
-        await writeFile(join(dir, IEUM_SOURCE_FILE), renderIeumSourceRecord(record))
+        await writeFile(join(dir, TTOK_SOURCE_FILE), renderTtokSourceRecord(record))
       }
       staged.push(dir)
     }

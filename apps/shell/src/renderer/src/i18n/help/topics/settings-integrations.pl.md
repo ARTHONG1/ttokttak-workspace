@@ -54,8 +54,8 @@ W sekcji **Lokalny serwer HTTP** aplikacja może też sama uruchomić ten serwer
 
 ## Ściągawka z poleceń
 
-| Polecenie           | Co robi                      |
-| ------------------- | ---------------------------- |
-| `ieumoffice <plik>` | otwiera plik                 |
-| `ieumoffice mcp`    | uruchamia lokalny serwer MCP |
-| `ieumoffice --help` | wszystkie polecenia i opcje  |
+| Polecenie         | Co robi                      |
+| ----------------- | ---------------------------- |
+| `ttokttak <plik>` | otwiera plik                 |
+| `ttokttak mcp`    | uruchamia lokalny serwer MCP |
+| `ttokttak --help` | wszystkie polecenia i opcje  |

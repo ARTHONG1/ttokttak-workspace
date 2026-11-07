@@ -14,7 +14,7 @@ afterEach(() => {
 const table = (text: string): TableModel => ({ rows: [[{ paras: [text] }]] })
 
 async function convert(model: TableModel) {
-  const dir = mkdtempSync(join(tmpdir(), 'ieumoffice-nested-md-'))
+  const dir = mkdtempSync(join(tmpdir(), 'ttokttak-nested-md-'))
   dirs.push(dir)
   const zip = await JSZip.loadAsync(await buildBlankDocx())
   const xml = await zip.file('word/document.xml')!.async('string')

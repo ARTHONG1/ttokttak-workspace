@@ -35,4 +35,4 @@ Karena installer tidak ditandatangani, jalankan hanya installer yang Anda unduh 
 
 ## Baris perintahnya sudah ikut
 
-Setiap pemasangan membawa perintah `ieumoffice` yang berbicara dengan mesin yang sama dengan jendela, sehingga keduanya tidak pernah berbeda pendapat tentang sebuah berkas. `ieumoffice install-cli` menaruhnya di `PATH` Anda. Lihat [Baris perintah dan agen](help://cli) untuk mengetahui apa saja yang dapat dilakukannya.
+Setiap pemasangan membawa perintah `ttokttak` yang berbicara dengan mesin yang sama dengan jendela, sehingga keduanya tidak pernah berbeda pendapat tentang sebuah berkas. `ttokttak install-cli` menaruhnya di `PATH` Anda. Lihat [Baris perintah dan agen](help://cli) untuk mengetahui apa saja yang dapat dilakukannya.

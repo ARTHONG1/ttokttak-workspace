@@ -15,7 +15,7 @@
  *
  * The two Rust sections need cargo, and the rhwp one a sparse checkout of the
  * rhwp tag (manifests only, cached under node_modules/.cache). Without them a
- * local build degrades to a pointer; with CI or IEUM_RELEASE set the gap is an
+ * local build degrades to a pointer; with CI or TTOK_RELEASE set the gap is an
  * error, and electron-builder's beforePack rejects a notice that has it.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs'
@@ -33,10 +33,10 @@ const BUILTIN = new Set(builtinModules)
 const envFlag = (name) => !['', '0', 'false'].includes((process.env[name] ?? '').toLowerCase())
 /**
  * A notice with a missing section must not reach an installer: on CI and in a
- * release build (IEUM_RELEASE=1, which electron-builder's beforePack sets when
+ * release build (TTOK_RELEASE=1, which electron-builder's beforePack sets when
  * it has to regenerate) every gap throws instead of degrading.
  */
-const STRICT = envFlag('CI') || envFlag('IEUM_RELEASE')
+const STRICT = envFlag('CI') || envFlag('TTOK_RELEASE')
 
 function gap(message) {
   if (STRICT) throw new Error(`third-party notice incomplete: ${message}`)

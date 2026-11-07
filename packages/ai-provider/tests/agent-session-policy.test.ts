@@ -17,7 +17,7 @@ const ctx = (overrides: Partial<AgentPolicyContext> = {}): AgentPolicyContext =>
   projectRoot: 'C:\\Users\\me\\Project',
   openDocuments: ['C:\\Users\\me\\Project\\report.docx', 'C:\\Users\\me\\Project\\notes.md'],
   protectedPaths: ['C:\\Users\\me\\.codex', 'C:\\Users\\me\\AppData\\Roaming\\HangulAIWorkbench'],
-  skillBundleDir: 'C:\\Temp\\ieum-skills-1',
+  skillBundleDir: 'C:\\Temp\\ttok-skills-1',
   platform: 'win32',
   ...overrides,
 })
@@ -90,7 +90,7 @@ describe('writes', () => {
   it('do not count the skill copy as a place to write', () => {
     expect(
       agentPolicyVerdict(
-        action({ kind: 'write', tool: 'Write', paths: ['C:\\Temp\\ieum-skills-1\\a\\SKILL.md'] }),
+        action({ kind: 'write', tool: 'Write', paths: ['C:\\Temp\\ttok-skills-1\\a\\SKILL.md'] }),
         ctx(),
       ),
     ).toEqual({ decision: 'deny', reason: 'outside-project' })
@@ -104,7 +104,7 @@ describe('reads', () => {
     ).toEqual({ decision: 'allow' })
     expect(
       agentPolicyVerdict(
-        action({ kind: 'read', tool: 'Read', paths: ['C:\\Temp\\ieum-skills-1\\pdf\\SKILL.md'] }),
+        action({ kind: 'read', tool: 'Read', paths: ['C:\\Temp\\ttok-skills-1\\pdf\\SKILL.md'] }),
         ctx(),
       ),
     ).toEqual({ decision: 'allow' })

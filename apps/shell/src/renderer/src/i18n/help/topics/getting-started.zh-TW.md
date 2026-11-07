@@ -24,7 +24,7 @@ GenOffice 是一套在你電腦上運作的辦公套件：單一視窗、一排�
 
 - 選單 **檔案 ▸ 開啟**（⌘O/ctrl+O）會開啟系統選擇視窗：.docx / .doc / .odt / .xlsx / .xls / .csv / .tsv / .pptx / .ppt / .pdf / .md / .html。
 - 直接點首頁「最近」的任一項目。
-- 終端機裡執行 `ieumoffice <file>` 也能開啟檔案。
+- 終端機裡執行 `ttokttak <file>` 也能開啟檔案。
 
 ## ODT 文件
 
