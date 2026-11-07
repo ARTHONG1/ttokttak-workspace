@@ -89,7 +89,7 @@ const ALLOW = [
   },
   {
     path: 'CITATION.cff',
-    line: /github\.com\/genspark-ai\/genoffice|name: "Mainfunc, Inc\."/,
+    line: /github\.com\/genspark-ai\/genoffice|name: ["']Mainfunc, Inc\.["']/,
     reason: 'the citation metadata crediting the original project and its copyright holder',
   },
   {
