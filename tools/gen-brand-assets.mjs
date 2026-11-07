@@ -1,21 +1,25 @@
 /**
- * Regenerates every file derived from the IeumOffice brand sources in
+ * Regenerates every file derived from the 똑딱작업실 brand sources in
  * apps/shell/build/brand/:
  *
- *   app-icon.svg        -> app / installer icons (png, ico, icns, Linux size
- *                          set) and the in-app app-icon.png copies
- *   app-icon-small.svg  -> the same icon redrawn bolder for slots of 32 px and
- *                          below (optional: without it app-icon.svg is used)
- *   logo-lockup.svg     -> the shell sidebar logo (copied verbatim)
+ *   app-icon.png        -> app / installer icons (png, ico, icns, Linux size
+ *                          set), the in-app app-icon.png copies, the web
+ *                          runtime icon and the browser extension icons
+ *   app-icon-small.png  -> a closer crop of the same mascot for slots of
+ *                          32 px and below (optional: without it app-icon.png
+ *                          is used)
  *
- * To rebrand, replace those SVGs and run:
+ * Both are 1024x1024 full-bleed tiles showing the ACE 연구회 rabbit mascot
+ * (artwork owned by ACE 연구회, see NOTICE).
+ *
+ * To rebrand, replace those PNGs and run:
  *   node tools/gen-brand-assets.mjs
  *
  * Optional: `--preview <file.png>` also writes a contact sheet (icon at
- * 16/32/48/256 px on light and dark backgrounds, the lockup and the AI mark)
- * for a quick visual check. The sheet is not part of the repo.
+ * 16/32/48/256 px on light and dark backgrounds and the AI mark) for a quick
+ * visual check. The sheet is not part of the repo.
  *
- * The SVG is rasterized with the system Chrome (or Edge) through
+ * The source is scaled with the system Chrome (or Edge) through
  * playwright-core, the same approach as tools/gen-file-association-icons.mjs.
  * The ICO and ICNS containers are written by hand, so the script runs on any
  * host OS and needs no dependency beyond the root devDependencies.
@@ -26,18 +30,17 @@
 
 /* global Image, document -- used inside page.evaluate callbacks, which run in the browser */
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const brandDir = join(root, 'apps/shell/build/brand')
-const ICON_SVG = join(brandDir, 'app-icon.svg')
-const ICON_SMALL_SVG = join(brandDir, 'app-icon-small.svg')
+const ICON_SOURCE = join(brandDir, 'app-icon.png')
+const ICON_SMALL_SOURCE = join(brandDir, 'app-icon-small.png')
 // Largest canvas (px) that is drawn from the small optical size.
 const SMALL_ICON_MAX_PX = 32
-const LOCKUP_SVG = join(brandDir, 'logo-lockup.svg')
 const AI_MARK_SVG = join(brandDir, 'ai-mark.svg')
 
 // Full-bleed 1024 px icon: electron-builder's Windows/Linux fallback and the
@@ -49,14 +52,19 @@ const FULL_BLEED_PNG_TARGETS = [
   'apps/docs/src/renderer/assets/app-icon.png',
   'apps/sheets/src/renderer/assets/app-icon.png',
   'apps/slides/src/renderer/assets/app-icon.png',
+  'web/runtime/client/icon.png',
 ]
+// Browser extension toolbar/store icons: [path, px].
+const EXTENSION_TARGETS = [16, 32, 48, 128].map((size) => [
+  `packages/ttokttak-extension/extension/icons/${size}.png`,
+  size,
+])
 const MAC_PNG_TARGETS = ['apps/shell/build/icon-mac.png', 'apps/docs/build/icon-mac.png']
 const ICO_TARGETS = ['apps/shell/build/icon.ico', 'apps/docs/build/icon.ico']
 const ICNS_TARGETS = ['apps/shell/build/icon.icns', 'apps/docs/build/icon.icns']
 // freedesktop hicolor size set (electron-builder linux.icon points at this dir).
 const LINUX_ICON_DIR = 'apps/shell/build/icons'
 const LINUX_SIZES = [16, 32, 48, 64, 128, 256, 512, 1024]
-const LOCKUP_TARGET = 'apps/shell/src/renderer/src/assets/genoffice-logo.svg'
 
 const WIN_SIZES = [16, 24, 32, 48, 64, 128, 256]
 
@@ -167,8 +175,8 @@ async function launchBrowser() {
   throw new Error(`No Chromium-based browser could be launched:\n  ${failures.join('\n  ')}`)
 }
 
-function svgDataUrl(file) {
-  return `data:image/svg+xml;base64,${readFileSync(file).toString('base64')}`
+function pngDataUrl(file) {
+  return `data:image/png;base64,${readFileSync(file).toString('base64')}`
 }
 
 /**
@@ -188,7 +196,22 @@ async function rasterize(page, dataUrl, canvasSize, contentSize) {
       canvas.height = canvasSize
       const context = canvas.getContext('2d')
       const inset = (canvasSize - contentSize) / 2
-      context.drawImage(image, inset, inset, contentSize, contentSize)
+      // Halve the bitmap step by step before the final draw: one large
+      // downscale (1024 -> 16 px) would alias the mascot's fur and eyes.
+      let source = image
+      let size = image.width
+      while (size / 2 >= contentSize) {
+        size = Math.round(size / 2)
+        const step = document.createElement('canvas')
+        step.width = size
+        step.height = size
+        const stepContext = step.getContext('2d')
+        stepContext.imageSmoothingQuality = 'high'
+        stepContext.drawImage(source, 0, 0, size, size)
+        source = step
+      }
+      context.imageSmoothingQuality = 'high'
+      context.drawImage(source, inset, inset, contentSize, contentSize)
       const { data } = context.getImageData(0, 0, canvasSize, canvasSize)
       let binary = ''
       for (let i = 0; i < data.length; i++) binary += String.fromCharCode(data[i])
@@ -210,21 +233,19 @@ function write(relativePath, data) {
 async function writePreview(page, outFile) {
   const icon = (size) =>
     `data:image/png;base64,${readFileSync(join(root, LINUX_ICON_DIR, `${size}x${size}.png`)).toString('base64')}`
-  const lockup = svgDataUrl(LOCKUP_SVG)
   const aiMark = readFileSync(AI_MARK_SVG, 'utf8').replace(/^[\s\S]*?(?=<svg)/, '')
-  const row = (background, color, invert) =>
+  const row = (background, color) =>
     `<div style="background:${background};color:${color};padding:28px;display:flex;align-items:flex-end;gap:28px">` +
     [256, 48, 32, 16]
       .map((size) => `<img src="${icon(size)}" width="${size}" height="${size}">`)
       .join('') +
-    `<img src="${lockup}" height="56" style="margin-left:24px;filter:invert(${invert})">` +
     [30, 26, 22, 18, 14]
       .map((size) => aiMark.replace('width="24" height="24"', `width="${size}" height="${size}"`))
       .join('') +
     '</div>'
   await page.setViewportSize({ width: 1100, height: 640 })
   await page.setContent(
-    `<body style="margin:0">${row('#f3f3f3', '#1f1f1f', 0)}${row('#1e1e1e', '#e8e8e8', 1)}</body>`,
+    `<body style="margin:0">${row('#f3f3f3', '#1f1f1f')}${row('#1e1e1e', '#e8e8e8')}</body>`,
   )
   writeFileSync(outFile, await page.screenshot({ fullPage: true }))
   console.log(`wrote preview ${outFile}`)
@@ -237,12 +258,16 @@ if (previewFlag !== -1 && !previewFile) throw new Error('--preview needs an outp
 const browser = await launchBrowser()
 try {
   const page = await browser.newPage({ deviceScaleFactor: 1 })
-  const icon = svgDataUrl(ICON_SVG)
-  const smallIcon = existsSync(ICON_SMALL_SVG) ? svgDataUrl(ICON_SMALL_SVG) : icon
+  const icon = pngDataUrl(ICON_SOURCE)
+  const smallIcon = existsSync(ICON_SMALL_SOURCE) ? pngDataUrl(ICON_SMALL_SOURCE) : icon
   const iconFor = (size) => (size <= SMALL_ICON_MAX_PX ? smallIcon : icon)
 
   const fullBleed = new Map()
-  for (const size of new Set([...WIN_SIZES, ...LINUX_SIZES])) {
+  for (const size of new Set([
+    ...WIN_SIZES,
+    ...LINUX_SIZES,
+    ...EXTENSION_TARGETS.map(([, s]) => s),
+  ])) {
     fullBleed.set(size, await rasterize(page, iconFor(size), size, size))
   }
   const mac = new Map()
@@ -267,8 +292,7 @@ try {
   )
   for (const target of ICNS_TARGETS) write(target, icns)
 
-  copyFileSync(LOCKUP_SVG, join(root, LOCKUP_TARGET))
-  console.log(`wrote ${LOCKUP_TARGET}`)
+  for (const [target, size] of EXTENSION_TARGETS) write(target, fullBleed.get(size).png)
 
   if (previewFile) await writePreview(page, resolve(previewFile))
 } finally {

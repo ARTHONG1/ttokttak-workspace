@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="apps/shell/build/brand/app-icon.svg" width="88" alt="똑딱작업실 아이콘" />
+<img src="apps/shell/build/brand/app-icon.png" width="96" alt="ACE 연구회 토끼가 손을 흔드는 똑딱작업실 아이콘" />
 
 # 똑딱작업실 (ttokttak-workspace)
 
@@ -13,7 +13,7 @@
 [![최신 릴리스](https://img.shields.io/github/v/release/ARTHONG1/ttokttak-workspace?style=for-the-badge&label=Mac%20%C2%B7%20Windows)](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2f5bea?style=for-the-badge)](LICENSE)
 
-[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [내장형 AI](#내장형-ai--인터넷-연결-없이-문서-작업) · [최근 업데이트](#최근-업데이트) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [English](README.en.md)
+[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [내장형 AI](#내장형-ai--내-pc-안에서-돌아가는-문서-ai) · [최근 업데이트](#최근-업데이트) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [English](README.en.md)
 
 </div>
 
@@ -22,16 +22,31 @@
   <sub>그림을 누르면 31초 소개 영상(MP4)을 봅니다.</sub>
 </p>
 
-## 내장형 AI — 인터넷 연결 없이 문서 작업
+## 내장형 AI — 내 PC 안에서 돌아가는 문서 AI
 
-**v0.16.2부터 Apple Silicon(M1 이상) Mac용 설치 파일에 Qwen3.5-2B(Q4_K_M) 모델과 llama.cpp 실행기를 포함합니다.** 처음 설치하면 별도의 구독이나 API 키 없이 내장 AI를 사용할 수 있습니다. 문서 내용은 로컬 모델을 사용할 때 이 PC에서 처리됩니다. 모델 파일은 약 1.28GB이며, 첫 실행과 응답에는 컴퓨터 성능에 따라 시간이 걸릴 수 있습니다.
+**v0.16.2부터 Apple Silicon(M1 이상) Mac용 설치 파일에 AI 모델이 들어 있습니다.** 설치만 하면 구독, API 키, 인터넷 연결 없이 한글·워드 문서를 AI에게 맡길 수 있습니다.
 
-- **앱 안에서 바로 실행**: 로컬 모델은 PC의 `127.0.0.1`에서 실행되고, 앱이 종료될 때 함께 종료됩니다.
-- **문서 작업**: 한글·워드 문서의 지정 부분 수정과 초안 작성, 엑셀·PPT·PDF의 일부 편집 흐름을 연결했습니다. 실제 수정과 저장은 각 편집기의 도구가 맡습니다.
-- **AI 선택 가능**: 설정에서 내장 AI와 기존 Codex·Claude 등 다른 AI를 고를 수 있습니다. 외부 AI를 고르면 그 서비스의 전송·과금 조건이 적용됩니다.
-- **특화 모델은 개발 예정**: 현재 버전은 공개 Qwen3.5-2B 양자화 모델입니다. 한국어 문서 업무 전용 추가 학습과 품질 개선은 이후 버전에 적용할 계획이며, 아직 학습 완료 모델이라고 표시하지 않습니다.
+### 왜 내장형인가
 
-현재 **내장 모델 묶음의 실제 설치·실행 검증 범위는 macOS Apple Silicon**입니다. Windows·Intel Mac·웹 체험판은 이번 배포의 내장 모델 대상에 포함되지 않으며, 기존 AI 연결 기능을 이용할 수 있습니다. [제약 사항 및 설치 파일](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)을 확인해 주세요.
+- **보안**: 학교와 사무실 문서에는 학생 이름, 연락처, 예산, 내부 결재 내용이 들어 있습니다. 내장 AI는 이 PC의 `127.0.0.1` 안에서만 실행되고, 문서와 대화를 외부 AI 서버로 보내지 않습니다. 앱이 실행할 때마다 임시 인증 키를 새로 만들고, 앱을 끄면 모델도 함께 꺼집니다.
+- **비용**: 외부 AI는 쓸수록 구독료나 사용량 요금이 붙습니다. 내장 AI는 한 번 설치하면 추가 요금 없이 계속 쓸 수 있어, 학교 전체나 여러 선생님이 함께 써도 비용 부담이 없습니다.
+- **선택권**: 더 큰 모델이 필요한 작업은 설정에서 기존처럼 Codex·Claude 등 내 AI 구독으로 바꿀 수 있습니다. 외부 AI를 고르면 그 서비스의 전송·과금 조건이 적용됩니다.
+
+### 지금 들어 있는 모델
+
+- 공개 모델 **Qwen3.5-2B**(Apache-2.0)를 4비트로 줄인 파일(약 1.28GB)과 실행기 **llama.cpp**를 앱에 넣었습니다. 모델 파일은 SHA-256 값으로 고정해, 검증한 파일만 설치본에 들어갑니다.
+- 한글·워드의 지정 문구 수정과 초안 작성, 엑셀·PPT·PDF의 일부 편집을 내장 AI로 처리합니다. 실제 수정과 저장은 각 편집기의 도구가 맡고, AI가 "고쳤다"고 답해도 편집기가 성공을 확인한 결과만 반영합니다.
+- 작은 모델이라 복잡한 문서에서는 느리거나 지시를 놓칠 수 있습니다. 결과는 꼭 확인해 주세요.
+
+### 자체 개선 모델로 계속 업그레이드합니다
+
+똑딱작업실은 문서 편집 도구를 정확히 고르고, 요청한 부분만 고치는 **문서 업무 특화 모델**을 직접 학습시키고 있습니다. 학습 데이터는 실제 개인 문서 없이 규칙으로 만든 합성 예제만 쓰고, 상용 AI의 답변을 베끼지 않습니다.
+
+- **진행 상황 (2026-11-07)**: 원본 모델에 소형 추가 학습(LoRA)을 적용한 실험에서, 한글 편집 명령 144개에 대한 도구 호출 정확도가 **55.6% → 85.4%**로 올랐습니다.
+- **아직 탑재하지 않은 이유**: 일부 기존 정답이 틀리기 시작했고, 선택한 영역만 바꾸는 작업이 아직 약합니다. 실제 한글 파일을 고치고 저장한 뒤 다시 여는 검증을 통과해야 설치본에 넣습니다.
+- **업그레이드 방식**: 검증을 통과한 모델이 나오면 새 버전의 설치 파일에 담아 배포하고, 아래 [최근 업데이트](#최근-업데이트)와 릴리스 설명에 무엇이 좋아졌는지 수치와 함께 적습니다.
+
+현재 **내장 모델을 설치해 실행까지 검증한 환경은 macOS Apple Silicon**입니다. Windows·Intel Mac·웹 체험판에는 아직 내장 모델이 없으며, 기존 AI 연결 기능을 쓸 수 있습니다. [설치 파일과 제약 사항](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)을 확인해 주세요.
 
 ## 최근 업데이트
 
@@ -272,6 +287,8 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인 조건에 따라 밝힙니다.
 
 > 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
+
+앱 아이콘의 토끼는 **ACE 연구회의 마스코트**입니다. 똑딱작업실은 바탕이 된 이음오피스의 아이콘과 로고를 쓰지 않고, 연구회의 허락을 받아 이 토끼를 아이콘으로 씁니다. 마스코트 그림은 Apache License 2.0에 포함되지 않으므로, 이 저장소를 고쳐 다시 배포할 때는 아이콘을 바꿔야 합니다.
 
 똑딱작업실은 독립된 프로젝트입니다. 이음오피스 개발자, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, 한글과컴퓨터, Adobe, XMind, Google과 제휴하거나 후원·보증을 받은 관계가 아닙니다. "이음오피스"·"IeumOffice", "GenOffice", "Genspark"의 이름과 로고는 각 소유자의 것이고, Apache License 2.0은 상표를 쓸 권리를 주지 않습니다(6조). "Claude"는 Anthropic, "Codex"·"ChatGPT"는 OpenAI, "Microsoft"·"Windows"·"Word"·"Excel"·"PowerPoint"는 Microsoft Corporation의 상표이고, "한글"·"한컴"·"HWP"·"HWPX"는 주식회사 한글과컴퓨터의 등록 상표, "XMind"는 XMind Ltd., "Gemini"·"Google 드라이브"는 Google LLC의 상표입니다. 이 이름들은 무엇을 바탕으로 만들었고, 무엇과 함께 동작하며, 어떤 파일을 여는지 알리기 위해서만 적었습니다.
 

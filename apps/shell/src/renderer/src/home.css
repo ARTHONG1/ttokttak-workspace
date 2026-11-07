@@ -17,7 +17,7 @@
   --shadow-pill: 0 1px 2px rgb(0 0 0 / 8%);
   --shadow-composer: 0 6px 30px rgb(0 0 0 / 8%);
 
-  /* genoffice-logo.svg is pure black-and-white; dark themes flip it to 1 */
+  /* a black-and-white .logo-lockup image is flipped to white in dark themes */
   --logo-invert: 0;
   /* lift for the kb-ask composer box */
   --shadow-composer: 0 1px 3px rgb(0 0 0 / 5%);

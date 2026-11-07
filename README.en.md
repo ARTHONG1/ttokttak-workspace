@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="apps/shell/build/brand/app-icon.svg" width="88" alt="ttokttak-workspace icon" />
+<img src="apps/shell/build/brand/app-icon.png" width="96" alt="ttokttak-workspace icon: the ACE 연구회 rabbit waving" />
 
 # ttokttak-workspace (똑딱작업실)
 
@@ -9,17 +9,27 @@
 Open a Hangul (HWP/HWPX), Word, Excel, PowerPoint or PDF file, say what to change, and the AI edits the document itself.<br />
 Try it in the browser, or install it and connect your own AI agent.
 
-[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Built-in AI](#built-in-offline-ai-on-apple-silicon-macs) · [Latest update](#latest-update) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
+[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Built-in AI](#built-in-ai-that-runs-inside-your-computer) · [Latest update](#latest-update) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
 
 </div>
 
 <p align="center"><a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="ttokttak-workspace intro film preview" /></a></p>
 
-## Built-in offline AI on Apple Silicon Macs
+## Built-in AI that runs inside your computer
 
-Beginning with **v0.16.2**, the Apple Silicon (M1+) Mac installer bundles the **Qwen3.5-2B Q4_K_M** model and **llama.cpp**. On a new installation, local AI is selected automatically, and the model runs on your Mac without an account, API key or internet connection. The model is approximately 1.28 GB; initial startup and generation speed depend on your machine.
+Beginning with **v0.16.2**, the Apple Silicon (M1+) Mac installer includes an AI model. After installing, you can hand Hangul and Word documents to the AI without a subscription, an API key or an internet connection.
 
-The local model supports selected editing and drafting workflows in Hangul, Word, Excel, PowerPoint and PDF. Editing and saving still use each document editor's tools, and AI output needs review. **This is the unmodified public model**, with Korean document-specific fine-tuning planned for later releases. The embedded model has only been verified on **macOS arm64**; Windows, Intel Mac and the web trial continue to use their existing AI connection options. Choosing Claude, Codex or another external AI service can send document contents to that provider.
+**Why built in**
+
+- **Security**: school and office documents hold student names, contact details, budgets and internal approvals. The built-in AI runs only on this computer's `127.0.0.1` and never sends documents or chats to an outside AI server. The app creates a fresh access key on every start and stops the model when it quits.
+- **Cost**: outside AI services charge subscriptions or usage fees. The built-in AI has no extra charge after installation, so a whole school can use it.
+- **Choice**: for bigger jobs you can still switch to your own Codex or Claude subscription in Settings; that provider's data and billing terms then apply.
+
+**What ships today**: the public **Qwen3.5-2B** model (Apache-2.0), quantized to 4 bits (about 1.28 GB), with the **llama.cpp** runtime. The model file is pinned by SHA-256. Each editor's own tools apply and save the edits, and only edits the editor confirms are kept. A small model can be slow or miss instructions on complex documents, so review the result.
+
+**Our own improved model, step by step**: we are training a document-editing specialist that picks the right editor tool and changes only what was asked, using rule-generated synthetic examples only (no personal documents, no copied answers from commercial AI). In the 2026-11-07 LoRA experiment, tool-call accuracy on 144 Hangul editing commands rose from **55.6% to 85.4%**. It is not shipped yet: a few previously correct answers regressed and selection-only edits are still weak. A model ships only after it also passes real save-and-reopen tests, and each release note will say what improved.
+
+The built-in model has been installed and run on **macOS arm64** only; Windows, Intel Macs and the web trial keep their existing AI connection options.
 
 ## Latest update
 
@@ -128,5 +138,7 @@ Node 22.12+ (npm 10+) and Rust (`cargo` on the PATH) are required. See [CONTRIBU
 Licensed under the [Apache License 2.0](LICENSE). The code in this repository is a modified version of [IeumOffice](https://github.com/pblsketch/openoffice) 0.12.5 (commit `4e4e9cc`), which is based on [GenOffice](https://github.com/genspark-ai/genoffice); both are Apache-2.0 and their copyright notices are kept as written. Attribution and the summary of changes are in [NOTICE](NOTICE); every change is in the history. ttokttak-workspace is an independent project and is not affiliated with, sponsored or endorsed by the IeumOffice maintainers, Genspark / Mainfunc, Inc., Anthropic, OpenAI, Microsoft, Hancom, Adobe, XMind or Google. "IeumOffice", "이음오피스", "GenOffice" and "Genspark" belong to their owners, and the licence grants no trademark rights (section 6). "한글", "한컴", "HWP" and "HWPX" are registered trademarks of Hancom Inc.; other product names belong to their owners and are used only to say what this program opens and works with.
 
 > 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
+
+The rabbit in the app icon is the mascot of ACE 연구회, used with its permission in place of the IeumOffice icon and logo. The mascot artwork is not covered by the Apache License 2.0; redistributions must replace the icon.
 
 Made by 홍찬우 (Incheon Bongsu Elementary School), who runs the teachers' edtech group [클래스똑딱](https://classddok.com). Issues: [https://github.com/ARTHONG1/ttokttak-workspace/issues](https://github.com/ARTHONG1/ttokttak-workspace/issues).
