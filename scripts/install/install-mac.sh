@@ -68,6 +68,27 @@ VERSION="$(/usr/bin/plutil -extract tag_name raw -o - "$WORK/release.json" 2>/de
 [ -n "$VERSION" ] || fail "릴리스 버전을 읽지 못했습니다."
 url_of() { grep -o '"browser_download_url": *"[^"]*"' "$WORK/release.json" | sed 's/.*"\(https[^"]*\)"/\1/' | grep -E "$1" | head -1; }
 DMG_URL="$(url_of "/$APP_NAME-[0-9][^/]*-$ARCH\\.dmg$")"
+if [ -z "$DMG_URL" ] && [ -z "${TTOKTTAK_VERSION:-}" ]; then
+  # A release may ship only some platforms (v0.16.2: Apple Silicon only, with
+  # the built-in AI model). Fall back to the newest stable release that has a
+  # dmg for this CPU.
+  say "$VERSION 릴리스에 $ARCH용 설치 파일이 없어, 이 Mac에 맞는 가장 최근 버전을 찾습니다"
+  curl -fsSL -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$REPO/releases?per_page=30" -o "$WORK/releases.json" ||
+    fail "릴리스 목록을 받지 못했습니다."
+  /usr/bin/osascript -l JavaScript - "$WORK/releases.json" "^$APP_NAME-[0-9][^/]*-$ARCH\\.dmg$" >"$WORK/release.json" <<'JXA' || fail "$ARCH용 dmg가 있는 릴리스를 찾지 못했습니다."
+function run(argv) {
+  const text = $.NSString.stringWithContentsOfFileEncodingError(argv[0], $.NSUTF8StringEncoding, null).js
+  const pattern = new RegExp(argv[1])
+  const found = JSON.parse(text).find(
+    (r) => !r.draft && !r.prerelease && r.assets.some((a) => pattern.test(a.name)),
+  )
+  if (!found) throw new Error('no matching release')
+  return JSON.stringify(found, null, 1)
+}
+JXA
+  VERSION="$(sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' "$WORK/release.json" | head -1)"
+  DMG_URL="$(url_of "/$APP_NAME-[0-9][^/]*-$ARCH\\.dmg$")"
+fi
 FEED_URL="$(url_of '/latest-mac\.yml$')"
 [ -n "$DMG_URL" ] || fail "$VERSION 릴리스에 $ARCH용 dmg가 없습니다."
 DMG="$WORK/$(basename "$DMG_URL")"

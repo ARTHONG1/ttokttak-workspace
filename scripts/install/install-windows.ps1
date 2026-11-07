@@ -37,8 +37,19 @@ try {
   catch { Fail "릴리스를 찾지 못했습니다($api). 아직 공개된 설치 파일이 없을 수 있습니다." }
   $State.version = $release.tag_name
   $exe = $release.assets | Where-Object { $_.name -match "^$AppName-Setup-[0-9][^/]*\.exe$" -and $_.name -notmatch 'arm64' } | Select-Object -First 1
+  if (-not $exe -and -not $env:TTOKTTAK_VERSION) {
+    # A release may ship only some platforms (v0.16.2: Apple Silicon Mac only).
+    # Fall back to the newest stable release that has a Windows installer.
+    Say "$($release.tag_name) 릴리스에 Windows 설치 파일이 없어, 가장 최근 Windows 버전을 찾습니다"
+    $list = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=30" -Headers @{ Accept = 'application/vnd.github+json' }
+    $release = $list | Where-Object { -not $_.draft -and -not $_.prerelease -and ($_.assets | Where-Object { $_.name -match "^$AppName-Setup-[0-9][^/]*\.exe$" -and $_.name -notmatch 'arm64' }) } | Select-Object -First 1
+    if ($release) {
+      $State.version = $release.tag_name
+      $exe = $release.assets | Where-Object { $_.name -match "^$AppName-Setup-[0-9][^/]*\.exe$" -and $_.name -notmatch 'arm64' } | Select-Object -First 1
+    }
+  }
   $feed = $release.assets | Where-Object { $_.name -eq 'latest.yml' } | Select-Object -First 1
-  if (-not $exe) { Fail "$($release.tag_name) 릴리스에 Windows 설치 파일이 없습니다." }
+  if (-not $exe) { Fail "공개된 릴리스에 Windows 설치 파일이 없습니다." }
 
   $work = Join-Path ([IO.Path]::GetTempPath()) ('ttokttak-' + [Guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $work | Out-Null
