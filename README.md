@@ -52,7 +52,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.2](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.2) · 2026-11-07** — 똑딱작업실 0.16.2는 Apple Silicon Mac용 설치 파일에 AI 모델을 넣은 첫 버전입니다. 문서와 대화가 PC 밖으로 나가지 않고(보안), 구독료나 사용량 요금 없이(비용) 한글·워드 문서 수정과 초안 작성을 AI에게 맡길 수 있습니다. 앱 아이콘도 ACE 연구회 토끼로 바꿨습니다.
+**[v0.16.3](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.3) · 2026-11-07** — 똑딱작업실 0.16.3은 바탕이 된 다른 프로젝트의 이름을 앱과 저장소에서 모두 걷어 낸 버전입니다. 앱 화면, 터미널 명령어, AI 에이전트 연결, 설치 안내, 도움말에 똑딱작업실의 이름만 남았고, 기존 설정은 처음 실행할 때 자동으로 옮겨집니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
