@@ -609,7 +609,9 @@ const homeApi: HomeApi = {
     return AI_PROVIDERS.map((meta) => {
       let defaultBaseUrl = ''
       // custom has no default — it stays ''
-      if (!meta.needsBaseUrl && !meta.needsCliPath) {
+      // The embedded runtime assigns its loopback endpoint only when started.
+      // Resolving it while rendering Settings would throw before startup.
+      if (meta.id !== 'local' && !meta.needsBaseUrl && !meta.needsCliPath) {
         defaultBaseUrl = getProviderAdapter(meta.id).resolveEndpoint({
           apiKey: '',
           model: meta.defaultModel,

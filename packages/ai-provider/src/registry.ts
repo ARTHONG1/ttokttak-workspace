@@ -200,6 +200,18 @@ function fixedEndpoint(
 }
 
 export const AI_PROVIDER_ADAPTERS: Record<AiProviderId, ProviderAdapter> = {
+  local: {
+    meta: metaOf('local'),
+    capabilities: { auth: 'api-key', vision: false },
+    resolveEndpoint(config) {
+      if (!config.baseUrl) throw new Error('The local AI runtime is not ready')
+      const url = new URL(normalizeBaseUrl(config.baseUrl, ''))
+      if (url.hostname !== '127.0.0.1' || url.protocol !== 'http:') {
+        throw new Error('Local AI can only connect to 127.0.0.1')
+      }
+      return { protocol: 'openai-compatible', baseUrl: url.toString(), omitTemperature: true }
+    },
+  },
   'claude-code': {
     meta: metaOf('claude-code'),
     capabilities: { auth: 'claude-subscription', vision: true },

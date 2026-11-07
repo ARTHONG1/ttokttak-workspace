@@ -330,14 +330,26 @@ class Session {
 
 function sessionFromCookie(req) {
   const m = /(?:^|;\s*)hs=([A-Za-z0-9_-]{16,64})/.exec(req.headers.cookie || '')
-  return m ? m[1] : null
+  if (m) return m[1]
+  try {
+    const u = new URL(req.url, 'http://localhost')
+    const q = u.searchParams.get('hs')
+    if (q && /^[A-Za-z0-9_-]{16,64}$/.test(q)) return q
+    if (req.headers.referer) {
+      const ref = new URL(req.headers.referer)
+      const rq = ref.searchParams.get('hs')
+      if (rq && /^[A-Za-z0-9_-]{16,64}$/.test(rq)) return rq
+    }
+  } catch {}
+  return null
 }
 function sessionCookie(req, sid) {
+  const https = req.headers['x-forwarded-proto'] === 'https'
   return (
     'hs=' +
     sid +
-    '; Path=/; HttpOnly; SameSite=Lax' +
-    (req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '')
+    '; Path=/; HttpOnly; ' +
+    (https ? 'SameSite=None; Secure; Partitioned' : 'SameSite=Lax')
   )
 }
 /** a state-changing request must come from this site's own pages (Origin set by the browser) */
@@ -625,7 +637,8 @@ async function handleHttp(req, res) {
     }
     // the trial opens only for a signed-in Google account: the gate page signs in first
     const page = accountOf(sid) ? 'index.html' : 'login.html'
-    const body = await fsp.readFile(path.join(CLIENT, page))
+    const rawBody = await fsp.readFile(path.join(CLIENT, page), 'utf8')
+    const body = rawBody.replace('<html ', '<html data-hs="' + sid + '" ')
     return send(res, 200, withPopupEditor(body, req), {
       'Content-Type': 'text/html; charset=utf-8',
       ...headers,

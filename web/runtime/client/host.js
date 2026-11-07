@@ -9,6 +9,14 @@
   var isMac = platform === 'darwin'
   var root = document.getElementById('desktop')
   var statusEl = document.getElementById('status')
+  var hsToken = document.documentElement.getAttribute('data-hs') || ''
+  function withHs(u) {
+    if (!hsToken || typeof u !== 'string' || u.indexOf('hs=') !== -1) return u
+    var hashIdx = u.indexOf('#')
+    var base = hashIdx >= 0 ? u.slice(0, hashIdx) : u
+    var hash = hashIdx >= 0 ? u.slice(hashIdx) : ''
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 'hs=' + encodeURIComponent(hsToken) + hash
+  }
   var wcs = new Map()
   var windows = new Map()
   var pending = new Map()
@@ -36,11 +44,11 @@
   function connect() {
     status('문서 편집기를 준비하는 중…')
     ws = new WebSocket(
-      (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/__ws',
+      (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + withHs('/__ws'),
     )
     ws.onopen = function () {
       rawSend({ t: 'hello', width: root.clientWidth, height: root.clientHeight })
-      fetch('/__upload-root', { credentials: 'same-origin' })
+      fetch(withHs('/__upload-root'), { credentials: 'same-origin' })
         .then(function (r) {
           return r.json()
         })
@@ -487,7 +495,7 @@
       '/__upload?path=' +
       encodeURIComponent(path) +
       (handleId ? '&handle=' + encodeURIComponent(handleId) : '')
-    var p = fetch(url, { method: 'POST', body: file, credentials: 'same-origin' })
+    var p = fetch(withHs(url), { method: 'POST', body: file, credentials: 'same-origin' })
       .then(function (r) {
         return r.json()
       })
@@ -533,7 +541,7 @@
   }
   function download(path, name) {
     var a = document.createElement('a')
-    a.href = '/__download?path=' + encodeURIComponent(path)
+    a.href = withHs('/__download?path=' + encodeURIComponent(path))
     a.download = name || ''
     document.body.appendChild(a)
     a.click()
@@ -542,7 +550,9 @@
   function onFileWritten(msg) {
     var h = msg.handle && handles.get(msg.handle)
     if (h) {
-      fetch('/__download?path=' + encodeURIComponent(msg.path), { credentials: 'same-origin' })
+      fetch(withHs('/__download?path=' + encodeURIComponent(msg.path)), {
+        credentials: 'same-origin',
+      })
         .then(function (r) {
           return r.blob()
         })
@@ -868,7 +878,7 @@
         var rec = contents(msg.wc)
         rec.url = msg.url
         rec.dispatch = null
-        rec.iframe.src = msg.url
+        rec.iframe.src = withHs(msg.url)
         return
       }
       case 'wc-send': {
@@ -887,7 +897,12 @@
       case 'wc-focus': {
         var rf = wcs.get(msg.wc)
         var owner = rf && windows.get(rf.win)
-        if (rf && (!owner || !owner.el.hidden) && rf.iframe.contentWindow)
+        if (
+          rf &&
+          (!owner || !owner.el.hidden) &&
+          rf.iframe.contentWindow &&
+          (window.self === window.top || document.hasFocus())
+        )
           rf.iframe.contentWindow.focus()
         return
       }
@@ -1020,6 +1035,7 @@
   window.__electronHost = {
     platform: platform,
     schemes: schemes,
+    withHs: withHs,
     bindFrame: function (wc, win, dispatch) {
       contents(wc).dispatch = dispatch
     },
@@ -1033,7 +1049,7 @@
     },
     sendSync: function (wc, ch, args) {
       var xhr = new XMLHttpRequest()
-      xhr.open('POST', '/__ipc-sync', false)
+      xhr.open('POST', withHs('/__ipc-sync'), false)
       xhr.setRequestHeader('Content-Type', 'application/json')
       xhr.send(JSON.stringify({ wc: wc, ch: ch, args: args }))
       try {

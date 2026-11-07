@@ -28,4 +28,7 @@ it('requires the selected subscription to be usable', () => {
     desktopConnectionState({ ...defaultAiSettings(), provider: 'claude-code' }, statuses),
   ).toBe('disconnected')
   expect(desktopConnectionState(null, statuses)).toBe('checking')
+  expect(desktopConnectionState({ ...defaultAiSettings(), provider: 'local' }, statuses)).toBe(
+    'connected',
+  )
 })

@@ -36,6 +36,9 @@ const MAINTAINER = 'ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>'
 // hoc. Off by default, so a local `dist:mac` stays one arm64 package that
 // needs no universal sidecar.
 const includeMacX64 = process.env.GENOFFICE_MAC_X64 === '1'
+// Opt-in offline bundle: built by tools/prepare-embedded-ai.mjs for the target
+// platform. Ordinary releases retain their existing size and resource set.
+const includeEmbeddedLocalAi = process.env.GENOFFICE_EMBED_LOCAL_AI === '1'
 
 // GENOFFICE_WIN_ARM64=1 — package the Windows ARM64 installer instead of x64.
 // CI runs it as a second electron-builder pass (own BUILD_DIR) after the
@@ -510,6 +513,7 @@ const config = {
   },
   files: ['out/**'],
   extraResources: [
+    ...(includeEmbeddedLocalAi ? [{ from: 'build/local-ai', to: 'local-ai' }] : []),
     // Apache-2.0 §4(a)/(d): every copy carries the license and the NOTICE of
     // the work; NOTICE refers to LICENSE-UNICODE.txt for the Unicode data
     {
@@ -877,6 +881,30 @@ const config = {
     )
     ensurePlatformHelpers()
     assertExtraResourceSources()
+    if (includeEmbeddedLocalAi) {
+      const bundled = join(__dirname, 'build/local-ai')
+      const manifestPath = join(bundled, 'manifest.json')
+      if (!existsSync(manifestPath)) {
+        throw new Error('Offline AI bundle missing: run tools/prepare-embedded-ai.mjs first')
+      }
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      const actualPlatform = context.electronPlatformName
+      const actualArch =
+        context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : String(context.arch)
+      if (manifest.platform !== actualPlatform || manifest.arch !== actualArch) {
+        throw new Error(
+          `Offline AI bundle is for ${manifest.platform}/${manifest.arch}, packaging ${actualPlatform}/${actualArch}`,
+        )
+      }
+      for (const name of [
+        'model.gguf',
+        actualPlatform === 'win32' ? 'llama-server.exe' : 'llama-server',
+        'MODEL-LICENSE.txt',
+        'LLAMA-LICENSE.txt',
+      ]) {
+        if (!existsSync(join(bundled, name))) throw new Error(`Offline AI bundle missing ${name}`)
+      }
+    }
     ensureThirdPartyNotices()
     assertModuleTreesPresent()
     assertPdfStructureProcessBuilt()

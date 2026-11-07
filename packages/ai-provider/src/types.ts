@@ -6,6 +6,7 @@ import type {
 } from '@genoffice/agent-core'
 
 export type AiProviderId =
+  | 'local'
   | 'codex'
   | 'claude-code'
   | 'anthropic'

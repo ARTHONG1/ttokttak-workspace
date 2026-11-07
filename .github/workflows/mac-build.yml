@@ -183,8 +183,15 @@ jobs:
       - name: Attach to the release
         run: |
           set -euo pipefail
-          gh run download "$GITHUB_RUN_ID" --name hangulaiworkbench-mac --dir mac
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "not a version tag: $TAG"; exit 1; }
+          # This workflow builds without the offline model. Never overwrite an
+          # embedded-AI release's arm64 assets with model-free installers.
+          baseline="v0.16.2"
+          if [ "$(printf '%s\n' "$baseline" "${TAG%%-*}" | sort -V | head -n1)" = "$baseline" ]; then
+            echo "Embedded-AI releases (>= $baseline) require a separately verified model-inclusive arm64 build; refusing legacy asset upload."
+            exit 1
+          fi
+          gh run download "$GITHUB_RUN_ID" --name hangulaiworkbench-mac --dir mac
           gh release view "$TAG" >/dev/null || { echo "no release $TAG: publish it first"; exit 1; }
           feed=$(ls mac/*-mac.yml)
           built=$(sed -n 's/^version: *//p' $feed | tr -d "'\"")

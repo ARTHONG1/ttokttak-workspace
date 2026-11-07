@@ -186,6 +186,7 @@ export function AiSection({
 }) {
   const [settings, setSettings] = useState<AiSettings | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(openTab !== undefined)
+  const [externalOpen, setExternalOpen] = useState(false)
   const [tab, setTab] = useState<AdvancedTab>(openTab ?? 'model')
   const [noticeOpen, setNoticeOpen] = useState(false)
   /** the automatic-requests switch was pressed while off: the warning is up, nothing is saved yet */
@@ -254,6 +255,7 @@ export function AiSection({
   const blocked = running ? aiConnectPromptView(running) : null
   const codexSelectable = choices.some((choice) => choice.provider === 'codex')
   const headlessOn = settings?.headlessSubscriptionEnabled === true
+  const localSelected = settings?.provider === 'local'
   // the web edition's AI is preset on the server: no subscription programs to
   // log into, and disconnecting its Gemini card would leave the session without AI
   const web = isWebEdition()
@@ -303,7 +305,61 @@ export function AiSection({
   return (
     <>
       <h3 className="set-pane-title">{t('setSecAi')}</h3>
-      {!web && (
+      {settings && (
+        <>
+          <div className="set-field">
+            <div className="set-field-text">
+              <div className="set-field-stack">
+                <label className="set-field-label">{t('setAiUse')}</label>
+                {!web && <div className="set-field-desc">{t('setAiUseDesc')}</div>}
+              </div>
+            </div>
+            <Dropdown
+              className="set-dd"
+              value={aiSelectionValue(settings)}
+              ariaLabel={t('setAiUse')}
+              options={(web ? choices.filter((c) => c.kind === 'key') : choices).map((choice) => ({
+                value: choice.value,
+                label: choiceLabel(choice, t, lang),
+                disabled: choice.unavailable,
+              }))}
+              onPick={(value) => {
+                const choice = choices.find((c) => c.value === value)
+                if (choice) change((current) => withAiSelection(current, choice))
+              }}
+            />
+          </div>
+          {localSelected && !web && (
+            <div className="set-field-desc set-ai-note" data-testid="offline-ai-info" role="status">
+              {lang === 'ko'
+                ? '내장 AI가 이 컴퓨터에서 실행됩니다. 로그인·API 키·인터넷 연결 없이 문서 편집에 사용할 수 있습니다.'
+                : 'Built-in AI runs on this computer. Edit documents without an account, API key, or internet connection.'}
+            </div>
+          )}
+          {blocked && (
+            <div
+              className="set-field-desc set-ai-note"
+              data-ai-blocked={running?.connected ? '' : running?.reason}
+            >
+              {aiSubscriptionText(lang, blocked.titleKey, { provider: blocked.providerName ?? '' })}
+            </div>
+          )}
+          {running?.connected && running.metered && <AiMeteredWarning lang={lang} />}
+          {codexSelectable && !localSelected && <AiCodexNotice lang={lang} />}
+        </>
+      )}
+      {localSelected && !web && (
+        <button
+          type="button"
+          className="set-adv-toggle set-external-ai-toggle"
+          aria-expanded={externalOpen}
+          data-testid="external-ai-toggle"
+          onClick={() => setExternalOpen((open) => !open)}
+        >
+          {lang === 'ko' ? '외부 AI 연결 옵션' : 'External AI connection options'}
+        </button>
+      )}
+      {!web && (!localSelected || externalOpen) && (
         <>
           <h4 className="set-pane-subtitle set-sub-title">{t('setSubTitle')}</h4>
           <div className="set-field-desc set-ai-note">
@@ -388,38 +444,6 @@ export function AiSection({
       )}
       {settings && (
         <>
-          <div className="set-field">
-            <div className="set-field-text">
-              <div className="set-field-stack">
-                <label className="set-field-label">{t('setAiUse')}</label>
-                {!web && <div className="set-field-desc">{t('setAiUseDesc')}</div>}
-              </div>
-            </div>
-            <Dropdown
-              className="set-dd"
-              value={aiSelectionValue(settings)}
-              ariaLabel={t('setAiUse')}
-              options={(web ? choices.filter((c) => c.kind === 'key') : choices).map((choice) => ({
-                value: choice.value,
-                label: choiceLabel(choice, t, lang),
-                disabled: choice.unavailable,
-              }))}
-              onPick={(value) => {
-                const choice = choices.find((c) => c.value === value)
-                if (choice) change((current) => withAiSelection(current, choice))
-              }}
-            />
-          </div>
-          {blocked && (
-            <div
-              className="set-field-desc set-ai-note"
-              data-ai-blocked={running?.connected ? '' : running?.reason}
-            >
-              {aiSubscriptionText(lang, blocked.titleKey, { provider: blocked.providerName ?? '' })}
-            </div>
-          )}
-          {running?.connected && running.metered && <AiMeteredWarning lang={lang} />}
-          {codexSelectable && <AiCodexNotice lang={lang} />}
           {!web && (
             <div className="set-field">
               <div className="set-field-text">

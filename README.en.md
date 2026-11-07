@@ -9,11 +9,28 @@
 Open a Hangul (HWP/HWPX), Word, Excel, PowerPoint or PDF file, say what to change, and the AI edits the document itself.<br />
 Try it in the browser, or install it and connect your own AI agent.
 
-[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
+[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Built-in AI](#built-in-offline-ai-on-apple-silicon-macs) · [Latest update](#latest-update) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
 
 </div>
 
 <p align="center"><a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="ttokttak-workspace intro film preview" /></a></p>
+
+## Built-in offline AI on Apple Silicon Macs
+
+Beginning with **v0.16.2**, the Apple Silicon (M1+) Mac installer bundles the **Qwen3.5-2B Q4_K_M** model and **llama.cpp**. On a new installation, local AI is selected automatically, and the model runs on your Mac without an account, API key or internet connection. The model is approximately 1.28 GB; initial startup and generation speed depend on your machine.
+
+The local model supports selected editing and drafting workflows in Hangul, Word, Excel, PowerPoint and PDF. Editing and saving still use each document editor's tools, and AI output needs review. **This is the unmodified public model**, with Korean document-specific fine-tuning planned for later releases. The embedded model has only been verified on **macOS arm64**; Windows, Intel Mac and the web trial continue to use their existing AI connection options. Choosing Claude, Codex or another external AI service can send document contents to that provider.
+
+## Latest update
+
+<!-- GITHUB-RELEASES:START -->
+
+**[v0.16.1](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.1) · 2026-11-06** — Read the full release notes (in Korean).
+
+[All releases and changes](https://github.com/ARTHONG1/ttokttak-workspace/releases)
+<!-- GITHUB-RELEASES:END -->
+
+This section and the [changelog](CHANGELOG.md) update automatically from published GitHub Releases. The same release notes appear in the desktop update dialog.
 
 ## New: 문서 변환 (convert a document)
 
@@ -46,11 +63,11 @@ Most school and office work is document work: opening a file to change one title
 
 ## Three ways to use it
 
-|           | Web trial                              | Desktop app                                    | Installed by your AI agent             |
-| --------- | -------------------------------------- | ---------------------------------------------- | -------------------------------------- |
-| What      | In the browser, nothing to install     | macOS and Windows                              | One prompt does the whole setup        |
-| AI        | Google Gemini (after Google sign-in)   | **Your own Claude Code or Codex** subscription | The same agent is connected to the app |
-| Documents | Kept only while you work, then deleted | Stay on your PC                                | —                                      |
+|           | Web trial                              | Desktop app                                              | Installed by your AI agent             |
+| --------- | -------------------------------------- | -------------------------------------------------------- | -------------------------------------- |
+| What      | In the browser, nothing to install     | macOS and Windows                                        | One prompt does the whole setup        |
+| AI        | Google Gemini (web configuration)      | **Built-in AI on Apple Silicon**, or Claude Code / Codex | The same agent is connected to the app |
+| Documents | Kept only while you work, then deleted | Stay on your PC                                          | —                                      |
 
 ## Install with an AI agent
 

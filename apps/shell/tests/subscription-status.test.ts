@@ -98,6 +98,18 @@ describe('firstConnectionNoticeDue', () => {
     ).toBe(false)
   })
 
+  it('does not interrupt offline users even when a subscription CLI is signed in', () => {
+    expect(
+      firstConnectionNoticeDue(settings({ provider: 'local' }), statusMap('ready', 'ready')),
+    ).toBe(false)
+    expect(
+      firstConnectionNoticeDue(settings({ provider: 'openai' }), statusMap('ready', 'ready')),
+    ).toBe(false)
+    expect(
+      firstConnectionNoticeDue(settings({ provider: 'codex' }), statusMap('ready', 'ready')),
+    ).toBe(true)
+  })
+
   it('waits for readable settings: an acknowledgement that cannot be stored would not stay away', () => {
     expect(firstConnectionNoticeDue(null, statusMap('ready', 'ready'))).toBe(false)
   })

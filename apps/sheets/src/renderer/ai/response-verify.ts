@@ -30,6 +30,18 @@ const CORRECTION =
   'but no successful select_range call happened during this run — the visible selection has NOT moved. ' +
   'Either call select_range now to actually perform the action, or rewrite your reply so it no longer claims an action that did not happen.'
 
+const KO_EDIT_CLAIM =
+  /(?:변경|수정|교체|적용|입력|추가|삭제|저장|작성)(?:했|하였|됐|되었습니다)|(?:바꿨|고쳤|설정했|붙여넣었)|(?:변경|수정)\s*완료했/
+const EN_EDIT_CLAIM =
+  /\bI(?:'ve| have)? (?:changed|updated|edited|replaced|modified|entered|deleted|added|applied|saved)\b|\b(?:has|have|was|were) been (?:changed|updated|edited|modified|replaced)\b|\bsuccessfully (?:changed|updated|edited|modified|replaced)\b/i
+const EDIT_CORRECTION =
+  '[System check] Your answer claims the workbook was modified, but no successful propose_operations call happened during this run. ' +
+  'The workbook has not been edited. Call propose_operations and verify the result, or explicitly say the change was not made.'
+
+export function claimsWorkbookMutation(text: string): boolean {
+  return KO_EDIT_CLAIM.test(text) || EN_EDIT_CLAIM.test(text)
+}
+
 export function claimsSelection(text: string): boolean {
   return ZH_SELECTION_CLAIM.test(text) || EN_SELECTION_CLAIM.test(text)
 }
@@ -39,7 +51,17 @@ export function verifySheetsResponse(
   finalText: string,
   executed: readonly ExecutedToolCall[],
 ): string | null {
-  if (!claimsSelection(finalText)) return null
-  if (executed.some((call) => call.name === 'select_range' && call.ok)) return null
-  return CORRECTION
+  if (
+    claimsSelection(finalText) &&
+    !executed.some((call) => call.name === 'select_range' && call.ok)
+  ) {
+    return CORRECTION
+  }
+  if (
+    claimsWorkbookMutation(finalText) &&
+    !executed.some((call) => call.name === 'propose_operations' && call.ok)
+  ) {
+    return EDIT_CORRECTION
+  }
+  return null
 }

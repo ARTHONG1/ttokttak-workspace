@@ -104,6 +104,7 @@ import {
   AI_SEARCH_PROVIDERS,
   isAiOverloadedError,
   chatForProvider,
+  defaultAiSettings,
   normalizeAiSettings,
   testMediaProvider,
   type AiMediaProviderConfig,
@@ -124,6 +125,25 @@ import {
 } from '@genoffice/ai-provider'
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
+import { ensureLocalAiRuntime, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
+import {
+  localExactEditFollowup,
+  localExactSlideStep,
+  localExactPdfStep,
+  localExactWorkbookStep,
+  planLocalExactEdit,
+  planLocalExactFormat,
+  planLocalHwpContextualEdit,
+} from './local-ai-exact-edit'
+import { prepareLocalAiTurn } from './local-ai-turn'
+import {
+  LOCAL_DRAFT_SYSTEM,
+  LOCAL_DRAFT_RETRY_SYSTEM,
+  documentDraftToolCall,
+  localFieldTripDraftFallback,
+  localDocumentDraftFollowup,
+  planLocalDocumentDraft,
+} from './local-ai-document-draft'
 import {
   ensureSubscriptionIpc,
   initSubscriptionChildTracking,
@@ -3940,7 +3960,11 @@ function broadcastAiSettingsChanged(): void {
  */
 /** the settings file as every reader gets it: removed and unknown selections read as their defaults */
 function storedAiSettings(): AiSettings {
-  return normalizeAiSettings(readJson<unknown>(SETTINGS_PATH(), {}))
+  const defaults = defaultAiSettings()
+  // Only a genuinely new installation gets local AI preselected. Existing
+  // provider preferences, including explicit 'auto', remain intact.
+  if (!existsSync(SETTINGS_PATH()) && localAiAvailable()) defaults.provider = 'local'
+  return normalizeAiSettings(readJson<unknown>(SETTINGS_PATH(), {}), defaults)
 }
 
 /** where the image and media tools may run: the screen path, with the live subscription statuses */
@@ -3954,7 +3978,13 @@ const AI_RUN_TEXTS: AiRunTexts = {
 }
 
 export function registerAiIpc(): void {
-  app.once('before-quit', shutdownCodexAppServers)
+  // before-quit can be followed by a cancelled close prompt: the app keeps running.
+  // Only tear down AI after the quit is committed, so editing still works after Cancel.
+  app.once('will-quit', shutdownCodexAppServers)
+  app.once('will-quit', stopLocalAiRuntime)
+  // app.exit()/process.exit() skip will-quit but still need to stop child processes.
+  process.once('exit', shutdownCodexAppServers)
+  process.once('exit', stopLocalAiRuntime)
   // the subscription channels (statuses, recheck, login, install, metered) exist once per
   // process: whichever editor main asks first registers them and starts the first check
   ensureSubscriptionIpc(ipcMain, {
@@ -4030,9 +4060,146 @@ export function registerAiIpc(): void {
       send({ requestId, type: 'error', ...target.refusal })
       return
     }
-    const { settings, provider, config } = target
+    const { settings, provider } = target
     const tools = request.tools ?? []
-    const maxTokens = request.maxTokens ?? maxOutputTokensOf(settings)
+    const draftFollowup = provider === 'local' ? localDocumentDraftFollowup(messages) : null
+    if (draftFollowup !== null) {
+      send({ requestId, type: 'delta', text: draftFollowup })
+      send({ requestId, type: 'done' })
+      return
+    }
+    // The editor already executed the deterministic edit and recorded its
+    // result in AgentLoop. Avoid a second (large) local-model request merely
+    // to verbalize that outcome; this also preserves the normal undo path.
+    const exactEditResult = provider === 'local' ? localExactEditFollowup(messages) : null
+    if (exactEditResult !== null) {
+      send({ requestId, type: 'delta', text: exactEditResult })
+      send({ requestId, type: 'done' })
+      return
+    }
+    const workbookStep = provider === 'local' ? localExactWorkbookStep(messages, tools) : null
+    if (workbookStep) {
+      if ('call' in workbookStep) {
+        send({ requestId, type: 'tool-call', toolCall: workbookStep.call })
+      } else {
+        send({ requestId, type: 'delta', text: workbookStep.text })
+      }
+      send({ requestId, type: 'done' })
+      return
+    }
+    const slideStep = provider === 'local' ? localExactSlideStep(messages, tools) : null
+    if (slideStep) {
+      if ('call' in slideStep) {
+        send({ requestId, type: 'tool-call', toolCall: slideStep.call })
+      } else {
+        send({ requestId, type: 'delta', text: slideStep.text })
+      }
+      send({ requestId, type: 'done' })
+      return
+    }
+    const pdfStep = provider === 'local' ? localExactPdfStep(messages, tools) : null
+    if (pdfStep) {
+      if ('call' in pdfStep) {
+        send({ requestId, type: 'tool-call', toolCall: pdfStep.call })
+      } else {
+        send({ requestId, type: 'delta', text: pdfStep.text })
+      }
+      send({ requestId, type: 'done' })
+      return
+    }
+    // A narrowly scoped quoted substitution is more reliable and faster when
+    // translated directly into the editor's own checked, reversible operation.
+    const exactEdit =
+      provider === 'local'
+        ? (planLocalExactEdit(messages, tools) ??
+          planLocalHwpContextualEdit(messages, tools) ??
+          planLocalExactFormat(messages, tools))
+        : null
+    if (exactEdit) {
+      send({ requestId, type: 'tool-call', toolCall: exactEdit })
+      send({ requestId, type: 'done' })
+      return
+    }
+    const documentDraft = provider === 'local' ? planLocalDocumentDraft(messages, tools) : null
+    if (documentDraft) {
+      const controller = new AbortController()
+      activeAiStreams.set(requestId, controller)
+      const unwatchSender = abortOnDestroyed(event.sender, controller)
+      const out = createChunkCoalescer<AiStreamChunk>(send)
+      try {
+        const config = await ensureLocalAiRuntime()
+        let lastPing = 0
+        const generateDraft = async (systemPrompt: string, maxTokens: number) => {
+          let generated = ''
+          let stopReason: string | undefined
+          await streamForProvider(
+            'local',
+            config,
+            systemPrompt,
+            [{ role: 'user', text: documentDraft.instruction }],
+            [],
+            maxTokens,
+            {
+              signal: controller.signal,
+              onDelta: (text) => {
+                generated += text
+                if (generated.length > 10_000) controller.abort()
+              },
+              onToolCall: () => undefined,
+              onActivity: () => {
+                const now = Date.now()
+                if (now - lastPing < 5000) return
+                lastPing = now
+                out.push({ requestId, type: 'ping' })
+              },
+              onStopReason: (reason) => {
+                stopReason = reason
+              },
+            },
+          )
+          return documentDraftToolCall(documentDraft.instruction, generated, stopReason)
+        }
+        let call = await generateDraft(LOCAL_DRAFT_SYSTEM, 1536)
+        if (!call && !controller.signal.aborted) {
+          call = await generateDraft(LOCAL_DRAFT_RETRY_SYSTEM, 1024)
+        }
+        if (controller.signal.aborted) {
+          out.push({ requestId, type: 'done' })
+        } else {
+          // A field-trip request can still produce a usable, clearly editable
+          // school plan when an offline model twice returns unusable prose.
+          call ??= localFieldTripDraftFallback(documentDraft.instruction)
+          if (!call)
+            throw new Error(
+              '내장 AI가 문서 본문으로 넣을 완성된 글을 생성하지 못했습니다. 요청을 짧게 나누어 다시 시도해 주세요.',
+            )
+          out.push({ requestId, type: 'tool-call', toolCall: call })
+          out.push({ requestId, type: 'done' })
+        }
+      } catch (err) {
+        if (controller.signal.aborted) out.push({ requestId, type: 'done' })
+        else out.push(aiStreamErrorChunk(requestId, err))
+      } finally {
+        out.flush()
+        unwatchSender()
+        activeAiStreams.delete(requestId)
+      }
+      return
+    }
+    const modelTurn =
+      provider === 'local'
+        ? prepareLocalAiTurn(system, messages, tools)
+        : { system, messages, tools }
+    if ('error' in modelTurn && modelTurn.error) {
+      send(aiStreamErrorChunk(requestId, new Error(modelTurn.error)))
+      return
+    }
+    // Small local models benefit from short edits; the hard cap also prevents
+    // unbounded generation on low-memory machines.
+    const maxTokens =
+      provider === 'local'
+        ? Math.min(request.maxTokens ?? maxOutputTokensOf(settings), 512)
+        : (request.maxTokens ?? maxOutputTokensOf(settings))
     const controller = new AbortController()
     activeAiStreams.set(requestId, controller)
     const unwatchSender = abortOnDestroyed(event.sender, controller)
@@ -4047,20 +4214,29 @@ export function registerAiIpc(): void {
       out.push({ requestId, type: 'ping' })
     }
     try {
+      const config = provider === 'local' ? await ensureLocalAiRuntime() : target.config
       let stopReason: string | undefined
-      await streamForProvider(provider, config, system, messages, tools, maxTokens, {
-        ...(request.sessionId ? { sessionId: request.sessionId } : {}),
-        signal: controller.signal,
-        onDelta: (text) => out.push({ requestId, type: 'delta', text }),
-        onReasoningDelta: (text) => out.push({ requestId, type: 'reasoning', text }),
-        onToolCall: (toolCall) => out.push({ requestId, type: 'tool-call', toolCall }),
-        onActivity: ping,
-        onStopReason: (reason) => {
-          stopReason = reason
+      await streamForProvider(
+        provider,
+        config,
+        modelTurn.system,
+        modelTurn.messages,
+        modelTurn.tools,
+        maxTokens,
+        {
+          ...(request.sessionId ? { sessionId: request.sessionId } : {}),
+          signal: controller.signal,
+          onDelta: (text) => out.push({ requestId, type: 'delta', text }),
+          onReasoningDelta: (text) => out.push({ requestId, type: 'reasoning', text }),
+          onToolCall: (toolCall) => out.push({ requestId, type: 'tool-call', toolCall }),
+          onActivity: ping,
+          onStopReason: (reason) => {
+            stopReason = reason
+          },
+          onUsage: (usage) => out.push({ requestId, type: 'usage', usage }),
+          ...subscriptionStreamCallbacks(requestId, out.push),
         },
-        onUsage: (usage) => out.push({ requestId, type: 'usage', usage }),
-        ...subscriptionStreamCallbacks(requestId, out.push),
-      })
+      )
       out.push({ requestId, type: 'done', stopReason })
     } catch (err) {
       if (controller.signal.aborted) {
@@ -4218,7 +4394,8 @@ export function registerAiIpc(): void {
     if (!target.ok) return { ok: false, ...target.refusal }
     const { system, user } = request
     try {
-      const result = await chatForProvider(target.provider, target.config, system, user)
+      const config = target.provider === 'local' ? await ensureLocalAiRuntime() : target.config
+      const result = await chatForProvider(target.provider, config, system, user)
       // the one-shot path reports HTTP failures as ok:false with the raw body —
       // replace capacity/rate-limit dumps with the localized "busy" message
       if (!result.ok && isAiOverloadedError(result.error)) {

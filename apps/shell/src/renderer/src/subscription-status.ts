@@ -7,6 +7,7 @@
  */
 import {
   AI_SUBSCRIPTION_PROVIDERS,
+  isSubscriptionProvider,
   selectAiProvider,
   subscriptionConnection,
 } from '@genoffice/ai-provider/browser'
@@ -64,10 +65,12 @@ export function subscriptionSummary(statuses: AiSubscriptionStatuses): Subscript
  * never "due": the acknowledgement could not be stored, so it would not stay away.
  */
 export function firstConnectionNoticeDue(
-  settings: Pick<AiSettings, 'subscriptionNoticeSeen'> | null,
+  settings: Pick<AiSettings, 'provider' | 'subscriptionNoticeSeen'> | null,
   statuses: AiSubscriptionStatuses,
 ): boolean {
   if (!settings || settings.subscriptionNoticeSeen === true) return false
+  // A local or explicit API-key selection does not use any subscription CLI.
+  if (settings.provider !== 'auto' && !isSubscriptionProvider(settings.provider)) return false
   return usableSubscriptionProviders(statuses).length > 0
 }
 

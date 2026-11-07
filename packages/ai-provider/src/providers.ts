@@ -30,6 +30,13 @@ export const DEEPSEEK_V41_FLASH = 'deep-seek-v4.1-flash'
 
 export const AI_PROVIDERS: AiProviderMeta[] = [
   {
+    id: 'local',
+    label: '내장 AI (오프라인)',
+    models: ['qwen3.5-2b-local'],
+    defaultModel: 'qwen3.5-2b-local',
+    keyPlaceholder: '',
+  },
+  {
     id: 'claude-code',
     label: 'Claude Code',
     // Aliases the CLI resolves to the subscription's current models, so no

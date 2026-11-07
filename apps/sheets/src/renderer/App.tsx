@@ -233,6 +233,7 @@ import {
 import { isSelectionDrag, type Point, type SelectionAskAnchor } from './ai/selection-ask'
 import { createAiDocument } from './ai/create-document'
 import { createWorkbookSkill } from './ai/workbook-skill'
+import { claimsWorkbookMutation } from './ai/response-verify'
 import { findWorkbookCells, selectWorkbookRange } from './ai/workbook-search'
 import { traceWorkbookDependents, traceWorkbookPrecedents } from './ai/formula-audit'
 import { createFilesSkill } from './ai/files-skill'
@@ -1691,9 +1692,15 @@ export function App({
           const baseText = turnLimit
             ? [prose, t('appAiTurnLimit')].filter(Boolean).join('\n\n')
             : prose || fallback
+          // The local model can narrate a successful edit after only read
+          // tools. Never display that assertion without a confirmed write.
+          const verifiedText =
+            !runMutatedRef.current && claimsWorkbookMutation(baseText)
+              ? t('appAiNoAction')
+              : baseText
           const finalText = truncated
-            ? [baseText, t('appAiTruncatedNote')].filter(Boolean).join('\n\n')
-            : baseText
+            ? [verifiedText, t('appAiTruncatedNote')].filter(Boolean).join('\n\n')
+            : verifiedText
           setMessage(cancelled ? t('appAiStopped') : t('appAiDone'))
           patchLastAssistant((entry) => ({
             ...entry,

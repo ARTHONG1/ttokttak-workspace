@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { claimsSelection, verifySheetsResponse } from '../src/renderer/ai/response-verify'
+import {
+  claimsSelection,
+  claimsWorkbookMutation,
+  verifySheetsResponse,
+} from '../src/renderer/ai/response-verify'
 
 const SELECT_OK = [{ name: 'select_range', ok: true }]
 const SELECT_FAILED = [{ name: 'select_range', ok: false }]
@@ -51,5 +55,25 @@ describe('verifySheetsResponse', () => {
 
   it('accepts replies without any selection claim regardless of calls', () => {
     expect(verifySheetsResponse('Kira 排名第一。', [])).toBeNull()
+  })
+
+  it('does not accept an unsupported claimed workbook write', () => {
+    const claim = 'A1 셀의 값 Old를 Ready로 변경했습니다. B1은 그대로 유지되었습니다.'
+    expect(claimsWorkbookMutation(claim)).toBe(true)
+    expect(verifySheetsResponse(claim, [])).toContain('propose_operations')
+    expect(verifySheetsResponse(claim, [{ name: 'read_cells', ok: true }])).toContain(
+      'propose_operations',
+    )
+    expect(verifySheetsResponse(claim, [{ name: 'propose_operations', ok: false }])).toContain(
+      'propose_operations',
+    )
+    expect(verifySheetsResponse(claim, [{ name: 'propose_operations', ok: true }])).toBeNull()
+  })
+
+  it('distinguishes descriptions and unsuccessful attempts from successful edits', () => {
+    expect(claimsWorkbookMutation('A1 셀을 변경하지 않았습니다.')).toBe(false)
+    expect(claimsWorkbookMutation('A1 셀을 변경하려면 어떻게 해야 하나요?')).toBe(false)
+    expect(claimsWorkbookMutation('The value is Old. You can change it.')).toBe(false)
+    expect(claimsWorkbookMutation('I have updated A1.')).toBe(true)
   })
 })

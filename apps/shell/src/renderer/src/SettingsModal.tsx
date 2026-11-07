@@ -502,6 +502,7 @@ function AiModelPane({ t }: { t: TFunc }) {
     cliPath: undefined,
   }
   const isCodex = provider === 'codex'
+  const isLocal = provider === 'local'
 
   const touch = () => {
     setDirty(true)
@@ -668,9 +669,11 @@ function AiModelPane({ t }: { t: TFunc }) {
           onPick={(v) => selectProvider(v as AiProviderId)}
         />
       </div>
-      <div className="set-field-desc set-ai-note">
-        {isCodex ? t('setAiCodexHint') : t('setAiKeyNote')}
-      </div>
+      {!isLocal && (
+        <div className="set-field-desc set-ai-note">
+          {isCodex ? t('setAiCodexHint') : t('setAiKeyNote')}
+        </div>
+      )}
       {meta?.needsBaseUrl && (
         <>
           <div className="set-field">
@@ -772,7 +775,7 @@ function AiModelPane({ t }: { t: TFunc }) {
             }}
           />
         </div>
-      ) : (
+      ) : !isLocal ? (
         <>
           <div className="set-field">
             <div className="set-field-text">
@@ -816,7 +819,7 @@ function AiModelPane({ t }: { t: TFunc }) {
             />
           </div>
         </>
-      )}
+      ) : null}
       <div className="set-field">
         <div className="set-field-text">
           <div className="set-field-stack">

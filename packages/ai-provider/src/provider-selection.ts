@@ -92,6 +92,9 @@ export function isKeyProviderConfigured(
   const config = settings.providers?.[provider]
   if (!meta || !config) return false
   if (!config.model?.trim()) return false
+  // The app supplies the on-device server URL and a transient bearer key at request time.
+  // The user's settings never contain a paid key or a remote endpoint for local AI.
+  if (provider === 'local') return true
   if (meta.needsBaseUrl) return !!config.baseUrl?.trim()
   return !!config.apiKey?.trim()
 }

@@ -31,9 +31,9 @@ describe('claude-code provider', () => {
     })
   })
 
-  it('sits next to Codex, ahead of the key providers', () => {
+  it('sits next to Codex, after the embedded offline provider and ahead of key providers', () => {
     const ids = AI_PROVIDERS.map((meta) => meta.id)
-    expect(ids.slice(0, 3)).toEqual(['claude-code', 'codex', 'anthropic'])
+    expect(ids.slice(0, 4)).toEqual(['local', 'claude-code', 'codex', 'anthropic'])
     expect(Object.keys(AI_PROVIDER_ADAPTERS).sort()).toEqual([...ids].sort())
     expect(AI_PROVIDER_ADAPTERS.codex.capabilities.auth).toBe('codex-chatgpt')
     expect(AI_PROVIDER_ADAPTERS.anthropic.capabilities.auth).toBe('api-key')

@@ -13,8 +13,16 @@
   } catch (e) {}
   var wc = frameEl && frameEl.dataset ? Number(frameEl.dataset.wc) : 0
   var host = null
+  var hostWin = null
   try {
-    host = window.top.__electronHost
+    for (var hw = window.parent; hw; hw = hw.parent) {
+      if (hw.__electronHost) {
+        host = hw.__electronHost
+        hostWin = hw
+        break
+      }
+      if (hw === hw.parent) break
+    }
   } catch (e) {}
   if (host && !wc) {
     // A nested iframe inside an app page (the HWP editor draws its document in one). In
@@ -22,9 +30,10 @@
     // shortcut keys pressed in here go to the app page that owns this frame.
     var owner = 0
     try {
-      for (var w = window.parent; w && w !== window.top && !owner; w = w.parent) {
+      for (var w = window.parent; w && w !== hostWin && !owner; w = w.parent) {
         var fe = w.frameElement
         if (fe && fe.dataset && fe.dataset.wc) owner = Number(fe.dataset.wc)
+        if (w === w.parent) break
       }
     } catch (e) {}
     if (owner) {
@@ -289,13 +298,16 @@
   }
 
   // ------------------------------------------------------------ app URLs → web URLs
+  function addHs(u) {
+    return host && typeof host.withHs === 'function' ? host.withHs(u) : u
+  }
   function toWeb(u) {
     if (typeof u !== 'string') return u
     var m = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/i.exec(u)
     if (!m) return u
     var scheme = m[1].toLowerCase()
-    if (scheme === 'file') return '/__file' + decodeURI(m[2].replace(/^[^/]*/, ''))
-    if (host.schemes.has(scheme)) return '/__proto/' + scheme + '/' + m[2]
+    if (scheme === 'file') return addHs('/__file' + decodeURI(m[2].replace(/^[^/]*/, '')))
+    if (host.schemes.has(scheme)) return addHs('/__proto/' + scheme + '/' + m[2])
     return u
   }
   window.__toWebUrl = toWeb
@@ -449,5 +461,5 @@
     host.frameEvent(wc, 'did-finish-load', { title: document.title })
   })
 
-  document.write('<script src="/__web/preload.js?wc=' + wc + '"></' + 'script>')
+  document.write('<script src="' + addHs('/__web/preload.js?wc=' + wc) + '"></' + 'script>')
 })()

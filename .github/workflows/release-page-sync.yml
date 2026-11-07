@@ -1,0 +1,60 @@
+name: Sync GitHub release notes to repository pages
+
+# The release body is the source of truth for the in-app update dialog,
+# GitHub Releases, the README landing page and the repository changelog.
+# A daily reconciliation also repairs events missed by other workflows.
+on:
+  release:
+    types: [published, edited]
+  schedule:
+    - cron: '19 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: release-page-sync-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event_name != 'release' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the public main branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install release renderer dependency
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify release page renderer
+        run: node --test tools/sync-release-page.test.mjs
+
+      - name: Synchronize the README files and changelog
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/sync-release-page.mjs
+
+      - name: Commit only the generated documentation
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add README.md README.en.md CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo 'Already up to date'
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs(release): sync latest GitHub release'
+          git push origin HEAD:main

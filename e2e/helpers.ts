@@ -64,7 +64,8 @@ export interface LaunchedApp {
 }
 
 export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> {
-  if (!existsSync(SHELL_MAIN)) {
+  const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
+  if (!packagedExecutable && !existsSync(SHELL_MAIN)) {
     throw new Error(`Missing build output at ${SHELL_MAIN} — run \`npm run build:all\` first`)
   }
   const userDataDir = options.userDataDir ?? (await mkdtemp(join(tmpdir(), 'genoffice-e2e-')))
@@ -85,7 +86,6 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   const require = createRequire(join(SHELL_DIR, 'package.json'))
   // Opt in to exercising the actual packaged macOS binary, not just the
   // unpackaged Electron entrypoint. Defaults remain unchanged for the suite.
-  const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
   if (packagedExecutable && !existsSync(packagedExecutable)) {
     throw new Error(`Packaged Electron executable missing: ${packagedExecutable}`)
   }
@@ -93,6 +93,12 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   // ELECTRON_RUN_AS_NODE (set by VS Code/CI hosts) would boot Electron as
   // plain Node with no windows — strip it so the app always starts as an app
   const { ELECTRON_RUN_AS_NODE: _electronRunAsNode, ...hostEnv } = process.env
+  if (packagedExecutable) {
+    // A packaged test must discover only the model and runtime inside its app.
+    // Do not inherit developer fixture overrides from a parent terminal.
+    delete hostEnv.GENOFFICE_LOCAL_AI_MODEL
+    delete hostEnv.GENOFFICE_LOCAL_AI_RUNTIME
+  }
   // Linux CI runners restrict unprivileged user namespaces (no usable SUID
   // sandbox) and run under xvfb without GPU — without these the window opens
   // but the renderer never loads. The suite drives trusted local builds only.
@@ -100,6 +106,9 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   // and they never leak into the argv the app parses for documents to open.
   const args: string[] = []
   if (process.platform === 'linux') args.push('--no-sandbox', '--disable-gpu')
+  // Packaged apps ignore GENOFFICE_USER_DATA. Isolate their Chromium profile
+  // and single-instance lock from an installed instance of the same product.
+  if (packagedExecutable) args.push(`--user-data-dir=${userDataDir}`)
   if (!packagedExecutable) args.push(SHELL_DIR)
   if (options.openFile) args.push(options.openFile)
   if (options.openFiles) args.push(...options.openFiles)

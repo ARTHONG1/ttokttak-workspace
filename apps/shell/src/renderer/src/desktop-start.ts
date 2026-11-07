@@ -11,7 +11,7 @@ export function startDestination(_state: 'connected' | 'checking' | 'disconnecte
   return 'workspace'
 }
 
-import { isSubscriptionProvider, selectAiProvider } from '@genoffice/ai-provider/browser'
+import { selectAiProvider } from '@genoffice/ai-provider/browser'
 import type { AiSettings, AiSubscriptionStatuses } from '@genoffice/ai-provider/browser'
 
 export function desktopConnectionState(
@@ -20,8 +20,7 @@ export function desktopConnectionState(
 ): 'connected' | 'checking' | 'disconnected' {
   if (!settings) return 'checking'
   const choice = selectAiProvider(settings, statuses)
-  if (choice.connected)
-    return isSubscriptionProvider(choice.provider) ? 'connected' : 'disconnected'
+  if (choice.connected) return 'connected'
   if (
     choice.reason === 'checking' ||
     (choice.selection === 'auto' && Object.values(statuses).some((s) => s?.state === 'checking'))

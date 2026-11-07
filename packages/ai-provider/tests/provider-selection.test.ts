@@ -167,6 +167,28 @@ describe('selectAiProvider with auto', () => {
 })
 
 describe('selectAiProvider with an explicit selection', () => {
+  it('uses embedded local AI without a key and never falls back to a subscription', () => {
+    const settings = settingsWith('local')
+    expect(settings.providers.local).toEqual({
+      apiKey: '',
+      model: 'qwen3.5-2b-local',
+      baseUrl: undefined,
+      cliPath: undefined,
+    })
+    expect(isKeyProviderConfigured(settings, 'local')).toBe(true)
+    expect(selectAiProvider(settings, statuses('ready', 'ready'))).toEqual({
+      connected: true,
+      provider: 'local',
+      metered: false,
+    })
+    settings.providers.local.model = ''
+    expect(selectAiProvider(settings, statuses('ready', 'ready'))).toMatchObject({
+      connected: false,
+      provider: 'local',
+      reason: 'not-configured',
+    })
+  })
+
   it('honors a ready subscription even when the other one would win auto', () => {
     expect(selectAiProvider(settingsWith('codex'), statuses('ready', 'ready'))).toEqual({
       connected: true,

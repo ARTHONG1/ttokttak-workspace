@@ -224,6 +224,11 @@ function waitForOpening() {
 }
 
 async function init() {
+  if (window.self !== window.top) return
+  try {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('nopopup') === '1' || params.get('embed') === '1') return
+  } catch {}
   const placement = document.documentElement.dataset.popupPlacement
   if (!['home', 'app'].includes(placement)) return
   const controller = new AbortController()

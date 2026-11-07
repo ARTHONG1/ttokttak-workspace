@@ -879,6 +879,18 @@ function runFindReplace(op: Op, env: RunEnv): OpResult {
     })
   }
 
+  // Deterministic local edits may require exactly one occurrence. Check the
+  // complete document before modifying the transaction, including inaccessible
+  // copies, so duplicate phrases never silently turn into a batch rewrite.
+  if (
+    op.exactlyOnce === true &&
+    (replacements.length !== 1 || skippedProtected > 0 || skippedDeleted > 0)
+  ) {
+    throw new Error(
+      `exact replacement requires one unambiguous editable occurrence; found ${replacements.length} editable match(es), ${skippedProtected} protected block(s) and ${skippedDeleted} tracked deletion(s). Nothing was changed.`,
+    )
+  }
+
   // A rewrite is refused only when it would actually touch a withheld span: the
   // collected replacements are exactly the text the model is about to
   // overwrite, so a batch that edits a different paragraph — or the words
@@ -1262,8 +1274,8 @@ register({
 register({
   name: 'findReplace',
   signature:
-    '{ op: "findReplace", find, replace, matchCase?, target? }  // plain-text find & replace inside runs (no cross-block matching); the replacement keeps the matched text\'s formatting — the right op for small in-place fixes; target narrows the scanned blocks (blockIndexes / scope:"selection" / nodeType), omitted = whole document',
-  keys: ['find', 'replace', 'matchCase'],
+    '{ op: "findReplace", find, replace, matchCase?, exactlyOnce?, target? }  // plain-text find & replace inside runs; exactlyOnce:true refuses zero/multiple matches without changing anything, omitted = replace all matches',
+  keys: ['find', 'replace', 'matchCase', 'exactlyOnce'],
   target: 'optional',
   validate(op, where) {
     const shape = validateShape(op, this, where)
@@ -1273,6 +1285,9 @@ register({
       return `${where}: replace must be a string (empty deletes the match)`
     if (op.matchCase !== undefined && typeof op.matchCase !== 'boolean') {
       return `${where}: matchCase must be a boolean`
+    }
+    if (op.exactlyOnce !== undefined && typeof op.exactlyOnce !== 'boolean') {
+      return `${where}: exactlyOnce must be a boolean`
     }
     return null
   },

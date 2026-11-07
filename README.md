@@ -13,7 +13,7 @@
 [![최신 릴리스](https://img.shields.io/github/v/release/ARTHONG1/ttokttak-workspace?style=for-the-badge&label=Mac%20%C2%B7%20Windows)](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2f5bea?style=for-the-badge)](LICENSE)
 
-[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [오픈소스와 기여](#오픈소스-위에서-만들고-다시-오픈소스로) · [English](README.en.md)
+[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [내장형 AI](#내장형-ai--인터넷-연결-없이-문서-작업) · [최근 업데이트](#최근-업데이트) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [English](README.en.md)
 
 </div>
 
@@ -21,6 +21,28 @@
   <a href="docs/assets/intro.mp4"><img src="docs/assets/intro-preview.gif" width="720" alt="똑딱작업실 소개 영상 미리보기" /></a><br />
   <sub>그림을 누르면 31초 소개 영상(MP4)을 봅니다.</sub>
 </p>
+
+## 내장형 AI — 인터넷 연결 없이 문서 작업
+
+**v0.16.2부터 Apple Silicon(M1 이상) Mac용 설치 파일에 Qwen3.5-2B(Q4_K_M) 모델과 llama.cpp 실행기를 포함합니다.** 처음 설치하면 별도의 구독이나 API 키 없이 내장 AI를 사용할 수 있습니다. 문서 내용은 로컬 모델을 사용할 때 이 PC에서 처리됩니다. 모델 파일은 약 1.28GB이며, 첫 실행과 응답에는 컴퓨터 성능에 따라 시간이 걸릴 수 있습니다.
+
+- **앱 안에서 바로 실행**: 로컬 모델은 PC의 `127.0.0.1`에서 실행되고, 앱이 종료될 때 함께 종료됩니다.
+- **문서 작업**: 한글·워드 문서의 지정 부분 수정과 초안 작성, 엑셀·PPT·PDF의 일부 편집 흐름을 연결했습니다. 실제 수정과 저장은 각 편집기의 도구가 맡습니다.
+- **AI 선택 가능**: 설정에서 내장 AI와 기존 Codex·Claude 등 다른 AI를 고를 수 있습니다. 외부 AI를 고르면 그 서비스의 전송·과금 조건이 적용됩니다.
+- **특화 모델은 개발 예정**: 현재 버전은 공개 Qwen3.5-2B 양자화 모델입니다. 한국어 문서 업무 전용 추가 학습과 품질 개선은 이후 버전에 적용할 계획이며, 아직 학습 완료 모델이라고 표시하지 않습니다.
+
+현재 **내장 모델 묶음의 실제 설치·실행 검증 범위는 macOS Apple Silicon**입니다. Windows·Intel Mac·웹 체험판은 이번 배포의 내장 모델 대상에 포함되지 않으며, 기존 AI 연결 기능을 이용할 수 있습니다. [제약 사항 및 설치 파일](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)을 확인해 주세요.
+
+## 최근 업데이트
+
+<!-- GITHUB-RELEASES:START -->
+
+**[v0.16.1](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.1) · 2026-11-06** — 문서 변환에 PDF → 한글(HWP·HWPX) 이 들어왔습니다.
+
+[모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
+<!-- GITHUB-RELEASES:END -->
+
+이 부분과 [전체 업데이트 기록](CHANGELOG.md)은 GitHub 릴리스가 공개·수정될 때 자동으로 갱신됩니다. 설치 프로그램의 업데이트 안내에도 같은 릴리스 설명이 표시됩니다.
 
 ## 새 기능: 문서 변환
 
@@ -31,16 +53,16 @@
 3. **변환하기**: 지금 어느 단계를 하고 있는지 보여 주고, 끝나면 첫 쪽 미리보기와 확인할 점(스캔한 문서, 그림으로 넣은 쪽 등)을 함께 보여 줍니다.
 4. **내려받기**: `원래이름.새형식`으로 저장합니다. 원본은 건드리지 않습니다.
 
-| 올린 문서     | 바꿀 수 있는 형식                      |
-| ------------- | -------------------------------------- |
-| 한글 HWP·HWPX | PDF, HWP↔HWPX, 쪽마다 그림(PNG)        |
-| 워드 DOCX     | PDF, ODT, HTML, Markdown, 쪽마다 그림  |
-| ODT           | 워드, PDF, HTML, Markdown, 쪽마다 그림 |
-| 엑셀·PPT      | PDF, 쪽마다 그림                       |
+| 올린 문서     | 바꿀 수 있는 형식                                    |
+| ------------- | ---------------------------------------------------- |
+| 한글 HWP·HWPX | PDF, HWP↔HWPX, 쪽마다 그림(PNG)                      |
+| 워드 DOCX     | PDF, ODT, HTML, Markdown, 쪽마다 그림                |
+| ODT           | 워드, PDF, HTML, Markdown, 쪽마다 그림               |
+| 엑셀·PPT      | PDF, 쪽마다 그림                                     |
 | PDF           | 워드, 한글 HWP·HWPX\*, PowerPoint, 엑셀, 쪽마다 그림 |
-| HTML          | PDF, 워드, ODT (설치 앱)               |
-| Markdown      | PDF (설치 앱)                          |
-| 사진 JPG·PNG  | PDF                                    |
+| HTML          | PDF, 워드, ODT (설치 앱)                             |
+| Markdown      | PDF (설치 앱)                                        |
+| 사진 JPG·PNG  | PDF                                                  |
 
 \* PDF → 한글은 글·표·그림을 새 한글 문서로 옮깁니다. 띄어쓰기와 표 순서는 그대로 두고, 글꼴과 배치는 한글 기본 양식으로 바뀝니다(PDF → 워드를 거쳐 [kordoc](https://github.com/chrisryugj/kordoc)으로 HWPX를 만들고, HWP는 한글 엔진으로 다시 저장).
 
@@ -84,7 +106,7 @@
 |      | 웹 체험판                                                                    | 데스크톱 앱                                                              | 설치는 AI 에이전트에게                      |
 | ---- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
 | 무엇 | 설치 없이 브라우저에서 바로                                                  | Mac · Windows 프로그램                                                   | 요청문 한 줄로 설치부터 연결까지            |
-| AI   | Google Gemini (Google 로그인 후)                                             | **내 Claude Code · Codex** 구독                                          | 같은 에이전트가 앱과 연결                   |
+| AI   | Google Gemini (웹 설정에 따름)                                               | **내장 AI(Apple Silicon Mac)** 또는 Claude Code · Codex 등               | 같은 에이전트가 앱과 연결                   |
 | 문서 | 작업하는 동안만 서버에 있고, 끝나면 지워집니다                               | 내 PC에만 남습니다                                                       | —                                           |
 | 시작 | [체험하기](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) | [릴리스](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) | [아래 요청문 복사](#ai-에이전트로-설치하기) |
 
@@ -160,7 +182,7 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ## 문서와 개인정보
 
-- **데스크톱 앱**에는 자체 서버가 없고 사용 통계를 보내지 않습니다. 문서는 내 PC에 남습니다. AI를 쓰면 문서 내용과 대화가 **사용자 본인 계정**으로 Anthropic 또는 OpenAI에 전송됩니다.
+- **데스크톱 앱**은 사용 통계를 보내지 않습니다. 문서는 내 PC에 남고, **내장 AI를 선택하면 문서와 대화가 PC 안에서 처리**됩니다(앱이 로컬에서 임시 AI 실행기를 구동합니다). Claude·Codex 등 **외부 AI를 선택하면** 해당 서비스로 요청 내용이 전송될 수 있습니다.
 - **웹 체험판**은 Google 계정으로 로그인한 사람만 쓰고, 계정마다 하루 AI 사용량을 셉니다. 올린 문서는 작업하는 동안만 서버의 임시 폴더에 있다가, 창을 닫고 15분이 지나면 지워집니다. 따로 보관하거나 AI 학습에 쓰지 않습니다. AI 요청은 Google Vertex AI(Gemini)로 갑니다.
 - 전체 목록은 [PRIVACY.md](PRIVACY.md)에 있습니다.
 
@@ -230,7 +252,7 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 
 ## 알려진 한계
 
-- 개발과 확인은 macOS(Apple Silicon)에서 했습니다. Windows 설치 파일은 GitHub Actions에서 만들고 시험합니다.
+- 이번 내장형 모델의 실행 검증은 macOS(Apple Silicon)에서 했습니다. Windows·Intel Mac용 배포본과 웹 체험판에는 이번 모델 묶음이 들어가지 않습니다.
 - 설치 파일에 아직 코드 서명·공증이 없습니다. 설치 스크립트가 처음 실행 경고를 처리합니다. 자동 업데이트는 아직 동작하지 않습니다.
 - 한컴 한글과의 호환은 시험한 문서에서만 확인했습니다. 중요한 문서는 다른 이름으로 저장해 원본을 남기세요.
 - AI가 만든 내용은 틀릴 수 있으니 확인한 뒤 쓰세요.

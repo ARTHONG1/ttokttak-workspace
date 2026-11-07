@@ -295,6 +295,54 @@ describe('setHeadingLevel', () => {
 })
 
 describe('findReplace', () => {
+  it('exactlyOnce edits one literal occurrence without touching nearby dates and amounts', () => {
+    const editor = createEditor([
+      para([text('2026년 12월 3일, 350,000원. 협조 부탁드립니다.')]),
+      para([text('봉수초등학교: 수정하지 않는 문장')]),
+    ])
+    const before = editor.state.doc.child(1).textContent
+    const result = executeOps(editor, [
+      {
+        op: 'findReplace',
+        find: '협조 부탁드립니다.',
+        replace: '협조하여 주시기 바랍니다.',
+        matchCase: true,
+        exactlyOnce: true,
+      },
+    ])
+    expect(result.ok).toBe(true)
+    expect(editor.state.doc.child(0).textContent).toBe(
+      '2026년 12월 3일, 350,000원. 협조하여 주시기 바랍니다.',
+    )
+    expect(editor.state.doc.child(1).textContent).toBe(before)
+  })
+
+  it('exactlyOnce refuses duplicate and missing text atomically', () => {
+    const editor = createEditor([para([text('협조 부탁드립니다. 협조 부탁드립니다.')])])
+    const before = JSON.stringify(editor.getJSON())
+    const duplicate = executeOps(editor, [
+      {
+        op: 'findReplace',
+        find: '협조 부탁드립니다.',
+        replace: '협조하여 주시기 바랍니다.',
+        exactlyOnce: true,
+      },
+    ])
+    expect(duplicate.ok).toBe(false)
+    expect(duplicate.error).toContain('2 editable match(es)')
+    expect(JSON.stringify(editor.getJSON())).toBe(before)
+    const missing = executeOps(editor, [
+      {
+        op: 'findReplace',
+        find: '없는 문구',
+        replace: '새 문구',
+        exactlyOnce: true,
+      },
+    ])
+    expect(missing.ok).toBe(false)
+    expect(JSON.stringify(editor.getJSON())).toBe(before)
+  })
+
   it('replaces every occurrence and keeps marks', () => {
     const editor = createEditor(fixtureDoc())
     const outcome = executeOps(editor, [
