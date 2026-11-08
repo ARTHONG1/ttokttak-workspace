@@ -1,8 +1,15 @@
 import { test, expect } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, screenshotPath, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  screenshotPath,
+  waitForPageWithUrl,
+  EARLIER_HOME_ONLY,
+} from './helpers'
 
 test.describe('home screen', () => {
   test('shows hero, quick-create cards and tab bar', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'home-basics' })
     const { page } = launched
     try {
@@ -41,6 +48,7 @@ test.describe('home screen', () => {
   })
 
   test('renders localized UI when GENOFFICE_LANG=zh-CN', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       lang: 'zh-CN',

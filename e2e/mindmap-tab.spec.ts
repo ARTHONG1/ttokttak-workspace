@@ -13,6 +13,7 @@ import {
   screenshotPath,
   waitForPageWithUrl,
   homeNewTile,
+  EARLIER_HOME_ONLY,
 } from './helpers'
 
 /**
@@ -144,9 +145,8 @@ test.describe('mind map editor in the shell', () => {
       // ── the Home card
       const card = homeNewTile(page, 'xmind')
       await expect(card).toHaveCount(1)
-      await expect(card.locator('.quick-sub')).toHaveText('.xmind')
       // the card is named for the editor, never after another product
-      await expect(card.locator('.quick-title')).toHaveText('Mind Map')
+      await expect(card.locator('.trial-tile-name')).toHaveText('마인드맵')
       await expect(card.locator('img')).toBeVisible()
       const cardIconSrc = await card.locator('img').getAttribute('src')
       await page.screenshot({ path: screenshotPath('mindmap-home-card') })
@@ -288,7 +288,7 @@ test.describe('mind map editor in the shell', () => {
       // and it is now a recent file. Home re-reads its list when the window
       // gets the focus back, which an unattended run has to say itself.
       await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-      const recentRow = page.locator('.recent-row', { hasText: 'first-map.xmind' })
+      const recentRow = page.locator('.trial-recent-name', { hasText: 'first-map.xmind' })
       await expect(recentRow).toBeVisible()
     } finally {
       await closeAndSaveVideo(launched, 'mindmap-new')
@@ -346,6 +346,7 @@ test.describe('mind map editor in the shell', () => {
   })
 
   test('a .xmind on the command line opens; recents, filter, Open in New Window and its close prompt', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     test.setTimeout(240_000)
     const dir = await mkdtemp(join(tmpdir(), 'genoffice-mindmap-argv-'))
     const mapPath = join(dir, 'trip.xmind')
@@ -446,6 +447,7 @@ test.describe('mind map editor in the shell', () => {
   })
 
   test('the folder tree, file search, the open dialog and a drop all reach the editor', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     test.setTimeout(240_000)
     const root = realpathSync(mkdtempSync(join(tmpdir(), 'genoffice-mindmap-root-')))
     const outside = realpathSync(mkdtempSync(join(tmpdir(), 'genoffice-mindmap-out-')))

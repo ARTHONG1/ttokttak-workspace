@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, expect } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, EARLIER_HOME_ONLY } from './helpers'
 
 /**
  * A `.txt` / `.json` file has no document model behind it, so the shell route
@@ -17,6 +17,7 @@ const BOM = '\uFEFF'
 const ORIGINAL_TEXT = `${BOM}first line\r\nsecond line`
 test.describe('source text files', () => {
   test('a .txt picked on Home opens as source and saves back byte-identical', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const dir = await mkdtemp(join(tmpdir(), 'genoffice-txt-home-'))
     const txtPath = join(dir, 'notes.txt')
     await writeFile(txtPath, Buffer.from(ORIGINAL_TEXT, 'utf8'))

@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test'
 import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
 
 /**
- * Home's three tiles: 문서 업로드, 똑딱업무 and 똑딱수업. 똑딱업무 opens the work tools in the
- * content pane (the sidebar too); the 품의서 생성 page checks its inputs before it calls the
+ * Home's three tiles: 문서 업로드, 똑딱업무 and 똑딱수업. 똑딱업무 opens the work tools in
+ * place of the home and their back button returns to it; the 품의서 생성 page checks its inputs before it calls the
  * AI, and 똑딱퀴즈 checks the question count. The AI turns themselves are not run here (no
  * provider in the test app).
  */
-test('special features open from the home sidebar', async () => {
+test('special features open from the home tiles', async () => {
   const launched = await launchShell({
     videoDir: 'home-special-features',
     onboardingSeen: true,
@@ -19,22 +19,18 @@ test('special features open from the home sidebar', async () => {
     await expect(page.locator('.hub-title')).toHaveText(['문서 업로드', '똑딱업무', '똑딱수업'])
     await page.screenshot({ path: screenshotPath('home-hub') })
 
-    // 똑딱수업: still coming, with the way over to 똑딱업무
-    await page.getByTestId('home-hub-class').click()
+    // 똑딱수업, with the way over to 똑딱업무
+    await page.getByTestId('trial-class').click()
     await expect(page.getByTestId('class-tools')).toBeVisible()
-    await expect(page.getByTestId('home-class-nav')).toHaveAttribute('aria-current', 'page')
     await page.screenshot({ path: screenshotPath('home-class-tools') })
     await page.getByTestId('class-to-work').click()
     await expect(page.getByTestId('special-features')).toBeVisible()
-    await expect(page.getByTestId('home-features-nav')).toHaveAttribute('aria-current', 'page')
-    await page.locator('.nav-item').first().click()
+    await page.locator('.sf-back').first().click()
+    await expect(page.getByTestId('special-features')).toHaveCount(0)
 
-    await page.getByTestId('home-hub-work').click()
+    await page.getByTestId('trial-features').click()
     await expect(page.getByTestId('special-features')).toBeVisible()
     await page.screenshot({ path: screenshotPath('home-special-features-list') })
-    await page.locator('.nav-item').first().click()
-    await page.getByTestId('home-features-nav').click()
-    await expect(page.getByTestId('special-features')).toBeVisible()
 
     await page.getByTestId('special-feature-proposal').click()
     await expect(page.getByRole('heading', { name: '품의서 생성' })).toBeVisible()
@@ -78,9 +74,11 @@ test('special features open from the home sidebar', async () => {
     expect(hits).toBeLessThanOrEqual(14)
     await page.screenshot({ path: screenshotPath('home-special-features-wordsearch') })
 
-    // the recents come back from the sidebar
-    await page.locator('.nav-item').first().click()
+    // back to the list, then back to the home
+    await page.locator('.sf-back').first().click()
+    await page.locator('.sf-back').first().click()
     await expect(page.getByTestId('special-features')).toHaveCount(0)
+    await expect(page.getByTestId('trial-features')).toBeVisible()
   } finally {
     await closeAndSaveVideo(launched, 'home-special-features')
   }

@@ -2,7 +2,13 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, screenshotPath, openSettings } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  screenshotPath,
+  openSettings,
+  EARLIER_HOME_ONLY,
+} from './helpers'
 
 /**
  * The free connections (Settings › AI › Use for free, and the first-run guide's
@@ -50,6 +56,7 @@ test('Settings › AI shows the free connections, and a seeded free connection a
 })
 
 test('the first-run connect step offers the free connections as the "neither yet" path', async () => {
+  test.skip(true, EARLIER_HOME_ONLY)
   const launched = await launchShell({ videoDir: 'free-ai-onboarding' })
   const { page } = launched
   try {

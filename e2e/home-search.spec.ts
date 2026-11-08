@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import JSZip from 'jszip'
-import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
+import { launchShell, closeAndSaveVideo, screenshotPath, EARLIER_HOME_ONLY } from './helpers'
 
 /**
  * Home file search: names, folders and extracted content over the default
@@ -54,6 +54,7 @@ test.describe('home file search', () => {
   })
 
   test('finds files by content and name, highlights hits, opens a result', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       settings: { defaultSaveDir: root },

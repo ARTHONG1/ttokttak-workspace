@@ -11,7 +11,13 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, screenshotPath, homeNewTile } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  screenshotPath,
+  homeNewTile,
+  EARLIER_HOME_ONLY,
+} from './helpers'
 
 /**
  * Home "Folders" panel: the tree over the default save folder, the folder
@@ -35,6 +41,7 @@ test.describe('home folders panel', () => {
   })
 
   test('shows the tree, opens a folder, then creates / moves / renames / deletes on disk', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       settings: { defaultSaveDir: root },
@@ -125,6 +132,7 @@ test.describe('home folders panel', () => {
   })
 
   test('an added folder joins the tree in place and leaves the list without touching disk', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const extra = realpathSync(mkdtempSync(join(tmpdir(), 'genoffice-e2e-extra-')))
     mkdirSync(join(extra, 'Projects', 'Alpha'), { recursive: true })
     writeFileSync(join(extra, 'Projects', 'plan.md'), '# plan')
@@ -180,6 +188,7 @@ test.describe('home folders panel', () => {
   })
 
   test('a file created from a folder view lands in that folder', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       settings: { defaultSaveDir: root },

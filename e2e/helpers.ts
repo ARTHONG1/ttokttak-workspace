@@ -350,3 +350,12 @@ export async function openSettings(app: ElectronApplication, page: Page): Promis
   if (!clicked) throw new Error('File → AI menu item (workspace-ai-settings) not found')
   await expect(page.locator('.set-nav-item').first()).toBeVisible()
 }
+
+/**
+ * Why a test of the earlier home is skipped: the desktop home is TrialHome since
+ * 0.14.0 and the feature has no way in from it (Home.tsx is no longer rendered).
+ * Bring the feature back to the home, or remove it together with Home.tsx and
+ * these tests.
+ */
+export const EARLIER_HOME_ONLY =
+  'earlier home (Home.tsx) only: the desktop home since 0.14.0 has no way into this feature'

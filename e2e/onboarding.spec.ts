@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { PRODUCT_NAME } from '../packages/i18n/src/product'
-import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
+import { launchShell, closeAndSaveVideo, screenshotPath, EARLIER_HOME_ONLY } from './helpers'
 
 test.describe('first-run onboarding', () => {
   test('fresh install walks all slides and persists the seen flag', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({ videoDir: 'onboarding-walkthrough' })
     const { page, userDataDir } = launched
     try {
@@ -55,6 +56,7 @@ test.describe('first-run onboarding', () => {
   })
 
   test('skip dismisses the onboarding and persists the seen flag', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({ videoDir: 'onboarding-skip' })
     const { page, userDataDir } = launched
     try {

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, expect, type ElectronApplication } from '@playwright/test'
-import { closeAndSaveVideo, launchShell, screenshotPath } from './helpers'
+import { closeAndSaveVideo, launchShell, screenshotPath, EARLIER_HOME_ONLY } from './helpers'
 
 /**
  * Narrowing the home ask to one starred group (spec 8.8), on the built app:
@@ -94,6 +94,7 @@ async function stubAi(app: ElectronApplication): Promise<void> {
 
 test.describe('ask narrowed to a starred group', () => {
   test('the choice, the narrowed run, and main refusing files outside the group', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     test.setTimeout(180_000)
     const dir = await mkdtemp(join(tmpdir(), 'genoffice-kb-group-e2e-'))
     const a1 = join(dir, 'lease-rules.md')

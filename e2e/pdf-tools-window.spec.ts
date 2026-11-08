@@ -102,8 +102,16 @@ function png(width: number, height: number): Uint8Array {
   )
 }
 
-async function openToolsWindow(app: ElectronApplication, home: Page, card: RegExp): Promise<Page> {
-  await home.getByRole('button', { name: card }).click()
+/**
+ * The home has had no PDF tools card since 0.14.0; the window still opens from the
+ * app's own entry (the one the card called) and from the AI tools.
+ */
+async function openToolsWindow(app: ElectronApplication, home: Page): Promise<Page> {
+  await home.evaluate(() =>
+    (
+      window as unknown as { aiOfficePdfToolsHome: { open(): Promise<void> } }
+    ).aiOfficePdfToolsHome.open(),
+  )
   const tools = await waitForPageWithUrl(app, 'pdf-tools.html')
   await expect(tools.locator('.pt-title')).toBeVisible()
   return tools
@@ -135,7 +143,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-window' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
       await expect(
         tools.getByText('These tools work only on this PC and do not use AI.'),
       ).toBeVisible()
@@ -242,7 +250,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-convert' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
 
       // images to PDF: a file that is no picture is named and left out
       await tools.getByRole('button', { name: /Images to PDF/ }).click()
@@ -324,7 +332,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-duplex' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
       await tools.getByRole('button', { name: /Pad for two-sided printing/ }).click()
       await queueDialogs(app, { open: [[a, b]], save: [out] })
       await tools.getByRole('button', { name: 'Choose PDF', exact: true }).click()
@@ -368,7 +376,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-overlay' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
       await tools.getByRole('button', { name: /Add a background/ }).click()
       await queueDialogs(app, { open: [[doc], [letterhead]], save: [out] })
       await tools.getByRole('button', { name: 'Choose PDF', exact: true }).click()
@@ -426,7 +434,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-annots' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
       await tools.getByRole('button', { name: /Remove annotations/ }).click()
       await queueDialogs(app, { open: [[reviewed]], save: [out] })
       await tools.getByRole('button', { name: 'Choose PDF', exact: true }).click()
@@ -475,7 +483,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-blank' })
     const { app, page } = launched
     try {
-      const tools = await openToolsWindow(app, page, /PDF tools/)
+      const tools = await openToolsWindow(app, page)
       await tools.getByRole('button', { name: /Remove blank pages/ }).click()
       await queueDialogs(app, { open: [[report]], save: [out] })
       await tools.getByRole('button', { name: 'Choose PDF', exact: true }).click()
@@ -604,7 +612,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-compress' })
     const { app, page: home } = launched
     try {
-      const tools = await openToolsWindow(app, home, /PDF tools/)
+      const tools = await openToolsWindow(app, home)
       await tools.getByRole('button', { name: /Make smaller/ }).click()
       await queueDialogs(app, { open: [[scan]], save: [out] })
       await tools.getByRole('button', { name: 'Choose PDF', exact: true }).click()
@@ -669,7 +677,7 @@ test.describe('PDF tools window', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'pdf-tools-security' })
     const { app, page: home } = launched
     try {
-      const tools = await openToolsWindow(app, home, /PDF tools/)
+      const tools = await openToolsWindow(app, home)
       await tools.screenshot({ path: shot('pdf-tools-home-security-en') })
 
       // add password: typed twice, and the button waits until both match
@@ -752,7 +760,7 @@ test.describe('PDF tools window', () => {
       videoDir: 'pdf-tools-window-ko',
     })
     try {
-      const tools = await openToolsWindow(launched.app, launched.page, /PDF 도구/)
+      const tools = await openToolsWindow(launched.app, launched.page)
       await expect(
         tools.getByText('이 도구들은 이 PC 안에서만 처리하며 AI를 쓰지 않습니다.'),
       ).toBeVisible()

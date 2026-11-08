@@ -3,7 +3,13 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
-import { closeAndSaveVideo, launchShell, screenshotPath, waitForPageWithUrl } from './helpers'
+import {
+  closeAndSaveVideo,
+  launchShell,
+  screenshotPath,
+  waitForPageWithUrl,
+  EARLIER_HOME_ONLY,
+} from './helpers'
 
 /**
  * The generate window ("make a new document from these files"), on the built
@@ -79,6 +85,7 @@ interface HandoffSnapshot {
 
 test.describe('generate window', () => {
   test('entry points, materials, unsaved save, and the queued hand-off', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     test.setTimeout(240_000)
     const dir = await mkdtemp(join(tmpdir(), 'genoffice-generate-e2e-'))
     const lesson = join(dir, 'lesson.md')

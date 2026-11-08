@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo } from './helpers'
+import { launchShell, closeAndSaveVideo, EARLIER_HOME_ONLY } from './helpers'
 
 /**
  * Row menus (the ⋯ button on folder rows) are position:fixed and anchor via
@@ -25,6 +25,7 @@ test.describe('home row menu position', () => {
   })
 
   test('the tree row menu opens below its button and inside the window', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       settings: { defaultSaveDir: root },
@@ -73,6 +74,7 @@ test.describe('home row menu position', () => {
   })
 
   test('the tree right-click menu opens to the right of the pointer and inside the window', async () => {
+    test.skip(true, EARLIER_HOME_ONLY)
     const launched = await launchShell({
       onboardingSeen: true,
       settings: { defaultSaveDir: root },
