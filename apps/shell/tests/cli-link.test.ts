@@ -6,7 +6,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getVersion: () => '0.0.0' } }))
 
-import { isEphemeralInstall, launcherFilePath, writeLauncherFile } from '../src/main/cli-link'
+import {
+  isDevelopmentCopy,
+  isEphemeralInstall,
+  launcherFilePath,
+  writeLauncherFile,
+} from '../src/main/cli-link'
 
 describe('genoffice launcher file', () => {
   it('lives in the genoffice auth directory, overridable like auth.json', () => {
@@ -37,5 +42,44 @@ describe('genoffice launcher file', () => {
       true,
     )
     expect(isEphemeralInstall('/Applications/GenOffice.app/Contents/Resources', {})).toBe(false)
+  })
+
+  /**
+   * Launching a packaged build straight from electron-builder's output folder
+   * (or a copy in a temp folder, or an e2e run with its own profile) used to
+   * point the user's ttokttak command and ~/.ttokttak/launcher at that build:
+   * the next rebuild then changed or removed the command every agent uses.
+   */
+  it('leaves the command alone for build outputs, temp copies and test profiles', () => {
+    const res = (app: string) => app + '/Contents/Resources'
+    for (const path of [
+      res('/Users/u/work/program/apps/shell/release/mac-arm64/HangulAIWorkbench.app'),
+      res('/Users/u/work/program/apps/shell/release/mac/HangulAIWorkbench.app'),
+      res('/Users/u/work/program/apps/shell/release/mac-universal/HangulAIWorkbench.app'),
+      'C:\\work\\program\\apps\\shell\\release\\win-unpacked\\resources',
+      '/home/u/program/apps/shell/release/linux-unpacked/resources',
+      res('/private/tmp/check-0152/HangulAIWorkbench.app'),
+      res('/tmp/probe/HangulAIWorkbench.app'),
+      res('/private/var/folders/x1/abc/T/AppTranslocation/HangulAIWorkbench.app'),
+      'C:\\Users\\u\\AppData\\Local\\Temp\\probe\\resources',
+    ])
+      expect(isDevelopmentCopy(path, {}), path).toBe(true)
+    expect(
+      isDevelopmentCopy(res('/Applications/HangulAIWorkbench.app'), {
+        GENOFFICE_USER_DATA: '/tmp/e2e-profile',
+      }),
+    ).toBe(true)
+  })
+
+  it('links real installs wherever the user keeps the app', () => {
+    for (const path of [
+      '/Applications/HangulAIWorkbench.app/Contents/Resources',
+      '/Users/u/Applications/HangulAIWorkbench.app/Contents/Resources',
+      '/Users/u/Desktop/HangulAIWorkbench.app/Contents/Resources',
+      '/Users/u/Downloads/release/HangulAIWorkbench.app/Contents/Resources',
+      'C:\\Users\\u\\AppData\\Local\\Programs\\HangulAIWorkbench\\resources',
+      '/opt/HangulAIWorkbench/resources',
+    ])
+      expect(isDevelopmentCopy(path, {}), path).toBe(false)
   })
 })

@@ -30,6 +30,12 @@ export function installCliLinkBestEffort(settingsPath: string): void {
       console.log('[genoffice] cli link skipped: app runs from a temporary mount')
       return
     }
+    if (isDevelopmentCopy(process.resourcesPath, process.env)) {
+      // a build output, temp copy or test profile must not take over the user's
+      // command: the next rebuild would change or remove what every agent runs
+      console.log('[genoffice] cli link skipped: build output, temp copy or test profile')
+      return
+    }
     const dir = join(process.resourcesPath, 'cli')
     writeLauncherFile(launcherFilePath(process.env), dir)
     const version = app.getVersion()
@@ -52,6 +58,20 @@ export function installCliLinkBestEffort(settingsPath: string): void {
 export function isEphemeralInstall(resourcesPath: string, env: NodeJS.ProcessEnv): boolean {
   if (env.APPIMAGE) return true
   return /^\/Volumes\//.test(resourcesPath) || /\/\.mount_[^/]+\//.test(resourcesPath)
+}
+
+/** electron-builder's unpacked output folders (release/mac-arm64, release/win-unpacked, …) */
+const BUILD_OUTPUT_RE =
+  /\/release\/(?:mac|mac-arm64|mac-universal|win-unpacked|win-arm64-unpacked|win-ia32-unpacked|linux-unpacked|linux-arm64-unpacked)\//
+/** temp folders: probe copies, App Translocation, extracted test builds */
+const TEMP_RE = /^\/(?:private\/)?(?:tmp|var\/folders)\/|\/AppData\/Local\/Temp\//i
+
+/** A packaged app that is not the user's install: a build output, a copy in a
+ *  temp folder, or a run with its own test profile (GENOFFICE_USER_DATA). */
+export function isDevelopmentCopy(resourcesPath: string, env: NodeJS.ProcessEnv): boolean {
+  if (env.GENOFFICE_USER_DATA) return true
+  const path = resourcesPath.replace(/\\/g, '/')
+  return BUILD_OUTPUT_RE.test(path) || TEMP_RE.test(path)
 }
 
 /** Same directory the ttokttak CLI uses for its audit log; never the upstream app's `~/.genoffice`. */

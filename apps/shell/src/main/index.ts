@@ -183,6 +183,12 @@ import { resolveDocAsker } from './doc-picker/doc-asker'
 import { createDocPicker } from './doc-picker/doc-picker-window'
 import { handleDroppedFiles } from './dropped-files'
 import { collectLaunchPaths } from './launch-paths'
+import {
+  type NewerInstance,
+  newerInstance,
+  newerInstanceText,
+  secondInstancePayload,
+} from './newer-instance'
 
 import {
   buildDocsMenu,
@@ -8592,7 +8598,40 @@ app.on('second-instance', (_event, argv, _cwd, additionalData) => {
   revealShellWindow()
   if (launchListGate.blocking()) deferredLaunchPaths.push(...paths)
   else openLaunchPaths(paths)
+  const newer = newerInstance(additionalData, app.getVersion())
+  if (newer) void offerQuitForNewerVersion(newer)
 })
+
+// A newer install was launched while this (older) copy keeps running: the
+// launch only reached this window, so say so and offer the normal quit
+// (unsaved documents still get their save prompt).
+let newerVersionPromptOpen = false
+async function offerQuitForNewerVersion(newer: NewerInstance): Promise<void> {
+  if (newerVersionPromptOpen) return
+  newerVersionPromptOpen = true
+  try {
+    const text = newerInstanceText(currentLang(), {
+      current: app.getVersion(),
+      next: newer.version,
+    })
+    const options = {
+      type: 'info' as const,
+      message: text.message,
+      detail: text.detail,
+      buttons: [text.quit, text.later],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    }
+    const win = shellWindow && !shellWindow.isDestroyed() ? shellWindow : null
+    const { response } = win
+      ? await dialog.showMessageBox(win, options)
+      : await dialog.showMessageBox(options)
+    if (response === 0) app.quit()
+  } finally {
+    newerVersionPromptOpen = false
+  }
+}
 
 installNavigationGuard(app)
 installContextMenu(app, () => contextMenuLabels(currentLang()))
@@ -8864,10 +8903,13 @@ app.whenReady().then(async () => {
     await runHeadlessExportEntry(headlessArgv)
     return
   }
-  const lockData = () =>
-    pendingLaunchPaths.length > 0
+  // the running copy also learns which version was launched (newer-instance.ts)
+  const lockData = () => ({
+    ...secondInstancePayload(app.getVersion(), process.execPath),
+    ...(pendingLaunchPaths.length > 0
       ? { launchPath: pendingLaunchPaths[0], launchPaths: pendingLaunchPaths }
-      : {}
+      : {}),
+  })
   let hasLock = app.requestSingleInstanceLock(lockData())
   if (!hasLock && !app.isPackaged) {
     // Dev watch restart: electron-vite SIGTERMs the previous instance and spawns this
