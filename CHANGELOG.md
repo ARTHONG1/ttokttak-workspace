@@ -6,7 +6,7 @@
 
 ### [v0.16.4](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.4) · 2026-11-08
 
-똑딱작업실 0.16.4는 내장 AI 모델을 문서 편집용으로 추가 학습한 버전으로 바꾼 업데이트입니다. Apple Silicon Mac 설치본의 내장 AI가 앱의 실제 편집 도구 호출 기록으로 한 번 더 학습한 모델로 바뀌었고, 크기·메모리·속도는 이전과 같습니다.
+똑딱작업실 0.16.4는 내장 AI 모델을 문서 편집용으로 추가 학습한 버전으로 바꾸고, Windows 설치본에도 내장 AI를 탑재한 업데이트입니다. Apple Silicon Mac과 Windows(64비트) 설치본에 앱의 실제 편집 도구 호출 기록으로 한 번 더 학습한 모델이 들어가며, 크기·메모리·속도는 이전과 같습니다.
 
 ### [v0.16.3](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.3) · 2026-11-07
 
