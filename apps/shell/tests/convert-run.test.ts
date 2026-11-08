@@ -131,6 +131,48 @@ describe('runConversion', () => {
     expect(result).toEqual({ ok: false, error: CONVERT_ERRORS.noRoute })
     expect(deps.step).not.toHaveBeenCalled()
   })
+
+  it('carries a Hangul stage preview SVG on PDF → HWP and PDF → HWPX conversions', async () => {
+    const HWP = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 1, 2])
+    const { deps } = fakeDeps(
+      { 'pdf-docx': ZIP, 'docx-hwpx': ZIP, 'hwp-container': HWP },
+      {
+        step: vi.fn(async (step, job) => {
+          if (step === 'pdf-docx' || step === 'docx-hwpx') {
+            return {
+              ...(step === 'docx-hwpx' ? { previewSvg: '<svg>hwpx-page-1</svg>' } : {}),
+            }
+          }
+          if (step === 'hwp-container') {
+            return { previewSvg: '<svg>hwp-page-1</svg>' }
+          }
+          void job
+          return {}
+        }),
+        readFile: async (path) => (path.endsWith('.hwp') ? HWP : ZIP),
+        fileSize: async () => 128,
+        copyFile: async () => {},
+      },
+    )
+    const hwpResult = await runConversion(
+      { ...request(), path: '/in/원고.pdf', kind: 'pdf', format: 'hwp' },
+      deps,
+    )
+    expect(hwpResult).toMatchObject({
+      ok: true,
+      fileName: '원고.hwp',
+      previewSvg: '<svg>hwp-page-1</svg>',
+    })
+    const hwpxResult = await runConversion(
+      { ...request(), path: '/in/원고.pdf', kind: 'pdf', format: 'hwpx' },
+      deps,
+    )
+    expect(hwpxResult).toMatchObject({
+      ok: true,
+      fileName: '원고.hwpx',
+      previewSvg: '<svg>hwpx-page-1</svg>',
+    })
+  })
 })
 
 describe('outputLooksRight', () => {

@@ -47,6 +47,8 @@ export type ConvertRunResult =
       warnings: string[]
       /** the last PDF made on the way (or the result itself), for a first-page preview */
       previewPdf?: Uint8Array
+      /** the first page of a finished Hangul document as SVG, for a first-page preview */
+      previewSvg?: string
     }
   | { ok: false; error: string }
 

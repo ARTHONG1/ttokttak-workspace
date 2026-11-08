@@ -3,7 +3,11 @@ import { createRequire } from 'node:module'
 import { beforeAll, describe, expect, it } from 'vitest'
 import init, { HwpDocument } from '@rhwp/core'
 import { hwpToText } from '@genoffice/file-parse'
-import { HwpConvertError, convertHwpContainer } from '../src/main/document-convert/hwp-container'
+import {
+  HwpConvertError,
+  convertHwpContainer,
+  hwpFirstPageSvg,
+} from '../src/main/document-convert/hwp-container'
 
 beforeAll(async () => {
   const wasm = createRequire(import.meta.url).resolve('@rhwp/core/rhwp_bg.wasm')
@@ -69,5 +73,17 @@ describe('convertHwpContainer', () => {
   it('says a password-protected document needs its password', async () => {
     const locked = build().exportHwpWithPassword('1234')
     expect(await reasonOf(convertHwpContainer(locked, 'hwpx'))).toBe('password')
+  })
+
+  it('draws the first page of an HWP or HWPX document as an SVG preview', async () => {
+    const hwp = build().exportHwp()
+    const hwpx = build().exportHwpx()
+    const hwpSvg = await hwpFirstPageSvg(hwp)
+    const hwpxSvg = await hwpFirstPageSvg(hwpx)
+    expect(hwpSvg?.startsWith('<svg')).toBe(true)
+    expect(hwpxSvg?.startsWith('<svg')).toBe(true)
+    expect(hwpSvg).toContain('>국</text>')
+    expect(hwpxSvg).toContain('>국</text>')
+    expect(await hwpFirstPageSvg(new Uint8Array([1, 2, 3]))).toBeUndefined()
   })
 })

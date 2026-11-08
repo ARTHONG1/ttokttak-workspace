@@ -363,6 +363,16 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
               <div className="tc-preview">
                 {view.made.previewPdf ? (
                   <FirstPage pdf={view.made.previewPdf} />
+                ) : view.made.previewSvg ? (
+                  <img
+                    src={
+                      'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(view.made.previewSvg)
+                    }
+                    width={520}
+                    className="tc-preview-page"
+                    alt="첫 쪽 미리보기"
+                    draggable={false}
+                  />
                 ) : (
                   <div className="tc-preview-badge">
                     <Badge label={BADGE[view.target.format]} kind={view.target.format} />

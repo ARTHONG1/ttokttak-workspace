@@ -49,6 +49,7 @@ export interface StepJob {
 export interface StepOutcome {
   warnings?: string[]
   facts?: string[]
+  previewSvg?: string
 }
 
 export interface ConvertDeps {
@@ -138,12 +139,14 @@ export async function runConversion(
     const warnings: string[] = []
     const facts: string[] = []
     let previewPdf: Uint8Array | undefined
+    let previewSvg: string | undefined
     for (const [i, step] of route.steps.entries()) {
       req.onStep(i + 1, route.steps.length, STEP_LABELS[step])
       const output = join(dir, 'work-' + (i + 1) + '.' + (STEP_OUTPUT[step] ?? extension))
       const outcome = await deps.step(step, { input, output, format: req.format, name })
       warnings.push(...(outcome.warnings ?? []))
       facts.push(...(outcome.facts ?? []))
+      if (outcome.previewSvg) previewSvg = outcome.previewSvg
       if (output.endsWith('.pdf')) previewPdf = await deps.readFile(output)
       input = output
     }
@@ -160,6 +163,7 @@ export async function runConversion(
       facts,
       warnings,
       ...(previewPdf ? { previewPdf } : {}),
+      ...(previewSvg ? { previewSvg } : {}),
     }
   } catch (err) {
     console.warn('[convert] failed', req.kind, '→', req.format, err)

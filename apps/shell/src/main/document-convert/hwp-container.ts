@@ -64,3 +64,20 @@ export async function convertHwpContainer(
   if (comparable(after) !== comparable(before)) throw new HwpConvertError('mismatch')
   return out
 }
+
+/** The first page of an HWP or HWPX document drawn as an SVG by the Hangul engine, or undefined. */
+export async function hwpFirstPageSvg(bytes: Uint8Array): Promise<string | undefined> {
+  try {
+    const { HwpDocument } = await loadRhwpEngine()
+    const doc = new HwpDocument(new Uint8Array(bytes))
+    try {
+      if (doc.pageCount() < 1) return undefined
+      const svg = doc.renderPageSvg(0)
+      return svg.trimStart().startsWith('<svg') ? svg : undefined
+    } finally {
+      doc.free()
+    }
+  } catch {
+    return undefined
+  }
+}

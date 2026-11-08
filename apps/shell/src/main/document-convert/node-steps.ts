@@ -6,7 +6,7 @@ import { imagesToPdfBytes } from '../../../../pdf/src/main/images-to-pdf'
 import { PdfLoadError, convertPdfFileToDocxLocal, ensurePdfium } from '../pdf2docx-local'
 import { convertPdfFileToPptxLocal } from '../pdf2pptx-local'
 import { convertPdfFileToXlsxLocal } from '../pdf2xlsx-local'
-import { convertHwpContainer } from './hwp-container'
+import { convertHwpContainer, hwpFirstPageSvg } from './hwp-container'
 import { DOCX_HWPX_NOTE, docxToHwpx } from './docx-hwpx'
 import { PNG_PAGE_LIMIT, pdfToPngZip } from './pdf-pages'
 import { withPdfDocument } from '../../../../../packages/pdf2docx/src/extract/pdfium'
@@ -87,9 +87,12 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
       await host.toPdf(job.input, job.output)
       // the page count only when the PDF is the result (a later stage reports its own)
       return job.format === 'pdf' ? { facts: await pdfPageFacts(job.output) } : {}
-    case 'hwp-container':
-      await write(await convertHwpContainer(await read(), job.format === 'hwp' ? 'hwp' : 'hwpx'))
-      return {}
+    case 'hwp-container': {
+      const out = await convertHwpContainer(await read(), job.format === 'hwp' ? 'hwp' : 'hwpx')
+      await write(out)
+      const previewSvg = await hwpFirstPageSvg(out)
+      return previewSvg ? { previewSvg } : {}
+    }
     case 'pdf-png': {
       const made = await pdfToPngZip(await read(), job.name, await ensurePdfium()).catch(
         pdfPassword,
@@ -140,9 +143,12 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
         await imagesToPdfBytes([await read()], { paper: { w: 595.28, h: 841.89 }, marginPt: 0 }),
       )
       return { facts: ['1쪽'] }
-    case 'docx-hwpx':
-      await write(await docxToHwpx(await read()))
-      return { warnings: [DOCX_HWPX_NOTE] }
+    case 'docx-hwpx': {
+      const out = await docxToHwpx(await read())
+      await write(out)
+      const previewSvg = job.format === 'hwpx' ? await hwpFirstPageSvg(out) : undefined
+      return { warnings: [DOCX_HWPX_NOTE], ...(previewSvg ? { previewSvg } : {}) }
+    }
   }
 }
 
