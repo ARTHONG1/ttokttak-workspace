@@ -203,11 +203,13 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 
 ## 오픈소스 위에서 만들고, 다시 오픈소스로
 
-똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 여러 오픈소스 프로젝트를 이어 붙이고, 학교와 사무실에서 실제로 막히던 부분을 고치고 채워 넣었습니다. 아래 프로젝트를 만든 분들께 감사드립니다.
+똑딱작업실은 처음부터 새로 쓴 프로그램이 아닙니다. 통합 오피스와 AI 연결의 토대를 세운 **[GenOffice](https://github.com/genspark-ai/genoffice)**, 그 위에 한국어 환경과 한글(HWP·HWPX) 편집·보정 체계를 정성껏 다듬어 공개해 주신 **[이음오피스(IeumOffice)](https://github.com/pblsketch/openoffice)**, 그리고 한글 문서 엔진을 개척한 **[rhwp](https://github.com/edwardkim/rhwp)**를 비롯한 오픈소스 개발자분들의 깊은 노고와 공유 정신에 진심으로 존경과 감사를 표합니다.
+
+똑딱작업실은 이 든든한 토대 위에서 두 가지 목표를 향해 걸음을 이어가고 있습니다. 하나는 품의서·퀴즈·전자서명·문서 변환·수업 도구처럼 **현장의 실제 업무에 특화된 프로그램을 앱 안에 바로 탑재**하는 것이고, 다른 하나는 **자체 학습한 내장 AI를 더해 외부 전송이나 보안 걱정 없이 안심하고 문서를 맡길 수 있는 환경**을 완성하는 것입니다.
 
 | 분야           | 오픈소스                                                                                                                                                                                                 | 맡은 일                                                         | 라이선스         |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------- |
-| 앱의 바탕      | [GenOffice](https://github.com/genspark-ai/genoffice) 계열 오픈소스 (출처 전체는 [NOTICE](NOTICE))                                                                                                       | 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결, 문서 엔진 | Apache-2.0       |
+| 앱의 바탕      | [이음오피스(IeumOffice)](https://github.com/pblsketch/openoffice) · [GenOffice](https://github.com/genspark-ai/genoffice) (출처 전체는 [NOTICE](NOTICE))                                                 | 탭으로 묶인 편집기, 편집기마다 있는 AI 창, 구독 연결, 문서 엔진 | Apache-2.0       |
 | 한글 문서      | [rhwp](https://github.com/edwardkim/rhwp)                                                                                                                                                                | 한글(HWP·HWPX) 읽기·쓰기와 화면 그리기                          | MIT              |
 | 엑셀           | [Univer](https://github.com/dream-num/univer) · [calamine](https://github.com/tafia/calamine)                                                                                                            | 표 계산과 화면, 엑셀 파일 읽기                                  | Apache-2.0 · MIT |
 | 워드·마크다운  | [Tiptap](https://github.com/ueberdosis/tiptap) · [ProseMirror](https://prosemirror.net)                                                                                                                  | 문서 편집                                                       | MIT              |
@@ -282,7 +284,7 @@ AI 도구가 이 저장소를 빠르게 이해하도록 [llms.txt](llms.txt)에 
 
 똑딱작업실은 [Apache License 2.0](LICENSE)으로 배포합니다.
 
-이 저장소의 코드는 Apache License 2.0으로 공개된 [GenOffice](https://github.com/genspark-ai/genoffice) 계열 오픈소스를 바탕으로 고치고 더한 것입니다. 원래의 저작권 고지는 그대로 두었고, 출처와 바꾼 내용은 [NOTICE](NOTICE)에 있습니다. 바꾼 파일과 내용은 커밋 기록으로 확인할 수 있습니다.
+이 저장소의 코드는 Apache License 2.0으로 공개된 [이음오피스(IeumOffice)](https://github.com/pblsketch/openoffice)와 그 바탕인 [GenOffice](https://github.com/genspark-ai/genoffice)를 바탕으로 고치고 더한 것입니다. 훌륭한 코드를 공개해 주신 원저작자분들께 깊이 감사드리며, 원래의 저작권 고지는 그대로 두었고 출처와 바꾼 내용은 [NOTICE](NOTICE)에 있습니다. 바꾼 파일과 내용은 커밋 기록으로 확인할 수 있습니다.
 
 한글(HWP·HWPX) 편집기는 [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 바탕으로 합니다. 한글과컴퓨터가 HWP 형식 문서를 공개하며 붙인 조건에 따라 밝힙니다.
 
