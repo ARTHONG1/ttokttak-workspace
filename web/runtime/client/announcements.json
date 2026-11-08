@@ -1,16 +1,4 @@
 {
   "version": 1,
-  "items": [
-    {
-      "id": "04182bc9-bc05-4383-a41e-d504f41199f5",
-      "enabled": true,
-      "title": "선착순 3명!) 💙요즘 AI 교육이 궁금한 선생님들 모여라! AI X EDU 제 2회 러닝페스티벌 신청 안내 (무료 공개 연수 / 60만원 상당의 푸짐한 경품까지)💙💙",
-      "body": "📅 일시 : 11월 7일(토) 13:30~17:30\n📍 장소 : 여의도 동아출판 본사(9호선 국회의사당역 3번 출구)\n👤 대상 : AI 활용 교육이 궁금한 선생님 누구나\n⭐참가비 : 무료\n🎁참가자 혜택 : 다과, 에듀테크 무료 체험권, 럭키드로우 추첨권 증정(AI 구독권, 각종 디지털 악세서리, AI 서적까지 60만원 상당의 푸짐한 선물!)",
-      "mediaType": "youtube",
-      "mediaUrl": "https://youtu.be/h79sANEgHFk?si=8FB06NO5IbUxXfKQ",
-      "linkUrl": "https://forms.gle/nGUhoJXHz4CfPHSJ8",
-      "linkLabel": "신청하기",
-      "placement": "home"
-    }
-  ]
+  "items": []
 }
