@@ -12,7 +12,7 @@
 import { test, expect } from '@playwright/test'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { existsSync, readdirSync } from 'node:fs'
-import { copyFile, mkdtemp, stat } from 'node:fs/promises'
+import { copyFile, mkdtemp, readFile, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { closeAndSaveVideo, launchShell, waitForPageWithUrl } from './helpers'
@@ -73,6 +73,20 @@ async function openMemoPanel(page: Page): Promise<void> {
 }
 
 const memoCards = (page: Page) => page.locator('.memo-card')
+
+/**
+ * Where a plain Save of this file lands. HWPX is the default save format
+ * (apps/hwp/AGENTS.md, user decision 2026-10-30): an opened .hwp is written as
+ * <name>.hwpx beside it and the .hwp is left as it was; an .hwpx is written in place.
+ */
+function savedPathOf(file: string): string {
+  return file.endsWith('.hwp') ? file.slice(0, -'.hwp'.length) + '.hwpx' : file
+}
+
+/** The file's mtime, or null while it does not exist yet. */
+async function mtimeOf(file: string): Promise<number | null> {
+  return existsSync(file) ? (await stat(file)).mtimeMs : null
+}
 
 /** The File menu items the plugin adds fire this event on the editor's window. */
 async function fileCommand(page: Page, command: 'save' | 'saveAs'): Promise<void> {
@@ -168,13 +182,16 @@ for (const format of ['hwp', 'hwpx'] as const) {
       await expect(page.locator('.memo-modal')).toHaveCount(0)
       await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
 
-      const before = (await stat(file)).mtimeMs
+      const saved = savedPathOf(file)
+      const original = await readFile(file)
+      const before = await mtimeOf(saved)
       await fileCommand(page, 'save')
-      await expect
-        .poll(async () => (await stat(file)).mtimeMs, { timeout: 20_000 })
-        .not.toBe(before)
+      await expect.poll(() => mtimeOf(saved), { timeout: 20_000 }).not.toBe(before)
+      await expect.poll(() => mtimeOf(saved)).not.toBeNull()
+      // an opened .hwp is never overwritten
+      if (saved !== file) expect((await readFile(file)).equals(original)).toBe(true)
 
-      page = await reopenFile(launched.app, file)
+      page = await reopenFile(launched.app, saved)
       await openMemoPanel(page)
       await expect(memoCards(page)).toHaveCount(3)
       await expect(memoCards(page).filter({ hasText: '고친 본문 메모입니다.' })).toHaveCount(1)
@@ -207,12 +224,14 @@ test('adds a memo, then holds save and tab close until its editor is closed', as
     await expect(page.locator('.memo-author-value')).not.toBeEmpty()
     await page.locator('.memo-textarea').fill('새로 넣은 메모입니다.')
 
+    const saved = savedPathOf(file)
     const before = (await stat(file)).mtimeMs
     await fileCommand(page, 'save')
     await expect(page.locator('.hwp-notice')).toContainText(
       '메모 작성을 먼저 저장하거나 취소해 주세요.',
     )
     await expect.poll(async () => (await stat(file)).mtimeMs).toBe(before)
+    expect(existsSync(saved)).toBe(false)
 
     // closing asks in main (a hung page must not keep the tab open): Cancel keeps it
     await launched.app.evaluate(({ dialog: d }) => {
@@ -240,8 +259,9 @@ test('adds a memo, then holds save and tab close until its editor is closed', as
     await expect(memoCards(page).filter({ hasText: '새로 넣은 메모입니다.' })).toHaveCount(1)
 
     await fileCommand(page, 'save')
-    await expect.poll(async () => (await stat(file)).mtimeMs, { timeout: 20_000 }).not.toBe(before)
-    const reopened = await reopenFile(launched.app, file)
+    await expect.poll(() => mtimeOf(saved), { timeout: 20_000 }).not.toBeNull()
+    expect((await stat(file)).mtimeMs).toBe(before)
+    const reopened = await reopenFile(launched.app, saved)
     await openMemoPanel(reopened)
     await expect(memoCards(reopened).filter({ hasText: '새로 넣은 메모입니다.' })).toHaveCount(1)
   } finally {
