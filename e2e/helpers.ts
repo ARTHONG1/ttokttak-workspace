@@ -164,8 +164,9 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
 export async function enterWorkspace(page: Page, timeoutMs = 20_000): Promise<void> {
   const welcome = page.locator('iframe[title="똑딱작업실 소개"]')
   const deadline = Date.now() + timeoutMs
-  // the welcome page renders with the home's first paint
-  await welcome.waitFor({ state: 'attached', timeout: 5_000 }).catch(() => {})
+  // the welcome page comes with the home's first paint, which a document opened at
+  // launch can hold back for seconds; the desktop always shows it
+  await welcome.waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {})
   while ((await welcome.count()) > 0) {
     if (Date.now() > deadline)
       throw new Error('The desktop welcome page did not close after 시작하기')
