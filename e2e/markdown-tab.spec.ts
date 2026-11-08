@@ -8,6 +8,7 @@ import {
   waitForPageWithUrl,
   screenshotPath,
   stubAiReady,
+  homeNewTile,
 } from './helpers'
 
 test.describe('markdown editor', () => {
@@ -48,7 +49,7 @@ test.describe('markdown editor', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'new-markdown-tab' })
     const { app, page } = launched
     try {
-      const card = page.locator('.quick-card', { hasText: 'AI Markdown' })
+      const card = homeNewTile(page, 'md')
       await expect(card).toHaveCount(1)
       await card.click()
 

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
+import { launchShell, closeAndSaveVideo, screenshotPath, openSettings } from './helpers'
 
 test('Jev reranking lives under AI > Advanced > AI Media & Search, saves with it, and reports its own test verdict', async () => {
   const launched = await launchShell({
@@ -10,7 +10,7 @@ test('Jev reranking lives under AI > Advanced > AI Media & Search, saves with it
   })
   const { page, userDataDir } = launched
   try {
-    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await openSettings(launched.app, page)
     await page.locator('.set-nav-item').filter({ hasText: 'General' }).click()
     await expect(page.getByRole('switch', { name: 'Jev search reranking' })).toHaveCount(0)
 

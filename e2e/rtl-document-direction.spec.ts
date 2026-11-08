@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 
 /**
  * An RTL UI must mirror the chrome, never the document (genoffice#1861).
@@ -48,7 +48,7 @@ for (const { name, card, url, host } of APPS) {
       videoDir: `rtl-${name}`,
     })
     try {
-      await launched.page.locator(`.quick-card[data-ext="${card}"]`).click()
+      await homeNewTile(launched.page, card).click()
       const page = await waitForPageWithUrl(launched.app, url)
       const surface = page.locator(host).first()
       await expect(surface).toBeVisible({ timeout: 45_000 })

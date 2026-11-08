@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
+import { launchShell, closeAndSaveVideo, screenshotPath, openSettings } from './helpers'
 
 /**
  * The free connections (Settings › AI › Use for free, and the first-run guide's
@@ -30,7 +30,7 @@ test('Settings › AI shows the free connections, and a seeded free connection a
   })
   const { page } = launched
   try {
-    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await openSettings(launched.app, page)
     await page.locator('.set-nav-item').filter({ hasText: 'AI' }).first().click()
     await expect(page.locator('#set-free-ai')).toHaveText('Use for free')
     const openrouter = page.locator('.free-ai-card[data-provider="openrouter"]')

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 
 /**
  * Post-paste "Paste options" chip (Word parity): after pasting foreign web
@@ -27,8 +27,8 @@ test.describe('docs paste options chip', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'docs-paste-options' })
     const { app, page } = launched
     try {
-      await expect(page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
-      await page.locator('.quick-card[data-ext="docx"]').click()
+      await expect(homeNewTile(page, 'docx')).toBeVisible()
+      await homeNewTile(page, 'docx').click()
       const editorPage = await waitForPageWithUrl(app, '://docs/')
       await editorPage.waitForFunction(
         () => Boolean((window as unknown as AidocsWindow).__aidocs?.editor),

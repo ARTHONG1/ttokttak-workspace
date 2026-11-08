@@ -4,7 +4,13 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  screenshotPath,
+  homeNewTile,
+} from './helpers'
 import { PRODUCT_NAME } from '../packages/i18n/src/product'
 
 /**
@@ -31,8 +37,8 @@ test.describe('sheets: new blank workbook', () => {
         dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
       }, workbook)
 
-      await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-      await page.locator('.quick-card[data-ext="xlsx"]').click()
+      await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+      await homeNewTile(page, 'xlsx').click()
 
       const sheets = await waitForPageWithUrl(app, '://sheets/')
       await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {

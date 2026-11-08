@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 
 /**
  * Home > Styles follows Word's Quick Style gallery: a new document lists Word's
@@ -42,8 +42,8 @@ test.describe('docs quick style gallery', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'docs-style-gallery' })
     const { app, page } = launched
     try {
-      await expect(page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
-      await page.locator('.quick-card[data-ext="docx"]').click()
+      await expect(homeNewTile(page, 'docx')).toBeVisible()
+      await homeNewTile(page, 'docx').click()
       const editorPage = await waitForPageWithUrl(app, '://docs/')
       await editorPage.waitForFunction(
         () => Boolean((window as unknown as AidocsWindow).__aidocs?.editor),

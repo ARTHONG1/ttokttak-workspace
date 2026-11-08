@@ -8,7 +8,13 @@ import { test, expect } from '@playwright/test'
 import type { ElectronApplication, Frame, Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ARTIFACTS_DIR, closeAndSaveVideo, launchShell, waitForPageWithUrl } from './helpers'
+import {
+  ARTIFACTS_DIR,
+  closeAndSaveVideo,
+  launchShell,
+  waitForPageWithUrl,
+  homeNewTile,
+} from './helpers'
 
 interface TableList {
   count: number
@@ -54,7 +60,7 @@ interface Geometry {
 const STUDIO_IFRAME = '.hwp-editor-host iframe'
 
 async function openHwp(app: ElectronApplication, page: Page): Promise<Page> {
-  await page.locator('.quick-card[data-ext="hwp"]').click()
+  await homeNewTile(page, 'hwp').click()
   const hwp = await waitForPageWithUrl(app, '://hwp/')
   await hwp.waitForSelector('.hwp-app[data-phase="ready"]', { timeout: 90_000 })
   return hwp

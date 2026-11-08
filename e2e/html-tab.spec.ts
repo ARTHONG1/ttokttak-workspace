@@ -8,6 +8,7 @@ import {
   waitForPageWithUrl,
   screenshotPath,
   stubAiReady,
+  homeNewTile,
 } from './helpers'
 
 test.describe('html editor', () => {
@@ -15,7 +16,7 @@ test.describe('html editor', () => {
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'new-html-tab' })
     const { app, page } = launched
     try {
-      const card = page.locator('.quick-card', { hasText: 'AI HTML' })
+      const card = homeNewTile(page, 'html')
       await expect(card).toHaveCount(1)
       await card.click()
 

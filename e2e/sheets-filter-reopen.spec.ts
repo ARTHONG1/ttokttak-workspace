@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process'
 import { mkdtemp, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 import { PRODUCT_NAME } from '../packages/i18n/src/product'
 
 // the preload exposes window.__genofficeDebug only under this env var
@@ -42,8 +42,8 @@ test.describe('sheets: filter criteria survive save and reopen', () => {
         join(saveDir, 'filtered.xlsx'),
       )
 
-      await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-      await page.locator('.quick-card[data-ext="xlsx"]').click()
+      await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+      await homeNewTile(page, 'xlsx').click()
 
       const sheets = await waitForPageWithUrl(app, '://sheets/')
       await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {

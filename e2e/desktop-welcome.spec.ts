@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test'
 import { launchShell, closeAndSaveVideo } from './helpers'
 
 test('desktop welcome opens the AI connection page', async () => {
-  const launched = await launchShell({ videoDir: 'desktop-welcome', lang: 'ko', recordVideo: false })
+  const launched = await launchShell({
+    videoDir: 'desktop-welcome',
+    lang: 'ko',
+    recordVideo: false,
+    welcome: true,
+  })
   try {
     const { page } = launched
     await page.setViewportSize({ width: 1440, height: 900 })

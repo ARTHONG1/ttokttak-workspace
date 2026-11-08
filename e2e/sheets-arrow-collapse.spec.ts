@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 
 // the preload exposes window.__genofficeDebug only under this env var; the
 // spec needs it to read the selection through Univer's Facade
@@ -56,8 +56,8 @@ test.describe('sheets: arrow collapses a multi-cell selection to the active cell
         electronApp.setPath('documents', dir)
       }, scratch)
 
-      await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-      await page.locator('.quick-card[data-ext="xlsx"]').click()
+      await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+      await homeNewTile(page, 'xlsx').click()
 
       const sheets = await waitForPageWithUrl(app, '://sheets/')
       // the replayed move must not surface as an uncaught command error

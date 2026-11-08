@@ -1,14 +1,20 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  screenshotPath,
+  openSettings,
+} from './helpers'
 
 test('AI panel side persists across restart and updates an open Docs tab without losing the draft', async () => {
   const fixture = join(__dirname, 'assets/justify-pagegap-fr.docx')
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'ai-panel-side' })
   const { page } = launched
   try {
-    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await openSettings(launched.app, page)
     await page.locator('.set-nav-item').filter({ hasText: 'General' }).click()
     await page.getByRole('button', { name: 'AI sidebar position', exact: true }).click()
     await page.getByRole('option', { name: 'Right', exact: true }).click()

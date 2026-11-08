@@ -3,7 +3,13 @@ import { execSync } from 'node:child_process'
 import { copyFile, mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  screenshotPath,
+  homeNewTile,
+} from './helpers'
 
 /**
  * The View tab's Right-to-Left toggle (#1963): the checkbox flips the active
@@ -16,7 +22,7 @@ test('the View tab toggles the sheet grid direction', async () => {
   test.setTimeout(240_000)
   const launched = await launchShell({ onboardingSeen: true, videoDir: 'sheets-rtl-toggle' })
   try {
-    await launched.page.locator('.quick-card[data-ext="xlsx"]').click()
+    await homeNewTile(launched.page, 'xlsx').click()
     const page = await waitForPageWithUrl(launched.app, '://sheets/')
     // the sheet tab strip is DOM; a blank workbook's sheet must exist before
     // the toggle has an active worksheet to flip

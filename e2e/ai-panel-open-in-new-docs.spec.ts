@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  homeNewTile,
+  openSettings,
+} from './helpers'
 
 /**
  * Settings → General → "AI panel" (genoffice#1589, #1951), the way the reporter
@@ -18,10 +24,11 @@ async function aiPanelState(
 }
 
 async function chooseAiPanelStart(
+  app: import('@playwright/test').ElectronApplication,
   page: import('@playwright/test').Page,
   label: 'Off' | 'Collapsed' | 'Last state',
 ): Promise<void> {
-  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await openSettings(app, page)
   await page.locator('.set-nav-item').filter({ hasText: 'General' }).click()
   const trigger = page.getByRole('button', { name: 'AI panel', exact: true })
   await trigger.click()
@@ -37,7 +44,7 @@ test.describe('#1589 the AI panel start setting', () => {
     const first = await launchShell({ onboardingSeen: true, videoDir: 'ai-panel-1589-on' })
     let userDataDir: string
     try {
-      await chooseAiPanelStart(first.page, 'Collapsed')
+      await chooseAiPanelStart(first.app, first.page, 'Collapsed')
       // the write half: the flag has to be on disk, not only in the shell's cache
       const saved = JSON.parse(await readFile(join(first.userDataDir, 'app-settings.json'), 'utf8'))
       expect(saved.aiPanelOpenInNewDocs).toBe(false)
@@ -49,8 +56,8 @@ test.describe('#1589 the AI panel start setting', () => {
 
     const restarted = await launchShell({ userDataDir, videoDir: 'ai-panel-1589-new-doc' })
     try {
-      await expect(restarted.page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
-      await restarted.page.locator('.quick-card[data-ext="docx"]').click()
+      await expect(homeNewTile(restarted.page, 'docx')).toBeVisible()
+      await homeNewTile(restarted.page, 'docx').click()
       const editor = await waitForPageWithUrl(restarted.app, '://docs/')
       await expect(editor.locator('.ProseMirror').first()).toBeVisible({ timeout: 30_000 })
       expect(await aiPanelState(editor)).toBe('collapsed')
@@ -68,8 +75,8 @@ test.describe('#1589 the AI panel start setting', () => {
     test.setTimeout(300_000)
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'ai-panel-1589-on-new' })
     try {
-      await expect(launched.page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
-      await launched.page.locator('.quick-card[data-ext="docx"]').click()
+      await expect(homeNewTile(launched.page, 'docx')).toBeVisible()
+      await homeNewTile(launched.page, 'docx').click()
       const editor = await waitForPageWithUrl(launched.app, '://docs/')
       await expect(editor.locator('.ProseMirror').first()).toBeVisible({ timeout: 30_000 })
       expect(await aiPanelState(editor)).toBe('expanded')
@@ -84,7 +91,7 @@ test.describe('#1589 the AI panel start setting', () => {
     const first = await launchShell({ onboardingSeen: true, videoDir: 'ai-panel-1951-off' })
     let userDataDir: string
     try {
-      await chooseAiPanelStart(first.page, 'Off')
+      await chooseAiPanelStart(first.app, first.page, 'Off')
       const saved = JSON.parse(await readFile(join(first.userDataDir, 'app-settings.json'), 'utf8'))
       expect(saved.aiPanelShowSidebar).toBe(false)
       userDataDir = first.userDataDir
@@ -94,8 +101,8 @@ test.describe('#1589 the AI panel start setting', () => {
 
     const restarted = await launchShell({ userDataDir, videoDir: 'ai-panel-1951-new-doc' })
     try {
-      await expect(restarted.page.locator('.quick-card[data-ext="docx"]')).toContainText('AI Docs')
-      await restarted.page.locator('.quick-card[data-ext="docx"]').click()
+      await expect(homeNewTile(restarted.page, 'docx')).toBeVisible()
+      await homeNewTile(restarted.page, 'docx').click()
       const editor = await waitForPageWithUrl(restarted.app, '://docs/')
       await expect(editor.locator('.ProseMirror').first()).toBeVisible({ timeout: 30_000 })
       await expect(editor.locator('.ai-dock')).toHaveClass(/ai-dock-off/)

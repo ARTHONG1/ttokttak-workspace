@@ -8,7 +8,13 @@ import { promisify } from 'node:util'
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
 import { PDFDocument } from 'pdf-lib'
 import { createXmindDocumentFromOutline } from '@genoffice/xmind-engine'
-import { closeAndSaveVideo, launchShell, waitForPageWithUrl, type LaunchedApp } from './helpers'
+import {
+  closeAndSaveVideo,
+  launchShell,
+  waitForPageWithUrl,
+  type LaunchedApp,
+  homeNewTile,
+} from './helpers'
 
 /**
  * Crash recovery end to end against the built app (spec 4-7): edits in every
@@ -370,7 +376,7 @@ test.describe('crash recovery', () => {
       const shell = await shellPageOf(app)
 
       // an untitled document: the Home card's new Markdown tab
-      await shell.locator('.quick-card', { hasText: 'AI Markdown' }).click()
+      await homeNewTile(shell, 'md').click()
       const untitled = await waitForPageWithUrl(app, '://markdown/')
       await editMarkdown(untitled, UNTITLED_MARK)
       const untitledTab = (await documentTabs(shell)).find((tab) => tab.kind === 'markdown')
@@ -714,7 +720,7 @@ test.describe('crash recovery', () => {
     try {
       const { app } = first
       const shell = await shellPageOf(app)
-      await shell.locator('.quick-card', { hasText: 'AI HTML' }).click()
+      await homeNewTile(shell, 'html').click()
       const html = await waitForPageWithUrl(app, '://html/')
       await expect(html.locator('.ribbon-body')).toBeVisible()
       await html.locator('.rb-view', { hasText: /Source/ }).click()
@@ -725,7 +731,7 @@ test.describe('crash recovery', () => {
       await expect(source).toContainText(HTML_MARK)
 
       await shell.locator('.tab-bar .tab-home').click()
-      await shell.locator('.quick-card', { hasText: 'AI Markdown' }).click()
+      await homeNewTile(shell, 'md').click()
       const md = await waitForPageWithUrl(app, '://markdown/')
       await editMarkdown(md, MD_MARK)
 

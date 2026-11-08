@@ -3,7 +3,13 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  screenshotPath,
+  homeNewTile,
+} from './helpers'
 
 // the preload exposes window.__genofficeDebug only under this env var; the
 // spec reads cell data and cell geometry through Univer's Facade
@@ -160,8 +166,8 @@ test.describe('sheets: superscript and subscript', () => {
         electronApp.setPath('documents', dir)
       }, scratch)
 
-      await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-      await page.locator('.quick-card[data-ext="xlsx"]').click()
+      await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+      await homeNewTile(page, 'xlsx').click()
 
       const sheets = await waitForPageWithUrl(app, '://sheets/')
       await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {

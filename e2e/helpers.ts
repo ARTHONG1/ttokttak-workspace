@@ -6,7 +6,13 @@
  * and never collide with a running install's single-instance lock.
  * Build first: `npm run build:all`.
  */
-import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+import {
+  _electron as electron,
+  expect,
+  type ElectronApplication,
+  type Locator,
+  type Page,
+} from '@playwright/test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -55,6 +61,12 @@ interface LaunchOptions {
    * does; `E2E_NO_VIDEO=1` turns recording off for a whole run.
    */
   recordVideo?: boolean
+  /**
+   * keep the desktop welcome page (DesktopWelcome, shown over the home on every
+   * desktop launch) up. By default launchShell presses its 시작하기 so the test
+   * starts at the home screen, as a user does.
+   */
+  welcome?: boolean
 }
 
 export interface LaunchedApp {
@@ -138,7 +150,34 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   })
   const page = await app.firstWindow()
   await waitForDocumentReady(app, page)
+  if (!options.welcome) await enterWorkspace(page)
   return { app, page, userDataDir }
+}
+
+/**
+ * Presses 시작하기 on the desktop welcome page and waits for it to go. The
+ * page is an iframe whose click handler is attached on load, so the click is
+ * repeated until the page closes. It works while an editor tab hides the
+ * home (a file opened at launch): the click goes to the button, not a point
+ * on screen.
+ */
+export async function enterWorkspace(page: Page, timeoutMs = 20_000): Promise<void> {
+  const welcome = page.locator('iframe[title="똑딱작업실 소개"]')
+  const deadline = Date.now() + timeoutMs
+  // the welcome page renders with the home's first paint
+  await welcome.waitFor({ state: 'attached', timeout: 5_000 }).catch(() => {})
+  while ((await welcome.count()) > 0) {
+    if (Date.now() > deadline)
+      throw new Error('The desktop welcome page did not close after 시작하기')
+    const frame = await (await welcome.elementHandle().catch(() => null))?.contentFrame()
+    await frame
+      ?.evaluate(() => {
+        const start = document.querySelector<HTMLElement>('[data-action="start"]')
+        start?.click()
+      })
+      .catch(() => {})
+    await page.waitForTimeout(200)
+  }
 }
 
 /**
@@ -282,4 +321,31 @@ export async function stubAiReady(app: ElectronApplication): Promise<void> {
       if (!wc.isDestroyed()) realSend.call(wc, 'ai:subscription-changed', statuses)
     }
   })
+}
+
+/**
+ * A "새 문서 만들기" tile on the home screen (TrialHome, the desktop home since
+ * 0.14.0): ext is one of hwp, docx, xlsx, pptx, pdf, md, html, xmind. It calls
+ * the same new-document action the earlier home's quick cards did.
+ */
+export function homeNewTile(page: Page, ext: string): Locator {
+  return page.locator(`.trial-tile[data-ext="${ext}"]`)
+}
+
+/**
+ * Opens the settings dialog the way a user does on the desktop home, which has
+ * no Settings button: File → AI. The dialog opens on its AI section; pick
+ * another one from its side list (.set-nav-item).
+ */
+export async function openSettings(app: ElectronApplication, page: Page): Promise<void> {
+  const clicked = await app.evaluate(({ Menu, BrowserWindow }) => {
+    const entry = Menu.getApplicationMenu()
+      ?.items.flatMap((item) => item.submenu?.items ?? [])
+      .find((item) => item.id === 'workspace-ai-settings')
+    if (!entry) return false
+    entry.click(undefined as never, BrowserWindow.getAllWindows()[0], undefined as never)
+    return true
+  })
+  if (!clicked) throw new Error('File → AI menu item (workspace-ai-settings) not found')
+  await expect(page.locator('.set-nav-item').first()).toBeVisible()
 }

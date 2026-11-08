@@ -11,7 +11,13 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  screenshotPath,
+  homeNewTile,
+} from './helpers'
 
 const MODEL = process.env.TRIAL_MODEL ?? ''
 const RUN_TIMEOUT = 240_000
@@ -46,7 +52,7 @@ test(`free model trial: ${MODEL}`, async () => {
   const report: Record<string, unknown> = { model: MODEL, pass: false }
   let editor: Page | undefined
   try {
-    await page.locator('.quick-card[data-ext="docx"]').click()
+    await homeNewTile(page, 'docx').click()
     editor = await waitForPageWithUrl(app, '://docs/')
     const docPage = editor.locator('.doc-page[contenteditable="true"]')
     await docPage.waitFor()

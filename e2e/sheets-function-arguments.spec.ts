@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import { launchShell, closeAndSaveVideo, waitForPageWithUrl, homeNewTile } from './helpers'
 
 process.env.GENOFFICE_DEBUG_HOOKS = '1'
 
@@ -34,8 +34,8 @@ test('Insert Function leads into Function Arguments; fx reopens the call pre-fil
     await app.evaluate(({ app: electronApp }, dir) => {
       electronApp.setPath('documents', dir)
     }, scratch)
-    await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-    await page.locator('.quick-card[data-ext="xlsx"]').click()
+    await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+    await homeNewTile(page, 'xlsx').click()
     const sheets = await waitForPageWithUrl(app, '://sheets/')
     await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {
       timeout: 30_000,

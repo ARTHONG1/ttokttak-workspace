@@ -12,6 +12,7 @@ import {
   launchShell,
   screenshotPath,
   waitForPageWithUrl,
+  homeNewTile,
 } from './helpers'
 
 /**
@@ -141,7 +142,7 @@ test.describe('mind map editor in the shell', () => {
     const { app, page } = launched
     try {
       // ── the Home card
-      const card = page.locator('.quick-card', { hasText: 'Mind Map' })
+      const card = homeNewTile(page, 'xmind')
       await expect(card).toHaveCount(1)
       await expect(card.locator('.quick-sub')).toHaveText('.xmind')
       // the card is named for the editor, never after another product
@@ -371,10 +372,7 @@ test.describe('mind map editor in the shell', () => {
       await page.locator('.tab-bar .tab-item.tab-home').click()
       const row = page.locator('.recent-row', { hasText: 'trip.xmind' })
       await expect(row).toBeVisible()
-      const tile = await page
-        .locator('.quick-card', { hasText: 'Mind Map' })
-        .locator('img')
-        .getAttribute('src')
+      const tile = await homeNewTile(page, 'xmind').locator('img').getAttribute('src')
       expect(await row.locator('.recent-icon img').getAttribute('src')).toBe(tile)
       await expectMindMapTabIcon(tab, tile)
       await page.screenshot({ path: screenshotPath('mindmap-home-recent-row') })

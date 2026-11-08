@@ -3,7 +3,13 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl, type LaunchedApp } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  type LaunchedApp,
+  homeNewTile,
+} from './helpers'
 
 // the preload exposes window.__genofficeDebug only under this env var
 process.env.GENOFFICE_DEBUG_HOOKS = '1'
@@ -42,8 +48,8 @@ async function openBlankSheet(
     electronApp.setPath('documents', dir)
   }, scratch)
 
-  await expect(page.locator('.quick-card[data-ext="xlsx"]')).toContainText('AI Sheets')
-  await page.locator('.quick-card[data-ext="xlsx"]').click()
+  await expect(homeNewTile(page, 'xlsx')).toBeVisible()
+  await homeNewTile(page, 'xlsx').click()
 
   const sheets = await waitForPageWithUrl(app, '://sheets/')
   await sheets.waitForFunction(() => document.body.textContent?.includes('Sheet1'), null, {

@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  waitForPageWithUrl,
+  homeNewTile,
+  openSettings,
+} from './helpers'
 
 /**
  * Settings → General → "User name" (genoffice#2029): comments were signed with
@@ -14,7 +20,7 @@ test.describe('#2029 the comment author follows Settings → General → User na
     const launched = await launchShell({ onboardingSeen: true, videoDir: 'author-name-2029' })
     try {
       const shellPage = launched.page
-      await shellPage.getByRole('button', { name: 'Settings', exact: true }).click()
+      await openSettings(launched.app, shellPage)
       await shellPage.locator('.set-nav-item').filter({ hasText: 'General' }).click()
       const field = shellPage.getByRole('textbox', { name: 'User name' })
       await expect(field).toHaveAttribute('placeholder', /.+/)
@@ -27,7 +33,7 @@ test.describe('#2029 the comment author follows Settings → General → User na
       expect(saved.authorName).toBe('Ada Lovelace')
       await shellPage.locator('.set-close').click()
 
-      await shellPage.locator('.quick-card', { hasText: 'AI Slides' }).click()
+      await homeNewTile(shellPage, 'pptx').click()
       const editor = await waitForPageWithUrl(launched.app, '://slides/')
       await editor.waitForSelector('.stage-wrap canvas', { timeout: 30_000 })
 
