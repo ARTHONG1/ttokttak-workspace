@@ -31,7 +31,19 @@ export function WorkspaceHome() {
     <>
       <TrialHome />
       {page !== 'workspace' && !isWebEdition() && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#07080b' }}>
+        // Below the tab bar (40px, tabbar.css .app-frame-content): covering it left a
+        // document opened from Finder unreachable until 시작하기 was pressed on Home.
+        <div
+          style={{
+            position: 'fixed',
+            top: 40,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 1000,
+            background: '#07080b',
+          }}
+        >
           {page === 'welcome' ? (
             <DesktopWelcome onConnect={() => setPage('connection')} onStart={start} />
           ) : (
