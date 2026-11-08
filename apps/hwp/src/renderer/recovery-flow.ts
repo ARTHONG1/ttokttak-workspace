@@ -205,6 +205,12 @@ const READING_CALLS: ReadonlySet<string> = new Set([
   'reveal',
   'clearMarks',
   'installFileMenu',
+  // the memo panel shares the bridge and lists memos as soon as a document opens; showing
+  // their anchors, selecting one and locking input while its editor is open change nothing
+  'listMemos',
+  'showMemoAnchors',
+  'selectMemo',
+  'setMemoLock',
 ])
 
 /**

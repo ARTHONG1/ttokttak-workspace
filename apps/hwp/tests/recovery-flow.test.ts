@@ -281,4 +281,31 @@ describe('the AI panel’s edits', () => {
     // when it starts and when it lands
     expect(onChange).toHaveBeenCalledTimes(2)
   })
+
+  /**
+   * The memo panel shares this bridge and lists the memos as soon as a document opens.
+   * When listing counted as a change, an untouched document asked to be saved on close
+   * (and kept a recovery copy) without a single edit.
+   */
+  it('do not include the memo panel listing, showing or selecting memos', async () => {
+    const onChange = vi.fn()
+    const bridge = withChangeNotes(
+      {
+        listMemos: vi.fn(async () => ({ memos: [] })),
+        showMemoAnchors: vi.fn(async () => undefined),
+        selectMemo: vi.fn(async () => undefined),
+        setMemoLock: vi.fn(async () => undefined),
+        setMemo: vi.fn(async () => ({ ok: true })),
+      },
+      onChange,
+    )
+    await bridge.listMemos()
+    await bridge.showMemoAnchors()
+    await bridge.selectMemo()
+    await bridge.setMemoLock()
+    expect(onChange).not.toHaveBeenCalled()
+    // changing a memo's text is an edit
+    await bridge.setMemo()
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
 })
