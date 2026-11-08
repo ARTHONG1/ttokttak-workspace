@@ -17,7 +17,7 @@ Try it in the browser, or install it and connect your own AI agent.
 
 ## Built-in AI that runs inside your computer
 
-Beginning with **v0.16.2**, the Apple Silicon (M1+) Mac installer includes an AI model. After installing, you can hand Hangul and Word documents to the AI without a subscription, an API key or an internet connection.
+The Apple Silicon (M1+) Mac and Windows (x64, since **v0.16.4**) installers include an AI model. After installing, you can hand Hangul and Word documents to the AI without a subscription, an API key or an internet connection.
 
 **Why built in**
 
@@ -29,7 +29,7 @@ Beginning with **v0.16.2**, the Apple Silicon (M1+) Mac installer includes an AI
 
 **Our own improved model, step by step**: we train a document-editing specialist that picks the right editor tool and changes only what was asked, using rule-generated synthetic examples only (no personal documents, no copied answers from commercial AI). 0.16.4 ships the first one, trained on 1,529 examples built from the app's real tool-call records. Measured on the training side (full precision, MLX), validation loss fell from 0.452 to 0.267 and it answered 244 of 256 synthetic Hangul tool-call cases; these are not measurements of the 4-bit model in the app or of real file edits. Real save-and-reopen development tests on Word and Excel pass 67 of 100, so wrong arguments and missed post-edit checks remain. Each release note says what changed.
 
-The built-in model has been installed and run on **macOS arm64** only; Windows, Intel Macs and the web trial keep their existing AI connection options.
+The built-in model ships in the **macOS arm64** and **Windows x64** installers; Intel Macs and the web trial keep their existing AI connection options.
 
 ## Latest update
 
@@ -73,11 +73,11 @@ Most school and office work is document work: opening a file to change one title
 
 ## Three ways to use it
 
-|           | Web trial                              | Desktop app                                              | Installed by your AI agent             |
-| --------- | -------------------------------------- | -------------------------------------------------------- | -------------------------------------- |
-| What      | In the browser, nothing to install     | macOS and Windows                                        | One prompt does the whole setup        |
-| AI        | Google Gemini (web configuration)      | **Built-in AI on Apple Silicon**, or Claude Code / Codex | The same agent is connected to the app |
-| Documents | Kept only while you work, then deleted | Stay on your PC                                          | —                                      |
+|           | Web trial                              | Desktop app                                                           | Installed by your AI agent             |
+| --------- | -------------------------------------- | --------------------------------------------------------------------- | -------------------------------------- |
+| What      | In the browser, nothing to install     | macOS and Windows                                                     | One prompt does the whole setup        |
+| AI        | Google Gemini (web configuration)      | **Built-in AI (Apple Silicon Mac & Windows)**, or Claude Code / Codex | The same agent is connected to the app |
+| Documents | Kept only while you work, then deleted | Stay on your PC                                                       | —                                      |
 
 ## Install with an AI agent
 

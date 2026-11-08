@@ -56,6 +56,9 @@ for (const file of readdirSync(runtime)) {
   copyFileSync(join(runtime, file), join(output, basename(file)))
 }
 copyFileSync(runtimeLicense, join(output, 'LLAMA-LICENSE.txt'))
+if (existsSync(join(runtime, 'LICENSE-LLVM-OpenMP'))) {
+  copyFileSync(join(runtime, 'LICENSE-LLVM-OpenMP'), join(output, 'LICENSE-LLVM-OpenMP.txt'))
+}
 copyFileSync(join(root, 'LICENSE'), join(output, 'MODEL-LICENSE.txt'))
 writeFileSync(
   join(output, 'MODEL-ATTRIBUTION.txt'),

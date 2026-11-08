@@ -96,8 +96,35 @@ jobs:
           mkdir -p "$engine/x86_64-pc-windows-gnu/release"
           cp "$engine/release/xlsx-sidecar.exe" "$engine/x86_64-pc-windows-gnu/release/"
 
+      - name: Prepare the built-in AI (model + llama.cpp Windows x64)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/local-ai"
+          mkdir -p "$work/runtime" "$work/model"
+          curl -sSfL --retry 5 -o "$work/llama-win.zip" \
+            https://github.com/ggml-org/llama.cpp/releases/download/b12167/llama-b12167-bin-win-cpu-x64.zip
+          7z x "$work/llama-win.zip" -o"$work/runtime" >/dev/null
+          curl -sSfL --retry 5 -o "$work/runtime/LICENSE" \
+            https://raw.githubusercontent.com/ggml-org/llama.cpp/b12167/LICENSE
+          version=$(node -p "require('./apps/shell/package.json').version")
+          if gh release download "v$version" --pattern "HangulAIWorkbench-*-arm64-mac.zip" --dir "$work" 2>/dev/null; then
+            zip=$(ls "$work"/HangulAIWorkbench-*-arm64-mac.zip | head -1)
+          else
+            gh release download v0.16.4 --pattern "HangulAIWorkbench-0.16.4-arm64-mac.zip" --dir "$work"
+            zip="$work/HangulAIWorkbench-0.16.4-arm64-mac.zip"
+          fi
+          7z e "$zip" "HangulAIWorkbench.app/Contents/Resources/local-ai/model.gguf" -o"$work/model" >/dev/null
+          rm -f "$zip" "$work/llama-win.zip"
+          node tools/prepare-embedded-ai.mjs "$work/model/model.gguf" "$work/runtime"
+          rm -rf "$work"
+
       - name: Package
-        run: npm run dist:win -w @genoffice/shell -- --publish never
+        env:
+          GENOFFICE_EMBED_LOCAL_AI: '1'
+        run: npm run dist:win -w @genoffice/shell -- --publish never -c.electronDist=../../node_modules/electron/dist
 
       - name: Check the installer, its feed and the bundled programs
         run: |
@@ -108,7 +135,10 @@ jobs:
             "$dir/resources/native/xlsx-sidecar.exe" \
             "$dir/resources/ocr/win-ocr.exe" \
             "$dir/resources/cli/genoffice.cjs" \
-            "$dir/resources/cli/ttokttak.cmd"; do
+            "$dir/resources/cli/ttokttak.cmd" \
+            "$dir/resources/local-ai/llama-server.exe" \
+            "$dir/resources/local-ai/model.gguf" \
+            "$dir/resources/local-ai/manifest.json"; do
             test -f "$bin" || { echo "missing: $bin"; exit 1; }
           done
           version=$(node -p "require('./apps/shell/package.json').version")
@@ -128,6 +158,7 @@ jobs:
       - name: Smoke test the packaged app
         run: |
           set -euo pipefail
+          dir="apps/shell/release/win-unpacked"
           exe="apps/shell/release/win-unpacked/HangulAIWorkbench.exe"
           work="$RUNNER_TEMP/smoke"
           mkdir -p "$work"
@@ -137,6 +168,25 @@ jobs:
             "$exe" --headless-export "$work/$input" --to pdf --out "$work/$input.pdf" --json
             test -s "$work/$input.pdf"
           done
+          "$dir/resources/local-ai/llama-server.exe" \
+            --model "$dir/resources/local-ai/model.gguf" \
+            --alias qwen3.5-2b-local \
+            --host 127.0.0.1 --port 18899 \
+            --ctx-size 2048 --threads 4 --parallel 1 --n-gpu-layers 0 \
+            --reasoning off --jinja --no-webui --log-disable &
+          srv=$!
+          trap "kill $srv 2>/dev/null || true" EXIT
+          for _ in $(seq 1 60); do
+            curl -sf http://127.0.0.1:18899/health >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:18899/health | grep -q '"ok"'
+          reply=$(curl -sf http://127.0.0.1:18899/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"안녕"}],"max_tokens":16,"temperature":0}')
+          echo "$reply" | grep -q '"choices"'
+          kill $srv 2>/dev/null || true
+          trap - EXIT
 
       - name: List the release files
         run: ls -la apps/shell/release
