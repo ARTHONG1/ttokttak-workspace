@@ -4,7 +4,13 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { launchShell, closeAndSaveVideo, screenshotPath, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  screenshotPath,
+  waitForPageWithUrl,
+  enterWorkspace,
+} from './helpers'
 
 const fixtureRoot =
   process.env.GENOFFICE_LOCAL_AI_FIXTURE_ROOT || join(homedir(), 'Desktop/인공지능 모델/.local-ai')
@@ -64,11 +70,7 @@ test('fresh installation selects the bundled local model and accepts a keyless c
     ).toBe('')
     console.log('[local-ai-e2e] fresh default and provider catalog ready')
 
-    await page
-      .frameLocator('iframe[title="똑딱작업실 소개"]')
-      .locator('a[data-action="start"]')
-      .first()
-      .click()
+    await enterWorkspace(page)
     await expect(page.locator('.hub-title').first()).toBeVisible()
     console.log('[local-ai-e2e] workspace entered')
     const opened = await launched.app.evaluate(({ Menu, BrowserWindow }) => {
@@ -134,11 +136,7 @@ test('offline AI edits one quoted phrase in DOCX and preserves other content aft
     env: testEnv,
   })
   try {
-    await launched.page
-      .frameLocator('iframe[title="똑딱작업실 소개"]')
-      .locator('a[data-action="start"]')
-      .first()
-      .click()
+    await enterWorkspace(launched.page)
     await expect(launched.page.locator('.hub-title').first()).toBeVisible()
     await launched.page.locator('.trial-tile[data-ext="docx"]').click()
     const page = await waitForPageWithUrl(launched.app, '://docs/')
@@ -258,11 +256,7 @@ test('offline AI answers a document question without exceeding the model context
     env: testEnv,
   })
   try {
-    await launched.page
-      .frameLocator('iframe[title="똑딱작업실 소개"]')
-      .locator('a[data-action="start"]')
-      .first()
-      .click()
+    await enterWorkspace(launched.page)
     await expect(launched.page.locator('.hub-title').first()).toBeVisible()
     await launched.page.locator('.trial-tile[data-ext="docx"]').click()
     const page = await waitForPageWithUrl(launched.app, '://docs/')
@@ -316,11 +310,7 @@ test('offline AI changes the color of named text while leaving adjacent text unt
     env: testEnv,
   })
   try {
-    await launched.page
-      .frameLocator('iframe[title="똑딱작업실 소개"]')
-      .locator('a[data-action="start"]')
-      .first()
-      .click()
+    await enterWorkspace(launched.page)
     await expect(launched.page.locator('.hub-title').first()).toBeVisible()
     await launched.page.locator('.trial-tile[data-ext="docx"]').click()
     const page = await waitForPageWithUrl(launched.app, '://docs/')
