@@ -544,7 +544,10 @@ test.describe('crash recovery', () => {
       // restoring wrote nothing to the files
       await expectOriginalsUnchanged(fx)
 
-      // the restored HWP saves to its own file, edit included
+      // the restored HWP saves, edit included. HWPX is the default save format
+      // (apps/hwp/AGENTS.md, decision 2026-10-30): a plain Save of an opened .hwp
+      // writes <name>.hwpx beside it and leaves the .hwp as it was
+      const savedHwp = fx.hwp.replace(/\.hwp$/, '.hwpx')
       await stripTab(shell, 'form.hwp').click()
       await stubMessageBoxes(app, 0)
       // the editor's File > Save item: the same save request as Ctrl+S
@@ -553,13 +556,10 @@ test.describe('crash recovery', () => {
           window as unknown as { hwpApi: { requestFileCommand(c: string): void } }
         ).hwpApi.requestFileCommand('save'),
       )
-      await expect
-        .poll(async () => !(await readFile(fx.hwp)).equals(fx.originals.get(fx.hwp)!), {
-          timeout: 30_000,
-        })
-        .toBe(true)
-      expect(await hwpText(fx.hwp)).toContain(HWP_MARK)
-      // a plain save to the original path: no question on the way
+      await expect.poll(() => existsSync(savedHwp), { timeout: 30_000 }).toBe(true)
+      await expect.poll(() => hwpText(savedHwp), { timeout: 30_000 }).toContain(HWP_MARK)
+      expect((await readFile(fx.hwp)).equals(fx.originals.get(fx.hwp)!)).toBe(true)
+      // a plain save beside the original: no question on the way
       expect(await messageBoxes(app)).toEqual([])
       // saving removed that document's copy, and only that one
       await expect
