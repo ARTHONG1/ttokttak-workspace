@@ -52,7 +52,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.3](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.3) · 2026-11-07** — 똑딱작업실 0.16.3은 바탕이 된 다른 프로젝트의 이름을 앱과 저장소에서 모두 걷어 낸 버전입니다. 앱 화면, 터미널 명령어, AI 에이전트 연결, 설치 안내, 도움말에 똑딱작업실의 이름만 남았고, 기존 설정은 처음 실행할 때 자동으로 옮겨집니다.
+**[v0.16.4](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.4) · 2026-11-08** — 똑딱작업실 0.16.4는 내장 AI 모델을 문서 편집용으로 추가 학습한 버전으로 바꾼 업데이트입니다. Apple Silicon Mac 설치본의 내장 AI가 앱의 실제 편집 도구 호출 기록으로 한 번 더 학습한 모델로 바뀌었고, 크기·메모리·속도는 이전과 같습니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
