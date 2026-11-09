@@ -54,6 +54,15 @@ interface MemoError {
 
 const memos = (doc: HwpDocument): Memo[] => JSON.parse(doc.getMemoList()) as Memo[]
 
+/** A moment as Hancom writes a memo date: the local wall time, then a literal Z. */
+function hancomLocal(date: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}` +
+    `T${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}Z`
+  )
+}
+
 function open(name: string): HwpDocument {
   return new HwpDocument(new Uint8Array(readFileSync(join(FIXTURES, name))))
 }
@@ -317,8 +326,9 @@ describe('reading memos', () => {
     expect(list[0]).toMatchObject({
       index: 1,
       author: 'CDC',
-      // the date Hancom saved with the memo (rhwp 0.9.0 reads it)
-      date: '2022-09-15T13:44:46Z',
+      // the date Hancom saved with the memo (UTC 2022-09-15 04:44:46), which rhwp 0.9.0
+      // gives as Hancom writes dates: local time with a literal Z
+      date: hancomLocal(new Date(Date.UTC(2022, 8, 15, 4, 44, 46))),
       text: '수정',
       place: 'body',
       sectionIndex: 0,

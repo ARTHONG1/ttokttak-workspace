@@ -136,6 +136,15 @@ describe('card text', () => {
     expect(shown).toBeTruthy()
     expect(shown).not.toBe('2024-01-02T03:04:00Z')
   })
+
+  it('reads a memo date as the local time Hancom writes, despite its "Z"', () => {
+    // rhwp 0.9.0 gives memo dates as Hancom saves them: local time with a literal Z
+    const format = (date: Date) =>
+      new Intl.DateTimeFormat('ko', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+    expect(memoDateText('2022-09-15T13:44:46Z', 'ko')).toBe(
+      format(new Date(2022, 8, 15, 13, 44, 46)),
+    )
+  })
 })
 
 describe('where a new memo would go', () => {

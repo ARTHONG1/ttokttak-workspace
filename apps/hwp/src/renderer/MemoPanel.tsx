@@ -120,11 +120,14 @@ export function memoPageParams(page: number): Params | null {
 /**
  * The date the panel shows, when the file carries one. A date the browser can
  * parse is localized; an unfamiliar string is shown as the file wrote it.
+ * The engine (rhwp 0.9.0) gives memo dates as Hancom writes them: local time with a
+ * literal "Z". Read as UTC, a memo made at 13:44 in Korea would show 22:44.
  */
 export function memoDateText(date: string | null, lang: string): string | null {
   const raw = (date ?? '').trim()
   if (!raw) return null
-  const parsed = new Date(raw)
+  const hancomLocal = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)Z$/.exec(raw)
+  const parsed = new Date(hancomLocal ? hancomLocal[1] : raw)
   if (Number.isNaN(parsed.getTime())) return raw
   try {
     return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed)
