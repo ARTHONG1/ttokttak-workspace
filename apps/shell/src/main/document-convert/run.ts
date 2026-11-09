@@ -39,6 +39,7 @@ export class ConvertStepError extends Error {
 
 export interface StepJob {
   input: string
+  /** the file this stage writes; its extension says which format (see ConvertRoute.outputs) */
   output: string
   /** the format the whole conversion makes */
   format: ConvertFormat
@@ -60,22 +61,6 @@ export interface ConvertDeps {
   removeDir(dir: string): Promise<void>
   /** one stage: job.input → job.output */
   step(step: RouteStep, job: StepJob): Promise<StepOutcome>
-}
-
-/** the file a stage writes, by extension; two stages write whatever the conversion makes */
-const STEP_OUTPUT: Record<RouteStep, string | null> = {
-  'to-pdf': 'pdf',
-  'hwp-container': null,
-  'pdf-png': 'zip',
-  'pdf-docx': 'docx',
-  'pdf-pptx': 'pptx',
-  'pdf-xlsx': 'xlsx',
-  'docx-odt': 'odt',
-  'odt-docx': 'docx',
-  'docs-export': null,
-  'html-docx': 'docx',
-  'images-pdf': 'pdf',
-  'docx-hwpx': 'hwpx',
 }
 
 const startsWith = (bytes: Uint8Array, head: number[]): boolean =>
@@ -142,7 +127,7 @@ export async function runConversion(
     let previewSvg: string | undefined
     for (const [i, step] of route.steps.entries()) {
       req.onStep(i + 1, route.steps.length, STEP_LABELS[step])
-      const output = join(dir, 'work-' + (i + 1) + '.' + (STEP_OUTPUT[step] ?? extension))
+      const output = join(dir, 'work-' + (i + 1) + '.' + route.outputs[i])
       const outcome = await deps.step(step, { input, output, format: req.format, name })
       warnings.push(...(outcome.warnings ?? []))
       facts.push(...(outcome.facts ?? []))

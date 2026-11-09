@@ -229,6 +229,21 @@ describe('slides PDF export', () => {
     expect(html).not.toContain('<a ')
   })
 
+  // regression: on macOS, SVG text that fell back to PingFang SC printed blank (a Korean
+  // or Chinese deck became an empty PDF); the print window draws those with faces that print
+  it('prints the PingFang SC fallback with faces that print', () => {
+    const html = buildPdfExportHtml([{ png: 'png' }], 13.333, 7.5)
+    expect(html).toMatch(
+      /@font-face\{font-family:'PingFang SC';src:local\('Apple SD Gothic Neo'\)[^}]*unicode-range:U\+1100/,
+    )
+    expect(html).toMatch(/@font-face\{font-family:'PingFang SC';src:local\('Hiragino Sans GB'\)/)
+    // a deck's own embedded faces still come after, and win for their own families
+    const withFonts = buildPdfExportHtml([{ png: 'png' }], 13.333, 7.5, undefined, '@font-face{x}')
+    expect(withFonts.indexOf("font-family:'PingFang SC'")).toBeLessThan(
+      withFonts.indexOf('@font-face{x}'),
+    )
+  })
+
   // regression: a hung renderer used to leave the export promise unsettled
   // forever — spinning button, leaked hidden window and temp dir per retry.
   it('fails the export and cleans up when the renderer never settles', async () => {

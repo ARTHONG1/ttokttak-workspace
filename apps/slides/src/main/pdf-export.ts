@@ -68,6 +68,22 @@ function safeCss(css: string | undefined): string {
   return css ? css.replace(/<\/style/gi, '') : ''
 }
 
+/**
+ * Text the page's CSS chains leave to 'PingFang SC' prints blank on macOS: Chromium's PDF
+ * printer writes no glyphs for that system face inside SVG text, so a Korean or Chinese deck
+ * (and Latin text whose bundled face did not load) came out as empty pages. The print window
+ * draws that family with macOS faces that print: Apple SD Gothic Neo for Hangul, Hiragino
+ * Sans GB for the rest. Where these are not installed (Windows, Linux) the rules match no
+ * face and the chain goes on to its next family as before.
+ */
+const HANGUL_RANGE = 'U+1100-11FF,U+3130-318F,U+A960-A97F,U+AC00-D7AF,U+D7B0-D7FF'
+export const PRINT_FONT_FIXES = [
+  `@font-face{font-family:'PingFang SC';src:local('Apple SD Gothic Neo'),local('AppleSDGothicNeo-Regular');font-weight:100 500;unicode-range:${HANGUL_RANGE}}`,
+  `@font-face{font-family:'PingFang SC';src:local('Apple SD Gothic Neo Bold'),local('AppleSDGothicNeo-Bold');font-weight:600 900;unicode-range:${HANGUL_RANGE}}`,
+  "@font-face{font-family:'PingFang SC';src:local('Hiragino Sans GB'),local('HiraginoSansGB-W3');font-weight:100 500}",
+  "@font-face{font-family:'PingFang SC';src:local('Hiragino Sans GB W6'),local('HiraginoSansGB-W6');font-weight:600 900}",
+].join('\n')
+
 function pageMarkup(page: ExportPdfPage): string {
   return 'svg' in page ? page.svg : `<img src="data:image/png;base64,${page.png}">`
 }
@@ -80,6 +96,7 @@ export function buildPdfExportHtml(
   fontCss?: string,
 ): string {
   return `<!doctype html><html><head><meta charset="utf-8"><style>
+${PRINT_FONT_FIXES}
 ${safeCss(fontCss)}
 @page { size: ${widthIn}in ${heightIn}in; margin: 0; }
 html, body { margin: 0; padding: 0; }

@@ -1,6 +1,6 @@
 import { copyFile, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { extname, join } from 'node:path'
 import { docxToOdt, isOdtOpenError, odtToDocx } from '@genoffice/odt-engine'
 import { imagesToPdfBytes } from '../../../../pdf/src/main/images-to-pdf'
 import { PdfLoadError, convertPdfFileToDocxLocal, ensurePdfium } from '../pdf2docx-local'
@@ -82,13 +82,15 @@ async function pdfPageFacts(path: string): Promise<string[]> {
 async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Promise<StepOutcome> {
   const read = async () => new Uint8Array(await readFile(job.input))
   const write = (bytes: Uint8Array) => writeFile(job.output, bytes)
+  // the format this stage writes: the route names it, also when it is a stage on the way
+  const writes = extname(job.output).slice(1).toLowerCase()
   switch (step) {
     case 'to-pdf':
       await host.toPdf(job.input, job.output)
       // the page count only when the PDF is the result (a later stage reports its own)
       return job.format === 'pdf' ? { facts: await pdfPageFacts(job.output) } : {}
     case 'hwp-container': {
-      const out = await convertHwpContainer(await read(), job.format === 'hwp' ? 'hwp' : 'hwpx')
+      const out = await convertHwpContainer(await read(), writes === 'hwp' ? 'hwp' : 'hwpx')
       await write(out)
       const previewSvg = await hwpFirstPageSvg(out)
       return previewSvg ? { previewSvg } : {}
@@ -132,7 +134,7 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
       return { warnings: odtReportNote(made.report, 'Word') }
     }
     case 'docs-export':
-      await host.headless(job.input, job.output, job.format === 'md' ? 'md' : 'html')
+      await host.headless(job.input, job.output, writes === 'md' ? 'md' : 'html')
       return {}
     case 'html-docx':
       await host.headless(job.input, job.output, 'docx')

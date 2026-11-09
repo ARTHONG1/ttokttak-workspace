@@ -2,9 +2,10 @@ import { extname } from 'node:path'
 import type { ConvertFormat, ConvertTarget } from '../../shared/convert-api'
 
 /**
- * 문서 변환's route table: which formats each kind of document can be made into with the
- * engines the app already has, and the stages on the way. One table for both editions; a
- * route the web edition has not been checked for is left out there (web: false).
+ * 문서 변환's routes: every engine the app already has, as the format it reads and the one it
+ * writes, and for each document the shortest chain of them to every format it can become.
+ * One graph for both editions; an engine the web edition has not been checked for is left
+ * out there (web: false).
  */
 
 export type Edition = 'desktop' | 'web'
@@ -30,13 +31,8 @@ export type RouteStep =
 export interface ConvertRoute {
   format: ConvertFormat
   steps: RouteStep[]
-}
-
-interface RouteRow extends ConvertRoute {
-  /** shown on the web edition (its server converts; checked there) */
-  web: boolean
-  /** the card's line when it differs from the format's usual one */
-  summary?: string
+  /** the extension of the file each stage writes; the last one is the result's */
+  outputs: string[]
 }
 
 const KIND_BY_EXTENSION: Record<string, SourceKind> = {
@@ -67,57 +63,80 @@ export function sourceKindOf(path: string): SourceKind | null {
   return KIND_BY_EXTENSION[extname(path).slice(1).toLowerCase()] ?? null
 }
 
-const row = (
-  format: ConvertFormat,
-  steps: RouteStep[],
-  web = true,
-  summary?: string,
-): RouteRow => ({
-  format,
-  steps,
-  web,
-  ...(summary ? { summary } : {}),
-})
+/**
+ * A file on the way: the formats the engines read and write. A spreadsheet is 'xlsx', a
+ * photo 'image', the pictures of the pages 'png' (downloaded as a ZIP).
+ */
+type FileKind = ConvertFormat | 'image'
+
+const START: Record<SourceKind, FileKind | null> = {
+  hwp: 'hwp',
+  hwpx: 'hwpx',
+  docx: 'docx',
+  odt: 'odt',
+  sheet: 'xlsx',
+  pptx: 'pptx',
+  pdf: 'pdf',
+  html: 'html',
+  md: 'md',
+  image: 'image',
+  // nothing reads an e-book yet
+  epub: null,
+}
+
+interface Edge {
+  step: RouteStep
+  from: FileKind
+  to: FileKind
+  /** checked on the web edition (its server converts) */
+  web: boolean
+}
+
+const edges = (step: RouteStep, from: FileKind[], to: FileKind, web = true): Edge[] =>
+  from.map((f) => ({ step, from: f, to, web }))
+
+/**
+ * Every engine the app has, as what it reads and what it writes. A format no engine makes
+ * directly is reached through the others: a Hangul document becomes slides by way of a PDF.
+ * The order breaks ties between routes of the same length.
+ */
+const EDGES: Edge[] = [
+  ...edges('to-pdf', ['hwp', 'hwpx', 'docx', 'xlsx', 'pptx'], 'pdf'),
+  ...edges('to-pdf', ['html', 'md'], 'pdf', false),
+  ...edges('hwp-container', ['hwp'], 'hwpx'),
+  ...edges('hwp-container', ['hwpx'], 'hwp'),
+  ...edges('images-pdf', ['image'], 'pdf'),
+  ...edges('docx-odt', ['docx'], 'odt'),
+  ...edges('odt-docx', ['odt'], 'docx'),
+  ...edges('docs-export', ['docx'], 'html'),
+  ...edges('docs-export', ['docx'], 'md'),
+  ...edges('html-docx', ['html'], 'docx', false),
+  ...edges('docx-hwpx', ['docx'], 'hwpx'),
+  ...edges('pdf-docx', ['pdf'], 'docx'),
+  ...edges('pdf-pptx', ['pdf'], 'pptx'),
+  ...edges('pdf-xlsx', ['pdf'], 'xlsx'),
+  ...edges('pdf-png', ['pdf'], 'png'),
+]
+
+/** the order of the cards among routes of the same length */
+const FORMAT_ORDER: ConvertFormat[] = [
+  'pdf',
+  'hwp',
+  'hwpx',
+  'docx',
+  'odt',
+  'pptx',
+  'xlsx',
+  'html',
+  'md',
+  'png',
+]
 
 /** a PDF's words and tables moved into a new Hangul document: the layout is not kept */
 const PDF_TO_HANGUL = '글과 표를 옮겨요 · 모양은 한글 기본 양식'
-
-const TABLE: Record<SourceKind, RouteRow[]> = {
-  hwp: [row('pdf', ['to-pdf']), row('hwpx', ['hwp-container']), row('png', ['to-pdf', 'pdf-png'])],
-  hwpx: [row('pdf', ['to-pdf']), row('hwp', ['hwp-container']), row('png', ['to-pdf', 'pdf-png'])],
-  docx: [
-    row('pdf', ['to-pdf']),
-    row('odt', ['docx-odt']),
-    row('html', ['docs-export']),
-    row('md', ['docs-export']),
-    row('png', ['to-pdf', 'pdf-png']),
-  ],
-  odt: [
-    row('docx', ['odt-docx']),
-    row('pdf', ['odt-docx', 'to-pdf']),
-    row('html', ['odt-docx', 'docs-export']),
-    row('md', ['odt-docx', 'docs-export']),
-    row('png', ['odt-docx', 'to-pdf', 'pdf-png']),
-  ],
-  sheet: [row('pdf', ['to-pdf']), row('png', ['to-pdf', 'pdf-png'])],
-  pptx: [row('pdf', ['to-pdf']), row('png', ['to-pdf', 'pdf-png'])],
-  pdf: [
-    row('docx', ['pdf-docx']),
-    row('hwp', ['pdf-docx', 'docx-hwpx', 'hwp-container'], true, PDF_TO_HANGUL),
-    row('hwpx', ['pdf-docx', 'docx-hwpx'], true, PDF_TO_HANGUL),
-    row('pptx', ['pdf-pptx']),
-    row('xlsx', ['pdf-xlsx']),
-    row('png', ['pdf-png']),
-  ],
-  html: [
-    row('pdf', ['to-pdf'], false),
-    row('docx', ['html-docx'], false),
-    row('odt', ['html-docx', 'docx-odt'], false),
-  ],
-  md: [row('pdf', ['to-pdf'], false)],
-  image: [row('pdf', ['images-pdf'])],
-  epub: [],
-}
+/** a document printed to a PDF and read back into an editable format */
+const VIA_PDF = 'PDF를 거쳐 옮겨요 · 모양이 조금 달라질 수 있어요'
+const FROM_PDF: RouteStep[] = ['pdf-docx', 'pdf-pptx', 'pdf-xlsx']
 
 const CARD: Record<ConvertFormat, { title: string; summary: string }> = {
   pdf: { title: 'PDF', summary: '공유·인쇄용' },
@@ -153,14 +172,52 @@ export function extensionOf(format: ConvertFormat): string {
 }
 
 /**
- * The rows this run offers. `canMakePdf` is false where nothing can print the document to a
- * PDF (a web server without its converters): routes through a PDF are left out at once,
- * instead of failing after a wait.
+ * The shortest route from a document to each format it can be made into, with the engines
+ * this run has: edges the web edition has not been checked for are left out there, and where
+ * nothing can print a PDF (a web server without its converters) routes through one go at
+ * once, instead of failing after a wait.
  */
-function offered(kind: SourceKind, edition: Edition, canMakePdf: boolean): RouteRow[] {
-  return TABLE[kind].filter(
-    (r) => (edition === 'desktop' || r.web) && (canMakePdf || !r.steps.includes('to-pdf')),
+function shortestRoutes(
+  kind: SourceKind,
+  edition: Edition,
+  canMakePdf: boolean,
+): Map<ConvertFormat, Edge[]> {
+  const start = START[kind]
+  const found = new Map<ConvertFormat, Edge[]>()
+  if (!start) return found
+  const usable = EDGES.filter(
+    (e) => (edition === 'desktop' || e.web) && (canMakePdf || e.step !== 'to-pdf'),
   )
+  const reached = new Map<FileKind, Edge[]>([[start, []]])
+  let frontier: FileKind[] = [start]
+  while (frontier.length > 0) {
+    const next: FileKind[] = []
+    for (const at of frontier) {
+      for (const edge of usable) {
+        if (edge.from !== at || reached.has(edge.to)) continue
+        reached.set(edge.to, [...reached.get(at)!, edge])
+        next.push(edge.to)
+      }
+    }
+    frontier = next
+  }
+  for (const [file, path] of reached) {
+    if (file !== start && file !== 'image') found.set(file, path)
+  }
+  return found
+}
+
+const routeOf = (format: ConvertFormat, path: Edge[]): ConvertRoute => ({
+  format,
+  steps: path.map((e) => e.step),
+  outputs: path.map((e) => (e.to === 'png' ? 'zip' : e.to)),
+})
+
+function summaryOf(kind: SourceKind, route: ConvertRoute): string {
+  const fromPdf = route.steps.some((s) => FROM_PDF.includes(s))
+  if (fromPdf && (route.format === 'hwp' || route.format === 'hwpx')) return PDF_TO_HANGUL
+  if (fromPdf && kind !== 'pdf') return VIA_PDF
+  return CARD[route.format].summary
 }
 
 export function routeFor(
@@ -169,16 +226,23 @@ export function routeFor(
   edition: Edition,
   canMakePdf = true,
 ): ConvertRoute | null {
-  const found = offered(kind, edition, canMakePdf).find((r) => r.format === format)
-  return found ? { format: found.format, steps: [...found.steps] } : null
+  const path = shortestRoutes(kind, edition, canMakePdf).get(format)
+  return path ? routeOf(format, path) : null
 }
 
 export function targetsFor(kind: SourceKind, edition: Edition, canMakePdf = true): ConvertTarget[] {
-  return offered(kind, edition, canMakePdf).map((r) => ({
-    format: r.format,
-    ...CARD[r.format],
-    ...(r.summary ? { summary: r.summary } : {}),
-    steps: r.steps.map((s) => STEP_LABELS[s]),
-    extension: extensionOf(r.format),
-  }))
+  return [...shortestRoutes(kind, edition, canMakePdf)]
+    .map(([format, path]) => routeOf(format, path))
+    .sort(
+      (a, b) =>
+        a.steps.length - b.steps.length ||
+        FORMAT_ORDER.indexOf(a.format) - FORMAT_ORDER.indexOf(b.format),
+    )
+    .map((route) => ({
+      format: route.format,
+      title: CARD[route.format].title,
+      summary: summaryOf(kind, route),
+      steps: route.steps.map((s) => STEP_LABELS[s]),
+      extension: extensionOf(route.format),
+    }))
 }

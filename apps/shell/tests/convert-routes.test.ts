@@ -36,26 +36,45 @@ describe('sourceKindOf', () => {
   })
 })
 
-describe('targetsFor', () => {
-  const formats = (kind: SourceKind, edition: 'desktop' | 'web') =>
-    targetsFor(kind, edition).map((t) => t.format)
+const ALL = ['pdf', 'hwp', 'hwpx', 'docx', 'odt', 'pptx', 'xlsx', 'html', 'md', 'png'] as const
+/** the format a document already is, which has no card of its own */
+const OWN: Partial<Record<SourceKind, string>> = {
+  hwp: 'hwp',
+  hwpx: 'hwpx',
+  docx: 'docx',
+  odt: 'odt',
+  sheet: 'xlsx',
+  pptx: 'pptx',
+  pdf: 'pdf',
+  html: 'html',
+  md: 'md',
+}
 
-  it('offers what the built-in engines make, in a fixed order', () => {
-    expect(formats('hwp', 'desktop')).toEqual(['pdf', 'hwpx', 'png'])
-    expect(formats('hwpx', 'desktop')).toEqual(['pdf', 'hwp', 'png'])
-    expect(formats('docx', 'desktop')).toEqual(['pdf', 'odt', 'html', 'md', 'png'])
-    expect(formats('odt', 'desktop')).toEqual(['docx', 'pdf', 'html', 'md', 'png'])
-    expect(formats('pdf', 'desktop')).toEqual(['docx', 'hwp', 'hwpx', 'pptx', 'xlsx', 'png'])
-    expect(formats('html', 'desktop')).toEqual(['pdf', 'docx', 'odt'])
-    expect(formats('md', 'desktop')).toEqual(['pdf'])
-    expect(formats('image', 'desktop')).toEqual(['pdf'])
+describe('targetsFor', () => {
+  const formats = (kind: SourceKind, edition: 'desktop' | 'web', canMakePdf = true) =>
+    targetsFor(kind, edition, canMakePdf).map((t) => t.format)
+
+  it.each(['hwp', 'hwpx', 'docx', 'odt', 'sheet', 'pptx', 'pdf', 'html', 'md', 'image'] as const)(
+    'turns a %s document into every other format on the desktop',
+    (kind) => {
+      expect([...formats(kind, 'desktop')].sort()).toEqual(
+        ALL.filter((f) => f !== OWN[kind]).sort(),
+      )
+    },
+  )
+
+  it('lists the shorter routes first', () => {
+    for (const kind of ['hwp', 'docx', 'sheet', 'pdf'] as const) {
+      const lengths = targetsFor(kind, 'desktop').map((t) => t.steps.length)
+      expect(lengths).toEqual([...lengths].sort((a, b) => a - b))
+    }
+    expect(formats('hwp', 'desktop').slice(0, 2)).toEqual(['pdf', 'hwpx'])
   })
 
   it('leaves out on the web what the web edition has not been checked for', () => {
-    expect(formats('docx', 'web')).toEqual(['pdf', 'odt', 'html', 'md', 'png'])
     expect(formats('html', 'web')).toEqual([])
-    expect(formats('pdf', 'web')).toEqual(['docx', 'hwp', 'hwpx', 'pptx', 'xlsx', 'png'])
     expect(formats('md', 'web')).toEqual([])
+    expect(formats('hwp', 'web')).toContain('pptx')
   })
 
   it('has no card for a document nothing can be made of yet', () => {
@@ -63,16 +82,9 @@ describe('targetsFor', () => {
   })
 
   it('leaves out routes through a PDF where nothing can print one', () => {
-    expect(targetsFor('docx', 'web', false).map((t) => t.format)).toEqual(['odt', 'html', 'md'])
-    expect(targetsFor('hwp', 'web', false).map((t) => t.format)).toEqual(['hwpx'])
-    expect(targetsFor('pdf', 'web', false).map((t) => t.format)).toEqual([
-      'docx',
-      'hwp',
-      'hwpx',
-      'pptx',
-      'xlsx',
-      'png',
-    ])
+    expect(formats('hwp', 'web', false)).toEqual(['hwpx'])
+    expect(formats('docx', 'web', false)).toEqual(['hwpx', 'odt', 'html', 'md', 'hwp'])
+    expect([...formats('pdf', 'web', false)].sort()).toEqual(ALL.filter((f) => f !== 'pdf').sort())
     expect(routeFor('docx', 'pdf', 'web', false)).toBeNull()
   })
 
@@ -97,14 +109,54 @@ describe('targetsFor', () => {
       }
     }
   })
+
+  it('says on a card when the route goes through a PDF', () => {
+    const viaPdf = targetsFor('hwp', 'desktop').find((t) => t.format === 'pptx')!
+    expect(viaPdf.summary).toContain('PDF를 거쳐')
+    // a PDF itself, and a route without a PDF, keep their usual words
+    expect(targetsFor('pdf', 'desktop').find((t) => t.format === 'pptx')!.summary).toBe(
+      '쪽마다 슬라이드로',
+    )
+    expect(targetsFor('docx', 'desktop').find((t) => t.format === 'odt')!.summary).toBe(
+      '오픈 문서 형식',
+    )
+  })
 })
 
 describe('routeFor', () => {
-  it('chains the engines a format needs', () => {
+  it('keeps the direct routes as they were', () => {
+    expect(routeFor('hwp', 'pdf', 'desktop')?.steps).toEqual(['to-pdf'])
+    expect(routeFor('hwp', 'hwpx', 'web')?.steps).toEqual(['hwp-container'])
     expect(routeFor('odt', 'pdf', 'desktop')?.steps).toEqual(['odt-docx', 'to-pdf'])
     expect(routeFor('hwp', 'png', 'desktop')?.steps).toEqual(['to-pdf', 'pdf-png'])
     expect(routeFor('html', 'odt', 'desktop')?.steps).toEqual(['html-docx', 'docx-odt'])
-    expect(routeFor('hwp', 'hwpx', 'web')?.steps).toEqual(['hwp-container'])
+    expect(routeFor('docx', 'md', 'desktop')?.steps).toEqual(['docs-export'])
+    expect(routeFor('image', 'pdf', 'desktop')?.steps).toEqual(['images-pdf'])
+  })
+
+  it('goes through another format when there is no direct engine', () => {
+    expect(routeFor('hwp', 'pptx', 'desktop')?.steps).toEqual(['to-pdf', 'pdf-pptx'])
+    expect(routeFor('hwp', 'docx', 'desktop')?.steps).toEqual(['to-pdf', 'pdf-docx'])
+    expect(routeFor('pptx', 'xlsx', 'desktop')?.steps).toEqual(['to-pdf', 'pdf-xlsx'])
+    expect(routeFor('docx', 'hwp', 'desktop')?.steps).toEqual(['docx-hwpx', 'hwp-container'])
+    expect(routeFor('sheet', 'hwp', 'desktop')?.steps).toEqual([
+      'to-pdf',
+      'pdf-docx',
+      'docx-hwpx',
+      'hwp-container',
+    ])
+    expect(routeFor('hwpx', 'html', 'desktop')?.steps).toEqual([
+      'to-pdf',
+      'pdf-docx',
+      'docs-export',
+    ])
+  })
+
+  it('names the file each stage writes, ending in the format asked for', () => {
+    expect(routeFor('docx', 'hwp', 'desktop')?.outputs).toEqual(['hwpx', 'hwp'])
+    expect(routeFor('hwpx', 'md', 'desktop')?.outputs).toEqual(['pdf', 'docx', 'md'])
+    expect(routeFor('pdf', 'png', 'desktop')?.outputs).toEqual(['zip'])
+    expect(routeFor('pptx', 'xlsx', 'desktop')?.outputs).toEqual(['pdf', 'xlsx'])
   })
 
   it('turns a PDF into a Hangul document through Word, the HWP saved by the Hangul engine', () => {
@@ -112,17 +164,23 @@ describe('routeFor', () => {
     expect(routeFor('pdf', 'hwp', 'web')?.steps).toEqual(['pdf-docx', 'docx-hwpx', 'hwp-container'])
   })
 
-  it('says on a PDF → Hangul card that the content moves and the layout does not', () => {
-    const hwp = targetsFor('pdf', 'desktop').find((t) => t.format === 'hwp')!
-    expect(hwp.summary).toContain('기본 양식')
+  it('says on a card into Hangul through a PDF that the content moves and the layout does not', () => {
+    expect(targetsFor('pdf', 'desktop').find((t) => t.format === 'hwp')!.summary).toContain(
+      '기본 양식',
+    )
+    expect(targetsFor('pptx', 'desktop').find((t) => t.format === 'hwpx')!.summary).toContain(
+      '기본 양식',
+    )
     // a Hangul card for a Hangul document keeps its usual words
     expect(targetsFor('hwpx', 'desktop').find((t) => t.format === 'hwp')!.summary).toBe(
       '한글에서 바로 열어요',
     )
   })
 
-  it('has no route the table does not list', () => {
-    expect(routeFor('sheet', 'hwp', 'desktop')).toBeNull()
+  it('has no route to the format a document already is, or from one nothing reads', () => {
+    expect(routeFor('hwp', 'hwp', 'desktop')).toBeNull()
+    expect(routeFor('sheet', 'xlsx', 'desktop')).toBeNull()
+    expect(routeFor('epub', 'pdf', 'desktop')).toBeNull()
     expect(routeFor('html', 'docx', 'web')).toBeNull()
   })
 })

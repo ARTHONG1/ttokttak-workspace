@@ -127,9 +127,30 @@ describe('runConversion', () => {
 
   it('refuses a format the route table has no route for', async () => {
     const { deps } = fakeDeps({})
-    const result = await runConversion({ ...request(), kind: 'sheet', format: 'hwp' }, deps)
+    const result = await runConversion({ ...request(), kind: 'epub', format: 'pdf' }, deps)
     expect(result).toEqual({ ok: false, error: CONVERT_ERRORS.noRoute })
     expect(deps.step).not.toHaveBeenCalled()
+  })
+
+  it('goes through the formats on the way, each stage writing its own kind of file', async () => {
+    const HWP = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 1, 2])
+    const { deps, calls } = fakeDeps({
+      'to-pdf': PDF,
+      'pdf-docx': ZIP,
+      'docx-hwpx': ZIP,
+      'hwp-container': HWP,
+    })
+    const onStep = vi.fn()
+    const result = await runConversion({ ...request(onStep), kind: 'sheet', format: 'hwp' }, deps)
+    expect(calls.map((c) => c.output)).toEqual([
+      '/tmp/convert-1/work-1.pdf',
+      '/tmp/convert-1/work-2.docx',
+      '/tmp/convert-1/work-3.hwpx',
+      '/tmp/convert-1/work-4.hwp',
+    ])
+    for (let i = 1; i < calls.length; i++) expect(calls[i].input).toBe(calls[i - 1].output)
+    expect(onStep.mock.calls.map((c) => c[1])).toEqual([4, 4, 4, 4])
+    expect(result).toMatchObject({ ok: true, fileName: '회의록 (최종).hwp', bytes: HWP })
   })
 
   it('carries a Hangul stage preview SVG on PDF → HWP and PDF → HWPX conversions', async () => {
