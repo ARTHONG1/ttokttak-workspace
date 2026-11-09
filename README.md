@@ -52,7 +52,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.4](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.4) · 2026-11-08** — 똑딱작업실 0.16.4는 내장 AI 모델을 문서 편집용으로 추가 학습한 버전으로 바꾸고, Windows 설치본에도 내장 AI를 탑재한 업데이트입니다. Apple Silicon Mac과 Windows(64비트) 설치본에 앱의 실제 편집 도구 호출 기록으로 한 번 더 학습한 모델이 들어가며, 크기·메모리·속도는 이전과 같습니다.
+**[v0.16.6](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.6) · 2026-11-09** — 똑딱작업실 0.16.6는 한글 문서를 읽고 편집하는 엔진(rhwp)을 공식 0.9.0으로 올린 업데이트입니다. 별도 fork 없이 공식 버전을 그대로 쓰고, 공식 버전에 아직 없는 보정 7개만 얹었습니다. 긴 문서의 입력 속도와 Shift+화살표 표 칸 크기 조절은 이전과 같이 동작합니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
