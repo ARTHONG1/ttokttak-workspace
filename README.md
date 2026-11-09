@@ -52,7 +52,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.6](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.6) · 2026-11-09** — 똑딱작업실 0.16.6는 한글 문서를 읽고 편집하는 엔진(rhwp)을 공식 0.9.0으로 올린 업데이트입니다. 별도 fork 없이 공식 버전을 그대로 쓰고, 공식 버전에 아직 없는 보정 7개만 얹었습니다. 긴 문서의 입력 속도와 Shift+화살표 표 칸 크기 조절은 이전과 같이 동작합니다.
+**[v0.16.7](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.7) · 2026-11-09** — 똑딱작업실 0.16.7은 문서 변환에서 어떤 문서든 모든 형식으로 바꿀 수 있게 한 업데이트입니다. 한 번에 바꿀 엔진이 없으면 PDF나 워드를 거쳐 갑니다. 예를 들어 한글 → PDF → PowerPoint, 엑셀 → PDF → 워드 → 한글처럼 바꿉니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
