@@ -123,10 +123,11 @@ describe('writeTabWidths', () => {
           expect(back.getTextRange(0, para, 0, length)).toBe(doc.getTextRange(0, para, 0, length))
         }
       }
-      // and lays the first tab out as wide as written
-      const before = JSON.parse(back.getCursorRect(0, 0, 2)) as { x: number }
-      const after = JSON.parse(back.getCursorRect(0, 0, 3)) as { x: number }
-      expect(Math.round((after.x - before.x) * 75)).toBe(6000)
+      // and lays the first tab out as the editor showed it before the widths went in
+      // (rhwp 0.9.0 places a tab by its tab stops, as Hangul does, not by the stored width)
+      const shown = (d: HwpDocument) =>
+        JSON.parse(d.getCursorRect(0, 0, 3)).x - JSON.parse(d.getCursorRect(0, 0, 2)).x
+      expect(shown(back)).toBeCloseTo(shown(doc), 1)
     })
   }
 

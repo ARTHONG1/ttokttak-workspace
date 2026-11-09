@@ -41,19 +41,30 @@ function firstRowWidths(doc: HwpDocument): number[] {
 describe('one cell resize (Shift+arrow)', () => {
   it('moves the same boundary again and keeps the grid after save', () => {
     const doc = table()
-    expect(firstRowWidths(doc)).toEqual([189, 189, 189])
+    // The pasted table's starting width comes from the engine; the resize is measured from it.
+    const [start, middle, last] = firstRowWidths(doc)
+    expect(middle).toBe(start)
+    expect(last).toBe(start)
 
     expect(JSON.parse(doc.resizeTableCell(0, 1, 0, 0, 0, false, true))).toMatchObject({
       ok: true,
       moved: true,
     })
-    expect(firstRowWidths(doc)).toEqual([192.7, 185.2, 189])
+    const once = firstRowWidths(doc)
+    const step = once[0] - start
+    expect(step).toBeGreaterThan(3)
+    expect(step).toBeLessThan(4.5)
+    expect(once[1]).toBeCloseTo(start - step, 0)
+    expect(once[2]).toBe(start)
 
     expect(JSON.parse(doc.resizeTableCell(0, 1, 0, 0, 0, false, true))).toMatchObject({
       ok: true,
       moved: true,
     })
-    expect(firstRowWidths(doc)).toEqual([196.5, 181.4, 189])
+    const twice = firstRowWidths(doc)
+    expect(twice[0]).toBeCloseTo(start + 2 * step, 0)
+    expect(twice[1]).toBeCloseTo(start - 2 * step, 0)
+    expect(twice[2]).toBe(start)
 
     const dims = JSON.parse(doc.getTableDimensions(0, 1, 0))
     expect(dims).toMatchObject({ rowCount: 3, colCount: 4, cellCount: 9 })
@@ -61,7 +72,7 @@ describe('one cell resize (Shift+arrow)', () => {
     expect(first).toMatchObject({ row: 0, col: 0, rowSpan: 1, colSpan: 2 })
 
     const saved = new HwpDocument(doc.exportHwp())
-    expect(firstRowWidths(saved)).toEqual([196.5, 181.4, 189])
+    expect(firstRowWidths(saved)).toEqual(twice)
     expect(JSON.parse(saved.getCellInfo(0, 1, 0, 0))).toMatchObject({ colSpan: 2 })
     expect(JSON.parse(saved.resizeTableCell(0, 1, 0, 0, 0, false, true))).toMatchObject({
       ok: true,
@@ -69,16 +80,17 @@ describe('one cell resize (Shift+arrow)', () => {
     })
 
     const savedHwpx = new HwpDocument(doc.exportHwpx())
-    expect(firstRowWidths(savedHwpx)).toEqual([196.5, 181.4, 189])
+    expect(firstRowWidths(savedHwpx)).toEqual(twice)
     expect(JSON.parse(savedHwpx.getCellInfo(0, 1, 0, 0))).toMatchObject({ colSpan: 2 })
   })
 
   it('does nothing at the last column', () => {
     const doc = table()
+    const before = firstRowWidths(doc)
     expect(JSON.parse(doc.resizeTableCell(0, 1, 0, 0, 2, false, true))).toMatchObject({
       ok: true,
       moved: false,
     })
-    expect(firstRowWidths(doc)).toEqual([189, 189, 189])
+    expect(firstRowWidths(doc)).toEqual(before)
   })
 })

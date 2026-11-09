@@ -121,10 +121,35 @@ describe('setPageNumberPos', () => {
     expect(doc.renderPageSvg(0)).toMatch(/>-<[\s\S]*>1<[\s\S]*>-</)
   })
 
+  it('keeps a table cursor address when an existing page number is in a later paragraph', () => {
+    // Generated HWPX: paragraph 0 has text, paragraph 1 has [page number, table].
+    // Relocating the number would shift the table from control 1 to 0 behind the cursor.
+    const doc = new HwpDocument(
+      readFileSync(join(__dirname, 'fixtures', 'page-number-before-table.hwpx')),
+    )
+    expect(JSON.parse(doc.getTableDimensions(0, 1, 1))).toMatchObject({ cellCount: 2 })
+    expect(JSON.parse(doc.setPageNumberPos(0, 2, 6, false))).toEqual({
+      ok: true,
+      replaced: true,
+    })
+    expect(JSON.parse(doc.getTableDimensions(0, 1, 1))).toMatchObject({ cellCount: 2 })
+    doc.insertTextInCell(0, 1, 1, 0, 0, 0, 'after ')
+    expect(doc.getTextInCell(0, 1, 1, 0, 0, 0, 12)).toBe('after before')
+    const reopened = new HwpDocument(doc.exportHwp())
+    expect(reopened.getTextInCell(0, 1, 1, 0, 0, 0, 12)).toBe('after before')
+    expect(pageNumber(reopened)).toEqual({ format: 2, position: 6, dash: false })
+    reopened.free()
+    doc.free()
+  })
+
   it('refuses shapes HWPX cannot hold and positions that do not exist', () => {
     const doc = document()
     expect(() => doc.setPageNumberPos(0, 8, 5, true)).toThrow()
     expect(() => doc.setPageNumberPos(0, 0, 11, true)).toThrow()
     expect(() => doc.setPageNumberPos(3, 0, 5, true)).toThrow()
+    doc.setPageNumberPos(0, 2, 6, false)
+    expect(() => doc.setPageNumberPos(0, 8, 5, true)).toThrow()
+    expect(() => doc.setPageNumberPos(0, 0, 11, true)).toThrow()
+    expect(pageNumber(doc)).toEqual({ format: 2, position: 6, dash: false })
   })
 })

@@ -24,7 +24,7 @@
     "@genoffice/ui": "*",
     "@noble/hashes": "^2.2.0",
     "@rhwp/core": "file:../../vendor/rhwp-core",
-    "@rhwp/editor": "0.8.7",
+    "@rhwp/editor": "0.9.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.4",

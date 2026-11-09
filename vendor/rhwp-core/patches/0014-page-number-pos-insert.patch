@@ -1,175 +1,95 @@
-diff --git a/src/document_core/commands/object_ops/common.rs b/src/document_core/commands/object_ops/common.rs
-index 9d15d48ca..5233bf8aa 100644
---- a/src/document_core/commands/object_ops/common.rs
-+++ b/src/document_core/commands/object_ops/common.rs
-@@ -465,3 +465,115 @@ impl crate::document_core::DocumentCore {
-         )))
+From: ttokttak maintainers
+Subject: [PATCH 14] Keep legacy page-number API alongside upstream Position API
+
+Apply after 0013 on rhwp-core v0.9.0. Upstream already implements page-number
+insertion/replacement and empty sideChar parsing/serialization. Keep it and
+adapt legacy setPageNumberPos(section, format, position, dash), the 0..7
+format limit, and {ok,replaced}/{ok,pageNumber} response shapes. The legacy setter updates an existing control in place so table cursor
+addresses remain valid; only insertion delegates to upstream. Both getters
+use its last-control semantics.
+No parser/serializer or object_ops changes are needed.
+
+diff --git a/src/document_core/commands/formatting.rs b/src/document_core/commands/formatting.rs
+--- a/src/document_core/commands/formatting.rs
++++ b/src/document_core/commands/formatting.rs
+@@ -2961,6 +2961,69 @@
+         Ok("{\"ok\":true,\"exists\":false}".to_string())
      }
- }
-+
-+impl crate::document_core::DocumentCore {
-+    /// 구역의 쪽 번호 위치(`pgnp`)를 정한다 — 한글의 [쪽 번호 매기기].
-+    ///
-+    /// 한글 2024 실측: 쪽 번호 위치는 구역마다 하나이고, 커서가 어디에 있든 구역 첫 문단의
-+    /// 구역·단 정의 바로 뒤에 들어간다. 이미 있으면 새로 넣지 않고 그 설정을 바꾼다.
-+    /// 줄표가 없으면 대시 문자는 0이다(HWPX `sideChar=""`).
+
++    /// Legacy page-number API preserves existing control addresses for the app cursor.
 +    pub fn set_page_number_pos_native(
 +        &mut self,
 +        section_idx: usize,
 +        format: u8,
 +        position: u8,
 +        dash: bool,
-+    ) -> Result<String, crate::error::HwpError> {
-+        use crate::error::HwpError;
-+        use crate::model::control::{Control, PageNumberPos};
-+
-+        if section_idx >= self.document.sections.len() {
-+            return Err(HwpError::RenderError(format!(
-+                "구역 인덱스 {} 범위 초과",
-+                section_idx
-+            )));
++    ) -> Result<String, HwpError> {
++        if format > 7 {
++            return Err(HwpError::RenderError("format must be 0~7".to_string()));
 +        }
-+        if self.document.sections[section_idx].paragraphs.is_empty() {
-+            return Err(HwpError::RenderError("구역에 문단이 없음".to_string()));
++        if position > 10 {
++            return Err(HwpError::RenderError("position must be 0~10".to_string()));
 +        }
-+        let setting = PageNumberPos {
-+            format,
-+            position,
-+            user_symbol: '\0',
-+            prefix_char: '\0',
-+            suffix_char: '\0',
-+            dash_char: if dash { '-' } else { '\0' },
-+        };
-+
-+        self.document.sections[section_idx].raw_stream = None;
-+        let section = &mut self.document.sections[section_idx];
-+        let existing = section.paragraphs.iter_mut().find_map(|para| {
-+            para.controls.iter_mut().find_map(|control| match control {
-+                Control::PageNumberPos(pnp) => Some(pnp),
++        let section = self
++            .document
++            .sections
++            .get_mut(section_idx)
++            .ok_or_else(|| HwpError::RenderError("구역 범위 초과".to_string()))?;
++        // Match the upstream getter's last-control rule without relocating any control.
++        let existing = section.paragraphs.iter_mut().rev().find_map(|para| {
++            para.controls.iter_mut().rev().find_map(|control| match control {
++                crate::model::control::Control::PageNumberPos(pnp) => Some(pnp),
 +                _ => None,
 +            })
 +        });
 +        let replaced = if let Some(pnp) = existing {
-+            // 사용자 기호·앞뒤 장식은 이 창이 다루지 않으므로 원래 값을 둔다
-+            pnp.format = setting.format;
-+            pnp.position = setting.position;
-+            pnp.dash_char = setting.dash_char;
++            pnp.format = format;
++            pnp.position = position;
++            pnp.dash_char = if dash { '-' } else { '\0' };
 +            true
 +        } else {
-+            let paragraph = &mut section.paragraphs[0];
-+            let insert_idx = paragraph
-+                .controls
-+                .iter()
-+                .take_while(|c| matches!(c, Control::SectionDef(_) | Control::ColumnDef(_)))
-+                .count();
-+            paragraph.align_ctrl_data_records();
-+            paragraph
-+                .controls
-+                .insert(insert_idx, Control::PageNumberPos(setting));
-+            paragraph.ctrl_data_records.insert(insert_idx, None);
-+            // 앞선 정의들처럼 첫 글자 앞 자리(8 유닛)를 차지한다
-+            paragraph.shift_for_inline_control_insert(insert_idx, 0);
-+            paragraph.char_count += 8;
-+            paragraph.control_mask |= 1u32 << 0x0015;
-+            paragraph.has_para_text = true;
-+            self.shift_active_field_for_control_insert(section_idx, 0, insert_idx);
 +            false
 +        };
-+
-+        if !replaced {
-+            self.reflow_paragraph(section_idx, 0);
++        if replaced {
++            self.document.sections[section_idx].raw_stream = None;
++            self.recompose_section(section_idx);
++            self.paginate_if_needed();
++            self.invalidate_page_tree_cache();
++        } else {
++            self.set_page_number_position_native(section_idx, position, format, dash)?;
 +        }
-+        self.recompose_section(section_idx);
-+        self.paginate_if_needed();
-+        self.invalidate_page_tree_cache();
-+
-+        Ok(crate::document_core::helpers::json_ok_with(&format!(
-+            "\"replaced\":{}",
-+            replaced
-+        )))
++        Ok(format!("{{\"ok\":true,\"replaced\":{replaced}}}"))
 +    }
 +
-+    /// 구역의 쪽 번호 위치. 없으면 `pageNumber` 가 null 이다.
-+    pub fn get_page_number_pos_native(
-+        &self,
-+        section_idx: usize,
-+    ) -> Result<String, crate::error::HwpError> {
-+        use crate::error::HwpError;
-+        use crate::model::control::Control;
-+
-+        let section = self.document.sections.get(section_idx).ok_or_else(|| {
-+            HwpError::RenderError(format!("구역 인덱스 {} 범위 초과", section_idx))
-+        })?;
-+        let found = section.paragraphs.iter().find_map(|para| {
-+            para.controls.iter().find_map(|control| match control {
-+                Control::PageNumberPos(pnp) => Some(pnp),
-+                _ => None,
-+            })
-+        });
-+        let body = match found {
++    /// 기존 앱이 읽는 `{ok,pageNumber:{format,position,dash}|null}` 응답.
++    pub fn get_page_number_pos_native(&self, section_idx: usize) -> Result<String, HwpError> {
++        let section = self
++            .document
++            .sections
++            .get(section_idx)
++            .ok_or_else(|| HwpError::RenderError("구역 범위 초과".to_string()))?;
++        Ok(match last_page_number_position(&section.paragraphs) {
 +            Some(pnp) => format!(
-+                "\"pageNumber\":{{\"format\":{},\"position\":{},\"dash\":{}}}",
++                "{{\"ok\":true,\"pageNumber\":{{\"format\":{},\"position\":{},\"dash\":{}}}}}",
 +                pnp.format,
 +                pnp.position,
 +                pnp.dash_char != '\0'
 +            ),
-+            None => "\"pageNumber\":null".to_string(),
-+        };
-+        Ok(crate::document_core::helpers::json_ok_with(&body))
++            None => "{\"ok\":true,\"pageNumber\":null}".to_string(),
++        })
 +    }
-+}
-diff --git a/src/parser/hwpx/section.rs b/src/parser/hwpx/section.rs
-index 8b490f6b1..c5eca3cc4 100644
---- a/src/parser/hwpx/section.rs
-+++ b/src/parser/hwpx/section.rs
-@@ -5338,8 +5338,9 @@ fn parse_page_num_attrs(e: &quick_xml::events::BytesStart) -> PageNumberPos {
-                 };
-             }
-             b"sideChar" => {
-+                // 한글은 줄표 없는 쪽 번호를 `sideChar=""`로 쓴다(HWP5 대시 문자 0)
-                 let s = attr_str(&attr);
--                pn.dash_char = s.chars().next().unwrap_or('-');
-+                pn.dash_char = s.chars().next().unwrap_or('\0');
-             }
-             _ => {}
-         }
-diff --git a/src/serializer/hwpx/section.rs b/src/serializer/hwpx/section.rs
-index 8829aec04..c62fb5376 100644
---- a/src/serializer/hwpx/section.rs
-+++ b/src/serializer/hwpx/section.rs
-@@ -2963,17 +2963,18 @@ fn page_num_format_to_str(fmt: u8) -> &'static str {
- 
- /// `<hp:ctrl><hp:pageNum .../></hp:ctrl>` — 쪽 번호 위치(PageNumberPos) 컨트롤.
- fn render_page_num(pn: &PageNumberPos) -> String {
--    // dash_char 기본값은 '-' (모델: 항상 '-'); '\0'이면 '-'로 폴백.
-+    // 줄표 없는 쪽 번호(대시 문자 0)는 한글처럼 `sideChar=""`로 쓴다. 종전에는 '-'로
-+    // 바꿔 써서, 줄표 없이 매긴 쪽 번호가 저장 뒤 "- 1 -"이 됐다.
-     let side = if pn.dash_char == '\0' {
--        '-'
-+        String::new()
-     } else {
--        pn.dash_char
-+        pn.dash_char.to_string()
-     };
-     format!(
-         r#"<hp:ctrl><hp:pageNum pos="{}" formatType="{}" sideChar="{}"/></hp:ctrl>"#,
-         page_num_pos_to_str(pn.position),
-         page_num_format_to_str(pn.format),
--        xml_escape(&side.to_string()),
-+        xml_escape(&side),
-     )
- }
- 
++
+     /// 구역의 쪽 번호 매기기(`pgnp`)를 읽는다 (#7635).
+     ///
+     /// 한/글 쪽 번호 매기기 창처럼 구역 본문 문단의 마지막 쪽 번호 위치를 돌려준다.
 diff --git a/src/wasm_api.rs b/src/wasm_api.rs
-index 2031085e3..c372b7668 100644
 --- a/src/wasm_api.rs
 +++ b/src/wasm_api.rs
-@@ -2528,6 +2528,33 @@ impl HwpDocument {
-         .map_err(|e| e.into())
+@@ -9137,6 +9137,32 @@
+             .map_err(|e| e.into())
      }
- 
-+    /// 구역의 쪽 번호 위치 지정 (쪽 > 쪽 번호 매기기). 구역에 이미 있으면 그 설정을 바꾼다.
-+    /// format: 번호 모양 0~7 (표 134, HWPX에서도 쓸 수 있는 것), position: 표시 위치 0~10 (표 150)
+
++    /// 기존 앱 호환: 번호 모양을 위치보다 먼저 받는다 (모양 0~7, 위치 0~10).
 +    #[wasm_bindgen(js_name = setPageNumberPos)]
 +    pub fn set_page_number_pos(
 +        &mut self,
@@ -188,13 +108,76 @@ index 2031085e3..c372b7668 100644
 +            .map_err(|e| e.into())
 +    }
 +
-+    /// 구역의 쪽 번호 위치 (`{"ok":true,"pageNumber":{format,position,dash}|null}`)
++    /// 기존 앱 호환: `{ok,pageNumber:{format,position,dash}|null}`.
 +    #[wasm_bindgen(js_name = getPageNumberPos)]
 +    pub fn get_page_number_pos(&self, section_idx: u32) -> Result<String, JsValue> {
 +        self.get_page_number_pos_native(section_idx as usize)
 +            .map_err(|e| e.into())
 +    }
 +
-     /// 다단 설정 변경
-     /// column_type: 0=일반, 1=배분, 2=평행
-     /// same_width: 0=다른 너비, 1=같은 너비
+     /// 구역의 쪽 번호 매기기를 정한다 (쪽 > 쪽 번호 매기기, #7635).
+     ///
+     /// position: 0 없음, 1~3 위 왼쪽·가운데·오른쪽, 4~6 아래, 7·8 바깥쪽 위·아래, 9·10 안쪽 위·아래.
+diff --git a/src/wasm_api/tests.rs b/src/wasm_api/tests.rs
+--- a/src/wasm_api/tests.rs
++++ b/src/wasm_api/tests.rs
+@@ -27073,3 +27073,59 @@
+         assert_eq!(info.char_shapes[run.char_shape_id as usize].base_size, 1600);
+     }
+ }
++
++/// 기존 앱의 (구역, 모양, 위치, 줄표) 인수 순서와 JSON 계약을 지킨다.
++#[test]
++fn legacy_page_number_pos_api_keeps_argument_order_and_json_shape() {
++    let mut doc = HwpDocument::create_empty();
++    doc.create_blank_document_native().unwrap();
++    doc.insert_text_native(0, 0, 0, "가나다 라마바").unwrap();
++    let read = |doc: &HwpDocument| -> Value {
++        serde_json::from_str(&doc.get_page_number_pos_native(0).unwrap()).unwrap()
++    };
++    assert_eq!(read(&doc), serde_json::json!({"ok":true,"pageNumber":null}));
++    let inserted: Value =
++        serde_json::from_str(&doc.set_page_number_pos_native(0, 2, 5, false).unwrap()).unwrap();
++    assert_eq!(inserted, serde_json::json!({"ok":true,"replaced":false}));
++    assert_eq!(
++        read(&doc),
++        serde_json::json!({
++            "ok":true,"pageNumber":{"format":2,"position":5,"dash":false}
++        })
++    );
++    for bytes in [
++        doc.export_hwp_with_adapter().unwrap(),
++        doc.export_hwpx_native().unwrap(),
++    ] {
++        let again = HwpDocument::new(&bytes).unwrap();
++        assert_eq!(read(&again), read(&doc), "HWP/HWPX에서 줄표 없음 보존");
++        assert_eq!(
++            again.get_text_range_native(0, 0, 0, 7).unwrap(),
++            "가나다 라마바"
++        );
++    }
++    let replaced: Value =
++        serde_json::from_str(&doc.set_page_number_pos_native(0, 1, 6, true).unwrap()).unwrap();
++    assert_eq!(replaced, serde_json::json!({"ok":true,"replaced":true}));
++    assert_eq!(
++        read(&doc),
++        serde_json::json!({
++            "ok":true,"pageNumber":{"format":1,"position":6,"dash":true}
++        })
++    );
++    let current: Value =
++        serde_json::from_str(&doc.get_page_number_position_native(0).unwrap()).unwrap();
++    assert_eq!(
++        current,
++        serde_json::json!({"ok":true,"exists":true,"position":6,"format":1,"dash":true})
++    );
++    assert!(doc.set_page_number_pos_native(0, 8, 5, true).is_err());
++    assert!(doc.set_page_number_pos_native(0, 0, 11, true).is_err());
++    assert!(doc.set_page_number_pos_native(3, 0, 5, true).is_err());
++    assert!(doc.get_page_number_pos_native(3).is_err());
++    assert_eq!(
++        read(&doc)["pageNumber"]["position"],
++        6,
++        "잘못된 입력은 문서를 바꾸지 않는다"
++    );
++}

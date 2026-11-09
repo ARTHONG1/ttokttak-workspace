@@ -66,11 +66,14 @@ function boxes(doc: HwpDocument, page: number): Box[] {
   return out
 }
 
-/** The footnote separator's top and the body text lines' bottoms on one page. */
+/**
+ * The top of the footnote area's separator (its area's top when the document draws no line,
+ * as Hangul does for a separator in color "none") and the body text lines' bottoms on one page.
+ */
 function footnoteAndBody(doc: HwpDocument, page: number) {
   const root = JSON.parse(doc.getPageRenderTree(page)) as Node
   const area = root.children?.find((child) => child.type === 'FootnoteArea')
-  const separator = area?.children?.find((child) => child.type === 'Line')?.bbox?.y
+  const separator = area?.children?.find((child) => child.type === 'Line')?.bbox?.y ?? area?.bbox?.y
   const bottoms: number[] = []
   const walk = (node: Node) => {
     if (node.type === 'TextLine' && node.bbox) bottoms.push(node.bbox.y + node.bbox.h)
@@ -104,7 +107,7 @@ const px = (hwpunit: number) => (hwpunit * 96) / 7200
 describe('vendored rhwp engine', () => {
   it('is the build its manifest records', () => {
     const manifest = JSON.parse(readFileSync(join(CORE, 'package.json'), 'utf8'))
-    expect(manifest.version).toMatch(/^0\.8\.7-ttok\.\d+$/)
+    expect(manifest.version).toMatch(/^0\.9\.0-ttok\.\d+$/)
     const wasm = readFileSync(join(CORE, 'rhwp_bg.wasm'))
     expect(createHash('sha256').update(wasm).digest('hex')).toBe(manifest.rhwp.wasmSha256)
   })

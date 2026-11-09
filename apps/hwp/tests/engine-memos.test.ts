@@ -317,7 +317,8 @@ describe('reading memos', () => {
     expect(list[0]).toMatchObject({
       index: 1,
       author: 'CDC',
-      date: null,
+      // the date Hancom saved with the memo (rhwp 0.9.0 reads it)
+      date: '2022-09-15T13:44:46Z',
       text: '수정',
       place: 'body',
       sectionIndex: 0,
@@ -390,6 +391,9 @@ describe('editing memos', () => {
     expect(created.id).not.toBe(0)
     let list = memos(doc)
     expect(list).toHaveLength(1)
+    // a new memo is dated when it is made, as Hancom does, and keeps that date when edited
+    const date = list[0]!.date
+    expect(date).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/)
     expect(list[0]).toMatchObject({
       id: created.id,
       index: 1,
@@ -408,7 +412,7 @@ describe('editing memos', () => {
     list = memos(doc)
     expect(list[0]).toMatchObject({
       author: 'tester',
-      date: null,
+      date,
       text: '바뀐 글\n\n끝\n',
       editable: true,
     })
@@ -1003,42 +1007,40 @@ describe('the engine writes Hancom memo identity', () => {
     expect(Buffer.compare(Buffer.from(doc.exportHwp()), Buffer.from(original))).toBe(0)
   })
 
-  // What the engine without memo support (vendor/rhwp-core patches 0001-0017) wrote
-  // for these documents, unedited and after typing, as HWP and HWPX. A later
-  // engine patch that changes how these documents save updates them on purpose.
+  // What the engine (official rhwp 0.9.0 with vendor/rhwp-core's patches) writes for
+  // these memo-free documents, unedited and after typing, as HWP and HWPX: memo support
+  // must not change them. A later engine change that saves them differently updates
+  // these on purpose, after checking the files reopen with the same text.
   const before: Record<string, Record<string, string>> = {
     'format-copy-table.hwp': {
       hwp: 'd90a4045fa4a1cb72fdb287580721a681ad73753519ff4eaa6b0816485b7a6df',
-      hwpx: 'bb912ac89306d45318a655a4d0e34604f4e4941e3970cdbe17b046a6667569a2',
+      hwpx: 'e54b6b604b2610b41ed581bbd0dfd662954f8f61b5971165b717deb79726a0a1',
       editedHwp: '78e031ac0f9c84936a696deb75b8dbf9e00d2e3c8b3052356d31a99b8ae666ab',
-      editedHwpx: 'b6bd4a8bd41dcc139e884214a5e592082cee339b19e9c5995825c2b62b275dda',
+      editedHwpx: 'a617c26bbe31e6534d9a50b04db49a876be4bbdc51c9d0659c0ea684b66b866c',
     },
     'hancom-page-number-no-dash.hwpx': {
-      hwp: '2280bfbcb5c6c9ef3c3db271fc91cd912fd097e4a260517aa7576fa2bb5d813c',
-      hwpx: '1ff93bc1fd76ef6f64f53a256ff3d7b22fed32da1697c6ed4412bfb1daea1ff1',
-      editedHwp: '9ba31666a1c8c46289b4a2f32ecfa369a7ea47174cee9ecfb6e4092eb72ef41c',
-      editedHwpx: '32a2dc1bb703d11a6d5d8e16ddf4075e6ffb04d5b318b3dde52e96edc72d09d9',
+      hwp: 'c3e3c463c70d787ddf5e2a568bbb83da12df18d0284e373eb1799a6449578b96',
+      hwpx: 'bc3fb577f4836ad12c7d9878c0bcc3eff1a5042be0a98cf668ddbb058a728c90',
+      editedHwp: '63a6d970a15095b535a882f4e87219f386716b0beb7c04a120cead28da4def5d',
+      editedHwpx: 'a27eadf418310de4d9685dc073207c6ee0ed0a75f70cfb3b7513601d79e58eb3',
     },
   }
 
-  it.each(Object.keys(before))(
-    'saves %s, edited or not, as the engine without memos did',
-    (name) => {
-      const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
-      const edited = () => {
-        const doc = open(name)
-        doc.insertText(0, 0, 0, '메모 없음 ')
-        return doc
-      }
-      expect(open(name).getMemoList()).toBe('[]')
-      expect({
-        hwp: sha(open(name).exportHwp()),
-        hwpx: sha(open(name).exportHwpx()),
-        editedHwp: sha(edited().exportHwp()),
-        editedHwpx: sha(edited().exportHwpx()),
-      }).toEqual(before[name])
-    },
-  )
+  it.each(Object.keys(before))('saves the memo-free %s, edited or not, as pinned', (name) => {
+    const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
+    const edited = () => {
+      const doc = open(name)
+      doc.insertText(0, 0, 0, '메모 없음 ')
+      return doc
+    }
+    expect(open(name).getMemoList()).toBe('[]')
+    expect({
+      hwp: sha(open(name).exportHwp()),
+      hwpx: sha(open(name).exportHwpx()),
+      editedHwp: sha(edited().exportHwp()),
+      editedHwpx: sha(edited().exportHwpx()),
+    }).toEqual(before[name])
+  })
 })
 
 /** The PARA_HEADER tail (bytes 12..) of every memo body paragraph, by memo number. */
@@ -1156,7 +1158,7 @@ describe('memo requests and text', () => {
 
     // escapes JSON.stringify does not write but other writers do, and spacing
     const other = blank('hello world')
-    other.insertMemo(0, 0, 0, 5, '{ "text" : "\\u00e9\\ud83d\\ude00\\/x", "author" : null }')
+    other.insertMemo(0, 0, 0, 5, '{ "text" : "\\u00e9\\ud83d\\ude00\\/x" }')
     expect(memos(other)[0]).toMatchObject({ author: '', text: 'é😀/x' })
 
     const path = JSON.stringify([{ controlIndex: 0, cellIndex: 0, cellParaIndex: 0 }])
@@ -1237,31 +1239,27 @@ describe('undoing the deletion of a memo anchor', () => {
 })
 
 describe('memo errors', () => {
-  const expectProtected = (doc: HwpDocument, id: number) => {
-    const memo = memos(doc)[0]!
-    expect(memo).toMatchObject({
-      id,
-      editable: false,
-      readOnlyReason: 'protected',
-      text: 'memo body',
-    })
-    expect(errorOf(() => doc.insertMemo(0, 0, 0, 0, '{}')).code).toBe('memo_read_only')
-    expect(errorOf(() => doc.setMemoText(memo.id, 'new')).code).toBe('memo_read_only')
-    expect(errorOf(() => doc.removeMemo(memo.id)).code).toBe('memo_read_only')
+  // rhwp 0.9.0, like Hancom, lets a document opened with its password edit its memos. This
+  // app never saves such a document, so its plugin keeps them read-only
+  // (agent-plugin-memos.test.ts). The engine reports HWP as encrypted but not HWPX; for that
+  // the plugin reads the editor's passwordProtected flag.
+  const expectProtected = (doc: HwpDocument, id: number, encrypted: boolean) => {
+    expect(JSON.parse(doc.getDocumentInfo())).toMatchObject({ encrypted })
+    expect(memos(doc)[0]).toMatchObject({ id, text: 'memo body' })
   }
 
-  it('treats password-protected HWP documents as read-only', () => {
+  it('opens password-protected HWP documents with their memos', () => {
     const doc = blank('protected')
     const created = insert(doc, 0, 0, 'tester', 'memo body')
     const encrypted = doc.exportHwpWithPassword('secret')
-    expectProtected(HwpDocument.openWithPassword(encrypted, 'secret'), created.id)
+    expectProtected(HwpDocument.openWithPassword(encrypted, 'secret'), created.id, true)
   })
 
-  it('treats password-protected HWPX documents as read-only', () => {
+  it('opens password-protected HWPX documents with their memos', () => {
     const doc = blank('protected')
     const created = insert(doc, 0, 0, 'tester', 'memo body')
     const encrypted = doc.exportHwpxWithPassword('secret')
-    expectProtected(HwpDocument.openWithPassword(encrypted, 'secret'), created.id)
+    expectProtected(HwpDocument.openWithPassword(encrypted, 'secret'), created.id, false)
   })
 
   it('rejects missing paragraphs and paths as invalid ranges', () => {

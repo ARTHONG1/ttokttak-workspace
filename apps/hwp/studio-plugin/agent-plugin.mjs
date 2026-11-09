@@ -320,15 +320,27 @@ function memoRectsOf(doc, entry) {
 function memoEntriesOf(doc) {
   if (typeof doc.getMemoList !== 'function') return []
   const entries = parse(doc.getMemoList())
-  return Array.isArray(entries) ? entries : []
+  if (!Array.isArray(entries)) return []
+  // rhwp 0.9.0 lets a document opened with its password edit memos. This app never saves
+  // such a document (it would drop the password), so its memos stay read-only here.
+  if (!memoProtected(doc)) return entries
+  return entries.map((entry) => ({ ...entry, editable: false, readOnlyReason: 'protected' }))
 }
+
+/**
+ * Whether the editor opened the document with its password, as the app's studio patch puts it
+ * in the command context (passwordProtected). Set while the plugin is active.
+ */
+let editorPasswordProtected = () => false
 
 /**
  * Whether the document is password protected. The engine's document info has the password
  * flag only, not a distribution flag: a distribution-only document gets as far as the
- * mutation, where the engine refuses with memo_read_only and the panel shows that.
+ * mutation, where the engine refuses with memo_read_only and the panel shows that. rhwp 0.9.0
+ * reports a password-protected HWPX as not encrypted, so the editor's flag counts too.
  */
-const memoProtected = (doc) => parse(doc.getDocumentInfo()).encrypted === true
+const memoProtected = (doc) =>
+  parse(doc.getDocumentInfo()).encrypted === true || editorPasswordProtected()
 
 /** What the panel and an approval question need to know about a memo that is going away. */
 const memoSummaryOf = (entry) => ({
@@ -3240,9 +3252,18 @@ export const agentPlugin = {
     memoSettleTimer = null
     if (memoProbeTimer) clearTimeout(memoProbeTimer)
     memoProbeTimer = null
+    editorPasswordProtected = () => false
   },
 
   activate(host) {
+    editorPasswordProtected = () => {
+      try {
+        return host.automation?.getContext?.()?.passwordProtected === true
+      } catch {
+        return false
+      }
+    }
+
     // the unsaved state as the editor sets it, in the same task as the edit: the app's close
     // prompt reads its copy of this, and a key typed just before closing must be in it
     host.events.on('document-dirty-changed', (change) => {

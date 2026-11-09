@@ -14,8 +14,8 @@ import {
   hancomHooks,
   missingHancomCommands,
   missingPluginHooks,
-  patchTargets,
   pluginHooks,
+  rhwpPatches,
 } from '../scripts/rhwp-patches.mjs'
 import { AGENT_PLUGIN_ID } from '../studio-plugin/agent-plugin.mjs'
 
@@ -112,6 +112,14 @@ describe('what the plugin reaches into the studio for', () => {
     expect(missingPluginHooks(complete)).toEqual([])
   })
 
+  it('accepts CRLF checkouts while still rejecting a changed hook', () => {
+    const windows = (file: string) => complete(file)?.replaceAll('\n', '\r\n') ?? null
+    expect(missingPluginHooks(windows)).toEqual([])
+    const changed = (file: string) =>
+      windows(file)?.replace('getSelectionOrdered()', 'selectionInOrder()') ?? null
+    expect(missingPluginHooks(changed)).toEqual(['src/engine/cursor.ts: getSelectionOrdered()'])
+  })
+
   it('names the file and the name when one is gone', () => {
     const renamed = (file: string) =>
       (complete(file) ?? '').replace('getSelectionOrdered()', 'selectionInOrder()')
@@ -201,24 +209,34 @@ describe('rhwp nested-table patches', () => {
     expect(patched.split('moveOutOfSelectedTable()').length).toBe(2)
   })
 
-  it('let Cut take a selected table in a cell, after copying it', () => {
+  it('lets Cut delete a nested table only after the guarded asynchronous copy', () => {
     const source = [
-      '      if (ref) {',
-      '        // 중첩 표 잘라내기는 지원하지 않는다. keydown 경로도 같은 선택 상태를 유지한다.',
-      '        if (ref.cellPath && ref.cellPath.length > 1) return;',
-      '        this.performCopy();',
+      '    // 중첩 표 잘라내기는 지원하지 않는다. keydown 경로도 같은 선택 상태를 유지한다.',
+      '    if (table?.cellPath && table.cellPath.length > 1) return;',
+      '    try {',
+      '      if (!await this.copySelectedObject(isCurrent) || !isCurrent()) return;',
+      '      if (picture) {',
+      '        this.deleteObjectControl(picture);',
+      '      } else {',
       '        this.cursor.moveOutOfSelectedTable();',
-      "        this.eventBus.emit('table-object-selection-changed', false);",
       "        this.executeOperation({ kind: 'snapshot', operationType: 'cutTable', operation: (wasm: WasmBridge) => {",
       '          wasm.deleteTableControl(ref.sec, ref.ppi, ref.ci);',
       '          return this.cursor.getPosition();',
       '        }});',
-      '',
+      "        this.eventBus.emit('table-object-selection-changed', false);",
+      '      }',
+      '    } finally { cancel(); }',
     ].join('\n')
     const patched = applyPatch('studio-nested-table-cut', source)
-    expect(patched).not.toContain('ref.cellPath.length > 1')
-    expect(patched.indexOf('this.performCopy();')).toBeLessThan(
-      patched.indexOf('wasm.deleteTableAt(ref);'),
+    expect(patched).not.toContain('table.cellPath.length > 1')
+    expect(patched).toContain(
+      'if (!await this.copySelectedObject(isCurrent) || !isCurrent()) return;',
+    )
+    expect(patched).toContain('wasm.deleteTableAt(ref);')
+    expect(patched).toContain('this.deleteObjectControl(picture);')
+    expect(patched).toContain('finally { cancel(); }')
+    expect(() => applyPatch('studio-nested-table-cut', `${source}\n${source}`)).toThrow(
+      /exactly one/,
     )
   })
 
@@ -355,240 +373,279 @@ describe('rhwp memo menu patches', () => {
   })
 })
 
-describe('rhwp memo delete-undo patches', () => {
-  // the studio's text around the patches, as the pinned release has it
+describe('rhwp memo bridge patch', () => {
   const bridge = [
-    '  getHyperlinkContext(target: HyperlinkTarget): HyperlinkContext {',
+    '  getMemoAnchors(): MemoAnchor[] {',
     "    if (!this.doc) throw new Error('문서가 로드되지 않았습니다');",
-    '    return JSON.parse(this.doc.getHyperlinkContext(JSON.stringify(target)));',
+    '    return JSON.parse(this.doc.getMemoList());',
     '  }',
-    '',
   ].join('\n')
-  const command = [
-    'export class DeleteTextCommand implements EditCommand {',
-    '  execute(wasm: WasmBridge): DocumentPosition {',
-    '    if (!isCaption && this.count > 0) {',
-    '      const target = hyperlinkTarget(this.position);',
-    '      const context = wasm.getHyperlinkContext(target);',
-    '      if (context.links.some(link => this.position.charOffset < link.end',
-    '        && link.start < this.position.charOffset + this.count)) {',
-    '        this.fragmentId = wasm.captureDeleteRange(target.section, target.para, target.para);',
-    '      }',
-    '    }',
-    '  }',
-    '}',
-    '',
-  ].join('\n')
-  const patched = applyPatch('studio-memo-delete-undo', command)
 
-  type Anchor = {
-    sectionIndex: number
-    paraIndex: number | null
-    startCharIdx: number | null
-    endCharIdx: number | null
-    path: { controlIndex: number; cellIndex?: number; paraIndex: number }[] | null
-  }
-  type Target = { section: number; para: number; cellPath: [number, number, number][] }
-
-  /** The helper the patch adds, run against a bridge that holds the given memos. */
-  function overlaps(anchors: Anchor[], target: Target, offset: number, count: number): boolean {
-    const start = patched.indexOf('export function memoAnchorOverlaps(')
-    const block = patched.slice(start, patched.indexOf('\n}\n', start) + 2)
-    const js = ts.transpileModule(block.replace('export function', 'function'), {
+  it('keeps one memo method and returns no anchors without a memo-capable document', () => {
+    const patched = applyPatch('studio-memo-anchors', bridge)
+    const js = ts.transpileModule(`class Bridge { ${patched} }`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
     }).outputText
-    const helper = new Function(`${js}\nreturn memoAnchorOverlaps`)() as (
-      wasm: { getMemoAnchors(): Anchor[] },
-      target: Target,
-      offset: number,
-      count: number,
-    ) => boolean
-    return helper({ getMemoAnchors: () => anchors }, target, offset, count)
-  }
-
-  const body = (start: number, end: number): Anchor => ({
-    sectionIndex: 0,
-    paraIndex: 3,
-    startCharIdx: start,
-    endCharIdx: end,
-    path: null,
+    const makeBridge = new Function(`${js}; return new Bridge()`)
+    const instance = makeBridge()
+    expect(instance.getMemoAnchors()).toEqual([])
+    instance.doc = {}
+    expect(instance.getMemoAnchors()).toEqual([])
+    instance.doc = { getMemoList: () => '[{"sectionIndex":2}]' }
+    expect(instance.getMemoAnchors()).toEqual([{ sectionIndex: 2 }])
+    expect(patched.match(/getMemoAnchors\(/g)).toHaveLength(1)
   })
 
-  it('give the bridge the memo anchors, and none from an engine without memos', () => {
-    const patched = applyPatch('studio-memo-anchors', bridge)
-    expect(patched).toContain('  getMemoAnchors(): {')
-    expect(patched).toContain("if (!doc || typeof doc.getMemoList !== 'function') return [];")
-    expect(patched).toContain('return JSON.parse(doc.getMemoList());')
-    expect(patched.indexOf('getMemoAnchors(')).toBeLessThan(
-      patched.indexOf('  getHyperlinkContext('),
-    )
-  })
-
-  it('capture the paragraph when a typed deletion touches a memo anchor, as for a link', () => {
-    expect(patched).toContain(
-      '        || memoAnchorOverlaps(wasm, target, this.position.charOffset, this.count)) {',
-    )
-    expect(patched.indexOf('export function memoAnchorOverlaps(')).toBeLessThan(
-      patched.indexOf('export class DeleteTextCommand'),
-    )
-    expect(patched.split('captureDeleteRange').length).toBe(2)
-  })
-
-  it('see a deletion inside or at the edge of a body memo, not beside it', () => {
-    const at = { section: 0, para: 3, cellPath: [] as [number, number, number][] }
-    expect(overlaps([body(2, 5)], at, 4, 1)).toBe(true)
-    expect(overlaps([body(2, 5)], at, 2, 1)).toBe(true)
-    expect(overlaps([body(2, 5)], at, 1, 1)).toBe(false)
-    expect(overlaps([body(2, 5)], at, 5, 1)).toBe(false)
-    expect(overlaps([body(2, 5)], at, 0, 9)).toBe(true)
-    // a caret memo is not removed by a deletion, so nothing to capture
-    expect(overlaps([body(2, 2)], at, 1, 2)).toBe(false)
-    // another paragraph or section, or a range-less memo spanning paragraphs
-    expect(overlaps([body(2, 5)], { ...at, para: 4 }, 3, 1)).toBe(false)
-    expect(overlaps([{ ...body(2, 5), sectionIndex: 1 }], at, 3, 1)).toBe(false)
-    expect(overlaps([{ ...body(2, 5), startCharIdx: null, endCharIdx: null }], at, 3, 1)).toBe(
-      false,
-    )
-    expect(overlaps([], at, 3, 1)).toBe(false)
-  })
-
-  it('match a memo in a table cell or a text box by its path', () => {
-    const cell: Anchor = {
-      ...body(0, 4),
-      path: [{ controlIndex: 1, cellIndex: 2, paraIndex: 0 }],
-    }
-    const box: Anchor = { ...body(0, 4), path: [{ controlIndex: 5, paraIndex: 1 }] }
-    expect(overlaps([cell], { section: 0, para: 3, cellPath: [[1, 2, 0]] }, 1, 1)).toBe(true)
-    expect(overlaps([cell], { section: 0, para: 3, cellPath: [[1, 3, 0]] }, 1, 1)).toBe(false)
-    expect(overlaps([cell], { section: 0, para: 3, cellPath: [] }, 1, 1)).toBe(false)
-    expect(overlaps([box], { section: 0, para: 3, cellPath: [[5, 0, 1]] }, 3, 1)).toBe(true)
-  })
-
-  it('fail when the text is gone, and are in the studio build', () => {
+  it('rejects missing and ambiguous upstream methods', () => {
     expect(() => applyPatch('studio-memo-anchors', 'export class WasmBridge {}')).toThrow(
       /rhwp patch/,
     )
-    expect(() =>
-      applyPatch('studio-memo-delete-undo', command.replace('implements EditCommand', '')),
-    ).toThrow(/rhwp patch/)
+    expect(() => applyPatch('studio-memo-anchors', `${bridge}\n${bridge}`)).toThrow(/exactly one/)
     expect(STUDIO_PATCHES).toContain('studio-memo-anchors')
-    expect(STUDIO_PATCHES).toContain('studio-memo-delete-undo')
   })
 })
 
-describe('rhwp font memo patches', () => {
-  // the studio's text around the patches, as the pinned release has it
-  const bridge = [
-    'let canvasFontSubstitutionInstalled = false;',
-    '',
-    'function installCanvasFontSubstitution(): void {',
-    '  Object.defineProperty(proto, "font", {',
-    '    set(value: string) {',
-    '      descriptor.set!.call(this, scopedHostCanvasFont(String(value)) ?? substituteCssFontFamily(String(value)));',
-    '    },',
-    '  });',
-    '}',
-    '',
-  ].join('\n')
-  const patched = applyPatch('studio-font-memo-use', applyPatch('studio-font-memo-state', bridge))
-
-  /** The memo the patch adds, run against a substitution that counts its calls. */
-  function memoWith(substitute: (font: string) => string): (font: string) => string {
-    const start = patched.indexOf('let canvasFontMemo')
-    const block = patched.slice(start, patched.indexOf('\n}\n', start) + 2)
-    const js = ts.transpileModule(block, {
-      compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }).outputText
-    return new Function('substituteCssFontFamily', `${js}\nreturn memoSubstituteCssFontFamily`)(
-      substitute,
-    )
+describe('official v0.9.0 studio integration', () => {
+  // Both the studio builder and the engine builder may have fetched the same official tag.
+  const studio = [
+    join(__dirname, '..', 'node_modules', '.cache', 'rhwp-studio', 'v0.9.0', 'rhwp-studio'),
+    join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'node_modules',
+      '.cache',
+      'rhwp-core',
+      'v0.9.0',
+      'rhwp-studio',
+    ),
+  ].find(existsSync)
+  const read = (file: string) => {
+    try {
+      return readFileSync(join(studio!, file), 'utf8')
+    } catch {
+      return null
+    }
   }
+  const files = studio
+    ? readdirSync(join(studio, 'src'), { recursive: true })
+        .map(String)
+        .filter((file) => file.endsWith('.ts'))
+        .map((file) => join(studio, 'src', file))
+    : []
 
-  it('send the font setter through the memo, after the host fonts as before', () => {
-    expect(patched).toContain(
-      'scopedHostCanvasFont(String(value)) ?? memoSubstituteCssFontFamily(String(value))',
-    )
-    expect(patched).not.toContain('?? substituteCssFontFamily(String(value))')
-    expect(patched.startsWith('let canvasFontSubstitutionInstalled = false;\n')).toBe(true)
-  })
-
-  it('substitute a font string once in a synchronous stretch, and again after it', async () => {
-    const calls: string[] = []
-    const memo = memoWith((font) => {
-      calls.push(font)
-      return `${font} chain`
-    })
-    expect(memo('10px "A"')).toBe('10px "A" chain')
-    expect(memo('10px "A"')).toBe('10px "A" chain')
-    expect(memo('bold 10px "B"')).toBe('bold 10px "B" chain')
-    expect(calls).toEqual(['10px "A"', 'bold 10px "B"'])
-    // a microtask checkpoint: fonts found or a document opened since then are seen
-    await Promise.resolve()
-    expect(memo('10px "A"')).toBe('10px "A" chain')
-    expect(calls).toEqual(['10px "A"', 'bold 10px "B"', '10px "A"'])
-  })
-
-  it('are in the studio build', () => {
-    expect(STUDIO_PATCHES).toContain('studio-font-memo-state')
-    expect(STUDIO_PATCHES).toContain('studio-font-memo-use')
-  })
-})
-
-describe('the studio source the build fetched', () => {
-  // build-studio.mjs keeps it under the tag the engine names (vendor/rhwp-core, decision 0050)
-  const core = JSON.parse(
-    readFileSync(join(__dirname, '..', '..', '..', 'vendor', 'rhwp-core', 'package.json'), 'utf8'),
-  )
-  const studio = join(
-    __dirname,
-    '..',
-    'node_modules',
-    '.cache',
-    'rhwp-studio',
-    core.rhwp.tag,
-    'rhwp-studio',
-  )
-  const files = [
-    'src/main.ts',
-    'src/embed/protocol.ts',
-    'src/core/wasm-bridge.ts',
-    'src/engine/input-handler.ts',
-    'src/engine/input-handler-keyboard.ts',
-    'src/engine/command.ts',
-    'src/command/commands/edit.ts',
-    'src/command/commands/insert.ts',
-    'src/command/commands/table.ts',
-    'src/command/shortcut-map.ts',
-    'src/command/registry.ts',
-    'src/i18n/locales/ko.ts',
-    'src/i18n/locales/en.ts',
-  ].map((file) => join(studio, file))
-
-  // only where a build has fetched it; a fresh checkout has nothing to look at
-  it.skipIf(!existsSync(studio))('takes every studio patch exactly once', () => {
-    for (const name of STUDIO_PATCHES) {
-      const targets = files.filter((file) => patchTargets(name, file))
-      expect(targets, name).toHaveLength(1)
-      expect(() => applyPatch(name, readFileSync(targets[0], 'utf8')), name).not.toThrow()
-    }
-  })
-
-  it.skipIf(!existsSync(studio))('has what the plugin and the Hangul keys reach into', () => {
-    const read = (file: string) => {
-      try {
-        return readFileSync(join(studio, file), 'utf8')
-      } catch {
-        return null
+  it.skipIf(!studio)(
+    'takes every patch through the actual build hooks without duplicate methods',
+    () => {
+      const plugin = rhwpPatches(...STUDIO_PATCHES)
+      const transform = plugin.transform as (code: string, id: string) => { code: string } | null
+      for (const file of files) {
+        const source = readFileSync(file, 'utf8')
+        const patched = transform.call({}, source, `${file}?integration`)
+        if (!patched) continue
+        const ast = ts.createSourceFile(file, patched.code, ts.ScriptTarget.Latest, true)
+        const checkClass = (node: ts.Node) => {
+          if (ts.isClassDeclaration(node)) {
+            const methods = node.members
+              .filter(ts.isMethodDeclaration)
+              .filter((method) => !!method.body)
+              .map((method) => method.name.getText(ast))
+            expect(new Set(methods).size, file).toBe(methods.length)
+          }
+          ts.forEachChild(node, checkClass)
+        }
+        checkClass(ast)
       }
-    }
+      const buildEnd = plugin.buildEnd as () => void
+      buildEnd.call({
+        error: (message: string) => {
+          throw new Error(message)
+        },
+      })
+    },
+  )
+
+  it.skipIf(!studio)('has every app hook and Hangul-key command before transformation', () => {
     expect(missingPluginHooks(read)).toEqual([])
-    const commands = join(studio, 'src', 'command', 'commands')
+    const commands = join(studio!, 'src', 'command', 'commands')
     const sources = readdirSync(commands)
       .filter((file) => file.endsWith('.ts'))
       .map((file) => readFileSync(join(commands, file), 'utf8'))
       .join('\n')
     expect(missingHancomCommands(sources)).toEqual([])
   })
+
+  it.skipIf(!studio)('rejects upstream changes to the memo undo and paint-cache wiring', () => {
+    for (const [file, needle] of [
+      ['src/engine/command.ts', 'touchesMemoAnchor(wasm.getMemoAnchors(), target, start, end)'],
+      ['src/core/memo.ts', 'memo.startCharIdx <= end && start <= memo.endCharIdx'],
+      ['src/core/wasm-bridge.ts', 'canvasFontResolution.resolve(String(value))'],
+      [
+        'src/core/wasm-bridge.ts',
+        'withHostCanvasFonts(session, () => canvasFontResolution.run(operation))',
+      ],
+      ['src/core/canvas-font-resolution-scope.ts', 'finally { this.values = previous; }'],
+    ]) {
+      expect(read(file), file).toContain(needle)
+      const changed = (name: string) =>
+        name === file ? read(name)!.replace(needle, 'CHANGED') : read(name)
+      expect(missingPluginHooks(changed), `${file}: ${needle}`).not.toEqual([])
+    }
+  })
+
+  function upstreamModule(file: string): Record<string, any> {
+    const output = ts.transpileModule(read(file)!, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+    }).outputText
+    const exports = {}
+    new Function('exports', output)(exports)
+    return exports
+  }
+
+  it
+    .skipIf(!studio)
+    .each(['success', 'copy-failed', 'selection', 'document', 'mutation', 'history'])(
+    'preserves asynchronous nested-table cut safety: %s',
+    async (outcome) => {
+      const source = applyPatch('studio-nested-table-cut', read('src/engine/input-handler.ts')!)
+      const ast = ts.createSourceFile('input-handler.ts', source, ts.ScriptTarget.Latest, true)
+      const handler = ast.statements.find(
+        (node): node is ts.ClassDeclaration =>
+          ts.isClassDeclaration(node) && node.name?.text === 'InputHandler',
+      )!
+      const method = handler.members.find(
+        (node) => ts.isMethodDeclaration(node) && node.name.getText(ast) === 'cutSelectedObject',
+      )!
+      const output = ts.transpileModule(`class Cut { ${method.getText(ast)} }`, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022 },
+      }).outputText
+      const { tableObjectClipboardTarget } = upstreamModule(
+        'src/engine/table-object-clipboard-target.ts',
+      )
+      const cut = new Function('tableObjectClipboardTarget', `${output}; return new Cut()`)(
+        tableObjectClipboardTarget,
+      )
+      const ref = {
+        sec: 0,
+        ppi: 3,
+        ci: 1,
+        cellPath: [
+          { controlIndex: 1, cellIndex: 2, cellParaIndex: 0 },
+          { controlIndex: 4, cellIndex: 0, cellParaIndex: 0 },
+        ],
+      }
+      let selection = ref
+      let undoTop = {}
+      let finishCopy!: (ok: boolean) => void
+      const clipboard = new Promise<boolean>((resolve) => {
+        finishCopy = resolve
+      })
+      const deleted: unknown[] = []
+      const listeners = new Map<string, () => void>()
+      cut.active = true
+      cut.editMode = 'edit'
+      cut.isFormMode = () => false
+      cut.history = { peekUndoTop: () => undoTop }
+      cut.cursor = {
+        isInPictureObjectSelection: () => false,
+        isInTableObjectSelection: () => true,
+        getSelectedTableRef: () => selection,
+        moveOutOfSelectedTable: () => {},
+        getPosition: () => ({ sectionIndex: 0, paragraphIndex: 3, charOffset: 0 }),
+      }
+      cut.wasm = {
+        documentGeneration: 1,
+        borrowDocumentHandle: () => 1,
+        deleteTableAt: (target: unknown) => deleted.push(target),
+      }
+      cut.eventBus = {
+        on: (event: string, listener: () => void) => {
+          listeners.set(event, listener)
+          return () => listeners.delete(event)
+        },
+        emit: () => {},
+      }
+      cut.copySelectedObject = () => clipboard
+      cut.executeOperation = (operation: { kind: string; operation: (wasm: unknown) => void }) => {
+        expect(operation.kind).toBe('snapshot')
+        operation.operation(cut.wasm)
+      }
+      const pending = cut.cutSelectedObject()
+      expect(deleted).toEqual([])
+      if (outcome === 'selection') selection = { ...ref }
+      if (outcome === 'document') cut.wasm.documentGeneration++
+      if (outcome === 'mutation') listeners.get('document-mutated')!()
+      if (outcome === 'history') undoTop = {}
+      finishCopy(outcome !== 'copy-failed')
+      await pending
+      expect(deleted).toEqual(outcome === 'success' ? [ref] : [])
+      expect(cut.cancelPendingObjectCut).toBeNull()
+      expect(listeners.size).toBe(0)
+    },
+  )
+
+  it.skipIf(!studio)(
+    'preserves upstream memo undo coverage for boundaries, caret memos and nested paths',
+    () => {
+      const { touchesMemoAnchor } = upstreamModule('src/core/memo.ts')
+      const target = { section: 0, para: 3, cellPath: [] }
+      const memo = { sectionIndex: 0, paraIndex: 3, startCharIdx: 2, endCharIdx: 5, path: null }
+      expect(touchesMemoAnchor([memo], target, 3, 4)).toBe(true)
+      expect(touchesMemoAnchor([memo], target, 1, 2)).toBe(true)
+      expect(touchesMemoAnchor([memo], target, 5, 6)).toBe(true)
+      expect(touchesMemoAnchor([memo], target, 0, 1)).toBe(false)
+      expect(touchesMemoAnchor([{ ...memo, endCharIdx: 2 }], target, 1, 3)).toBe(true)
+      expect(touchesMemoAnchor([memo], { ...target, para: 4 }, 3, 4)).toBe(false)
+      expect(touchesMemoAnchor([memo], { ...target, section: 1 }, 3, 4)).toBe(false)
+      expect(touchesMemoAnchor([{ ...memo, startCharIdx: null }], target, 3, 4)).toBe(false)
+      const cell = {
+        ...memo,
+        path: [{ type: 'cell', controlIndex: 1, cellIndex: 2, paraIndex: 0 }],
+      }
+      expect(touchesMemoAnchor([cell], { ...target, cellPath: [[1, 2, 0]] }, 3, 4)).toBe(true)
+      expect(touchesMemoAnchor([cell], { ...target, cellPath: [[1, 3, 0]] }, 3, 4)).toBe(false)
+      const box = { ...memo, path: [{ type: 'textbox', controlIndex: 5, paraIndex: 1 }] }
+      expect(touchesMemoAnchor([box], { ...target, cellPath: [[5, 0, 1]] }, 3, 4)).toBe(true)
+    },
+  )
+
+  it.skipIf(!studio)(
+    'reuses font resolutions within a paint and refreshes between host scopes and awaits',
+    async () => {
+      const { CanvasFontResolutionScope } = upstreamModule(
+        'src/core/canvas-font-resolution-scope.ts',
+      )
+      const calls: string[] = []
+      let policy = 'A'
+      const scope = new CanvasFontResolutionScope((font: string) => {
+        calls.push(font)
+        return `${policy}:${font}`
+      })
+      scope.run(() => {
+        expect(scope.resolve('font')).toBe('A:font')
+        expect(scope.resolve('font')).toBe('A:font')
+        policy = 'B'
+        scope.run(() => expect(scope.resolve('font')).toBe('B:font'))
+        expect(scope.resolve('font')).toBe('A:font')
+      })
+      scope.run(() => expect(scope.resolve('font')).toBe('B:font'))
+      expect(calls).toEqual(['font', 'font', 'font'])
+      await scope.run(async () => {
+        expect(scope.resolve('font')).toBe('B:font')
+        await Promise.resolve()
+        policy = 'C'
+        expect(scope.resolve('font')).toBe('C:font')
+      })
+      expect(() =>
+        scope.run(() => {
+          throw new Error('paint failed')
+        }),
+      ).toThrow('paint failed')
+      policy = 'D'
+      expect(scope.resolve('font')).toBe('D:font')
+    },
+  )
 })
 
 describe('rhwp Hangul-key patches', () => {

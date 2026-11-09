@@ -51,6 +51,8 @@ run(
     '-c',
     'core.autocrlf=false',
     'clone',
+    '--depth',
+    '1',
     '--filter=blob:none',
     '--no-checkout',
     '--branch',

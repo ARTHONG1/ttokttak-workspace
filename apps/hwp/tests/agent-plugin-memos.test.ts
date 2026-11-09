@@ -132,7 +132,7 @@ const insertPathMemo = (
     index: number
   }
 
-function openEditor(doc: HwpDocument) {
+function openEditor(doc: HwpDocument, { passwordProtected = false } = {}) {
   document.body.innerHTML = '<div id="scroll-container"><div id="scroll-content"></div></div>'
   zoom = 2
   let current = doc
@@ -169,6 +169,8 @@ function openEditor(doc: HwpDocument) {
     },
     events: { on: (_name: string, handler: () => void) => listeners.push(handler) },
     automation: {
+      // the editor's command context; the app's studio patch adds passwordProtected to it
+      getContext: () => ({ passwordProtected }),
       registerCommand: (def: { id: string; execute: (s: unknown, p?: unknown) => unknown }) =>
         commands.set(def.id, def.execute),
       execute: (command: string, params?: unknown) => {
@@ -531,6 +533,7 @@ describe('inserting, editing and removing a memo', () => {
     const doc = blank(['hello world'])
     const made = insertBodyMemo(doc, 0, 0, 5, 'tester', 'before')
     const editor = openEditor(doc)
+    const date = editor.plugin.listMemos().memos[0]!.date
 
     expect(editor.plugin.setMemo(made.id, 'after\n\nend')).toEqual({ ok: true })
     expect(editor.labels).toEqual(['memo-set'])
@@ -538,7 +541,7 @@ describe('inserting, editing and removing a memo', () => {
     expect(editor.plugin.listMemos().memos[0]).toMatchObject({
       id: made.id,
       author: 'tester',
-      date: null,
+      date,
       text: 'after\n\nend',
     })
     // the text the memo was put on is untouched
@@ -567,6 +570,8 @@ describe('inserting, editing and removing a memo', () => {
     const protectedDoc = HwpDocument.openWithPassword(doc.exportHwpWithPassword('secret'), 'secret')
     const editor = openEditor(protectedDoc)
     const memo = editor.plugin.listMemos().memos[0]!
+    // the panel shows it read-only: this app never saves a password-protected document
+    expect(memo).toMatchObject({ editable: false, readOnlyReason: 'protected' })
     const anchor = {
       place: 'body' as const,
       sectionIndex: 0,
@@ -590,6 +595,25 @@ describe('inserting, editing and removing a memo', () => {
 
     const plain = openEditor(blank(['hello']))
     expect(plain.plugin.removeMemo(999)).toEqual({ ok: false, reason: 'memo_not_found' })
+  })
+
+  it('keeps a password-protected HWPX document read-only by the editor flag', () => {
+    // rhwp 0.9.0 reports such a document as not encrypted; the editor knows it was opened
+    // with a password and the app will not save it
+    const doc = blank(['hello'])
+    insertBodyMemo(doc, 0, 0, 2)
+    const opened = HwpDocument.openWithPassword(doc.exportHwpxWithPassword('secret'), 'secret')
+    const editor = openEditor(opened, { passwordProtected: true })
+    const memo = editor.plugin.listMemos().memos[0]!
+    expect(memo).toMatchObject({ editable: false, readOnlyReason: 'protected' })
+    expect(editor.plugin.setMemo(memo.id, 'new')).toMatchObject({
+      ok: false,
+      reason: 'memo_read_only',
+    })
+    expect(editor.plugin.removeMemo(memo.id)).toMatchObject({
+      ok: false,
+      reason: 'memo_read_only',
+    })
   })
 })
 

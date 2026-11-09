@@ -218,5 +218,5 @@ npm run test -w @genoffice/hwp                      # 엔진 시험(engine-layou
 ```
 
 - 패치는 `vendor/rhwp-core/patches/`에 번호 순으로 두고 `package.json`의 `rhwp.patches`에 적는다. 만드는 방법은 같은 태그를 받은 rhwp 사본에서 커밋한 뒤 `git format-patch`로 뽑는 것이다.
-- 패치 묶음이 바뀌면 `package.json`의 버전(`0.8.7-ttok.N`)을 올리고 `package-lock.json`의 같은 항목도 고친다.
+- 패치 묶음이 바뀌면 `package.json`의 버전(`0.9.0-ttok.N`)을 올리고 `package-lock.json`의 같은 항목도 고친다.
 - 빌드에는 10분 남짓 걸린다. 빌드 뒤 `rhwp.js`·`rhwp.d.ts`가 npm의 같은 버전과 같은지, WASM에 이 PC의 사용자 폴더 경로가 없는지 본다(스크립트가 경로를 검사한다).

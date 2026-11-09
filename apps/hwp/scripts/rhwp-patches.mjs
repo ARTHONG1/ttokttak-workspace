@@ -81,22 +81,17 @@
  *   document open outside form mode it sends `ttok:memo-insert` to the window the app
  *   listens on, and the menu names it 메모 (Memo) in the studio's two languages.
  *
- * studio-memo-anchors, studio-memo-delete-undo
- *   The engine drops a memo when Backspace or Delete removes the last character of its
- *   anchor (vendor/rhwp-core patch 0018, decision 0072). The studio's undo of a typed
- *   deletion only puts the text back, so the memo stayed gone. The bridge gains a call
- *   for the memo anchors, and a deletion that touches one captures its paragraph first,
- *   as the studio already does for a link, so undo restores the paragraph with the memo.
+ * studio-memo-anchors
+ *   v0.9.0 supplies the memo bridge and deletion undo, including deletions next
+ *   to an anchor and caret-only memos. Keep the app's empty answer without a
+ *   memo-capable document; pluginHooks checks the upstream undo wiring instead
+ *   of applying the older, narrower overlap test a second time.
  *
- * studio-font-memo-state, studio-font-memo-use
- *   The studio replaces the Canvas2D `font` setter so that every font string
- *   the engine sets passes its font substitution, which builds the family
- *   chain anew each time. Drawing a page sets the same few strings thousands
- *   of times, and that rebuilding was most of the cost of a keystroke. The
- *   setter keeps each string's answer until the next microtask checkpoint:
- *   one synchronous draw reuses it, and what the answer depends on (the fonts
- *   found on the PC, the open document's substitutions) changes only when an
- *   asynchronous step ends, so every later draw asks again.
+ * v0.9.0 also supplies CanvasFontResolutionScope: font substitutions are reused
+ *   within a synchronous paint and reset between paints or nested host-font
+ *   scopes. Keep that implementation rather than the older microtask cache,
+ *   which could reuse a previous document's policy. pluginHooks checks both
+ *   the cache lifetime and its connection to the Canvas2D font setter.
  */
 
 import { HANCOM_KEYS_MODULE, studioCommandIds } from '../studio-plugin/hancom-keys.mjs'
@@ -191,22 +186,27 @@ const PATCHES = {
   },
   'studio-nested-table-cut': {
     file: /[\\/]rhwp-studio[\\/]src[\\/]engine[\\/]input-handler\.ts$/,
-    find: [
-      '        // 중첩 표 잘라내기는 지원하지 않는다. keydown 경로도 같은 선택 상태를 유지한다.',
-      '        if (ref.cellPath && ref.cellPath.length > 1) return;',
-      '        this.performCopy();',
-      '        this.cursor.moveOutOfSelectedTable();',
-      "        this.eventBus.emit('table-object-selection-changed', false);",
-      "        this.executeOperation({ kind: 'snapshot', operationType: 'cutTable', operation: (wasm: WasmBridge) => {",
-      '          wasm.deleteTableControl(ref.sec, ref.ppi, ref.ci);',
-    ].join('\n'),
-    replace: [
-      '        this.performCopy();',
-      '        this.cursor.moveOutOfSelectedTable();',
-      "        this.eventBus.emit('table-object-selection-changed', false);",
-      "        this.executeOperation({ kind: 'snapshot', operationType: 'cutTable', operation: (wasm: WasmBridge) => {",
-      '          wasm.deleteTableAt(ref);',
-    ].join('\n'),
+    // v0.9.0 awaits a guarded clipboard write before deleting the selected object.
+    // Keep all cancellation/document/selection checks and change only the table target.
+    edits: [
+      {
+        find: [
+          '    // 중첩 표 잘라내기는 지원하지 않는다. keydown 경로도 같은 선택 상태를 유지한다.',
+          '    if (table?.cellPath && table.cellPath.length > 1) return;',
+        ].join('\n'),
+        replace: '',
+      },
+      {
+        find: [
+          "        this.executeOperation({ kind: 'snapshot', operationType: 'cutTable', operation: (wasm: WasmBridge) => {",
+          '          wasm.deleteTableControl(ref.sec, ref.ppi, ref.ci);',
+        ].join('\n'),
+        replace: [
+          "        this.executeOperation({ kind: 'snapshot', operationType: 'cutTable', operation: (wasm: WasmBridge) => {",
+          '          wasm.deleteTableAt(ref);',
+        ].join('\n'),
+      },
+    ],
   },
   'studio-nested-table-command': {
     file: /[\\/]rhwp-studio[\\/]src[\\/]command[\\/]commands[\\/]table\.ts$/,
@@ -677,95 +677,21 @@ const PATCHES = {
   },
   'studio-memo-anchors': {
     file: /[\\/]rhwp-studio[\\/]src[\\/]core[\\/]wasm-bridge\.ts$/,
-    // the memo list of vendor/rhwp-core patch 0018, ahead of a neighbour the bridge has once
-    find: '  getHyperlinkContext(target: HyperlinkTarget): HyperlinkContext {',
+    // v0.9.0 already exposes anchors. Preserve the app's safe empty answer without
+    // inserting a second method that shadows the upstream implementation.
+    find: [
+      '  getMemoAnchors(): MemoAnchor[] {',
+      "    if (!this.doc) throw new Error('문서가 로드되지 않았습니다');",
+      '    return JSON.parse(this.doc.getMemoList());',
+      '  }',
+    ].join('\n'),
     replace: [
-      '  /** The memo anchors of the document; none from an engine without memos. */',
-      '  getMemoAnchors(): {',
-      '    sectionIndex: number;',
-      '    paraIndex: number | null;',
-      '    startCharIdx: number | null;',
-      '    endCharIdx: number | null;',
-      '    path: { controlIndex: number; cellIndex?: number; paraIndex: number }[] | null;',
-      '  }[] {',
+      '  getMemoAnchors(): MemoAnchor[] {',
       '    const doc = this.doc as any;',
       "    if (!doc || typeof doc.getMemoList !== 'function') return [];",
       '    return JSON.parse(doc.getMemoList());',
       '  }',
-      '',
-      '  getHyperlinkContext(target: HyperlinkTarget): HyperlinkContext {',
     ].join('\n'),
-  },
-  'studio-memo-delete-undo': {
-    file: /[\\/]rhwp-studio[\\/]src[\\/]engine[\\/]command\.ts$/,
-    edits: [
-      // whether a deletion touches a memo's anchor, next to the command that asks
-      {
-        find: 'export class DeleteTextCommand implements EditCommand {',
-        replace: [
-          "/** Whether deleting `count` characters at `offset` in `target` touches a memo's anchor. */",
-          'export function memoAnchorOverlaps(',
-          '  wasm: WasmBridge,',
-          '  target: ReturnType<typeof hyperlinkTarget>,',
-          '  offset: number,',
-          '  count: number,',
-          '): boolean {',
-          '  const path = JSON.stringify(target.cellPath);',
-          '  return wasm.getMemoAnchors().some(memo =>',
-          '    memo.sectionIndex === target.section',
-          '    && memo.paraIndex === target.para',
-          '    && JSON.stringify((memo.path ?? []).map(entry =>',
-          '      [entry.controlIndex, entry.cellIndex ?? 0, entry.paraIndex])) === path',
-          '    && memo.startCharIdx !== null && memo.endCharIdx !== null',
-          '    && memo.startCharIdx < memo.endCharIdx',
-          '    && offset < memo.endCharIdx && memo.startCharIdx < offset + count);',
-          '}',
-          '',
-          'export class DeleteTextCommand implements EditCommand {',
-        ].join('\n'),
-      },
-      // the engine drops a memo whose whole anchor goes; capture the paragraph as for a link
-      {
-        find: [
-          '      if (context.links.some(link => this.position.charOffset < link.end',
-          '        && link.start < this.position.charOffset + this.count)) {',
-        ].join('\n'),
-        replace: [
-          '      if (context.links.some(link => this.position.charOffset < link.end',
-          '        && link.start < this.position.charOffset + this.count)',
-          '        || memoAnchorOverlaps(wasm, target, this.position.charOffset, this.count)) {',
-        ].join('\n'),
-      },
-    ],
-  },
-  'studio-font-memo-state': {
-    file: /[\\/]rhwp-studio[\\/]src[\\/]core[\\/]wasm-bridge\.ts$/,
-    find: 'let canvasFontSubstitutionInstalled = false;',
-    replace: [
-      'let canvasFontSubstitutionInstalled = false;',
-      '',
-      '// one answer per font string until the next microtask checkpoint: a page draw sets the',
-      '// same strings thousands of times, and what the answer depends on changes between tasks',
-      'let canvasFontMemo: Map<string, string> | null = null;',
-      'function memoSubstituteCssFontFamily(cssFont: string): string {',
-      '  if (!canvasFontMemo) {',
-      '    canvasFontMemo = new Map();',
-      '    queueMicrotask(() => { canvasFontMemo = null; });',
-      '  }',
-      '  let out = canvasFontMemo.get(cssFont);',
-      '  if (out === undefined) {',
-      '    out = substituteCssFontFamily(cssFont);',
-      '    canvasFontMemo.set(cssFont, out);',
-      '  }',
-      '  return out;',
-      '}',
-    ].join('\n'),
-  },
-  'studio-font-memo-use': {
-    file: /[\\/]rhwp-studio[\\/]src[\\/]core[\\/]wasm-bridge\.ts$/,
-    find: 'descriptor.set!.call(this, scopedHostCanvasFont(String(value)) ?? substituteCssFontFamily(String(value)));',
-    replace:
-      'descriptor.set!.call(this, scopedHostCanvasFont(String(value)) ?? memoSubstituteCssFontFamily(String(value)));',
   },
 }
 
@@ -794,9 +720,6 @@ export const STUDIO_PATCHES = /** @type {const} */ ([
   'studio-memo-label-ko',
   'studio-memo-label-en',
   'studio-memo-anchors',
-  'studio-memo-delete-undo',
-  'studio-font-memo-state',
-  'studio-font-memo-use',
 ])
 
 /** Whether a patch is written against this file. */
@@ -821,6 +744,63 @@ export function patchTargets(name, file) {
  * off without a word.
  */
 export const pluginHooks = [
+  // Official v0.9.0 replaces the app's memo-delete and font-memo patches.
+  // Guard the complete wiring as well as the helper contracts before dropping them.
+  {
+    file: 'src/engine/command.ts',
+    needles: [
+      "import { touchesMemoAnchor } from '../core/memo';",
+      [
+        '      if (context.links.some(link => start < link.end && link.start < end)',
+        '        || touchesMemoAnchor(wasm.getMemoAnchors(), target, start, end)) {',
+        '        this.fragmentId = wasm.captureDeleteRange(target.section, target.para, target.para);',
+      ].join('\n'),
+    ],
+  },
+  {
+    file: 'src/core/memo.ts',
+    needles: [
+      'export function touchesMemoAnchor(',
+      'memo.sectionIndex === target.section',
+      'memo.paraIndex === target.para',
+      'memo.startCharIdx !== null && memo.endCharIdx !== null',
+      'memo.startCharIdx <= end && start <= memo.endCharIdx',
+      'sameCellPath(memo.path ?? [], target.cellPath)',
+      'path.length === cellPath.length && path.every(',
+      'entry.controlIndex === controlIndex',
+      "(entry.type === 'cell' ? entry.cellIndex : 0) === cellIndex",
+      'entry.paraIndex === paraIndex',
+    ],
+  },
+  {
+    file: 'src/core/wasm-bridge.ts',
+    needles: [
+      "import { CanvasFontResolutionScope } from './canvas-font-resolution-scope';",
+      [
+        'const canvasFontResolution = new CanvasFontResolutionScope(',
+        '  font => scopedHostCanvasFont(font) ?? substituteCssFontFamily(font),',
+        ');',
+      ].join('\n'),
+      'withHostCanvasFonts(session, () => canvasFontResolution.run(operation))',
+      'descriptor.set!.call(this, canvasFontResolution.resolve(String(value)));',
+    ],
+  },
+  {
+    file: 'src/core/canvas-font-resolution-scope.ts',
+    needles: [
+      'export class CanvasFontResolutionScope',
+      'const cached = this.values?.get(font);',
+      'if (cached !== undefined) return cached;',
+      'const resolved = this.resolveFont(font);',
+      'this.values?.set(font, resolved);',
+      [
+        '    const previous = this.values;',
+        '    this.values = new Map();',
+        '    try { return operation(); }',
+        '    finally { this.values = previous; }',
+      ].join('\n'),
+    ],
+  },
   {
     file: 'src/engine/cursor.ts',
     needles: [
@@ -1071,7 +1051,8 @@ export function missingHancomCommands(sources) {
 export function missingPluginHooks(read) {
   const missing = []
   for (const { file, needles } of [...pluginHooks, ...hancomHooks]) {
-    const text = read(file)
+    // Match the same exact hooks in Windows checkouts, including multi-line guards.
+    const text = read(file)?.replaceAll('\r\n', '\n') ?? null
     for (const needle of needles) {
       if (text === null || !text.includes(needle)) missing.push(`${file}: ${needle}`)
     }

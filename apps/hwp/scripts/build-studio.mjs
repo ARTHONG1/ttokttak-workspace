@@ -53,6 +53,7 @@ const TAG = core.rhwp.tag
 /** Commit each supported tag must resolve to; a moved tag stops the build. */
 const PINNED_COMMITS = {
   'v0.8.7': '1a76570e833917d15817415a53c09ad61ab3203f',
+  'v0.9.0': 'c9095c5f67632e6721e800ccc7fb43ea49d26682',
 }
 /**
  * Only what the build reads. The repository also carries gigabytes of sample
@@ -68,6 +69,11 @@ const SPARSE_PATTERNS = [
   '!/rhwp-studio/public/fonts',
   '!/rhwp-studio/public/samples',
   '/npm/hwpctrl-ocx/src/',
+  // v0.9.0: the studio imports shared PDF/form/security helpers from the repository root
+  '/rhwp-shared/',
+  // and two single files outside it (only these: assets/fonts also holds font files)
+  '/assets/fonts/enclosed-pua-metrics.json',
+  '/src/renderer/square_gradient.sksl',
 ]
 
 const CACHE = join(APP, 'node_modules', '.cache', 'rhwp-studio', TAG)
@@ -170,22 +176,25 @@ async function buildStudio() {
       // no CDN web fonts: the app makes no request the user did not ask for
       __RHWP_DISABLE_EXTERNAL_WEBFONTS__: 'true',
       __RHWP_HWPCTRL__: 'true',
+      // v0.9.0's own AI assistant calls outside AI services directly; the app has its own AI
+      // connection, so the build leaves that plugin and its SDKs out
+      __RHWP_AI__: 'false',
     },
     resolve: {
-      alias: {
-        '@': join(studio, 'src'),
-        '@wasm': wasmPkg,
-        '@rhwp/hwpctrl/studio-plugin': join(
-          CACHE,
-          'npm',
-          'hwpctrl-ocx',
-          'src',
-          'studio-plugin.mjs',
-        ),
-        [AGENT_PLUGIN_MODULE]: AGENT_PLUGIN,
-        [HANCOM_KEYS_MODULE]: HANCOM_KEYS,
-        [FORMAT_COPY_MODULE]: FORMAT_COPY,
-      },
+      alias: [
+        { find: '@', replacement: join(studio, 'src') },
+        { find: '@wasm', replacement: wasmPkg },
+        // v0.9.0's shared PDF import worker loads the engine from the repository's pkg/:
+        // the same patched engine as the studio's @wasm
+        { find: /^(\.\.\/)+pkg\/rhwp\.js$/, replacement: join(wasmPkg, 'rhwp.js') },
+        {
+          find: '@rhwp/hwpctrl/studio-plugin',
+          replacement: join(CACHE, 'npm', 'hwpctrl-ocx', 'src', 'studio-plugin.mjs'),
+        },
+        { find: AGENT_PLUGIN_MODULE, replacement: AGENT_PLUGIN },
+        { find: HANCOM_KEYS_MODULE, replacement: HANCOM_KEYS },
+        { find: FORMAT_COPY_MODULE, replacement: FORMAT_COPY },
+      ],
     },
     // upstream registers a service worker for its website build; this build
     // leaves that plugin out, a custom scheme cannot register one

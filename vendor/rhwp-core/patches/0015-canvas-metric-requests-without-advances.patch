@@ -18,14 +18,11 @@ Content-Transfer-Encoding: 8bit
 글자의 판정은 `trace_char_width_decisions` 와 같다(단위 시험). 요청 묶음은 바뀌지 않는다.
 
 50쪽 문서(글자 8만 7천 개, 요청 0개)에서 WASM 수집 한 번이 중앙값 153ms 에서 89ms 로 줄었다.
----
- src/document_core/canvas_metric_requests.rs |  5 +-
- src/renderer/layout.rs                      |  8 +--
- src/renderer/layout/text_measurement.rs     | 61 +++++++++++++++++++++
- 3 files changed, 68 insertions(+), 6 deletions(-)
+
+Rebased onto official v0.9.0; the non-tab equivalence test is retained.
 
 diff --git a/src/document_core/canvas_metric_requests.rs b/src/document_core/canvas_metric_requests.rs
-index c2b24f167..b927f272c 100644
+index 31124f948..8bc8b3de9 100644
 --- a/src/document_core/canvas_metric_requests.rs
 +++ b/src/document_core/canvas_metric_requests.rs
 @@ -4,7 +4,7 @@ use crate::model::{control::Control, paragraph::Paragraph, shape::ShapeObject};
@@ -35,45 +32,26 @@ index c2b24f167..b927f272c 100644
 -    layout::{resolved_to_text_style, trace_char_width_decisions},
 +    layout::{char_width_decisions_without_advances, resolved_to_text_style},
      supplemental_metrics::{
-         MetricContext, MetricError, SupplementalMetric, MAX_SUPPLEMENTAL_ENTRIES,
-         MAX_SUPPLEMENTAL_KEY_BYTES,
+         accepts_prepared_glyph_advance, MetricContext, MetricError, SupplementalMetric,
+         MAX_SUPPLEMENTAL_ENTRIES, MAX_SUPPLEMENTAL_KEY_BYTES,
 @@ -73,7 +73,8 @@ impl Collector<'_> {
                      }
                      let mut style = run.text_style(&self.core.styles);
                      style.supplemental_metrics = None;
 -                    let decisions = trace_char_width_decisions(&run.text, &style);
-+                    // only a tab's decision needs the advances, and a tab is never asked for
++                    // Tabs are skipped below, so their context-dependent advances are unnecessary.
 +                    let decisions = char_width_decisions_without_advances(&run.text, &style);
                      let mut index = 0;
                      for cluster in run.text.graphemes(true) {
                          let count = cluster.chars().count();
-diff --git a/src/renderer/layout.rs b/src/renderer/layout.rs
-index 4eb94afc4..b4181716b 100644
---- a/src/renderer/layout.rs
-+++ b/src/renderer/layout.rs
-@@ -3787,10 +3787,10 @@ pub(crate) use table_layout::border_style_has_diagonal;
- // [#4149] 셀 커서 fast path 프로브 (document_core::queries::cursor_rect 전용)
- pub(crate) use table_partial::{PartialTableCellProbe, ProbeCutPlan};
- pub(crate) use text_measurement::{
--    compute_char_positions, estimate_text_width, estimate_text_width_exact,
--    estimate_text_width_unrounded, extract_tab_leaders_with_extended, find_next_tab_stop,
--    hancom_regenerated_space_width, is_cjk_char, is_halfwidth_cjk_quote, kopub_space_advance_em,
--    resolved_letter_spacing, resolved_to_text_style, split_into_clusters,
-+    char_width_decisions_without_advances, compute_char_positions, estimate_text_width,
-+    estimate_text_width_exact, estimate_text_width_unrounded, extract_tab_leaders_with_extended,
-+    find_next_tab_stop, hancom_regenerated_space_width, is_cjk_char, is_halfwidth_cjk_quote,
-+    kopub_space_advance_em, resolved_letter_spacing, resolved_to_text_style, split_into_clusters,
-     trace_char_width_decisions, CharWidthDecision,
- };
- // [#6060] forces_halfwidth_cjk_quote 는 통합 테스트
 diff --git a/src/renderer/layout/text_measurement.rs b/src/renderer/layout/text_measurement.rs
-index 1a1c56b98..91a043f30 100644
+index ce0578e58..c0fe7ffb3 100644
 --- a/src/renderer/layout/text_measurement.rs
 +++ b/src/renderer/layout/text_measurement.rs
-@@ -1776,6 +1776,29 @@ pub(crate) fn trace_char_width_decisions<'a>(
+@@ -2964,6 +2964,29 @@ pub(crate) fn trace_char_width_decisions<'a>(
          .collect()
  }
- 
+
 +/// Width decisions without measuring the text: only a tab's decision needs the
 +/// advances (`trace_char_width_decisions` sets it from them), so a caller that never
 +/// reads a tab's decision gets the same answers for a fraction of the work.
@@ -98,12 +76,12 @@ index 1a1c56b98..91a043f30 100644
 +}
 +
  // ── 문자 분류 함수 ──────────────────────────────────────────────────
- 
+
  /// CJK 문자 여부 판별 (EmbeddedTextMeasurer의 히우리스틱 폭 계산에서 사용)
-@@ -2051,6 +2074,44 @@ pub(crate) fn vertical_substitute_char(c: char) -> Option<char> {
+@@ -3267,6 +3290,44 @@ pub(crate) fn estimate_text_width_with_storage<S: crate::storage::Storage>(
  mod tests {
      use super::*;
- 
+
 +    #[test]
 +    fn decisions_without_advances_match_the_traced_ones_but_for_tabs() {
 +        let texts = [
@@ -145,3 +123,15 @@ index 1a1c56b98..91a043f30 100644
      #[test]
      fn issue_4442_noto_sans_kr_regular_ascii_shared_width_uses_tracked_advances() {
          let style = TextStyle {
+diff --git a/src/renderer/layout.rs b/src/renderer/layout.rs
+--- a/src/renderer/layout.rs
++++ b/src/renderer/layout.rs
+@@ -3980,7 +3980,7 @@
+ pub(crate) use table_partial::{PartialTableCellProbe, ProbeCutPlan};
+ pub(crate) use terminal_tracking::glyph_letter_spacing_advance;
+ pub(crate) use text_measurement::{
+-    char_width_decision, compute_char_positions, compute_glyph_fit_positions, estimate_text_width,
++    char_width_decision, char_width_decisions_without_advances, compute_char_positions, compute_glyph_fit_positions, estimate_text_width,
+     estimate_text_width_exact, estimate_text_width_unrounded,
+     estimate_text_width_unrounded_with_storage, extract_tab_leaders_with_extended,
+     find_next_tab_stop, hancom_regenerated_space_width, has_hft_bold_tracking, is_cjk_char,

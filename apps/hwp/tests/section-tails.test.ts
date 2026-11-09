@@ -148,9 +148,9 @@ describe('what is kept of an opened file', () => {
 })
 
 describe('why the lists have to be put back', () => {
-  it('the engine writes a changed section without a master page it read', () => {
-    // When this fails, rhwp keeps the lists itself (edwardkim/rhwp#7899): see whether
-    // section-tails.ts can go.
+  it('rhwp 0.9.0 keeps the master page of a section it rewrites', () => {
+    // rhwp 0.8.7 wrote a changed section without them (edwardkim/rhwp#7899). The fix-up
+    // stays: it only adds lists a save lacks, and older files still go through it.
     const first = exported('본문')
     const file = restoreSectionTails(first, sectionTailsOf(withTail(first, masterPage(4)))!).bytes
     expect(sectionTailsOf(file)?.tails.get(0)).toHaveLength(1)
@@ -160,7 +160,7 @@ describe('why the lists have to be put back', () => {
     doc.insertText(0, 0, 0, '또 ')
     const saved = doc.exportHwp()
     doc.free()
-    expect(sectionTailsOf(saved)).toBeNull()
+    expect(sectionTailsOf(saved)?.tails.get(0)).toHaveLength(1)
   })
 })
 

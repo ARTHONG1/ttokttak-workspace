@@ -194,8 +194,8 @@ function masterPage(kind: number): Buffer {
   ])
 }
 
-/** an engine document with master pages after the body, as Hangul writes them */
-function fileWithTails(...lines: string[]): Uint8Array {
+/** an engine document of these lines, with nothing after the body */
+function bareFile(...lines: string[]): Uint8Array {
   const doc = HwpDocument.createEmpty()
   doc.createBlankDocument()
   lines.forEach((line, index) => {
@@ -204,7 +204,12 @@ function fileWithTails(...lines: string[]): Uint8Array {
   })
   const bytes = doc.exportHwp()
   doc.free()
-  const cfb = CFB.read(Buffer.from(bytes), { type: 'buffer' })
+  return bytes
+}
+
+/** an engine document with master pages after the body, as Hangul writes them */
+function fileWithTails(...lines: string[]): Uint8Array {
+  const cfb = CFB.read(Buffer.from(bareFile(...lines)), { type: 'buffer' })
   const entry = CFB.find(cfb, SECTION0)!
   const body = inflateRawSync(Buffer.from(entry.content as Uint8Array))
   CFB.utils.cfb_add(
@@ -298,7 +303,6 @@ describe('a recovery copy of a file', () => {
     expect(dirname(copy!.copyPath)).toBe(join(userData, 'hwp-autosave'))
     // the save-time corrections against the opened file are in: the master pages are back
     const bytes = new Uint8Array(readFileSync(copy!.copyPath))
-    expect(sectionTailsOf(exported)).toBeNull()
     expect(sectionTailsOf(bytes)?.tails.get(0)).toHaveLength(2)
     const base = { tails: sectionTailsOf(original)!, kinds: fieldKindsOf(original) ?? undefined }
     expect(bytes).toEqual(applySaveFixes(exported, 'hwp', [], base).bytes)
@@ -671,9 +675,8 @@ describe('opening a file with a copy left over', () => {
     const { path } = await crashed('edited.hwp', original)
     const contents = view(path)
     const shown = await call<Promise<Uint8Array>>(HWP_CHANNELS.readFile, contents, path)
-    // the engine drops the lists of a section it rewrites: the save puts them back
+    // rhwp 0.9.0 keeps the lists of a section it rewrites; the save still checks them against the file
     const exported = edited(shown, '더 ')
-    expect(sectionTailsOf(exported)).toBeNull()
     await call(HWP_CHANNELS.beginSave, contents, 'save')
     await call(HWP_CHANNELS.commitSave, contents, exported, [])
     const saved = new Uint8Array(readFileSync(path))
@@ -686,7 +689,7 @@ describe('opening a file with a copy left over', () => {
     const original = fileWithTails('본문', '둘째 문단')
     writeFileSync(path, original)
     // a copy without the lists (as when putting them back had to be skipped)
-    const bare = edited(original, '고친 ')
+    const bare = bareFile('고친 본문', '둘째 문단')
     expect(sectionTailsOf(bare)).toBeNull()
     await store().writeCopy(fileIdentity(path), Buffer.from(bare), { title: 'lacking.hwp' })
     const contents = view(path)

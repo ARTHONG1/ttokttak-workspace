@@ -16,7 +16,7 @@ index 7c31daa4c..0f53295b2 100644
          &mut self,
 @@ -3759,59 +3760,68 @@ impl DocumentCore {
          const CELL_FLAG_JUST_RESIZED: u16 = 0x0100;
- 
+
          let table = self.get_table_mut(section_idx, parent_para_idx, control_idx)?;
 -        if table.cells.iter().any(|c| c.col_span > 1 || c.row_span > 1) {
 -            return Ok(r#"{"ok":false,"reason":"병합된 칸이 있는 표는 아직 안 쟀다"}"#.to_string());
@@ -127,7 +127,7 @@ index 7c31daa4c..0f53295b2 100644
 -        if hit == 0 {
 -            return Ok(r#"{"ok":true,"moved":false}"#.to_string());
 -        }
- 
+
          // 격자 재유도 — 경계 집합의 합집합으로 열(행)을 다시 매긴다.
          if vertical {
 diff --git a/src/wasm_api.rs b/src/wasm_api.rs
@@ -137,7 +137,7 @@ index 2031085e3..efd3b4873 100644
 @@ -3507,6 +3507,34 @@ impl HwpDocument {
          .map_err(|e| e.into())
      }
- 
+
 +    /// 한 칸의 오른쪽/아래 경계를 옮긴다 (한컴의 Shift+화살표).
 +    ///
 +    /// `vertical`: true면 위/아래 경계, false면 왼쪽/오른쪽 경계.

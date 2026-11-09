@@ -21,7 +21,9 @@ import { validateHwpxBeforeOverwrite } from '../src/main/hwpx-save-validation'
 const require = createRequire(import.meta.url)
 
 beforeAll(async () => {
-  await init({ module_or_path: readFileSync(join(dirname(require.resolve('@rhwp/core')), 'rhwp_bg.wasm')) })
+  await init({
+    module_or_path: readFileSync(join(dirname(require.resolve('@rhwp/core')), 'rhwp_bg.wasm')),
+  })
 })
 
 async function section(bytes: Uint8Array): Promise<string> {
@@ -52,7 +54,15 @@ function tableFirstDocument(): HwpDocument {
   doc.setPageNumberPos(0, 0, 5, false)
   const table = JSON.parse(
     doc.createTableEx(
-      JSON.stringify({ sectionIdx: 0, paraIdx: 0, charOffset: 0, rowCount: 1, colCount: 1, treatAsChar: true, colWidths: [47624] }),
+      JSON.stringify({
+        sectionIdx: 0,
+        paraIdx: 0,
+        charOffset: 0,
+        rowCount: 1,
+        colCount: 1,
+        treatAsChar: true,
+        colWidths: [47624],
+      }),
     ),
   ) as { paraIdx: number; controlIdx: number }
   doc.insertTextInCell(0, table.paraIdx, table.controlIdx, 0, 0, 0, '시험용 보고서 제목')
@@ -68,8 +78,8 @@ function editedExport(): Uint8Array {
 }
 
 describe('dropUntrustedLineCaches', () => {
-  it('reproduces the engine writing a line start that does not match the text', async () => {
-    expect(firstParagraphLines(await section(editedExport()))).toEqual(['0', '7'])
+  it('rhwp 0.9.0 writes the line start that matches the text (0.8.7 wrote 7)', async () => {
+    expect(firstParagraphLines(await section(editedExport()))).toEqual(['0', '31'])
   })
 
   it('drops the line cache of a multi-line paragraph that holds controls', async () => {
@@ -104,4 +114,3 @@ describe('dropUntrustedLineCaches', () => {
     expect(dropUntrustedLineCaches(notZip)).toEqual({ bytes: notZip, dropped: 0 })
   })
 })
-
