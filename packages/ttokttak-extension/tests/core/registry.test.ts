@@ -13,6 +13,12 @@ describe('the feature list', () => {
     expect(featureInfo('x')).toBeUndefined()
   })
 
+  it('has 생기부 나이스 입력 on NEIS', () => {
+    expect(featuresOf('neis')).toEqual([
+      expect.objectContaining({ id: 'neis-record', title: '생기부 나이스 입력', site: 'neis' }),
+    ])
+  })
+
   it('keeps ids unique, in the allowed form, with a title and a help line', () => {
     const ids = FEATURES.map((f) => f.id)
     expect(new Set(ids).size).toBe(ids.length)

@@ -6,7 +6,13 @@
 import type { Panel } from '../ext/page-ui'
 
 /** the work sites 똑딱작업실 knows; each new site is a deliberate change of the permissions */
-export type SiteId = 'edufine'
+export type SiteId = 'edufine' | 'neis'
+
+/** what the teacher calls each site (it: with its object particle) */
+export const SITE_NAMES: Readonly<Record<SiteId, { name: string; it: string }>> = {
+  edufine: { name: 'K-에듀파인', it: 'K-에듀파인을' },
+  neis: { name: '나이스', it: '나이스를' },
+}
 
 export interface FeatureInfo {
   /** stable id: work, storage keys and the /go page use it (a-z, 0-9 and -) */

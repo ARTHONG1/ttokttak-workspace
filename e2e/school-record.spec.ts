@@ -42,6 +42,12 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
     await expect(page.getByTestId('record-student')).toHaveCount(1)
     await page.getByTestId('record-generate-all').click()
     await expect(page.locator('.sf-toast')).toHaveText('관찰 기록을 입력한 학생이 없어요.')
+    // nothing to send to NEIS yet
+    await page.getByTestId('record-send').click()
+    await expect(page.locator('.sf-toast')).toHaveText(
+      '나이스로 보낼 글이 없어요. 먼저 글을 만들어 주세요.',
+    )
+    await expect(page.getByTestId('record-send-note')).toHaveCount(0)
     await page.screenshot({ path: screenshotPath('school-record-behavior') })
 
     // 임시 저장: the 세특 work comes back after the list is emptied

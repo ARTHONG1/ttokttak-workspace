@@ -10,6 +10,7 @@ import { freshEntry, inboxKey, migrateInbox, type InboxEntry } from '../core/inb
 import { migratePlaces, placeKey, readPlace, type Place } from '../core/places'
 import { featureInfo } from '../core/registry'
 import { parsePumuiPackage } from '../features/edufine-pumui/package'
+import { parseRecordPackage } from '../features/neis-record/package'
 import { DEFAULT_SCREEN_MAP, parseScreenMap, type ScreenMap } from '../sites/edufine/screen-map'
 import { PAGE_REQUESTS, POPUP_REQUESTS, type Moved, type NativeReply } from './messages'
 
@@ -22,11 +23,14 @@ const AUTO_OPEN_MS = 15 * 60_000
 /** each task's check of its work text: nothing else is kept, shown or filled */
 const CHECKS: Readonly<
   Record<string, (text: string) => { ok: true } | { ok: false; reason: string }>
-> = { 'edufine-pumui': (t) => parsePumuiPackage(t) }
+> = {
+  'edufine-pumui': (t) => parsePumuiPackage(t),
+  'neis-record': (t) => parseRecordPackage(t),
+}
 /** what came from the web app or the desktop app before work carried a task name */
 const PUMUI = 'edufine-pumui'
 const UNKNOWN_TASK = '이 확장이 모르는 업무예요. 확장을 업데이트해 주세요.'
-const SITES: readonly SiteId[] = ['edufine']
+const SITES: readonly SiteId[] = ['edufine', 'neis']
 
 /** the task a request names, when this extension has it */
 function taskOf(feature: unknown): string | null {

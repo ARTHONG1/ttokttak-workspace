@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
+import { isWebEdition } from '../edition'
 import { Back, Modal, ToastView, askAi, copyText, downloadBlob, useToast } from '../special-common'
 import {
   BEHAVIOR_SYSTEM,
@@ -42,13 +43,16 @@ import {
   type StudentFields,
   type Work,
 } from './record-core'
+import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
 import './school-record.css'
 
 /**
  * 똑딱업무 > 생기부: 교과 세특 and 행발 drafts for NEIS, after the author's ACE 세특&행발.
  * The teacher sets the length and any instruction, fills in the students (by hand, from
  * a class list or from a CSV), and the connected AI writes one student at a time. The
- * result stays editable, with NEIS's byte count beside it, and leaves as a copy or a CSV.
+ * result stays editable, with NEIS's byte count beside it, and leaves as a copy, a CSV, or
+ * straight into NEIS: [나이스로 보내기] hands the class to the 똑딱작업실 extension, which
+ * types it into the NEIS grid.
  */
 
 const newId = (): string => crypto.randomUUID()
@@ -185,6 +189,13 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const [countText, setCountText] = useState<string | null>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [toast, say] = useToast()
+  const [sending, setSending] = useState(false)
+  const [sendNote, setSendNote] = useState<{
+    mode: RecordMode
+    ok: boolean
+    text: string
+    pkgText: string
+  } | null>(null)
 
   const work = works[mode]
   const resultName = RESULT_NAME[mode]
@@ -400,6 +411,31 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       return say('이름이나 내용이 있는 학생이 없어요.', true)
     }
     saveCsv(studentsToCsv(work.students, mode), CSV_NAME[mode])
+  }
+
+  // 생기부 → 나이스: the desktop app holds the class for the extension and opens the
+  // browser on NEIS, the web app hands it to the extension in this browser; the note
+  // below always offers the clipboard too
+  const sendToNeis = async () => {
+    const found = recordSendProblem(mode, work)
+    if (found) return say(found, true)
+    const pkgText = JSON.stringify(recordPackageFromWork(mode, work))
+    const api = window.aiOffice
+    setSending(true)
+    try {
+      const out = await sendRecord(pkgText, {
+        web: isWebEdition(),
+        workSend: typeof api?.workSend === 'function' ? (f, t) => api.workSend(f, t) : undefined,
+        openWorkSite:
+          typeof api?.openWorkSite === 'function' ? (f) => api.openWorkSite(f) : undefined,
+        runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
+      })
+      setSendNote({ mode, ok: out.ok, text: out.message, pkgText })
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error), true)
+    } finally {
+      setSending(false)
+    }
   }
 
   /* ---------------------------------------------------------------- saved work */
@@ -682,6 +718,16 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             >
               CSV 저장
             </button>
+            <button
+              type="button"
+              className="sf-secondary sf-sm"
+              data-testid="record-send"
+              disabled={sending || anyBusy}
+              onClick={() => void sendToNeis()}
+            >
+              {sending && <span className="sf-spinner" aria-hidden="true" />}
+              나이스로 보내기
+            </button>
             {running[mode] ? (
               <button
                 type="button"
@@ -706,6 +752,38 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
               </button>
             )}
           </div>
+
+          {sendNote && sendNote.mode === mode && (
+            <div
+              className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
+              role="status"
+              data-testid="record-send-note"
+            >
+              <p>{sendNote.text}</p>
+              <p className="sr-send-sub">
+                나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요. 글을 고쳤다면 다시 보내
+                주세요.
+              </p>
+              <div className="sf-btn-row">
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  onClick={() =>
+                    void copyText(sendNote.pkgText).then(() =>
+                      say(
+                        '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
+                      ),
+                    )
+                  }
+                >
+                  클립보드로 복사
+                </button>
+                <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
+                  닫기
+                </button>
+              </div>
+            </div>
+          )}
 
           {mode === 'subject' && (
             <div className="sr-bulk">

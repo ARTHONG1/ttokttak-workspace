@@ -48,6 +48,7 @@ if (dev) {
     entryPoints: [
       join(HERE, 'tests/fixtures/fake-page.ts'),
       join(HERE, 'tests/fixtures/web-sender.ts'),
+      join(HERE, 'tests/fixtures/fake-neis-page.ts'),
     ],
     outdir: TEST,
     bundle: true,
@@ -57,6 +58,7 @@ if (dev) {
   })
   await cp(join(HERE, 'tests/fixtures/fake-edufine.html'), join(TEST, 'fake-edufine.html'))
   await cp(join(HERE, 'tests/fixtures/web-sender.html'), join(TEST, 'web-sender.html'))
+  await cp(join(HERE, 'tests/fixtures/fake-neis.html'), join(TEST, 'fake-neis.html'))
   // the web app's /go page (also at /edufine/go), served from the test server like the web app
   const GO = join(HERE, '../../web/runtime/client')
   await mkdir(join(TEST, 'edufine'), { recursive: true })

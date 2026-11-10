@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "똑딱작업실",
   "short_name": "똑딱작업실",
-  "description": "똑딱작업실에서 만든 작업을 학교 업무 사이트에 채워 줍니다. 첫 업무: K-에듀파인 품의. 저장과 결재는 선생님이 직접 합니다.",
+  "description": "똑딱작업실에서 만든 작업을 학교 업무 사이트에 채워 줍니다. K-에듀파인 품의, 나이스 생기부(세특·행발). 저장과 결재는 선생님이 직접 합니다.",
   "permissions": ["storage", "scripting", "nativeMessaging"],
   "host_permissions": [
     "https://*.go.kr/*",

@@ -1,6 +1,6 @@
 /**
  * Runs inside every https://*.go.kr page (MAIN world). Where a work site 똑딱작업실 knows
- * is running (now K-에듀파인) it shows the 똑딱 button. Pressing it opens the task with
+ * is running (K-에듀파인, NEIS) it shows the 똑딱 button. Pressing it opens the task with
  * work waiting, the site's only task straight away, or the list of the site's tasks. No
  * task ever saves, approves or submits anything on the site.
  */
@@ -9,6 +9,8 @@ import { homeChoice } from '../core/home'
 import type { InboxEntry } from '../core/inbox'
 import { featuresOf } from '../core/registry'
 import { edufinePumui } from '../features/edufine-pumui/index'
+import { neisRecord } from '../features/neis-record/index'
+import { FAKE_NEIS_MARK, isNeisHost } from '../sites/neis/grid'
 import { nexacro } from './edufine'
 import { PAGE_TAG } from './messages'
 import { call } from './page-channel'
@@ -16,11 +18,20 @@ import { h, mountPanel, type Panel } from './page-ui'
 import { troubleTools } from './trouble'
 
 /** the page part of each task, by id (their names are in core/registry.ts) */
-const MODULES: Readonly<Record<string, Feature>> = { [edufinePumui.id]: edufinePumui }
+const MODULES: Readonly<Record<string, Feature>> = {
+  [edufinePumui.id]: edufinePumui,
+  [neisRecord.id]: neisRecord,
+}
 
 /** how each site is recognised on a go.kr page */
 const SITES: readonly { id: SiteId; here(): boolean }[] = [
   { id: 'edufine', here: () => !!nexacro() },
+  {
+    id: 'neis',
+    here: () =>
+      isNeisHost(location.hostname) ||
+      (__DEV__ && document.documentElement.hasAttribute(FAKE_NEIS_MARK)),
+  },
 ]
 
 type Win = Window & { __ttokEdufineLoaded?: boolean }

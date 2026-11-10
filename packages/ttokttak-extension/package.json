@@ -1,12 +1,13 @@
 {
   "name": "@genoffice/ttokttak-extension",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "license": "Apache-2.0",
   "private": true,
   "type": "module",
-  "description": "똑딱작업실 Chrome extension: school work tasks on their own sites, first 에듀파인 품의 (fills the K-에듀파인 품의등록 screen)",
+  "description": "똑딱작업실 Chrome extension: school work tasks on their own sites: 에듀파인 품의 (fills the K-에듀파인 품의등록 screen) and 생기부 나이스 입력 (types 세특 and 행발 into the NEIS grid)",
   "exports": {
     "./package": "./src/features/edufine-pumui/package.ts",
+    "./record": "./src/features/neis-record/package.ts",
     "./ids": "./src/core/ids.ts",
     "./units": "./src/features/edufine-pumui/units.ts"
   },

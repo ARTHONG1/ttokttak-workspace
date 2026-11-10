@@ -1,22 +1,46 @@
 // /go?feature=<task>: 똑딱작업실 (the desktop app) opens this page after it holds a task's
-// work ([K-에듀파인으로 보내기]). It asks the 똑딱작업실 extension to bring the task's site
-// forward; the extension closes this tab when it did. The page only speaks when there is
-// nowhere to go. /edufine/go (what 0.15.5 and earlier open) is the same page for 에듀파인 품의,
-// and an extension from before task names (0.4.0) is asked again under its old message name.
+// work ([K-에듀파인으로 보내기], [나이스로 보내기]). It asks the 똑딱작업실 extension to bring
+// the task's site forward; the extension closes this tab when it did. The page only speaks
+// when there is nowhere to go. /edufine/go (what 0.15.5 and earlier open) is the same page
+// for 에듀파인 품의, and an extension from before task names (0.4.0) is asked again under its
+// old message name.
 // EXTENSION_ID must equal packages/ttokttak-extension/src/core/ids.ts (a test keeps them in step).
 ;(function () {
   var EXTENSION_ID = 'ebjaejdjilpnbcbcejmeeneahkngcmnm'
   var UNKNOWN_REQUEST = '알 수 없는 요청이에요.'
   var feature = new URLSearchParams(location.search).get('feature') || 'edufine-pumui'
+  // how each task's site is spoken of; a task this page does not know is spoken of as
+  // K-에듀파인 (an extension that knows it still moves to the right site)
+  var SITES = {
+    'edufine-pumui': {
+      to: 'K-에듀파인으로',
+      it: 'K-에듀파인을',
+      button: '[K-에듀파인으로 보내기]',
+      held: '똑딱작업실이 품의를 준비했어요. 업무포털에서 K-에듀파인 품의등록 화면을 열고 오른쪽 아래 [똑딱]을 누르면 품의가 보여요.',
+    },
+    'neis-record': {
+      to: '나이스로',
+      it: '나이스를',
+      button: '[나이스로 보내기]',
+      held: '똑딱작업실이 생기부 내용을 준비했어요. 나이스에서 세특이나 행발 입력 화면을 열고 오른쪽 아래 [똑딱]을 누르면 보낸 내용이 보여요.',
+    },
+  }
+  var site = SITES[feature] || SITES['edufine-pumui']
   function say(title, text, hint) {
     document.getElementById('title').textContent = title
     document.getElementById('text').textContent = text
     document.getElementById('hint').textContent = hint || ''
   }
+  document.title = site.to + ' 옮기는 중 · 똑딱작업실'
+  say(site.to + ' 옮기는 중…', '잠시만 기다려 주세요.')
   var noExtension = function () {
     say(
       '확장 프로그램이 필요해요',
-      '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. K-에듀파인을 여는 크롬에 설치한 뒤 [K-에듀파인으로 보내기]를 다시 눌러 주세요.',
+      '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. ' +
+        site.it +
+        ' 여는 크롬에 설치한 뒤 ' +
+        site.button +
+        '를 다시 눌러 주세요.',
       '똑딱작업실 소개 페이지 위쪽 [테스트]에서 받을 수 있어요.',
     )
   }
@@ -48,11 +72,11 @@
       )
     if (reply.moved === 'unknown')
       return say(
-        'K-에듀파인을 한 번 열어 주세요',
-        '똑딱작업실이 품의를 준비했어요. 업무포털에서 K-에듀파인 품의등록 화면을 열고 오른쪽 아래 [똑딱]을 누르면 품의가 보여요.',
-        '한 번 열고 나면 주소를 기억해서, 다음부터는 이 버튼이 K-에듀파인으로 바로 옮겨 줘요.',
+        site.it + ' 한 번 열어 주세요',
+        site.held,
+        '한 번 열고 나면 주소를 기억해서, 다음부터는 이 버튼이 ' + site.to + ' 바로 옮겨 줘요.',
       )
-    say('K-에듀파인으로 옮겼어요', '이 탭은 닫아도 돼요.')
+    say(site.to + ' 옮겼어요', '이 탭은 닫아도 돼요.')
   }
   ask({ type: 'go', feature: feature }, function (reply) {
     if (reply && !reply.ok && reply.reason === UNKNOWN_REQUEST && feature === 'edufine-pumui')

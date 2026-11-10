@@ -139,6 +139,7 @@ test('the toolbar popup lists the 에듀파인 품의 task', async () => {
   await page.goto('chrome-extension://' + EXTENSION_ID + '/popup.html')
   await expect(page.getByRole('heading', { name: /똑딱작업실/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: '에듀파인 품의' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '생기부 나이스 입력' })).toBeVisible()
   await page.close()
 })
 

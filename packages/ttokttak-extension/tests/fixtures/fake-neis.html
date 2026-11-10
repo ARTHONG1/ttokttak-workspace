@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko" data-ttok-fake-neis>
+  <head>
+    <meta charset="utf-8" />
+    <title>가짜 나이스 입력 화면</title>
+    <style>
+      .cl-grid-row {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        cursor: pointer;
+      }
+      .cl-grid-row.cl-selected {
+        background: #e8f0ff;
+      }
+      .cl-grid-cell {
+        flex: 0 0 90px;
+        min-height: 30px;
+        padding: 6px;
+      }
+      .cl-grid-cell:last-child {
+        flex: 1;
+      }
+      textarea.cl-text {
+        width: 100%;
+      }
+    </style>
+    <script src="fake-neis-page.js"></script>
+  </head>
+  <body>
+    <h1>가짜 나이스 입력 화면 (시험용)</h1>
+    <button id="save" type="button" onclick="window.__saved = (window.__saved || 0) + 1">
+      저장
+    </button>
+  </body>
+</html>

@@ -5,6 +5,7 @@
  * each for thirty minutes, so nothing lingers after the teacher is done.
  */
 import { parsePumuiPackage } from '@genoffice/ttokttak-extension/package'
+import { parseRecordPackage } from '@genoffice/ttokttak-extension/record'
 
 export const OUTBOX_MAX = 5
 export const OUTBOX_TTL_MS = 30 * 60_000
@@ -16,6 +17,10 @@ export type WorkCheck = (text: string, now: Date) => Held
 const CHECKS: Readonly<Record<string, WorkCheck>> = {
   'edufine-pumui': (text, now) => {
     const parsed = parsePumuiPackage(text, now)
+    return parsed.ok ? { ok: true, title: parsed.pkg.title } : parsed
+  },
+  'neis-record': (text, now) => {
+    const parsed = parseRecordPackage(text, now)
     return parsed.ok ? { ok: true, title: parsed.pkg.title } : parsed
   },
 }

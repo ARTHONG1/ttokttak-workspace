@@ -126,6 +126,10 @@
 .sr-toolbar-gap {
   flex: 1;
 }
+.sr-send-sub {
+  font-size: 12.5px;
+  color: var(--sf-ink-2);
+}
 .sr-count {
   display: inline-flex;
   align-items: center;

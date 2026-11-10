@@ -10,6 +10,7 @@ import { nativeHostManifest } from '../../cli/src/edufine-register'
 import { startControlServer, type ControlServer } from '../../../apps/shell/src/main/control-server'
 import { NATIVE_HOST_NAME } from '../src/core/ids'
 import { buildPumuiPackage } from '../src/features/edufine-pumui/package'
+import { buildRecordPackage } from '../src/features/neis-record/package'
 
 // The desktop route end to end in a real Chromium: the extension asks for a 품의 over
 // native messaging, Chromium starts the host, the host asks a running "app" (a control
@@ -41,6 +42,8 @@ let base = ''
 let context: BrowserContext
 let app: ControlServer | null = null
 let waiting: string | null = null
+/** the app's queue of the 생기부 task (neis-record) */
+let waitingRecord: string | null = null
 const userData = mkdtempSync(join(tmpdir(), 'ttok-appdata-'))
 const regKeys = WIN
   ? [
@@ -51,6 +54,11 @@ const regKeys = WIN
 
 async function startApp(): Promise<void> {
   app = await startControlServer(userData, async (req) => {
+    if (req.cmd === 'work-take' && req.feature === 'neis-record') {
+      const text = waitingRecord
+      waitingRecord = null
+      return { ok: true, result: { text } }
+    }
     if (req.cmd !== 'work-take' || req.feature !== 'edufine-pumui')
       return { ok: false, error: { reason: 'unsupported', message: 'x' } }
     // like the app's queue: a 품의 is handed over once
@@ -176,5 +184,38 @@ test('the self-check shows the app connection', async () => {
   await page.getByRole('button', { name: '연결 점검' }).click()
   const row = page.locator('tr', { hasText: '똑딱작업실 프로그램 연결' })
   await expect(row).toContainText('✓', { timeout: 20_000 })
+  await page.close()
+})
+
+test('takes the 생기부 class from the running app and types it into the NEIS grid', async () => {
+  waitingRecord = JSON.stringify(
+    buildRecordPackage({
+      mode: 'behavior',
+      title: '행발 · 2명',
+      students: [
+        { name: '김하늘', text: '배려심이 깊고 책임감이 강함.' },
+        { name: '이바다', text: '모둠 활동에서 의견을 차분히 정리함.' },
+      ],
+    }),
+  )
+  // a 품의 waiting in the app stays in its own queue
+  waiting = pkgText
+  const page = await context.newPage()
+  await page.goto(base + '/fake-neis.html')
+  await page.getByRole('button', { name: '똑딱', exact: true }).click()
+  const panel = page.getByRole('dialog', { name: '똑딱작업실' })
+  await expect(panel.getByRole('heading', { name: '행발 · 2명' })).toBeVisible({ timeout: 20_000 })
+  expect(waitingRecord).toBeNull()
+  expect(waiting).toBe(pkgText)
+  await page.locator('.cl-grid-row').first().click()
+  await panel.getByRole('button', { name: '나이스에 채우기' }).click()
+  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible({ timeout: 30_000 })
+  expect(await page.evaluate(() => (window as any).__neis.texts())).toEqual([
+    '배려심이 깊고 책임감이 강함.',
+    '모둠 활동에서 의견을 차분히 정리함.',
+    '',
+    '',
+  ])
+  waiting = null
   await page.close()
 })
