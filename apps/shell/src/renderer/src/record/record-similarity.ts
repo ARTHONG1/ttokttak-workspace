@@ -9,6 +9,8 @@ import { parseCsv } from './record-core'
 export interface Entry {
   name: string
   text: string
+  /** the student this text belongs to, when it was written here */
+  id?: string
 }
 
 /** letters in a row that must match before it counts as the same wording */
@@ -165,6 +167,93 @@ export function entriesFromText(raw: string): Entry[] {
 
 const csvCell = (value: string): string =>
   /[",\r\n]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value
+
+/* ------------------------------------------------------------------ warnings and rewording */
+
+/** from this much on a text is warned about beside the student */
+export const WARN_FLOOR = 50
+
+export interface Warning {
+  /** the entry it reads most like */
+  other: number
+  percent: number
+  /** how many entries it is alike with */
+  count: number
+}
+
+/** for each entry that reads like another: the one it is most like, by entry index */
+export function warnings(entries: readonly Entry[], floor: number): Map<number, Warning> {
+  const out = new Map<number, Warning>()
+  const note = (self: number, other: number, percent: number): void => {
+    const now = out.get(self)
+    if (!now) out.set(self, { other, percent, count: 1 })
+    else
+      out.set(
+        self,
+        percent > now.percent
+          ? { other, percent, count: now.count + 1 }
+          : { ...now, count: now.count + 1 },
+      )
+  }
+  for (const p of similarPairs(entries, floor)) {
+    note(p.a, p.b, p.percent)
+    note(p.b, p.a, p.percent)
+  }
+  return out
+}
+
+/** the wording a text shares with any of the others, longest first, without repeats */
+export function sharedPhrases(text: string, others: readonly string[]): string[] {
+  const found = new Set<string>()
+  for (const other of others) {
+    for (const piece of sharedPieces(text, other)) {
+      const phrase = piece.text.trim()
+      if (piece.shared && phrase) found.add(phrase)
+    }
+  }
+  return [...found].sort((a, b) => b.length - a.length).slice(0, 12)
+}
+
+export const REWORD_SYSTEM = [
+  '당신은 대한민국 학교생활기록부 문장을 다듬는 교사 보조자입니다.',
+  '주어진 글의 내용과 사실은 그대로 두고 표현만 바꿉니다.',
+  '',
+  '[지킬 것]',
+  '1. 글에 있는 활동, 성취, 평가의 내용을 빼거나 새로 지어내지 마십시오. 없는 사실을 더하지 마십시오.',
+  "2. '겹치는 표현'으로 준 구절은 그대로 쓰지 말고, 같은 뜻의 다른 낱말과 다른 문장 구성으로 바꾸십시오. 문장의 순서와 첫머리도 바꾸십시오.",
+  '3. 문장 끝은 "~함", "~임", "~음", "~됨", "~보임" 같은 학교생활기록부 종결 어미를 쓰십시오. "~입니다", "~해요"는 쓰지 마십시오.',
+  '4. 분량은 원래 글과 비슷하게 하고, 원래 글보다 길어지지 않게 하십시오.',
+  '5. 학생의 이름이나 번호를 쓰지 마십시오.',
+  "6. '#', '**' 같은 기호, 제목, 설명 없이 고친 글만 한 문단으로 출력하십시오.",
+].join('\n')
+
+/** the request to reword one text away from the texts it reads like */
+export function rewordRequest(text: string, others: readonly string[]): string {
+  const phrases = sharedPhrases(text, others)
+  return [
+    '[고칠 글]',
+    text.trim(),
+    '',
+    '[겹치는 표현] (다른 학생의 글과 같아서 바꿔야 하는 구절)',
+    ...(phrases.length ? phrases.map((p) => '- ' + p) : ['- 글 전체의 문장 구성']),
+    '',
+    '위 글의 내용은 그대로 두고, 겹치는 표현이 남지 않게 표현과 문장 구성을 바꿔 쓰십시오.',
+  ].join('\n')
+}
+
+/** the entries to reword so that no pair stays over the floor: the later one of each pair */
+export function rewordTargets(entries: readonly Entry[], floor: number): number[] {
+  const targets = new Set<number>()
+  for (const p of similarPairs(entries, floor)) {
+    if (!targets.has(p.a) && !targets.has(p.b)) targets.add(p.b)
+  }
+  return [...targets].sort((a, b) => a - b)
+}
+
+/** every entry as a CSV (after rewording a file's texts) */
+export function entriesToCsv(entries: readonly Entry[]): string {
+  return ['이름,내용', ...entries.map((e) => [e.name, e.text].map(csvCell).join(','))].join('\n')
+}
 
 /** the pairs as a CSV to keep */
 export function pairsToCsv(entries: readonly Entry[], pairs: readonly Pair[]): string {

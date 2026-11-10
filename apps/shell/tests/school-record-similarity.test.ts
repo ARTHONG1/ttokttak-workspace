@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   entriesFromText,
+  entriesToCsv,
   pairsToCsv,
+  rewordRequest,
+  rewordTargets,
   sharedPieces,
   similarity,
   similarPairs,
+  warnings,
 } from '../src/renderer/src/record/record-similarity'
 
 /** 똑딱업무 > 생기부 > 유사도 검사: counted on the device, no AI */
@@ -61,6 +65,36 @@ describe('similar pairs', () => {
 })
 
 describe('shared wording', () => {
+  const entries = [
+    { name: '김하늘', text: A },
+    { name: '이바다', text: C },
+    { name: '박나래', text: B },
+    { name: '최우주', text: A },
+  ]
+
+  it('warns each student whose text reads like another, naming the closest', () => {
+    const w = warnings(entries, 50)
+    expect([...w.keys()].sort()).toEqual([0, 2, 3])
+    expect(w.get(0)).toEqual({ other: 3, percent: 100, count: 2 })
+    expect(w.get(2)?.count).toBe(2)
+    expect(w.has(1)).toBe(false)
+  })
+
+  it('picks one student of each alike pair to reword, never both', () => {
+    expect(rewordTargets(entries, 50)).toEqual([2, 3])
+    expect(rewordTargets(entries, 95)).toEqual([3])
+    expect(rewordTargets([entries[0], entries[1]], 30)).toEqual([])
+  })
+
+  it('asks for other wording with the shared phrases, and never a name', () => {
+    const text = rewordRequest(A, [B, C])
+    expect(text).toContain('[고칠 글]\n' + A)
+    expect(text).toContain('- 강낭콩을 기르며 한살이를 관찰하고 관찰 일지를 꼼꼼히 기록함')
+    expect(text).not.toContain('리코더')
+    expect(text).not.toContain('김하늘')
+    expect(entriesToCsv(entries.slice(0, 1)).split('\n')[0]).toBe('이름,내용')
+  })
+
   it('marks the wording both texts have, spaces inside it included', () => {
     const pieces = sharedPieces(A, B)
     expect(pieces.map((p) => p.text).join('')).toBe(A)

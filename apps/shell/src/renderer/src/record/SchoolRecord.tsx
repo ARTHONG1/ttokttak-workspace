@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { isWebEdition } from '../edition'
 import { Back, Modal, ToastView, askAi, copyText, downloadBlob, useToast } from '../special-common'
@@ -45,6 +45,7 @@ import {
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
 import { SimilarityCheck } from './SimilarityCheck'
+import { WARN_FLOOR, warnings } from './record-similarity'
 import './school-record.css'
 
 /**
@@ -234,6 +235,22 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   }, [settings])
 
   const problem = mode === 'subject' ? commonProblem(work.info) : null
+
+  // a student whose text reads like another's is warned beside the text
+  const resultsKey = work.students.map((s) => s.id + '\u0000' + s.result).join('\u0001')
+  const alike = useMemo(() => {
+    const list = work.students.map((s, i) => ({
+      id: s.id,
+      name: s.name.trim() || i + 1 + '번',
+      text: s.result.trim(),
+    }))
+    const out = new Map<string, { name: string; percent: number; count: number }>()
+    for (const [index, w] of warnings(list, WARN_FLOOR)) {
+      out.set(list[index].id, { name: list[w.other].name, percent: w.percent, count: w.count })
+    }
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the students by their texts
+  }, [resultsKey])
 
   /* ---------------------------------------------------------------- writing */
 
@@ -538,7 +555,11 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       </div>
 
       {checking ? (
-        <SimilarityCheck works={works} say={say} />
+        <SimilarityCheck
+          works={works}
+          say={say}
+          onReword={(m, id, result) => patchStudent(m, id, { result })}
+        />
       ) : (
         <>
           <p className="sr-note">
@@ -940,6 +961,24 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                           }
                         />
                       </label>
+                      {alike.has(s.id) && !writing && (
+                        <p className="sr-alike" role="status" data-testid="record-alike">
+                          <span>
+                            {alike.get(s.id)!.name}의 글과 {alike.get(s.id)!.percent}% 겹쳐요
+                            {alike.get(s.id)!.count > 1
+                              ? ' (모두 ' + alike.get(s.id)!.count + '명과 비슷)'
+                              : ''}
+                            . 표현을 바꿔 주세요.
+                          </span>
+                          <button
+                            type="button"
+                            className="sf-text-btn"
+                            onClick={() => setChecking(true)}
+                          >
+                            유사도 검사에서 보기
+                          </button>
+                        </p>
+                      )}
                     </li>
                   )
                 })}

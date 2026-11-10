@@ -69,10 +69,15 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
       .getByTestId('record-result')
       .nth(1)
       .fill(same + ' 발표를 잘함.')
+    // the students are warned beside their texts
+    await expect(page.getByTestId('record-alike')).toHaveCount(2)
+    await expect(page.getByTestId('record-alike').first()).toContainText('2번의 글과')
     await page.getByTestId('record-tab-similarity').click()
     await expect(page.getByTestId('similarity-summary')).toHaveText(
       '2명 가운데 2명의 글이 서로 비슷해요 (1쌍).',
     )
+    await expect(page.getByTestId('similarity-warning')).toContainText('표현을 바꿔 주세요')
+    await expect(page.getByTestId('similarity-reword-all')).toBeEnabled()
     await page.getByTestId('similarity-pair').getByRole('button').click()
     await expect(page.locator('.sr-sim-text mark').first()).toContainText('강낭콩을 기르며')
     await page.screenshot({ path: screenshotPath('school-record-similarity') })

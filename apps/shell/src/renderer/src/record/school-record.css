@@ -132,6 +132,46 @@
 }
 
 /* 유사도 검사 */
+.sr-alike {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  padding: 6px 6px 6px 12px;
+  border-radius: 9px;
+  background: rgb(234 110 24 / 12%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #b0480a;
+}
+.sr-alike span {
+  flex: 1;
+  min-width: 0;
+}
+.sr-sim-warn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgb(234 110 24 / 12%);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--sf-ink);
+}
+.sr-sim-warn p {
+  flex: 1;
+  min-width: 240px;
+  margin: 0;
+}
+.sr-sim-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .sr-sim-hint {
   margin-top: 10px;
 }
