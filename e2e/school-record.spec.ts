@@ -61,6 +61,21 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
     await page.getByTestId('record-session').getByRole('button', { name: '불러오기' }).click()
     await expect(page.getByTestId('record-student')).toHaveCount(3)
     await expect(page.getByTestId('record-name').first()).toHaveValue('김하늘')
+
+    // 유사도 검사: two students with the same sentence show up as a pair, counted here
+    const same = '강낭콩을 기르며 한살이를 관찰하고 관찰 일지를 꼼꼼히 기록함.'
+    await page.getByTestId('record-result').nth(0).fill(same)
+    await page
+      .getByTestId('record-result')
+      .nth(1)
+      .fill(same + ' 발표를 잘함.')
+    await page.getByTestId('record-tab-similarity').click()
+    await expect(page.getByTestId('similarity-summary')).toHaveText(
+      '2명 가운데 2명의 글이 서로 비슷해요 (1쌍).',
+    )
+    await page.getByTestId('similarity-pair').getByRole('button').click()
+    await expect(page.locator('.sr-sim-text mark').first()).toContainText('강낭콩을 기르며')
+    await page.screenshot({ path: screenshotPath('school-record-similarity') })
   } finally {
     await closeAndSaveVideo(launched, 'school-record')
   }

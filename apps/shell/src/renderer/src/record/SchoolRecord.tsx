@@ -44,6 +44,7 @@ import {
   type Work,
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
+import { SimilarityCheck } from './SimilarityCheck'
 import './school-record.css'
 
 /**
@@ -189,6 +190,8 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const [countText, setCountText] = useState<string | null>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [toast, say] = useToast()
+  /** the 유사도 검사 tab is shown in place of the mode's page */
+  const [checking, setChecking] = useState(false)
   const [sending, setSending] = useState(false)
   const [sendNote, setSendNote] = useState<{
     mode: RecordMode
@@ -508,11 +511,12 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             key={m.id}
             type="button"
             role="tab"
-            aria-selected={mode === m.id}
-            className={'sr-tab' + (mode === m.id ? ' is-on' : '')}
+            aria-selected={!checking && mode === m.id}
+            className={'sr-tab' + (!checking && mode === m.id ? ' is-on' : '')}
             data-testid={'record-tab-' + m.id}
             onClick={() => {
               setMode(m.id)
+              setChecking(false)
               setCountText(null)
             }}
           >
@@ -520,412 +524,441 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             <small>{m.long}</small>
           </button>
         ))}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={checking}
+          className={'sr-tab' + (checking ? ' is-on' : '')}
+          data-testid="record-tab-similarity"
+          onClick={() => setChecking(true)}
+        >
+          <b>유사도 검사</b>
+          <small>비슷한 글 찾기</small>
+        </button>
       </div>
 
-      <p className="sr-note">
-        AI가 쓴 글은 초안이에요. 나이스에 넣기 전에 꼭 읽고 고쳐 주세요. 학생 이름은 AI에 보내지
-        않고, 관찰 기록과 {mode === 'subject' ? '공통 정보' : '지시사항'}만 보내요.
-      </p>
+      {checking ? (
+        <SimilarityCheck works={works} say={say} />
+      ) : (
+        <>
+          <p className="sr-note">
+            AI가 쓴 글은 초안이에요. 나이스에 넣기 전에 꼭 읽고 고쳐 주세요. 학생 이름은 AI에 보내지
+            않고, 관찰 기록과 {mode === 'subject' ? '공통 정보' : '지시사항'}만 보내요.
+          </p>
 
-      <div className="sf-stack">
-        <section className="sf-box" aria-labelledby="sr-setting-title">
-          <div className="sf-box-head">
-            <div>
-              <h2 id="sr-setting-title">생성 설정</h2>
-              <p className="sf-box-sub">길이와 지시사항은 다음에 열 때도 그대로 있어요.</p>
-            </div>
-          </div>
-          <div className="sf-field">
-            <span>{resultName} 길이</span>
-            <Segs
-              label={resultName + ' 길이'}
-              options={LENGTHS}
-              value={work.length}
-              onPick={(length) => patch(mode, (w) => ({ ...w, length }))}
-              testId="record-length"
-            />
-          </div>
-          <label className="sf-field">
-            <span>AI에게 더 일러 둘 말 (선택)</span>
-            <textarea
-              rows={2}
-              data-testid="record-instructions"
-              value={work.instructions}
-              onChange={(e) => patch(mode, (w) => ({ ...w, instructions: e.target.value }))}
-              placeholder="예: 학생의 창의성이 드러나도록 써 줘. 협동심과 관련된 내용을 꼭 넣어 줘."
-            />
-          </label>
-        </section>
-
-        {mode === 'subject' && (
-          <section className="sf-box" aria-labelledby="sr-info-title">
-            <div className="sf-box-head">
-              <div>
-                <h2 id="sr-info-title">공통 정보</h2>
-                <p className="sf-box-sub">모든 학생의 세특에 함께 쓰는 수업 정보예요.</p>
+          <div className="sf-stack">
+            <section className="sf-box" aria-labelledby="sr-setting-title">
+              <div className="sf-box-head">
+                <div>
+                  <h2 id="sr-setting-title">생성 설정</h2>
+                  <p className="sf-box-sub">길이와 지시사항은 다음에 열 때도 그대로 있어요.</p>
+                </div>
               </div>
-            </div>
-            <div className="sr-grid">
+              <div className="sf-field">
+                <span>{resultName} 길이</span>
+                <Segs
+                  label={resultName + ' 길이'}
+                  options={LENGTHS}
+                  value={work.length}
+                  onPick={(length) => patch(mode, (w) => ({ ...w, length }))}
+                  testId="record-length"
+                />
+              </div>
               <label className="sf-field">
-                <span>학교급</span>
-                <select
-                  data-testid="record-school"
-                  value={work.info.schoolLevel}
-                  aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
-                  onChange={(e) => patchInfo({ schoolLevel: e.target.value as SchoolLevel | '' })}
-                >
-                  <option value="">학교급 선택</option>
-                  {SCHOOL_LEVELS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="sf-field">
-                <span>학년 (선택)</span>
-                <input
-                  value={work.info.grade}
-                  onChange={(e) => patchInfo({ grade: e.target.value })}
-                  placeholder="예: 3"
+                <span>AI에게 더 일러 둘 말 (선택)</span>
+                <textarea
+                  rows={2}
+                  data-testid="record-instructions"
+                  value={work.instructions}
+                  onChange={(e) => patch(mode, (w) => ({ ...w, instructions: e.target.value }))}
+                  placeholder="예: 학생의 창의성이 드러나도록 써 줘. 협동심과 관련된 내용을 꼭 넣어 줘."
                 />
               </label>
-              <label className="sf-field">
-                <span>과목</span>
-                <select
-                  data-testid="record-subject"
-                  value={work.info.subject}
-                  aria-invalid={
-                    showProblem && !work.info.subject && !work.info.customSubject.trim()
-                      ? true
-                      : undefined
-                  }
-                  onChange={(e) => patchInfo({ subject: e.target.value })}
-                >
-                  <option value="">과목 선택</option>
-                  {SUBJECTS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                  <option value={CUSTOM_SUBJECT}>직접 입력</option>
-                </select>
-              </label>
-              {work.info.subject === CUSTOM_SUBJECT && (
+            </section>
+
+            {mode === 'subject' && (
+              <section className="sf-box" aria-labelledby="sr-info-title">
+                <div className="sf-box-head">
+                  <div>
+                    <h2 id="sr-info-title">공통 정보</h2>
+                    <p className="sf-box-sub">모든 학생의 세특에 함께 쓰는 수업 정보예요.</p>
+                  </div>
+                </div>
+                <div className="sr-grid">
+                  <label className="sf-field">
+                    <span>학교급</span>
+                    <select
+                      data-testid="record-school"
+                      value={work.info.schoolLevel}
+                      aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
+                      onChange={(e) =>
+                        patchInfo({ schoolLevel: e.target.value as SchoolLevel | '' })
+                      }
+                    >
+                      <option value="">학교급 선택</option>
+                      {SCHOOL_LEVELS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sf-field">
+                    <span>학년 (선택)</span>
+                    <input
+                      value={work.info.grade}
+                      onChange={(e) => patchInfo({ grade: e.target.value })}
+                      placeholder="예: 3"
+                    />
+                  </label>
+                  <label className="sf-field">
+                    <span>과목</span>
+                    <select
+                      data-testid="record-subject"
+                      value={work.info.subject}
+                      aria-invalid={
+                        showProblem && !work.info.subject && !work.info.customSubject.trim()
+                          ? true
+                          : undefined
+                      }
+                      onChange={(e) => patchInfo({ subject: e.target.value })}
+                    >
+                      <option value="">과목 선택</option>
+                      {SUBJECTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                      <option value={CUSTOM_SUBJECT}>직접 입력</option>
+                    </select>
+                  </label>
+                  {work.info.subject === CUSTOM_SUBJECT && (
+                    <label className="sf-field">
+                      <span>과목 이름</span>
+                      <input
+                        data-testid="record-subject-custom"
+                        value={work.info.customSubject}
+                        aria-invalid={
+                          showProblem && !work.info.customSubject.trim() ? true : undefined
+                        }
+                        onChange={(e) => patchInfo({ customSubject: e.target.value })}
+                        placeholder="과목 이름을 입력하세요"
+                      />
+                    </label>
+                  )}
+                  <label className="sf-field sr-span-2">
+                    <span>단원 (선택)</span>
+                    <input
+                      value={work.info.unitName}
+                      onChange={(e) => patchInfo({ unitName: e.target.value })}
+                      placeholder="예: 문학의 이해"
+                    />
+                  </label>
+                </div>
                 <label className="sf-field">
-                  <span>과목 이름</span>
-                  <input
-                    data-testid="record-subject-custom"
-                    value={work.info.customSubject}
-                    aria-invalid={showProblem && !work.info.customSubject.trim() ? true : undefined}
-                    onChange={(e) => patchInfo({ customSubject: e.target.value })}
-                    placeholder="과목 이름을 입력하세요"
+                  <span>과제 설명</span>
+                  <textarea
+                    rows={3}
+                    data-testid="record-assignment"
+                    value={work.info.assignmentDesc}
+                    aria-invalid={
+                      showProblem && !work.info.assignmentDesc.trim() ? true : undefined
+                    }
+                    onChange={(e) => patchInfo({ assignmentDesc: e.target.value })}
+                    placeholder="학생들이 한 과제나 활동을 설명해 주세요."
                   />
                 </label>
-              )}
-              <label className="sf-field sr-span-2">
-                <span>단원 (선택)</span>
-                <input
-                  value={work.info.unitName}
-                  onChange={(e) => patchInfo({ unitName: e.target.value })}
-                  placeholder="예: 문학의 이해"
-                />
-              </label>
-            </div>
-            <label className="sf-field">
-              <span>과제 설명</span>
-              <textarea
-                rows={3}
-                data-testid="record-assignment"
-                value={work.info.assignmentDesc}
-                aria-invalid={showProblem && !work.info.assignmentDesc.trim() ? true : undefined}
-                onChange={(e) => patchInfo({ assignmentDesc: e.target.value })}
-                placeholder="학생들이 한 과제나 활동을 설명해 주세요."
-              />
-            </label>
-            <label className="sf-field">
-              <span>관련 성취기준</span>
-              <textarea
-                rows={2}
-                data-testid="record-standard"
-                value={work.info.achievementStandard}
-                aria-invalid={
-                  showProblem && !work.info.achievementStandard.trim() ? true : undefined
-                }
-                onChange={(e) => patchInfo({ achievementStandard: e.target.value })}
-                placeholder="예: [10국01-01] 읽기의 즐거움과 중요성을 깨닫고 읽기를 생활화하는 태도를 지닌다."
-              />
-            </label>
-            {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
-          </section>
-        )}
-
-        <section className="sf-box" aria-labelledby="sr-students-title">
-          <div className="sf-box-head">
-            <div>
-              <h2 id="sr-students-title">학생</h2>
-              <p className="sf-box-sub">
-                {mode === 'subject'
-                  ? '학생마다 성취 수준을 고르고, 눈에 띈 점이 있으면 적어 주세요.'
-                  : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
-              </p>
-            </div>
-            <button type="button" className="sf-text-btn" onClick={clearStudents}>
-              학생 목록 비우기
-            </button>
-          </div>
-
-          <div className="sr-toolbar">
-            <label className="sr-count">
-              <span>학생 수</span>
-              <input
-                inputMode="numeric"
-                data-testid="record-count"
-                aria-label="학생 수"
-                value={countText ?? String(work.students.length)}
-                onChange={(e) => setCountText(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                onBlur={(e) => setCount(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.currentTarget.blur()
-                }}
-              />
-              <span>명</span>
-            </label>
-            <button
-              type="button"
-              className="sf-secondary sf-sm"
-              data-testid="record-roster"
-              disabled={readingRoster}
-              onClick={() => void loadRoster()}
-            >
-              {readingRoster && <span className="sf-spinner" aria-hidden="true" />}
-              명렬표 불러오기
-            </button>
-            <button
-              type="button"
-              className="sf-secondary sf-sm"
-              data-testid="record-load"
-              onClick={() => setLoadOpen(true)}
-            >
-              내용 불러오기
-            </button>
-            <span className="sr-toolbar-gap" />
-            <button
-              type="button"
-              className="sf-secondary sf-sm"
-              data-testid="record-download"
-              onClick={downloadCsv}
-            >
-              CSV 저장
-            </button>
-            <button
-              type="button"
-              className="sf-secondary sf-sm"
-              data-testid="record-send"
-              disabled={sending || anyBusy}
-              onClick={() => void sendToNeis()}
-            >
-              {sending && <span className="sf-spinner" aria-hidden="true" />}
-              나이스로 보내기
-            </button>
-            {running[mode] ? (
-              <button
-                type="button"
-                className="sf-secondary sf-sm sf-danger"
-                data-testid="record-stop"
-                onClick={() => {
-                  stop.current[mode] = true
-                }}
-              >
-                <span className="sf-spinner" aria-hidden="true" />
-                멈추기 ({modeBusy.length}명 남음)
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="sf-primary sf-sm"
-                data-testid="record-generate-all"
-                disabled={anyBusy}
-                onClick={() => void generate(mode, wholeTargets, true)}
-              >
-                {wholeLabel}
-              </button>
+                <label className="sf-field">
+                  <span>관련 성취기준</span>
+                  <textarea
+                    rows={2}
+                    data-testid="record-standard"
+                    value={work.info.achievementStandard}
+                    aria-invalid={
+                      showProblem && !work.info.achievementStandard.trim() ? true : undefined
+                    }
+                    onChange={(e) => patchInfo({ achievementStandard: e.target.value })}
+                    placeholder="예: [10국01-01] 읽기의 즐거움과 중요성을 깨닫고 읽기를 생활화하는 태도를 지닌다."
+                  />
+                </label>
+                {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
+              </section>
             )}
-          </div>
 
-          {sendNote && sendNote.mode === mode && (
-            <div
-              className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
-              role="status"
-              data-testid="record-send-note"
-            >
-              <p>{sendNote.text}</p>
-              <p className="sr-send-sub">
-                나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요. 글을 고쳤다면 다시 보내
-                주세요.
-              </p>
-              <div className="sf-btn-row">
+            <section className="sf-box" aria-labelledby="sr-students-title">
+              <div className="sf-box-head">
+                <div>
+                  <h2 id="sr-students-title">학생</h2>
+                  <p className="sf-box-sub">
+                    {mode === 'subject'
+                      ? '학생마다 성취 수준을 고르고, 눈에 띈 점이 있으면 적어 주세요.'
+                      : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
+                  </p>
+                </div>
+                <button type="button" className="sf-text-btn" onClick={clearStudents}>
+                  학생 목록 비우기
+                </button>
+              </div>
+
+              <div className="sr-toolbar">
+                <label className="sr-count">
+                  <span>학생 수</span>
+                  <input
+                    inputMode="numeric"
+                    data-testid="record-count"
+                    aria-label="학생 수"
+                    value={countText ?? String(work.students.length)}
+                    onChange={(e) => setCountText(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    onBlur={(e) => setCount(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.currentTarget.blur()
+                    }}
+                  />
+                  <span>명</span>
+                </label>
                 <button
                   type="button"
                   className="sf-secondary sf-sm"
-                  onClick={() =>
-                    void copyText(sendNote.pkgText).then(() =>
-                      say(
-                        '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
-                      ),
-                    )
-                  }
+                  data-testid="record-roster"
+                  disabled={readingRoster}
+                  onClick={() => void loadRoster()}
                 >
-                  클립보드로 복사
+                  {readingRoster && <span className="sf-spinner" aria-hidden="true" />}
+                  명렬표 불러오기
                 </button>
-                <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
-                  닫기
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  data-testid="record-load"
+                  onClick={() => setLoadOpen(true)}
+                >
+                  내용 불러오기
                 </button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'subject' && (
-            <div className="sr-bulk">
-              <span>성취 수준 한꺼번에 맞추기</span>
-              <div className="sr-segs is-small" role="group" aria-label="성취 수준 한꺼번에 맞추기">
-                {LEVELS.map((level) => (
+                <span className="sr-toolbar-gap" />
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  data-testid="record-download"
+                  onClick={downloadCsv}
+                >
+                  CSV 저장
+                </button>
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  data-testid="record-send"
+                  disabled={sending || anyBusy}
+                  onClick={() => void sendToNeis()}
+                >
+                  {sending && <span className="sf-spinner" aria-hidden="true" />}
+                  나이스로 보내기
+                </button>
+                {running[mode] ? (
                   <button
-                    key={level}
                     type="button"
-                    className="sr-seg"
-                    onClick={() => setAllLevels(level)}
+                    className="sf-secondary sf-sm sf-danger"
+                    data-testid="record-stop"
+                    onClick={() => {
+                      stop.current[mode] = true
+                    }}
                   >
-                    {level}
+                    <span className="sf-spinner" aria-hidden="true" />
+                    멈추기 ({modeBusy.length}명 남음)
                   </button>
-                ))}
+                ) : (
+                  <button
+                    type="button"
+                    className="sf-primary sf-sm"
+                    data-testid="record-generate-all"
+                    disabled={anyBusy}
+                    onClick={() => void generate(mode, wholeTargets, true)}
+                  >
+                    {wholeLabel}
+                  </button>
+                )}
               </div>
-            </div>
-          )}
 
-          <ol className="sr-students">
-            {work.students.map((s, i) => {
-              const writing = modeBusy.includes(s.id)
-              const bytes = neisBytes(s.result)
-              return (
-                <li key={s.id} className="sr-student" data-testid="record-student">
-                  <div className="sr-student-head">
-                    <span className="sr-no" aria-hidden="true">
-                      {i + 1}
-                    </span>
-                    <input
-                      className="sr-name"
-                      data-testid="record-name"
-                      aria-label={i + 1 + '번 학생 이름'}
-                      value={s.name}
-                      onChange={(e) => patchStudent(mode, s.id, { name: e.target.value })}
-                      placeholder="이름 (선택)"
-                    />
-                    {mode === 'subject' && (
-                      <Segs
-                        label={i + 1 + '번 학생 성취 수준'}
-                        options={LEVEL_OPTIONS}
-                        value={s.level}
-                        onPick={(level) => patchStudent(mode, s.id, { level })}
-                        small
-                      />
-                    )}
-                    <span className="sr-toolbar-gap" />
+              {sendNote && sendNote.mode === mode && (
+                <div
+                  className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
+                  role="status"
+                  data-testid="record-send-note"
+                >
+                  <p>{sendNote.text}</p>
+                  <p className="sr-send-sub">
+                    나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요. 글을 고쳤다면 다시
+                    보내 주세요.
+                  </p>
+                  <div className="sf-btn-row">
                     <button
                       type="button"
                       className="sf-secondary sf-sm"
-                      disabled={!s.result.trim()}
                       onClick={() =>
-                        void copyText(s.result.trim()).then(() =>
+                        void copyText(sendNote.pkgText).then(() =>
                           say(
-                            (s.name.trim() || i + 1 + '번 학생') +
-                              '의 ' +
-                              resultName +
-                              '을 복사했어요.',
+                            '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
                           ),
                         )
                       }
                     >
-                      복사
+                      클립보드로 복사
                     </button>
-                    <button
-                      type="button"
-                      className="sf-primary sf-sm"
-                      data-testid="record-generate-one"
-                      disabled={writing}
-                      onClick={() => generateOne(s)}
-                    >
-                      {writing ? (
-                        <>
-                          <span className="sf-spinner" aria-hidden="true" />
-                          쓰는 중…
-                        </>
-                      ) : s.result.trim() ? (
-                        '다시 생성'
-                      ) : (
-                        '생성'
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="sf-icon-btn"
-                      aria-label={i + 1 + '번 학생 지우기'}
-                      disabled={writing}
-                      onClick={() => removeStudent(s.id)}
-                    >
-                      ×
+                    <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
+                      닫기
                     </button>
                   </div>
-                  <label className="sf-field">
-                    <span>{NOTES_LABEL[mode]}</span>
-                    <textarea
-                      rows={2}
-                      data-testid="record-notes"
-                      value={s.notes}
-                      onChange={(e) => patchStudent(mode, s.id, { notes: e.target.value })}
-                      placeholder={NOTES_HINT[mode]}
-                    />
-                  </label>
-                  <label className="sf-field">
-                    <span className="sr-result-label">
-                      {resultName}
-                      <em
-                        className={'sr-bytes' + (bytes > NEIS_BYTE_LIMIT ? ' is-over' : '')}
-                        data-testid="record-bytes"
+                </div>
+              )}
+
+              {mode === 'subject' && (
+                <div className="sr-bulk">
+                  <span>성취 수준 한꺼번에 맞추기</span>
+                  <div
+                    className="sr-segs is-small"
+                    role="group"
+                    aria-label="성취 수준 한꺼번에 맞추기"
+                  >
+                    {LEVELS.map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        className="sr-seg"
+                        onClick={() => setAllLevels(level)}
                       >
-                        {bytes.toLocaleString('ko-KR')} / {NEIS_BYTE_LIMIT.toLocaleString('ko-KR')}{' '}
-                        바이트
-                      </em>
-                    </span>
-                    <textarea
-                      rows={4}
-                      className={'sr-result' + (writing ? ' is-writing' : '')}
-                      data-testid="record-result"
-                      value={s.result}
-                      readOnly={writing}
-                      onChange={(e) => patchStudent(mode, s.id, { result: e.target.value })}
-                      placeholder={
-                        writing
-                          ? 'AI가 ' + resultName + '을 쓰고 있어요…'
-                          : 'AI가 쓴 ' + resultName + '이 여기에 나와요. 직접 고칠 수 있어요.'
-                      }
-                    />
-                  </label>
-                </li>
-              )
-            })}
-          </ol>
-          <button
-            type="button"
-            className="sf-ghost"
-            data-testid="record-add"
-            disabled={work.students.length >= MAX_STUDENTS}
-            onClick={() => patch(mode, (w) => ({ ...w, students: [...w.students, newStudent()] }))}
-          >
-            + 학생 추가
-          </button>
-        </section>
-      </div>
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ol className="sr-students">
+                {work.students.map((s, i) => {
+                  const writing = modeBusy.includes(s.id)
+                  const bytes = neisBytes(s.result)
+                  return (
+                    <li key={s.id} className="sr-student" data-testid="record-student">
+                      <div className="sr-student-head">
+                        <span className="sr-no" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <input
+                          className="sr-name"
+                          data-testid="record-name"
+                          aria-label={i + 1 + '번 학생 이름'}
+                          value={s.name}
+                          onChange={(e) => patchStudent(mode, s.id, { name: e.target.value })}
+                          placeholder="이름 (선택)"
+                        />
+                        {mode === 'subject' && (
+                          <Segs
+                            label={i + 1 + '번 학생 성취 수준'}
+                            options={LEVEL_OPTIONS}
+                            value={s.level}
+                            onPick={(level) => patchStudent(mode, s.id, { level })}
+                            small
+                          />
+                        )}
+                        <span className="sr-toolbar-gap" />
+                        <button
+                          type="button"
+                          className="sf-secondary sf-sm"
+                          disabled={!s.result.trim()}
+                          onClick={() =>
+                            void copyText(s.result.trim()).then(() =>
+                              say(
+                                (s.name.trim() || i + 1 + '번 학생') +
+                                  '의 ' +
+                                  resultName +
+                                  '을 복사했어요.',
+                              ),
+                            )
+                          }
+                        >
+                          복사
+                        </button>
+                        <button
+                          type="button"
+                          className="sf-primary sf-sm"
+                          data-testid="record-generate-one"
+                          disabled={writing}
+                          onClick={() => generateOne(s)}
+                        >
+                          {writing ? (
+                            <>
+                              <span className="sf-spinner" aria-hidden="true" />
+                              쓰는 중…
+                            </>
+                          ) : s.result.trim() ? (
+                            '다시 생성'
+                          ) : (
+                            '생성'
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="sf-icon-btn"
+                          aria-label={i + 1 + '번 학생 지우기'}
+                          disabled={writing}
+                          onClick={() => removeStudent(s.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <label className="sf-field">
+                        <span>{NOTES_LABEL[mode]}</span>
+                        <textarea
+                          rows={2}
+                          data-testid="record-notes"
+                          value={s.notes}
+                          onChange={(e) => patchStudent(mode, s.id, { notes: e.target.value })}
+                          placeholder={NOTES_HINT[mode]}
+                        />
+                      </label>
+                      <label className="sf-field">
+                        <span className="sr-result-label">
+                          {resultName}
+                          <em
+                            className={'sr-bytes' + (bytes > NEIS_BYTE_LIMIT ? ' is-over' : '')}
+                            data-testid="record-bytes"
+                          >
+                            {bytes.toLocaleString('ko-KR')} /{' '}
+                            {NEIS_BYTE_LIMIT.toLocaleString('ko-KR')} 바이트
+                          </em>
+                        </span>
+                        <textarea
+                          rows={4}
+                          className={'sr-result' + (writing ? ' is-writing' : '')}
+                          data-testid="record-result"
+                          value={s.result}
+                          readOnly={writing}
+                          onChange={(e) => patchStudent(mode, s.id, { result: e.target.value })}
+                          placeholder={
+                            writing
+                              ? 'AI가 ' + resultName + '을 쓰고 있어요…'
+                              : 'AI가 쓴 ' + resultName + '이 여기에 나와요. 직접 고칠 수 있어요.'
+                          }
+                        />
+                      </label>
+                    </li>
+                  )
+                })}
+              </ol>
+              <button
+                type="button"
+                className="sf-ghost"
+                data-testid="record-add"
+                disabled={work.students.length >= MAX_STUDENTS}
+                onClick={() =>
+                  patch(mode, (w) => ({ ...w, students: [...w.students, newStudent()] }))
+                }
+              >
+                + 학생 추가
+              </button>
+            </section>
+          </div>
+        </>
+      )}
 
       <input
         ref={csvRef}

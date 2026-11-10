@@ -2,7 +2,7 @@
    --sf tokens, so the page follows the home's light and dark themes. */
 .sr-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -129,6 +129,90 @@
 .sr-send-sub {
   font-size: 12.5px;
   color: var(--sf-ink-2);
+}
+
+/* 유사도 검사 */
+.sr-sim-hint {
+  margin-top: 10px;
+}
+.sr-sim-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sr-sim-pair {
+  border: 1px solid var(--sf-line);
+  border-radius: 10px;
+  background: var(--sf-card);
+}
+.sr-sim-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: var(--sf-ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.sr-sim-percent {
+  flex: 0 0 52px;
+  padding: 3px 0;
+  border-radius: 7px;
+  background: var(--sf-soft);
+  font-size: 13px;
+  font-weight: 750;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.sr-sim-percent.is-mid {
+  background: rgb(234 110 24 / 14%);
+  color: #c2500a;
+}
+.sr-sim-percent.is-high {
+  background: rgb(217 45 58 / 13%);
+  color: var(--sf-danger);
+}
+.sr-sim-names {
+  flex: 1;
+  min-width: 0;
+  font-weight: 650;
+}
+.sr-sim-more {
+  font-size: 12.5px;
+  color: var(--sf-ink-3);
+}
+.sr-sim-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 2px 12px 12px;
+}
+.sr-sim-body b {
+  font-size: 13px;
+}
+.sr-sim-text {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--sf-ink-2);
+}
+.sr-sim-text mark {
+  border-radius: 3px;
+  background: rgb(250 204 21 / 42%);
+  color: var(--sf-ink);
+}
+@media (max-width: 720px) {
+  .sr-sim-body {
+    grid-template-columns: 1fr;
+  }
 }
 .sr-count {
   display: inline-flex;
