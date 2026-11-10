@@ -4,6 +4,10 @@
 
 <!-- GITHUB-RELEASES:START -->
 
+### [v0.16.8](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.8) · 2026-11-09
+
+똑딱작업실 0.16.8은 설치본에 들어 있는 내장 AI를 3차 '똑딱AI' 모델로 바꾼 업데이트입니다. Apple Silicon Mac과 Windows(64비트) 설치본에 적용되며, 웹 체험판과 Intel Mac 설치본은 바뀌지 않습니다.
+
 ### [v0.16.7](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.7) · 2026-11-09
 
 똑딱작업실 0.16.7은 문서 변환에서 어떤 문서든 모든 형식으로 바꿀 수 있게 한 업데이트입니다. 한 번에 바꿀 엔진이 없으면 PDF나 워드를 거쳐 갑니다. 예를 들어 한글 → PDF → PowerPoint, 엑셀 → PDF → 워드 → 한글처럼 바꿉니다.
