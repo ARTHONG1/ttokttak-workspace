@@ -1,0 +1,300 @@
+/* 똑딱업무 > 생기부 (record/SchoolRecord.tsx). Colours come from special-features.css's
+   --sf tokens, so the page follows the home's light and dark themes. */
+.sr-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sr-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 16px;
+  border: 1px solid var(--sf-line);
+  border-radius: 12px;
+  background: var(--sf-card);
+  color: var(--sf-ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+.sr-tab b {
+  font-size: 15.5px;
+  font-weight: 750;
+  color: var(--sf-ink);
+}
+.sr-tab small {
+  font-size: 12.5px;
+  color: var(--sf-ink-3);
+}
+.sr-tab:hover {
+  border-color: var(--sf-line-2);
+}
+.sr-tab.is-on {
+  border-color: var(--sf-accent);
+  background: var(--sf-accent-soft);
+}
+.sr-tab.is-on b {
+  color: var(--sf-accent);
+}
+.sr-tab.is-on small {
+  color: var(--sf-ink-2);
+}
+.sr-note {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--sf-soft);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--sf-ink-2);
+}
+
+.sr-segs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--sf-soft);
+  width: fit-content;
+  max-width: 100%;
+}
+.sr-seg {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--sf-ink-2);
+  cursor: pointer;
+}
+.sr-segs.is-small .sr-seg {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.sr-seg:hover {
+  color: var(--sf-ink);
+}
+.sr-seg.is-on {
+  background: var(--sf-card);
+  color: var(--sf-accent);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 12%);
+}
+
+.sr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.sr-grid .sf-field {
+  margin: 0;
+}
+.sr-grid .sr-span-2 {
+  grid-column: span 2;
+}
+/* quiz-generator.css styles every .sf select; here it lines up with the inputs beside it */
+.sf .sr-page select {
+  width: 100%;
+  height: 42px;
+}
+.sf .sr-page select:focus {
+  outline: none;
+  border-color: var(--sf-accent);
+  box-shadow: 0 0 0 3px var(--sf-accent-soft);
+}
+.sr-problem {
+  display: block;
+  margin-top: 10px;
+}
+
+.sr-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sr-toolbar-gap {
+  flex: 1;
+}
+.sr-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--sf-ink-2);
+}
+.sr-count input {
+  width: 52px;
+  height: 32px;
+  padding: 0 8px;
+  text-align: center;
+}
+.sr-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--sf-ink-3);
+}
+
+.sr-students {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.sr-student {
+  padding: 12px 14px 14px;
+  border: 1px solid var(--sf-line);
+  border-radius: 12px;
+  background: var(--sf-card);
+}
+.sr-student-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sr-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--sf-accent-soft);
+  font-size: 12.5px;
+  font-weight: 750;
+  color: var(--sf-accent);
+  font-variant-numeric: tabular-nums;
+}
+.sr-student-head .sr-name {
+  width: 132px;
+  height: 34px;
+  padding: 0 10px;
+}
+.sr-student .sf-field {
+  margin-top: 10px;
+}
+.sr-result-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sr-bytes {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--sf-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.sr-bytes.is-over {
+  color: var(--sf-danger);
+}
+.sr-result.is-writing {
+  opacity: 0.6;
+}
+
+.sr-modal-body {
+  padding: 4px 20px 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--sf-ink-2);
+}
+.sr-modal-body p {
+  margin: 0 0 10px;
+}
+.sr-modal-body b {
+  color: var(--sf-ink);
+}
+.sr-modal-warn {
+  font-size: 13px;
+  color: var(--sf-ink-3);
+}
+.sr-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.sr-empty {
+  padding: 18px 0 6px;
+  text-align: center;
+  color: var(--sf-ink-3);
+}
+.sr-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+.sr-sessions li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sf-line);
+  border-radius: 10px;
+}
+.sr-session-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.sr-session-text b {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sr-session-text small {
+  font-size: 12px;
+  color: var(--sf-ink-3);
+}
+
+/* the card on the 똑딱업무 list */
+.sf-work-card-record {
+  --sf-visual-accent: #e2620e;
+  --sf-visual-soft: rgb(234 110 24 / 12%);
+}
+.sf-work-card-record .sf-work-paper {
+  transform: rotate(3deg) translateY(-2px);
+}
+.sf-work-card-record .sf-work-paper-stamp {
+  right: -46px;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .sr-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sr-toolbar-gap {
+    flex-basis: 100%;
+    height: 0;
+  }
+}

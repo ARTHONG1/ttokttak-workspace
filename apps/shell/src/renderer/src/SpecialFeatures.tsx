@@ -18,6 +18,7 @@ import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import { TtokSign } from './sign/TtokSign'
 import { SignVideoPreview } from './sign/sign-video'
 import { ConvertIcon, TtokConvert } from './convert/TtokConvert'
+import { RecordIcon, SchoolRecord } from './record/SchoolRecord'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -32,7 +33,7 @@ import './quiz-generator.css'
  * always the table's total.
  */
 
-type FeatureId = 'proposal' | 'quiz' | 'sign' | 'convert'
+type FeatureId = 'proposal' | 'quiz' | 'sign' | 'convert' | 'record'
 
 interface Feature {
   id: FeatureId
@@ -67,6 +68,13 @@ export const FEATURES: Feature[] = [
     summary: '어떤 문서든 올리면 바꿀 수 있는 형식을 보여 주고, 고른 형식으로 바꿔 내려받아요.',
     tags: ['한글·워드·PDF·PPT', '카드로 고르기', '변환 과정 보기'],
   },
+  {
+    id: 'record',
+    title: '생기부',
+    summary:
+      '과제와 성취 수준, 관찰 기록을 넣으면 AI가 나이스에 넣을 교과 세특과 행발 초안을 써요.',
+    tags: ['교과 세특', '행발', '나이스 바이트 수', '명렬표·CSV'],
+  },
 ]
 
 /** the picture side of a card that has no video: a tilted paper with the tool's stamp */
@@ -77,6 +85,11 @@ const CARD_VISUAL: Record<
   proposal: { kicker: '문서 작성', stamp: 'AI', caption: '장바구니에서 기안문까지' },
   quiz: { kicker: '학습 자료', stamp: 'Q & A', caption: '자료 하나로 다채로운 퀴즈' },
   convert: { kicker: '형식 바꾸기', stamp: 'HWP→PDF', caption: '올리고, 고르고, 내려받기' },
+  record: {
+    kicker: '학교생활기록부',
+    stamp: '세특·행발',
+    caption: '관찰 기록에서 나이스 문장까지',
+  },
 }
 
 /** one row of the 품의 목록; the field names are the original's estimateData */
@@ -275,6 +288,8 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
                     <QuizIcon />
                   ) : f.id === 'convert' ? (
                     <ConvertIcon />
+                  ) : f.id === 'record' ? (
+                    <RecordIcon />
                   ) : (
                     <ProposalIcon />
                   )}
@@ -803,6 +818,8 @@ export function SpecialFeatures({
         <TtokSign onBack={() => setOpen(null)} />
       ) : open === 'convert' ? (
         <TtokConvert onBack={() => setOpen(null)} />
+      ) : open === 'record' ? (
+        <SchoolRecord onBack={() => setOpen(null)} />
       ) : (
         <FeatureList onOpen={setOpen} />
       )}
