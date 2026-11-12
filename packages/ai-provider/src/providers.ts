@@ -28,10 +28,23 @@ export function opencodeSessionHeaders(
 /** DeepSeek V4.1 Flash under its versioned display spelling; the adapter maps it to the vendor's wire id */
 export const DEEPSEEK_V41_FLASH = 'deep-seek-v4.1-flash'
 
+/**
+ * Names shown for model ids that are not the user's to read. The built-in model keeps
+ * its id (the llama.cpp alias and ai-settings.json use it); people see 똑딱AI.
+ */
+export const AI_MODEL_DISPLAY_NAMES: Readonly<Record<string, string>> = {
+  'qwen3.5-2b-local': '똑딱AI',
+}
+
+/** what a model id is called on screen: its display name, or the id itself */
+export function aiModelDisplayName(model: string): string {
+  return AI_MODEL_DISPLAY_NAMES[model] ?? model
+}
+
 export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'local',
-    label: '내장 AI (오프라인)',
+    label: '똑딱AI (내장·오프라인)',
     models: ['qwen3.5-2b-local'],
     defaultModel: 'qwen3.5-2b-local',
     keyPlaceholder: '',

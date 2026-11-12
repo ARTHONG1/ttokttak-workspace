@@ -105,10 +105,12 @@ export type {
 export { AiRunError, aiStreamErrorFields } from './run-error'
 export {
   AI_PROVIDERS,
+  AI_MODEL_DISPLAY_NAMES,
   DEFAULT_MAX_OUTPUT_TOKENS,
   HEADLESS_SUBSCRIPTION_CONSENT_VERSION,
   MAX_MAX_OUTPUT_TOKENS,
   MIN_MAX_OUTPUT_TOKENS,
+  aiModelDisplayName,
   clampMaxOutputTokens,
   defaultAiSettings,
   headlessSubscriptionOn,

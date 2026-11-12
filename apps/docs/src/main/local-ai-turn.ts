@@ -134,7 +134,7 @@ export function prepareLocalAiTurn(
       system: '',
       messages: [],
       tools: [],
-      error: '내장 AI 요청에 사용자 메시지가 없습니다.',
+      error: '똑딱AI 요청에 사용자 메시지가 없습니다.',
     }
   }
   if (lastUser.images?.length) {
@@ -142,7 +142,7 @@ export function prepareLocalAiTurn(
       system: '',
       messages: [],
       tools: [],
-      error: '내장 AI 모델은 첨부 이미지 분석을 지원하지 않습니다.',
+      error: '똑딱AI는 첨부 이미지 분석을 지원하지 않습니다.',
     }
   }
   if (tools.length === 0) {
@@ -157,7 +157,7 @@ export function prepareLocalAiTurn(
         system: '',
         messages: [],
         tools: [],
-        error: '요청이 내장 AI의 입력 한도를 초과했습니다. 지시사항이나 입력 내용을 줄여 주세요.',
+        error: '요청이 똑딱AI의 입력 한도를 초과했습니다. 지시사항이나 입력 내용을 줄여 주세요.',
       }
     }
     return { system, messages: [{ role: 'user', text: lastUser.text }], tools: [] }
@@ -189,7 +189,7 @@ export function prepareLocalAiTurn(
       system: '',
       messages: [],
       tools: [],
-      error: '요청이 내장 AI의 입력 한도를 초과했습니다. 작업을 나누어 요청해 주세요.',
+      error: '요청이 똑딱AI의 입력 한도를 초과했습니다. 작업을 나누어 요청해 주세요.',
     }
   }
   const localTools = selectTools(tools, instruction)

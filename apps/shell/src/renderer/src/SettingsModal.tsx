@@ -29,6 +29,7 @@ import {
   MAX_MAX_OUTPUT_TOKENS,
   MIN_MAX_OUTPUT_TOKENS,
   activeCustomEndpoint,
+  aiModelDisplayName,
   clampMaxOutputTokens,
   customEndpointLabel,
   newCustomEndpointId,
@@ -742,7 +743,7 @@ function AiModelPane({ t }: { t: TFunc }) {
             className="set-dd"
             value={config.model || meta.defaultModel}
             ariaLabel={t('setAiModelId')}
-            options={meta.models.map((m) => ({ value: m, label: m }))}
+            options={meta.models.map((m) => ({ value: m, label: aiModelDisplayName(m) }))}
             onPick={(m) => updateConfig({ model: m })}
           />
         ) : (

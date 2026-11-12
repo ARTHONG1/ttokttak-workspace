@@ -53,7 +53,9 @@ async function start(): Promise<LocalAiEndpoint> {
   if (shuttingDown) throw new Error('The local AI runtime is shutting down')
   const files = localAiFiles()
   if (!files)
-    throw new Error('내장 AI 파일을 찾지 못했습니다. 앱에 로컬 모델과 실행 파일을 포함해야 합니다.')
+    throw new Error(
+      '똑딱AI(내장 AI) 파일을 찾지 못했습니다. 앱에 로컬 모델과 실행 파일을 포함해야 합니다.',
+    )
   const port = await availablePort()
   const apiKey = randomBytes(32).toString('hex')
   const endpoint = { baseUrl: `http://127.0.0.1:${port}/v1`, apiKey, model: LOCAL_AI_MODEL }
@@ -110,7 +112,7 @@ async function start(): Promise<LocalAiEndpoint> {
       if (error) throw error
       if (child.exitCode !== null || child.signalCode !== null) {
         throw new Error(
-          `내장 AI 실행 파일이 종료되었습니다 (${child.exitCode ?? child.signalCode}).`,
+          `똑딱AI 실행 파일이 종료되었습니다 (${child.exitCode ?? child.signalCode}).`,
         )
       }
       try {
@@ -131,7 +133,7 @@ async function start(): Promise<LocalAiEndpoint> {
       }
       await new Promise((resolve) => setTimeout(resolve, 400))
     }
-    throw new Error('내장 AI가 90초 안에 시작되지 않았습니다. 모델과 메모리를 확인해 주세요.')
+    throw new Error('똑딱AI가 90초 안에 시작되지 않았습니다. 모델과 메모리를 확인해 주세요.')
   } finally {
     startingChild = null
     if (current?.process !== child) child.kill()

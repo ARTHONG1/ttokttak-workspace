@@ -332,8 +332,8 @@ export function AiSection({
           {localSelected && !web && (
             <div className="set-field-desc set-ai-note" data-testid="offline-ai-info" role="status">
               {lang === 'ko'
-                ? '내장 AI가 이 컴퓨터에서 실행됩니다. 로그인·API 키·인터넷 연결 없이 문서 편집에 사용할 수 있습니다.'
-                : 'Built-in AI runs on this computer. Edit documents without an account, API key, or internet connection.'}
+                ? '똑딱AI는 이 컴퓨터 안에서 실행되는 내장 AI입니다. 로그인·API 키·인터넷 연결 없이 문서 편집과 똑딱업무에 사용할 수 있습니다.'
+                : 'TtokTtak AI is the built-in AI that runs on this computer. Use it for documents and 똑딱업무 without an account, API key, or internet connection.'}
             </div>
           )}
           {blocked && (

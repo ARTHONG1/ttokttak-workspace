@@ -4176,7 +4176,7 @@ export function registerAiIpc(): void {
           call ??= localFieldTripDraftFallback(documentDraft.instruction)
           if (!call)
             throw new Error(
-              '내장 AI가 문서 본문으로 넣을 완성된 글을 생성하지 못했습니다. 요청을 짧게 나누어 다시 시도해 주세요.',
+              '똑딱AI가 문서 본문으로 넣을 완성된 글을 생성하지 못했습니다. 요청을 짧게 나누어 다시 시도해 주세요.',
             )
           out.push({ requestId, type: 'tool-call', toolCall: call })
           out.push({ requestId, type: 'done' })

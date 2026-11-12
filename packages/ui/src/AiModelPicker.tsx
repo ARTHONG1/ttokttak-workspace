@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '@genoffice/i18n'
-import type { AiSettings, AiSubscriptionStatuses } from '@genoffice/ai-provider/browser'
+import {
+  aiModelDisplayName,
+  type AiSettings,
+  type AiSubscriptionStatuses,
+} from '@genoffice/ai-provider/browser'
 import {
   aiProviderPickerGroups,
   aiProviderPickerSelection,
@@ -310,7 +314,7 @@ export function AiModelPicker({
         : aiSubscriptionText(lang, 'pickerAutoUsing', { provider: currentGroup.label })
       : modelName && currentGroup
         ? `${currentGroup.label} · ${modelName}`
-        : current.model || (currentGroup?.label ?? '')
+        : (current.model && aiModelDisplayName(current.model)) || (currentGroup?.label ?? '')
   // The composer footer is narrow: under automatic the chip names the model and leaves the
   // provider to the tooltip and the list, so the model is not the part that gets cut off.
   const chipText =
@@ -431,7 +435,7 @@ export function AiModelPicker({
                                     model: detail.name,
                                   })
                                 : aiSubscriptionText(lang, 'pickerDefaultModel')
-                            : m || g.label}
+                            : (m && aiModelDisplayName(m)) || g.label}
                         {detail?.concrete && (
                           <>
                             {' '}
