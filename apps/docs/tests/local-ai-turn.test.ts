@@ -30,6 +30,19 @@ const tools: AgentToolDef[] = [
 const user = (text: string): AgentMessage[] => [{ role: 'user', text }]
 
 describe('small offline model context', () => {
+  it('keeps the caller instructions of a plain writing request (똑딱업무)', () => {
+    const system = '나이스 입력용 행동특성 및 종합의견을 한 문단, 개조식 종결 어미로 쓰십시오.'
+    const request =
+      '[생성 정보]\n- 학생 관찰 및 특성 기록: 모둠 실험에서 기록을 맡아 꼼꼼히 정리함.'
+    const turn = prepareLocalAiTurn(system, user(request), [])
+    expect(turn.error).toBeUndefined()
+    expect(turn.system).toBe(system)
+    expect(turn.messages).toEqual(user(request))
+    expect(turn.tools).toEqual([])
+    const tooLong = prepareLocalAiTurn(system, user('가'.repeat(2400)), [])
+    expect(tooLong.error).toContain('입력 한도')
+  })
+
   it('keeps the HWP document reader available for modifications and retains short follow-ups', () => {
     const docTools: AgentToolDef[] = [
       { name: 'replace_text', description: 'Edit text', inputSchema: { type: 'object' } },

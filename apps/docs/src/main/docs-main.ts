@@ -136,7 +136,7 @@ import {
   planLocalExactFormat,
   planLocalHwpContextualEdit,
 } from './local-ai-exact-edit'
-import { prepareLocalAiTurn } from './local-ai-turn'
+import { LOCAL_PLAIN_MAX_TOKENS, prepareLocalAiTurn } from './local-ai-turn'
 import {
   LOCAL_DRAFT_SYSTEM,
   LOCAL_DRAFT_RETRY_SYSTEM,
@@ -4200,10 +4200,14 @@ export function registerAiIpc(): void {
       return
     }
     // Small local models benefit from short edits; the hard cap also prevents
-    // unbounded generation on low-memory machines.
+    // unbounded generation on low-memory machines. A plain writing request (no
+    // tools, e.g. a 생기부 paragraph of up to 1,500 NEIS bytes) needs more room.
     const maxTokens =
       provider === 'local'
-        ? Math.min(request.maxTokens ?? maxOutputTokensOf(settings), 512)
+        ? Math.min(
+            request.maxTokens ?? maxOutputTokensOf(settings),
+            tools.length === 0 ? LOCAL_PLAIN_MAX_TOKENS : 512,
+          )
         : (request.maxTokens ?? maxOutputTokensOf(settings))
     const controller = new AbortController()
     activeAiStreams.set(requestId, controller)

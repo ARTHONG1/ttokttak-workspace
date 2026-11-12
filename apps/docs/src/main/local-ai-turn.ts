@@ -8,6 +8,13 @@ const MAX_INSTRUCTION_BYTES = 2400
 const MAX_DOCUMENT_BYTES = 4000
 const MAX_TOOL_BYTES = 4800
 const MAX_TOOL_COUNT = 4
+// A plain writing request (똑딱업무: 생기부, 퀴즈, 품의서) brings its own
+// instructions and no tools. The 4096-token context must also hold the answer
+// (up to LOCAL_PLAIN_MAX_TOKENS), so the instructions and request together stay
+// under about 2,300 tokens of Korean text.
+const MAX_PLAIN_BYTES = 7000
+/** the output cap of a plain writing request; editor turns keep their short cap */
+export const LOCAL_PLAIN_MAX_TOKENS = 1024
 
 type LocalTurn = {
   system: string
@@ -115,7 +122,7 @@ function selectTools(tools: AgentToolDef[], instruction: string): AgentToolDef[]
 }
 
 export function prepareLocalAiTurn(
-  _system: string,
+  system: string,
   messages: AgentMessage[],
   tools: AgentToolDef[],
 ): LocalTurn {
@@ -137,6 +144,23 @@ export function prepareLocalAiTurn(
       tools: [],
       error: '내장 AI 모델은 첨부 이미지 분석을 지원하지 않습니다.',
     }
+  }
+  if (tools.length === 0) {
+    // No editor is behind this request: the caller's own instructions (NEIS style,
+    // one paragraph, JSON shape…) are the whole task. Replacing them with the
+    // editor guide made 생기부 answers ramble about "the open document".
+    if (
+      Buffer.byteLength(system, 'utf8') + Buffer.byteLength(lastUser.text, 'utf8') >
+      MAX_PLAIN_BYTES
+    ) {
+      return {
+        system: '',
+        messages: [],
+        tools: [],
+        error: '요청이 내장 AI의 입력 한도를 초과했습니다. 지시사항이나 입력 내용을 줄여 주세요.',
+      }
+    }
+    return { system, messages: [{ role: 'user', text: lastUser.text }], tools: [] }
   }
   const editorContext = splitEditorContext(lastUser.text)
   const { document } = editorContext

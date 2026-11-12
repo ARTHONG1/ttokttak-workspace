@@ -127,6 +127,11 @@ describe('AI reply clean-up', () => {
       cleanReply('## 과학\n**탐구 과정**에 적극적으로 참여함.\n\n- 관찰 일지를 꼼꼼히 기록함.'),
     ).toBe('탐구 과정에 적극적으로 참여함. 관찰 일지를 꼼꼼히 기록함.')
     expect(cleanReply('"자기 생각을 분명히 말함."')).toBe('자기 생각을 분명히 말함.')
+    expect(
+      cleanReply(
+        '원하는 분량을 기준으로 작성한 행동특성 및 종합의견은 다음과 같습니다. 기록표를 꼼꼼히 정리함.\n---',
+      ),
+    ).toBe('기록표를 꼼꼼히 정리함.')
     expect(cleanReply('  \n ')).toBe('')
   })
 })

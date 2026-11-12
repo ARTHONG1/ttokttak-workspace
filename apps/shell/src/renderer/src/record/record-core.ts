@@ -248,7 +248,8 @@ export function cleanReply(reply: string): string {
     .replace(/```[a-z]*\n?/gi, '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
+    // headings and "---" rules
+    .filter((line) => line && !line.startsWith('#') && !/^[-=*_]{3,}$/.test(line))
     .map((line) =>
       line
         .replace(/^([-*•·]|\d+[.)])\s+/, '')
@@ -256,11 +257,19 @@ export function cleanReply(reply: string): string {
         .trim(),
     )
     .filter(Boolean)
-  return lines
-    .join(' ')
-    .replace(/^["'“‘「]+/, '')
-    .replace(/["'”’」]+$/, '')
-    .trim()
+  return (
+    lines
+      .join(' ')
+      // a lead-in about the answer itself ("…작성한 행동특성 및 종합의견은 다음과 같습니다.")
+      // is not part of the record; small models add one now and then
+      .replace(
+        /^[^.。]{0,120}(?:다음과 같습니다|다음과 같이 작성|작성했습니다|작성합니다)[.:]?\s*/,
+        '',
+      )
+      .replace(/^["'“‘「]+/, '')
+      .replace(/["'”’」]+$/, '')
+      .trim()
+  )
 }
 
 /* ------------------------------------------------------------------ files */
