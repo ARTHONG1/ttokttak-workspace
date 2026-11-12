@@ -39,10 +39,10 @@ if (!model.endsWith('.gguf') || statSync(model).size > 5_000_000_000) {
 const sha256 = createHash('sha256')
 for await (const block of createReadStream(model)) sha256.update(block)
 const hash = sha256.digest('hex')
-// The pinned built-in model: 똑딱AI third generation (0.16.8), the Qwen3.5-2B below with
-// a document-editing LoRA fused in. It replaces the first-generation file of 0.16.4
-// (7b856b1c…). A replacement needs a new provenance entry.
-const PINNED_SHA = '9507b15d6540db8762d9b528b6fe599732132cfbe84dbb2fff6beb55ca2c8b7e'
+// The pinned built-in model: 똑딱AI fourth generation (0.16.10), the Qwen3.5-2B below with
+// a document-editing and 생기부 LoRA fused in. It replaces the third-generation file of
+// 0.16.8 (9507b15d…). A replacement needs a new provenance entry.
+const PINNED_SHA = 'd9b028a51147e2656cf19fae3df98660ad82c1493d75c93c9aef526c7452dbc7'
 if (hash !== PINNED_SHA) throw new Error(`Unverified model checksum: ${hash}`)
 
 const output = join(root, 'apps/shell/build/local-ai')
@@ -69,10 +69,11 @@ writeFileSync(
     'GGUF conversion: https://huggingface.co/unsloth/Qwen3.5-2B-GGUF',
     'GGUF revision: f6d5376be1edb4d416d56da11e5397a961aca8ae',
     'Base Q4_K_M SHA256: aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223',
-    'Modified by 똑딱작업실 (똑딱AI, third generation): a document-editing LoRA on the',
-    'last two layers (rank 8, scale 20, MLX-LM), trained in three rounds, each continuing',
-    'the previous adapter; third adapter SHA256',
-    'efd35591041fbea4b71b188af21a8541ae700611993d261b8434e8a1ba10e51f.',
+    'Modified by 똑딱작업실 (똑딱AI, fourth generation): a document-editing LoRA on the',
+    'last two layers (rank 8, scale 20, MLX-LM), trained in rounds, each continuing the',
+    'previous adapter: three document-editing rounds, HWPX editing (1,600 steps) and',
+    'school-record writing on fictional cases (400 steps, 2,000 in all); adapter SHA256',
+    'de9913a2bb40f08b263831155f19927dc6a289e686a9e1103864a9114a22fa9a.',
     'The adapter was fused into the BF16 weights, the 61 RMSNorm weights MLX stores',
     'offset by one were restored to the Hugging Face form, and the model was quantized',
     "to Q4_K_M with the base file's type for every tensor (same names, shapes and types).",
