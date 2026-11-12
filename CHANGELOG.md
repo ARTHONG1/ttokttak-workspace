@@ -4,6 +4,10 @@
 
 <!-- GITHUB-RELEASES:START -->
 
+### [v0.16.10](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.10) · 2026-11-12
+
+똑딱작업실 0.16.10은 내장 AI를 4차 '똑딱AI'로 바꾸고, 똑딱업무에 생기부를 더한 업데이트입니다. 내장 AI는 Apple Silicon Mac과 Windows(64비트) 설치본에 들어 있습니다.
+
 ### [v0.16.8](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.8) · 2026-11-09
 
 똑딱작업실 0.16.8은 설치본에 들어 있는 내장 AI를 3차 '똑딱AI' 모델로 바꾼 업데이트입니다. Apple Silicon Mac과 Windows(64비트) 설치본에 적용되며, 웹 체험판과 Intel Mac 설치본은 바뀌지 않습니다.
