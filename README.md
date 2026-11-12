@@ -54,7 +54,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.10](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.10) · 2026-11-12** — 똑딱작업실 0.16.10은 내장 AI를 4차 '똑딱AI'로 바꾸고, 똑딱업무에 생기부를 더한 업데이트입니다. 내장 AI는 Apple Silicon Mac과 Windows(64비트) 설치본에 들어 있습니다.
+**[v0.16.11](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.11) · 2026-11-12** — 똑딱작업실 0.16.11은 똑딱업무에서도 문서 편집과 똑같이 연결된 AI를 고르게 하고, 내장 AI 이름을 '똑딱AI'로 바꾸며, 똑딱AI로 똑딱업무를 쓸 때 엉뚱한 글이 나오던 버그를 고친 업데이트입니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
