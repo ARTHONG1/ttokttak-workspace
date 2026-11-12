@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { isWebEdition } from '../edition'
-import { Back, Modal, ToastView, askAi, copyText, downloadBlob, useToast } from '../special-common'
+import {
+  Back,
+  Modal,
+  SpecialAiPicker,
+  ToastView,
+  askAi,
+  copyText,
+  downloadBlob,
+  useToast,
+} from '../special-common'
 import {
   BEHAVIOR_SYSTEM,
   CUSTOM_SUBJECT,
@@ -498,6 +507,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     <div className="sf-page sr-page">
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
+        <SpecialAiPicker />
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">

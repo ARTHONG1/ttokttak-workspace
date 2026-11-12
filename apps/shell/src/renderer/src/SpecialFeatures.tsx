@@ -8,6 +8,7 @@ import { pumuiPackageFromWork, sendPumui, workProblem } from './pumui-send'
 import {
   Back,
   SaveTools,
+  SpecialAiPicker,
   ToastView,
   askAi,
   copyText,
@@ -503,6 +504,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     <div className="sf-page">
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
+        <SpecialAiPicker />
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">

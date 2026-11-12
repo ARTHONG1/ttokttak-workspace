@@ -217,7 +217,19 @@ button.sf-card:hover .sf-card-go svg {
 .sf-page-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 6px;
+}
+/* the editors' AI chip, at the right of the bar: which AI writes here */
+.sf-ai-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sf-ai-picker-label {
+  font-size: 13px;
+  color: #6b7280;
 }
 .sf-back {
   display: inline-flex;

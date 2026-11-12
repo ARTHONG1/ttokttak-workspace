@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Back, Modal, SaveTools, ToastView, askAi, copyText, useToast } from './special-common'
+import {
+  Back,
+  Modal,
+  SaveTools,
+  SpecialAiPicker,
+  ToastView,
+  askAi,
+  copyText,
+  useToast,
+} from './special-common'
 import {
   DIFFICULTY_LABEL,
   LANGUAGES,
@@ -874,6 +883,7 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
     <div className="sf-page qz-page">
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
+        <SpecialAiPicker />
       </div>
       <header className="sf-page-head">
         <span className="sf-card-icon">

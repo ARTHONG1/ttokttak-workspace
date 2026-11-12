@@ -9,6 +9,7 @@ import { useSubscriptionConnection } from './subscription-client'
 import { DesktopWelcome } from './DesktopWelcome'
 import { DesktopConnectionPage } from './DesktopConnectionPage'
 import { desktopConnectionState, startDestination, type DesktopPage } from './desktop-start'
+import { OPEN_AI_SETTINGS_EVENT } from './special-common'
 
 export function WorkspaceHome() {
   const [page, setPage] = useState<DesktopPage>(() => (isWebEdition() ? 'workspace' : 'welcome'))
@@ -27,6 +28,12 @@ export function WorkspaceHome() {
       ),
     [],
   )
+  // the 똑딱업무 AI chip's "AI 설정" link
+  useEffect(() => {
+    const open = () => setTarget({ section: 'aiModel' })
+    window.addEventListener(OPEN_AI_SETTINGS_EVENT, open)
+    return () => window.removeEventListener(OPEN_AI_SETTINGS_EVENT, open)
+  }, [])
   return (
     <>
       <TrialHome />

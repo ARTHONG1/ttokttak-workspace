@@ -1,8 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
+import { AiModelPicker, type AiModelPickerBridge } from '@genoffice/ui'
+import '@genoffice/ui/ai-model-picker.css'
+import { useI18n } from './locale'
+import { useSubscriptionConnection } from './subscription-client'
 
 /** What the 특화 기능 pages share: one AI turn, the clipboard, the back button and a toast. */
+
+/** asks the home screen to open Settings › AI 모델 (WorkspaceHome listens) */
+export const OPEN_AI_SETTINGS_EVENT = 'ttokttak:open-ai-settings'
+
+const PICKER_BRIDGE: AiModelPickerBridge = {
+  getSettings: () => window.aiOffice.getAiSettings(),
+  setSettings: (settings) => window.aiOffice.setAiSettings(settings),
+  onSettingsChanged: (handler) => window.aiOffice.onAiSettingsChanged(handler),
+  openModelSettings: () => {
+    window.dispatchEvent(new CustomEvent(OPEN_AI_SETTINGS_EVENT))
+  },
+}
+
+/**
+ * The AI a 똑딱업무 tool writes with, picked with the same chip as the editors' AI panels:
+ * the built-in AI, a connected subscription agent (Codex, Claude) or a key provider. The
+ * choice is the one app-wide setting, so changing it here changes it for the editors too.
+ */
+export function SpecialAiPicker(): ReactElement {
+  const { lang } = useI18n()
+  const subscription = useSubscriptionConnection()
+  return (
+    <div className="sf-ai-picker" data-testid="special-ai-picker">
+      <span className="sf-ai-picker-label">사용할 AI</span>
+      <AiModelPicker
+        bridge={PICKER_BRIDGE}
+        lang={lang}
+        subscriptionStatuses={subscription.statuses}
+        onRefreshSubscriptions={subscription.refresh}
+      />
+    </div>
+  )
+}
 
 export function aiErrorText(chunk: AiStreamChunk): string {
   switch (chunk.errorCode) {
