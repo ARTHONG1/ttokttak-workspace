@@ -58,17 +58,24 @@ function Marked({ text, other }: { text: string; other: string }): ReactElement 
 
 export function SimilarityCheck({
   works,
+  initialSource,
   onReword,
   say,
 }: {
   works: Record<RecordMode, Work>
+  /** the tab the teacher came from (세특 or 행발); opened when it has two or more texts */
+  initialSource?: RecordMode
   /** a text written here was reworded: put it into the student's result */
   onReword: (mode: RecordMode, id: string, text: string) => void
   say: (text: string, bad?: boolean) => void
 }): ReactElement {
   const written = { subject: entriesOf(works.subject), behavior: entriesOf(works.behavior) }
   const [source, setSource] = useState<Source>(
-    written.subject.length < 2 && written.behavior.length >= 2 ? 'behavior' : 'subject',
+    initialSource && written[initialSource].length >= 2
+      ? initialSource
+      : written.subject.length < 2 && written.behavior.length >= 2
+        ? 'behavior'
+        : (initialSource ?? 'subject'),
   )
   const [file, setFile] = useState<{ name: string; entries: Entry[] } | null>(null)
   const [reading, setReading] = useState(false)

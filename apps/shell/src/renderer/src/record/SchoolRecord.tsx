@@ -567,6 +567,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       {checking ? (
         <SimilarityCheck
           works={works}
+          initialSource={mode}
           say={say}
           onReword={(m, id, result) => patchStudent(m, id, { result })}
         />

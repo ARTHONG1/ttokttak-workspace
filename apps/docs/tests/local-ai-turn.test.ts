@@ -39,8 +39,17 @@ describe('small offline model context', () => {
     expect(turn.system).toBe(system)
     expect(turn.messages).toEqual(user(request))
     expect(turn.tools).toEqual([])
-    const tooLong = prepareLocalAiTurn(system, user('가'.repeat(2400)), [])
-    expect(tooLong.error).toContain('입력 한도')
+    const clipped = prepareLocalAiTurn(system, user('가'.repeat(3000)), [])
+    expect(clipped.error).toBeUndefined()
+    expect(
+      Buffer.byteLength(clipped.system, 'utf8') +
+        Buffer.byteLength(
+          clipped.messages[0]?.role === 'user' ? clipped.messages[0].text : '',
+          'utf8',
+        ),
+    ).toBeLessThanOrEqual(7000)
+    const hugeSystem = prepareLocalAiTurn('가'.repeat(1000), user(request), [])
+    expect(hugeSystem.error).toContain('입력 한도')
   })
 
   it('keeps the HWP document reader available for modifications and retains short follow-ups', () => {

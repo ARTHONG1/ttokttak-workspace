@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { PUMUI_FILE_EXTENSION } from '@genoffice/ttokttak-extension/package'
 import type { CartFileKind } from '../../shared/home-api'
@@ -351,6 +351,24 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [errors, setErrors] = useState<{ title?: string; cart?: string }>({})
   const [busy, setBusy] = useState(false)
   const [reading, setReading] = useState<CartFileKind | null>(null)
+  const [usingLocal, setUsingLocal] = useState(false)
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      void window.aiOffice
+        ?.getAiSettings?.()
+        .then((s) => {
+          if (alive) setUsingLocal(s?.provider === 'local')
+        })
+        .catch(() => {})
+    }
+    load()
+    const off = window.aiOffice?.onAiSettingsChanged?.(load)
+    return () => {
+      alive = false
+      off?.()
+    }
+  }, [])
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
   const [toast, say] = useToast()
@@ -548,7 +566,12 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                   type="button"
                   className="sf-secondary sf-sm"
                   data-testid={'proposal-file-' + b.kind}
-                  disabled={reading !== null || busy}
+                  disabled={reading !== null || busy || (b.kind === 'image' && usingLocal)}
+                  title={
+                    b.kind === 'image' && usingLocal
+                      ? '똑딱AI는 이미지 읽기를 지원하지 않아요. 위에서 구독·키 AI로 바꿔 주세요.'
+                      : undefined
+                  }
                   onClick={() => void readFromFile(b.kind)}
                 >
                   {reading === b.kind ? (

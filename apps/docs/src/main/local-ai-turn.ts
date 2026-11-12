@@ -13,6 +13,10 @@ const MAX_TOOL_COUNT = 4
 // (up to LOCAL_PLAIN_MAX_TOKENS), so the instructions and request together stay
 // under about 2,300 tokens of Korean text.
 const MAX_PLAIN_BYTES = 7000
+// When the caller's instruction + text exceed MAX_PLAIN_BYTES, keep all of the
+// system prompt and clip the user text to what fits so a long pasted article,
+// PDF extract or YouTube transcript still runs on the bundled model.
+const MAX_PLAIN_SYSTEM_BYTES = 2400
 /** the output cap of a plain writing request; editor turns keep their short cap */
 export const LOCAL_PLAIN_MAX_TOKENS = 1024
 
@@ -149,18 +153,33 @@ export function prepareLocalAiTurn(
     // No editor is behind this request: the caller's own instructions (NEIS style,
     // one paragraph, JSON shape…) are the whole task. Replacing them with the
     // editor guide made 생기부 answers ramble about "the open document".
-    if (
-      Buffer.byteLength(system, 'utf8') + Buffer.byteLength(lastUser.text, 'utf8') >
-      MAX_PLAIN_BYTES
-    ) {
+    const sysBytes = Buffer.byteLength(system, 'utf8')
+    if (sysBytes > MAX_PLAIN_SYSTEM_BYTES) {
       return {
         system: '',
         messages: [],
         tools: [],
-        error: '요청이 똑딱AI의 입력 한도를 초과했습니다. 지시사항이나 입력 내용을 줄여 주세요.',
+        error: '요청이 똑딱AI의 입력 한도를 초과했습니다. 지시사항을 줄여 주세요.',
       }
     }
-    return { system, messages: [{ role: 'user', text: lastUser.text }], tools: [] }
+    const budget = MAX_PLAIN_BYTES - sysBytes
+    const text =
+      Buffer.byteLength(lastUser.text, 'utf8') <= budget
+        ? lastUser.text
+        : lastUser.text
+            .slice(
+              0,
+              Math.floor(
+                (lastUser.text.length * budget) / Buffer.byteLength(lastUser.text, 'utf8'),
+              ),
+            )
+            .replace(/[\uD800-\uDBFF]$/, '')
+    // trim further if a dense slice still exceeds the byte budget
+    let clipped = text
+    while (Buffer.byteLength(clipped, 'utf8') > budget) {
+      clipped = clipped.slice(0, Math.floor(clipped.length * 0.9)).replace(/[\uD800-\uDBFF]$/, '')
+    }
+    return { system, messages: [{ role: 'user', text: clipped }], tools: [] }
   }
   const editorContext = splitEditorContext(lastUser.text)
   const { document } = editorContext
