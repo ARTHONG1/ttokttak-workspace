@@ -32,7 +32,7 @@ node packages/ttokttak-extension/scripts/store-zip.mjs
 | 자세한 설명          | 아래 "자세한 설명"                                                                                 |
 | 스크린샷             | `packages/ttokttak-extension/store/`의 PNG 3장 (1280×800)                                          |
 | 아이콘               | `packages/ttokttak-extension/extension/icons/128.png`                                              |
-| 개인정보처리방침 URL | https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/privacy/extension                 |
+| 개인정보처리방침 URL | https://hangul-ai-workbench-ehhtyai22q-du.a.run.app/privacy/extension                 |
 | 공개 범위            | 처음에는 **비공개(링크가 있는 사람만)**로 올려 선생님 몇 분이 써 본 뒤 공개로 바꾸는 것을 권합니다 |
 
 스크린샷을 다시 찍으려면: `node packages/ttokttak-extension/build.mjs --dev` 뒤 `packages/ttokttak-extension`에서 `STORE_SHOTS=1 npx playwright test -g "store screenshots"`.

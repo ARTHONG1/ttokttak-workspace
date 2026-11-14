@@ -9,7 +9,7 @@
 Open a Hangul (HWP/HWPX), Word, Excel, PowerPoint or PDF file, say what to change, and the AI edits the document itself.<br />
 Try it in the browser, or install it and connect your own AI agent.
 
-[Web trial](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [Built-in AI](#built-in-ai-that-runs-inside-your-computer) · [Latest update](#latest-update) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
+[Web trial](https://hangul-ai-workbench-ehhtyai22q-du.a.run.app) · [Built-in AI](#built-in-ai-that-runs-inside-your-computer) · [Latest update](#latest-update) · [Install with an AI agent](#install-with-an-ai-agent) · [한국어](README.md)
 
 </div>
 

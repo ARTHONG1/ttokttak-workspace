@@ -9,11 +9,11 @@
 한글·워드·엑셀·PPT·PDF 문서를 열고 고칠 곳을 말하면, AI가 문서 안에서 바로 고칩니다.<br />
 웹에서 바로 체험하고, PC에 설치하면 내 AI 에이전트와 연결해 더 똑똑하게 일합니다.
 
-[![웹에서 체험하기](https://img.shields.io/badge/웹에서_체험하기-바로_열기-111827?style=for-the-badge)](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app)
+[![웹에서 체험하기](https://img.shields.io/badge/웹에서_체험하기-바로_열기-111827?style=for-the-badge)](https://hangul-ai-workbench-ehhtyai22q-du.a.run.app)
 [![최신 릴리스](https://img.shields.io/github/v/release/ARTHONG1/ttokttak-workspace?style=for-the-badge&label=Mac%20%C2%B7%20Windows)](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2f5bea?style=for-the-badge)](LICENSE)
 
-[웹 체험판](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) · [내장형 AI](#내장형-ai--내-pc-안에서-돌아가는-문서-ai) · [최근 업데이트](#최근-업데이트) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [English](README.en.md)
+[웹 체험판](https://hangul-ai-workbench-ehhtyai22q-du.a.run.app) · [내장형 AI](#내장형-ai--내-pc-안에서-돌아가는-문서-ai) · [최근 업데이트](#최근-업데이트) · [AI 에이전트로 설치하기](#ai-에이전트로-설치하기) · [할 수 있는 일](#할-수-있는-일) · [English](README.en.md)
 
 </div>
 
@@ -121,7 +121,7 @@
 | 무엇 | 설치 없이 브라우저에서 바로                                                  | Mac · Windows 프로그램                                                   | 요청문 한 줄로 설치부터 연결까지            |
 | AI   | Google Gemini (웹 설정에 따름)                                               | **내장 AI(Apple Silicon Mac · Windows)** 또는 Claude Code · Codex 등     | 같은 에이전트가 앱과 연결                   |
 | 문서 | 작업하는 동안만 서버에 있고, 끝나면 지워집니다                               | 내 PC에만 남습니다                                                       | —                                           |
-| 시작 | [체험하기](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) | [릴리스](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) | [아래 요청문 복사](#ai-에이전트로-설치하기) |
+| 시작 | [체험하기](https://hangul-ai-workbench-ehhtyai22q-du.a.run.app) | [릴리스](https://github.com/ARTHONG1/ttokttak-workspace/releases/latest) | [아래 요청문 복사](#ai-에이전트로-설치하기) |
 
 ## AI 에이전트로 설치하기
 
@@ -217,7 +217,7 @@ irm https://raw.githubusercontent.com/ARTHONG1/ttokttak-workspace/main/scripts/i
 | 수식·도표·코드 | [KaTeX](https://github.com/KaTeX/KaTeX) · [Mermaid](https://github.com/mermaid-js/mermaid) · [CodeMirror](https://github.com/codemirror/dev)                                                             | 수식, 도표, HTML 소스 편집                                      | MIT              |
 | 앱 실행        | [Electron](https://github.com/electron/electron) · [React](https://github.com/facebook/react)                                                                                                            | 데스크톱 앱과 화면                                              | MIT              |
 
-이 밖에도 오픈소스 구성 요소 575개를 함께 씁니다. 모두의 저작권 고지와 라이선스는 고치지 않고 함께 배포합니다(설치 폴더의 `THIRD-PARTY-NOTICES.txt`, 웹의 [전체 라이선스](https://hangul-ai-workbench-545101783843.asia-northeast3.run.app/__web/licenses)). 어느 코드가 어디서 왔고 무엇을 바꿨는지는 [라이선스와 출처](#라이선스와-출처)와 [NOTICE](NOTICE)에 정확히 적었습니다.
+이 밖에도 오픈소스 구성 요소 575개를 함께 씁니다. 모두의 저작권 고지와 라이선스는 고치지 않고 함께 배포합니다(설치 폴더의 `THIRD-PARTY-NOTICES.txt`, 웹의 [전체 라이선스](https://hangul-ai-workbench-ehhtyai22q-du.a.run.app/__web/licenses)). 어느 코드가 어디서 왔고 무엇을 바꿨는지는 [라이선스와 출처](#라이선스와-출처)와 [NOTICE](NOTICE)에 정확히 적었습니다.
 
 ### 똑딱작업실에서 고치고 더한 것
 

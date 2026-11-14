@@ -11,7 +11,7 @@ export const EXTENSION_PUBLIC_KEY =
 export const NATIVE_HOST_NAME = 'kr.ttokttak.edufine'
 /** 똑딱작업실 web app origins allowed to hand a 품의 to the extension */
 export const WEB_APP_ORIGINS = [
-  'https://hangul-ai-workbench-545101783843.asia-northeast3.run.app',
+  'https://hangul-ai-workbench-ehhtyai22q-du.a.run.app',
   'http://127.0.0.1:5188',
 ]
 /** where the web app serves the current 화면 이름표 */

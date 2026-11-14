@@ -7,7 +7,7 @@ no server of its own: nothing is sent to this project or to its maintainer, and
 the app has no usage analytics or telemetry.
 
 This page is about the desktop app. **The web trial**
-(https://hangul-ai-workbench-545101783843.asia-northeast3.run.app) is different,
+(https://hangul-ai-workbench-ehhtyai22q-du.a.run.app) is different,
 because it runs on a server: it asks for a Google sign-in (Firebase
 Authentication; the server keeps your account id, email and name only for the
 browser session), counts AI requests per account per day, keeps the documents

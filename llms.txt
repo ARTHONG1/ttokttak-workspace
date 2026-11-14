@@ -4,7 +4,7 @@
 
 Key facts:
 - Repository: https://github.com/ARTHONG1/ttokttak-workspace
-- Web trial: https://hangul-ai-workbench-545101783843.asia-northeast3.run.app (Google sign-in required)
+- Web trial: https://hangul-ai-workbench-ehhtyai22q-du.a.run.app (Google sign-in required)
 - Releases (macOS dmg arm64/x64, Windows Setup exe): https://github.com/ARTHONG1/ttokttak-workspace/releases/latest
 - Install by an AI agent: https://github.com/ARTHONG1/ttokttak-workspace/blob/main/INSTALL.md (scripts in scripts/install/)
 - Command line and MCP server: `ttokttak`, `ttokttak mcp`, `ttokttak mcp install <agent|all>`, `ttokttak skill install <agent|all>`

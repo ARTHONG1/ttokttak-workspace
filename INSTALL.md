@@ -115,5 +115,5 @@ ttokttak mcp list            # 등록 결과 확인
 
 ## 문제가 생기면
 
-- 릴리스가 아직 없으면(`releases/latest`가 404) 설치를 멈추고, 웹 체험판 https://hangul-ai-workbench-545101783843.asia-northeast3.run.app 을 사용자에게 안내합니다.
+- 릴리스가 아직 없으면(`releases/latest`가 404) 설치를 멈추고, 웹 체험판 https://hangul-ai-workbench-ehhtyai22q-du.a.run.app 을 사용자에게 안내합니다.
 - 그 밖의 오류는 오류 메시지 전체와 함께 https://github.com/ARTHONG1/ttokttak-workspace/issues 에 올려 달라고 사용자에게 안내합니다.
