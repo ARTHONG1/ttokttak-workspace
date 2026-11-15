@@ -8,11 +8,8 @@ the app has no usage analytics or telemetry.
 
 This page is about the desktop app. **The web trial**
 (https://hangul-ai-workbench-ehhtyai22q-du.a.run.app) is different,
-because it runs on a server: it opens without a sign-in (when a Google
-sign-in through Firebase Authentication is switched on, the server keeps your
-account id, email and name only for the browser session and counts AI requests
-per account per day), keeps the documents
-you open only in a temporary folder of that session (deleted 15 minutes after
+because it runs on a server: it opens without a sign-in and asks for no
+account, keeps the documents you open only in a temporary folder of that session (deleted 15 minutes after
 the page is closed, or when the server restarts), never stores them anywhere
 else and never uses them for training, and sends what you ask the AI, with the
 document content it needs, to **Google Vertex AI** (Gemini).

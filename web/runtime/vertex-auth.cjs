@@ -85,26 +85,6 @@ function refusal(status, reason, message) {
   })
 }
 
-/** asks the gateway to count one request for the signed-in account (set by session-host) */
-let takeRequest = async () => ({ ok: true })
-function setRequestGate(fn) {
-  takeRequest = fn
-}
-
-function resetText(at) {
-  try {
-    return new Intl.DateTimeFormat('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date(at))
-  } catch {
-    return ''
-  }
-}
-
 function vertexBaseUrl() {
   const project = process.env.GOOGLE_CLOUD_PROJECT
   const location = process.env.VERTEX_LOCATION || 'global'
@@ -126,19 +106,6 @@ function install() {
         403,
         'PERMISSION_DENIED',
         '고급형 모델은 아직 열리지 않았어요. 기본형으로 바꿔서 다시 해 주세요.',
-      )
-    const verdict = await takeRequest()
-    if (!verdict.ok)
-      return refusal(
-        429,
-        'RESOURCE_EXHAUSTED',
-        verdict.signedOut
-          ? '로그인이 끝났어요. 페이지를 새로 고쳐 다시 로그인해 주세요.'
-          : '오늘 쓸 수 있는 AI 사용량(' +
-              verdict.limit +
-              '회)을 다 썼어요. ' +
-              resetText(verdict.resetsAt) +
-              '부터 다시 쓸 수 있어요. (GenerateRequestsPerDayPerProjectPerModel-FreeTier)',
       )
     const headers = new Headers(init && init.headers)
     headers.delete('x-goog-api-key')
@@ -191,7 +158,6 @@ function install() {
 module.exports = {
   install,
   vertexBaseUrl,
-  setRequestGate,
   BASIC_MODEL,
   ADVANCED_MODEL,
   ADVANCED_ENABLED,

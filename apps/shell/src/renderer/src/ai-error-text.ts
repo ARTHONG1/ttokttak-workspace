@@ -24,10 +24,7 @@ export function friendlyAiErrorMessage(raw: string | undefined): string {
   const fromServer = status > 0 || /[{[]\s*"error"/.test(text)
   if (!fromServer) return HANGUL.test(text) || text.length <= 120 ? text : FALLBACK
   const message = serverMessage(text)
-  if (message && HANGUL.test(message)) {
-    // a trailing quota code such as "(GenerateRequestsPerDayPerProjectPerModel-FreeTier)"
-    return message.replace(/\s*\([A-Za-z-]+\)\s*$/, '').trim()
-  }
+  if (message && HANGUL.test(message)) return message.trim()
   if (status === 401 || status === 403)
     return 'AI 서비스가 요청을 거절했어요. AI 연결 설정(키·계정·결제)을 확인해 주세요.'
   if (status === 429) return 'AI 사용량이 많아요. 잠시 뒤 다시 해 주세요.'

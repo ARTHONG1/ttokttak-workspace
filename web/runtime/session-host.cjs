@@ -118,14 +118,6 @@ web.link.request = (msg) =>
     pending.set(id, resolve)
     web.link.send({ ...msg, id })
   })
-// every AI request asks the gateway first: it counts the request against the signed-in account
-vertex.setRequestGate(() =>
-  Promise.race([
-    web.link.request({ t: 'ai-take' }),
-    new Promise((resolve) => setTimeout(() => resolve({ ok: false, signedOut: true }), 10_000)),
-  ]),
-)
-
 function ipcEvent(wc, extra = {}) {
   return {
     sender: wc,

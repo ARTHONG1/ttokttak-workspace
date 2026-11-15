@@ -14,13 +14,6 @@ import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 import { REFUSALS, clientIp, createSessionGuard } from './abuse-guard.mjs'
 import { createPopupRoutes, popupDevEnabled, popupLocalRequest } from './popup-routes.mjs'
-import {
-  aiUsageOf,
-  authRequired,
-  firebaseWebConfig,
-  takeAiRequest,
-  verifyIdToken,
-} from './web-auth.mjs'
 import zlib from 'node:zlib'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -111,20 +104,6 @@ for (const signal of ['SIGTERM', 'SIGINT']) {
     process.exit(0)
   })
 }
-/** the signed-in Google account of each browser session id (web-auth.mjs) */
-const accounts = new Map()
-/** the account a request comes from, or null; a session whose sign-in expired is signed out */
-function accountOf(sid) {
-  if (!authRequired) return { uid: 'local', email: '', name: '', expiresAt: Infinity }
-  const a = sid ? accounts.get(sid) : null
-  if (!a) return null
-  if (a.expiresAt < Date.now()) {
-    accounts.delete(sid)
-    return null
-  }
-  return a
-}
-
 class Session {
   constructor(id) {
     this.id = id
@@ -225,15 +204,6 @@ class Session {
     if (this.ws && this.ws.readyState === 1) this.ws.send(encode(msg))
   }
   fromChild(msg) {
-    if (msg.t === 'ai-take') {
-      // one AI request is about to leave this session: count it against the account
-      const account = accountOf(this.id)
-      const verdict = account
-        ? takeAiRequest(account.uid)
-        : { ok: false, used: 0, limit: 0, resetsAt: 0, signedOut: true }
-      this.toChild({ t: 'reply', id: msg.id, ...verdict })
-      return
-    }
     if (msg.t === 'reply' && typeof msg.id === 'string' && msg.id.startsWith('g')) {
       const resolve = this.pending.get(msg.id)
       this.pending.delete(msg.id)
@@ -635,88 +605,12 @@ async function handleHttp(req, res) {
       sid = randomBytes(18).toString('base64url')
       headers['Set-Cookie'] = sessionCookie(req, sid)
     }
-    // the trial opens only for a signed-in Google account: the gate page signs in first
-    const page = accountOf(sid) ? 'index.html' : 'login.html'
-    const rawBody = await fsp.readFile(path.join(CLIENT, page), 'utf8')
+    const rawBody = await fsp.readFile(path.join(CLIENT, 'index.html'), 'utf8')
     const body = rawBody.replace('<html ', '<html data-hs="' + sid + '" ')
     return send(res, 200, withPopupEditor(body, req), {
       'Content-Type': 'text/html; charset=utf-8',
       ...headers,
     })
-  }
-  if (p === '/__auth/config') {
-    return send(
-      res,
-      200,
-      JSON.stringify({
-        required: authRequired,
-        firebase: firebaseWebConfig(),
-        // the web edition's two model tiers (vertex-auth.cjs refuses any other model)
-        ai: {
-          basicModel: vertexTiers.BASIC_MODEL,
-          advancedModel: vertexTiers.ADVANCED_MODEL,
-          advancedEnabled: vertexTiers.ADVANCED_ENABLED,
-        },
-      }),
-      { 'Content-Type': 'application/json' },
-    )
-  }
-  if (p === '/__auth/session' && req.method === 'POST') {
-    if (!sameOrigin(req)) return send(res, 403, 'forbidden')
-    const sid = sessionFromCookie(req)
-    if (!sid) return send(res, 400, JSON.stringify({ ok: false, reason: 'no session cookie' }))
-    let token
-    try {
-      token = String(JSON.parse((await readBody(req, 16 * 1024)).toString('utf8')).idToken || '')
-    } catch {
-      return send(res, 400, JSON.stringify({ ok: false, reason: 'bad request' }))
-    }
-    const { account, reason } = await verifyIdToken(token)
-    if (!account) {
-      console.warn('[gateway] sign-in refused:', reason)
-      return send(res, 401, JSON.stringify({ ok: false, reason }), {
-        'Content-Type': 'application/json',
-      })
-    }
-    const before = accounts.get(sid)
-    // one browser session belongs to one account: a different account starts a fresh session
-    if (before && before.uid !== account.uid) {
-      sessions.get(sid)?.dispose()
-      const fresh = randomBytes(18).toString('base64url')
-      accounts.set(fresh, account)
-      return send(res, 200, JSON.stringify({ ok: true, email: account.email }), {
-        'Content-Type': 'application/json',
-        'Set-Cookie': sessionCookie(req, fresh),
-      })
-    }
-    accounts.set(sid, account)
-    return send(res, 200, JSON.stringify({ ok: true, email: account.email }), {
-      'Content-Type': 'application/json',
-    })
-  }
-  if (p === '/__auth/signout' && req.method === 'POST') {
-    if (!sameOrigin(req)) return send(res, 403, 'forbidden')
-    const sid = sessionFromCookie(req)
-    if (sid) {
-      accounts.delete(sid)
-      sessions.get(sid)?.dispose()
-    }
-    return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' })
-  }
-  if (p === '/__auth/me') {
-    const account = accountOf(sessionFromCookie(req))
-    if (!account) return send(res, 401, '{"ok":false}', { 'Content-Type': 'application/json' })
-    return send(
-      res,
-      200,
-      JSON.stringify({
-        ok: true,
-        email: account.email,
-        name: account.name,
-        usage: aiUsageOf(account.uid),
-      }),
-      { 'Content-Type': 'application/json' },
-    )
   }
   if (p.startsWith('/__web/') && p !== '/__web/preload.js') {
     // the license notices the desktop installer ships (apps/shell/build, copied by web/build.mjs)
@@ -740,7 +634,6 @@ async function handleHttp(req, res) {
     if (allowedAppFile(file)) return serveFile(res, file, { inject: true, req })
   }
   const sid = sessionFromCookie(req)
-  if (!accountOf(sid)) return send(res, 401, 'sign in first')
   const session = sid ? sessions.get(sid) : null
   if (!session || !session.child) return send(res, 409, 'no session')
 
@@ -876,9 +769,8 @@ const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_UPLOAD })
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url, 'http://localhost')
   const sid = sessionFromCookie(req)
-  // only this site's own pages open a work space, signed in or not
-  if (url.pathname !== '/__ws' || !sid || !accountOf(sid) || !sameOrigin(req))
-    return socket.destroy()
+  // only this site's own pages open a work space
+  if (url.pathname !== '/__ws' || !sid || !sameOrigin(req)) return socket.destroy()
   const ip = clientIp(req)
   // a work space that exists (a reload) always comes back; a new one asks the guard
   const verdict = sessions.has(sid)

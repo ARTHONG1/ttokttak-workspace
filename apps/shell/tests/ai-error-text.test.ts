@@ -9,17 +9,16 @@ describe('friendlyAiErrorMessage', () => {
     expect(shown).toBe('AI 서비스가 요청을 거절했어요. AI 연결 설정(키·계정·결제)을 확인해 주세요.')
   })
 
-  it("keeps the web edition's own Korean refusal and drops the quota code", () => {
+  it("keeps the web edition's own Korean refusal (the locked advanced model)", () => {
     const body = JSON.stringify({
       error: {
-        code: 429,
-        status: 'RESOURCE_EXHAUSTED',
-        message:
-          '오늘 쓸 수 있는 AI 사용량(30회)을 다 썼어요. 11월 16일 오전 12:00부터 다시 쓸 수 있어요. (GenerateRequestsPerDayPerProjectPerModel-FreeTier)',
+        code: 403,
+        status: 'PERMISSION_DENIED',
+        message: '고급형 모델은 아직 열리지 않았어요. 기본형으로 바꿔서 다시 해 주세요.',
       },
     })
-    expect(friendlyAiErrorMessage('Gemini HTTP 429: ' + body)).toBe(
-      '오늘 쓸 수 있는 AI 사용량(30회)을 다 썼어요. 11월 16일 오전 12:00부터 다시 쓸 수 있어요.',
+    expect(friendlyAiErrorMessage('Gemini HTTP 403: ' + body)).toBe(
+      '고급형 모델은 아직 열리지 않았어요. 기본형으로 바꿔서 다시 해 주세요.',
     )
   })
 

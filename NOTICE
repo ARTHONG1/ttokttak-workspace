@@ -10,7 +10,7 @@ GenOffice. Both are licensed under the Apache License 2.0. Modifications:
 product identity (name, app id, data folder), disabled update feed, HWPX
 saving that Hancom Hangul opens and that is validated before it overwrites a
 file, tables that split between pages, a web trial edition that runs the
-desktop app in a browser (web/) with Google sign-in and per-account limits,
+desktop app in a browser (web/) with limits on work spaces per address,
 the school work tools (purchase request generator, quiz maker, word search),
 an installer an AI agent runs (INSTALL.md, scripts/install/), and a Korean
 home screen and labels. The repository history records each changed file.

@@ -122,7 +122,7 @@ Building on that foundation, ttokttak-workspace carries the work forward toward 
 
 It also uses 575 bundled open-source components, whose copyright notices and licences ship unchanged. Where each part of the code comes from and what was changed is stated exactly under [License and acknowledgement](#license-and-acknowledgement) and in [NOTICE](NOTICE).
 
-What this project adds: HWPX saves that Hancom Hangul opens and that are validated before they overwrite a file, tables that split between pages, the browser trial edition (`web/`) with Google sign-in and per-account limits, the school work tools ported from the maker's 클래스똑딱 web tools, the agent-driven installer, and a Korean home screen and labels.
+What this project adds: HWPX saves that Hancom Hangul opens and that are validated before they overwrite a file, tables that split between pages, the browser trial edition (`web/`) that opens without a sign-in and limits work spaces per address, the school work tools ported from the maker's 클래스똑딱 web tools, the agent-driven installer, and a Korean home screen and labels.
 
 ## Build from source
 
