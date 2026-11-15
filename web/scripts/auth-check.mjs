@@ -10,7 +10,9 @@ const env = {
   PORT: String(PORT),
   WEB_HOST: '127.0.0.1',
   WEB_SESSIONS_ROOT: '/tmp/hs-auth-check',
-  GOOGLE_CLOUD_PROJECT: 'hangul-ai-workbench-3ope70',
+  GOOGLE_CLOUD_PROJECT: 'project-e5d839ff-c4a7-4288-8a3',
+  // sign-in is off by default since 2026-11-05; this check is about the gate, so turn it on
+  WEB_AUTH: 'google',
   VERTEX_ACCESS_TOKEN: 'unused',
   WEB_DAILY_AI_LIMIT: '2',
 }

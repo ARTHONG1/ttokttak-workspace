@@ -5,6 +5,7 @@ import { AiModelPicker, type AiModelPickerBridge } from '@genoffice/ui'
 import '@genoffice/ui/ai-model-picker.css'
 import { useI18n } from './locale'
 import { useSubscriptionConnection } from './subscription-client'
+import { friendlyAiErrorMessage } from './ai-error-text'
 
 /** What the 특화 기능 pages share: one AI turn, the clipboard, the back button and a toast. */
 
@@ -61,7 +62,7 @@ export function aiErrorText(chunk: AiStreamChunk): string {
     case 'network':
       return '인터넷 연결을 확인해 주세요.'
     default:
-      return chunk.error || 'AI 답을 받지 못했어요. 다시 해 주세요.'
+      return friendlyAiErrorMessage(chunk.error)
   }
 }
 
