@@ -87,6 +87,12 @@
  *   memo-capable document; pluginHooks checks the upstream undo wiring instead
  *   of applying the older, narrower overlap test a second time.
  *
+ * studio-offline-fonts
+ *   The app builds the studio with external web fonts off and leaves its public/fonts
+ *   folder out (the fonts' licenses are not all on this project's list, build-studio.mjs).
+ *   The font loader still offered the local entries, so every Hangul tab asked for
+ *   fonts/RHWPOldHangul-Regular.woff2 and logged a 404. In that build it offers none.
+ *
  * v0.9.0 also supplies CanvasFontResolutionScope: font substitutions are reused
  *   within a synchronous paint and reset between paints or nested host-font
  *   scopes. Keep that implementation rather than the older microtask cache,
@@ -675,6 +681,18 @@ const PATCHES = {
     find: '  "command.insert.comment.label": "Comments",',
     replace: '  "command.insert.comment.label": "Memo",',
   },
+  'studio-offline-fonts': {
+    file: /[\\/]rhwp-studio[\\/]src[\\/]core[\\/]font-loader\.ts$/,
+    find: [
+      '  if (options?.disableExternalWebFonts !== true) return FONT_LIST;',
+      '  return FONT_LIST.filter(f => !isExternalFontFile(f.file));',
+    ].join('\n'),
+    replace: [
+      '  if (options?.disableExternalWebFonts !== true) return FONT_LIST;',
+      '  // ttokttak: this build ships no fonts/ folder, so a local entry would only end in a 404',
+      '  return [];',
+    ].join('\n'),
+  },
   'studio-memo-anchors': {
     file: /[\\/]rhwp-studio[\\/]src[\\/]core[\\/]wasm-bridge\.ts$/,
     // v0.9.0 already exposes anchors. Preserve the app's safe empty answer without
@@ -720,6 +738,7 @@ export const STUDIO_PATCHES = /** @type {const} */ ([
   'studio-memo-label-ko',
   'studio-memo-label-en',
   'studio-memo-anchors',
+  'studio-offline-fonts',
 ])
 
 /** Whether a patch is written against this file. */

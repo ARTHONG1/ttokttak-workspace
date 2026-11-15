@@ -903,3 +903,42 @@ describe('rhwp Hangul-key patches', () => {
     }
   })
 })
+
+describe('rhwp offline font patch', () => {
+  const loader = [
+    'function selectableFontList(options?: WebFontLoadOptions): readonly FontEntry[] {',
+    '  if (options?.disableExternalWebFonts !== true) return FONT_LIST;',
+    '  return FONT_LIST.filter(f => !isExternalFontFile(f.file));',
+    '}',
+  ].join('\n')
+  const offer = (code: string, offline: boolean): string[] => {
+    const js = ts.transpileModule(code, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText
+    const list = new Function(
+      [
+        "const FONT_LIST = [{ name: 'RHWP Old Hangul', file: 'fonts/RHWPOldHangul-Regular.woff2' },",
+        "  { name: 'Noto Sans KR', file: 'https://cdn.example/noto.woff2' }];",
+        'function isExternalFontFile(file) { return /^https?:\\/\\//i.test(file) }',
+        js,
+        'return selectableFontList({ disableExternalWebFonts: ' + offline + ' })',
+      ].join('\n'),
+    )() as { file: string }[]
+    return list.map((entry) => entry.file)
+  }
+
+  it('offers no web font in the offline build, which ships no fonts/ folder', () => {
+    const patched = applyPatch('studio-offline-fonts', loader)
+    expect(offer(loader, true)).toEqual(['fonts/RHWPOldHangul-Regular.woff2'])
+    expect(offer(patched, true)).toEqual([])
+    expect(offer(patched, false)).toEqual([
+      'fonts/RHWPOldHangul-Regular.woff2',
+      'https://cdn.example/noto.woff2',
+    ])
+  })
+
+  it('fails when the list function is gone, and is in the studio build', () => {
+    expect(() => applyPatch('studio-offline-fonts', 'const FONT_LIST = []')).toThrow(/rhwp patch/)
+    expect(STUDIO_PATCHES).toContain('studio-offline-fonts')
+  })
+})
