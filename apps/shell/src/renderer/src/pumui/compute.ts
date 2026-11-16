@@ -1,4 +1,4 @@
-import { canonicalUnit, isSafeAmount, SHIPPING } from './policy'
+import { canonicalUnit, isSafeAmount, MAX_NUMBER, SHIPPING } from './policy'
 import type { EstimateRow, PumuiFlag } from './types'
 
 export { canonicalUnit } from './policy'
@@ -94,6 +94,8 @@ function money(qty: number | null, price: number | null, amount: number | null):
   if (price === null && amount === null)
     return { quantity: qty ?? 1, unitPrice: 0, reason: 'price_missing' }
   if (qty !== null && price !== null) {
+    if (BigInt(qty) * BigInt(price) > BigInt(MAX_NUMBER))
+      return { quantity: qty, unitPrice: price, reason: 'not_divisible' }
     const differs = amount !== null && BigInt(qty) * BigInt(price) !== BigInt(amount)
     return { quantity: qty, unitPrice: price, ...(differs ? { reason: 'amount_mismatch' } : {}) }
   }
@@ -118,17 +120,24 @@ export function computeRows(reply: ExtractReply): { rows: EstimateRow[]; flags: 
     if (item.state !== '담음') continue
     const m = money(item.qty, item.price, item.amount)
     if (m.reason) flags.push({ row: rows.length, reason: m.reason })
+    const amount = m.quantity * m.unitPrice
     rows.push({
       description: item.name.trim(),
       specification: item.spec.trim(),
       unit: canonicalUnit(item.unit),
       quantity: m.quantity,
       unitPrice: m.unitPrice,
-      amount: m.quantity * m.unitPrice,
+      // a product past 9 digits is not computed (the row is flagged above)
+      amount: isSafeAmount(amount) ? amount : 0,
     })
   }
-  const shipping = reply.fees.filter(isSafeAmount).reduce((a, b) => a + b, 0)
-  if (shipping > 0)
+  // a fee that is not a whole number up to 9 digits, or a sum past 9 digits, is not added: the
+  // 배송비 row stays 0 and is flagged so the user sees it
+  const sum = reply.fees.reduce((a, b) => a + b, 0)
+  const addable = reply.fees.every(isSafeAmount) && isSafeAmount(sum)
+  if (!addable) flags.push({ row: rows.length, reason: 'not_divisible' })
+  const shipping = addable ? sum : 0
+  if (shipping > 0 || !addable)
     rows.push({
       description: SHIPPING,
       specification: '',

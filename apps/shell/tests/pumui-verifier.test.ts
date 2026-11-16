@@ -49,4 +49,16 @@ describe('품의 verifier', () => {
     check('볼펜 1,000원 3개\n총 상품금액 4,000원', items)
     expect(JSON.stringify(items)).toBe(before)
   })
+
+  it('checks a cart with many shipping lines without stalling', () => {
+    const lines = Array.from({ length: 120 }, (_, i) => '배송비 ' + (2000 + i * 7) + '원')
+    const items: VerifierItem[] = [
+      { description: '볼펜', specification: '', unit: '개', quantity: 1, unitPrice: 1000 },
+      { description: '배송비', specification: '', unit: '식', quantity: 1, unitPrice: 6021 },
+    ]
+    const started = Date.now()
+    const got = check('볼펜 1,000원\n' + lines.join('\n'), items)
+    expect(Date.now() - started).toBeLessThan(2000)
+    expect(got.flags.map((f) => f.reason)).toContain('shipping_partial')
+  })
 })

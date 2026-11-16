@@ -96,6 +96,20 @@ describe('품의 v3 computation: the app does the arithmetic the model only copi
     const out = computeRows({ items: [item(1, 100, null), item(2, null, null)], fees: [] })
     expect(out.flags).toEqual([{ row: 1, reason: 'price_missing' }])
   })
+
+  it('does not multiply past 9 digits: the amount stays 0 and the row is flagged', () => {
+    const out = computeRows({ items: [item(50_000, 30_000, null)], fees: [] })
+    expect(out.rows[0]).toMatchObject({ quantity: 50_000, unitPrice: 30_000, amount: 0 })
+    expect(out.flags).toEqual([{ row: 0, reason: 'not_divisible' }])
+  })
+
+  it('flags a shipping fee it cannot add instead of dropping it', () => {
+    for (const fees of [[3000, 1_000_000_000], [600_000_000, 600_000_000], [-3000]]) {
+      const out = computeRows({ items: [item(1, 100, null)], fees })
+      expect(out.rows.at(-1)).toMatchObject({ description: '배송비', unitPrice: 0, amount: 0 })
+      expect(out.flags).toEqual([{ row: 1, reason: 'not_divisible' }])
+    }
+  })
 })
 
 describe('reading a v3 reply', () => {

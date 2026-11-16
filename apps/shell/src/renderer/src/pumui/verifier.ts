@@ -56,17 +56,18 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 const isFeeLine = (line: string): boolean =>
   SHIP.test(line) && !line.includes('이상') && !line.includes('무료') && !SHIP_SUM.test(line)
 
-/** the sums of every choice of 1 to 6 of the given fees */
+/**
+ * the sums of every choice of 1 to 6 of the given fees. Built size by size over the distinct sums
+ * so a cart with many 배송비 lines stays fast (listing each choice took 34 s for 120 lines).
+ */
 function subsetSums(values: number[]): Set<number> {
-  const out = new Set<number>()
   const limit = Math.min(values.length, 6)
-  const walk = (start: number, size: number, sum: number) => {
-    if (size > 0) out.add(sum)
-    if (size === limit) return
-    for (let i = start; i < values.length; i++) walk(i + 1, size + 1, sum + values[i])
-  }
-  walk(0, 0, 0)
-  return out
+  // bySize[k]: the sums of exactly k of the fees seen so far
+  const bySize: Set<number>[] = [new Set([0])]
+  for (let k = 1; k <= limit; k++) bySize.push(new Set())
+  for (const value of values)
+    for (let k = limit; k >= 1; k--) for (const sum of bySize[k - 1]) bySize[k].add(sum + value)
+  return new Set(bySize.slice(1).flatMap((sums) => [...sums]))
 }
 
 export function check(source: string, items: readonly object[]): VerifyResult {

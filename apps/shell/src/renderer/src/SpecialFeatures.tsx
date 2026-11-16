@@ -8,7 +8,7 @@ import { pumuiPackageFromWork, sendPumui, workProblem } from './pumui-send'
 import { computeRows, parseExtractReply } from './pumui/compute'
 import { extractGrammar } from './pumui/grammar'
 import { flagText, flagTexts, STATUS_TEXT } from './pumui/messages'
-import { normalize, prepareCart } from './pumui/normalize'
+import { prepareCart } from './pumui/normalize'
 import type { EstimateRow, PumuiFlag, PumuiStatus } from './pumui/types'
 import { check } from './pumui/verifier'
 import {
@@ -538,6 +538,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
         row[field] = toNumber(value)
       else row[field] = value
       if (field === 'quantity' || field === 'unitPrice') row.amount = row.quantity * row.unitPrice
+      // a computation flag is about the money: it goes once the user edits a money cell
+      const marks = computed.current.get(r)
+      if (marks && field !== 'quantity' && field !== 'unitPrice' && field !== 'amount')
+        computed.current.set(row, marks)
       return row
     })
     changeRows(next)
@@ -552,7 +556,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     setBusy(true)
     try {
       const prepared = prepareCart(cart)
-      const work = prepared.text.trim() ? prepared : { text: normalize(cart), removed: 0 }
+      // recommendation areas are always left out, even when nothing else remains
+      if (!prepared.text.trim())
+        throw new Error('추천 상품 구역을 빼면 남는 품목이 없어요. 장바구니 내용을 확인해 주세요.')
+      const work = prepared
       const marks = new WeakMap<EstimateRow, string[]>()
       let parsed: EstimateRow[]
       if (mode === 'v3') {
