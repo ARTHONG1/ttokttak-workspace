@@ -97,6 +97,24 @@ describe('품의 v3 computation: the app does the arithmetic the model only copi
     expect(out.flags).toEqual([{ row: 1, reason: 'price_missing' }])
   })
 
+  it('flags a quantity larger than its unit price (a likely swap) without changing the row', () => {
+    // seen in v3 evaluations: 41 × 21,280 written as 21,280 × 41 (same line amount, same total)
+    const out = computeRows({
+      items: [item(21_280, 41, 872_480), item(41, 21_280, null)],
+      fees: [],
+    })
+    expect(out.rows.map((r) => [r.quantity, r.unitPrice])).toEqual([
+      [21_280, 41],
+      [41, 21_280],
+    ])
+    expect(out.flags).toEqual([{ row: 0, reason: 'qty_over_price' }])
+  })
+
+  it('does not flag a quantity equal to the price, a free item or 배송비', () => {
+    const out = computeRows({ items: [item(500, 500, null), item(3, 0, null)], fees: [3000] })
+    expect(out.flags.map((f) => f.reason)).not.toContain('qty_over_price')
+  })
+
   it('does not multiply past 9 digits: the amount stays 0 and the row is flagged', () => {
     const out = computeRows({ items: [item(50_000, 30_000, null)], fees: [] })
     expect(out.rows[0]).toMatchObject({ quantity: 50_000, unitPrice: 30_000, amount: 0 })

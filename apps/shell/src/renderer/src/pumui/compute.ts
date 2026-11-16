@@ -119,7 +119,11 @@ export function computeRows(reply: ExtractReply): { rows: EstimateRow[]; flags: 
   for (const item of reply.items) {
     if (item.state !== '담음') continue
     const m = money(item.qty, item.price, item.amount)
-    if (m.reason) flags.push({ row: rows.length, reason: m.reason })
+    // A quantity above its unit price is rare in school carts (0.15% of labelled rows) but is
+    // what a swapped 수량/단가 looks like: same line amount, same total, so the verifier passes.
+    const reason =
+      m.reason ?? (m.unitPrice > 0 && m.quantity > m.unitPrice ? 'qty_over_price' : undefined)
+    if (reason) flags.push({ row: rows.length, reason })
     const amount = m.quantity * m.unitPrice
     rows.push({
       description: item.name.trim(),

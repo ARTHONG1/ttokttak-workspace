@@ -23,6 +23,7 @@ const REASON_TEXT: Record<string, string> = {
   amount_mismatch: '수량×단가가 원문의 금액과 다릅니다',
   not_divisible: '원문 금액을 나눠 수량(단가)을 구하지 못했습니다. 확인해 주세요',
   price_missing: '이 줄의 가격을 원문에서 찾지 못했습니다',
+  qty_over_price: '수량이 단가보다 큽니다. 수량과 단가가 뒤바뀌지 않았는지 확인해 주세요',
 }
 
 /** one flag in words; a row's format problem is usually a hand edit, so it names the columns */
