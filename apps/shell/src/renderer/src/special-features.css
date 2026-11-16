@@ -28,6 +28,10 @@
   --sf-on-color: #ffffff;
   --sf-danger: #d92d3a;
   --sf-warn-soft: var(--danger-bg, #fdf3f3);
+  /* 품의서 생성's money check: confirmed, not compared, flagged */
+  --sf-ok: var(--success, #12805c);
+  --sf-ok-soft: var(--success-bg, #ecf7f2);
+  --sf-attn: #c27803;
   --sf-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color: var(--sf-ink);
   word-break: keep-all;
@@ -988,6 +992,77 @@ button.sf-card:hover .sf-card-go svg {
 }
 .sf-send-warn {
   background: var(--sf-warn-soft);
+}
+
+/* 품의서 생성: the money check above the 품의 목록, and the rows it flags */
+.sf-check {
+  margin: 2px 0 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--sf-line);
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: var(--sf-soft);
+  color: var(--sf-ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.sf-check-title {
+  margin: 0;
+  font-weight: 600;
+}
+.sf-check ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.sf-check-confirmed {
+  border-color: var(--sf-ok);
+  background: var(--sf-ok-soft);
+}
+.sf-check-unconfirmed {
+  border-color: var(--sf-attn);
+  background: var(--sf-soft);
+}
+.sf-check-needs_review {
+  border-color: var(--sf-danger);
+  background: var(--sf-warn-soft);
+}
+.sf-table tr.sf-row-flag td,
+.sf-table tbody tr.sf-row-flag:hover td,
+.sf-table tr.sf-row-why td {
+  background: var(--sf-warn-soft);
+}
+.sf-table tr.sf-row-flag td {
+  border-bottom-color: transparent;
+}
+.sf-table tr.sf-row-flag td.sf-col-no {
+  box-shadow: inset 3px 0 0 var(--sf-danger);
+  color: var(--sf-danger);
+  font-weight: 600;
+}
+.sf-table tr.sf-row-why td {
+  padding: 0 10px 7px;
+  color: var(--sf-danger);
+  font-size: 12.5px;
+}
+.sf-table tr.sf-row-why td:first-child {
+  box-shadow: inset 3px 0 0 var(--sf-danger);
+}
+.sf-mode-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sf-accent-soft);
+  color: var(--sf-accent);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.sf-confirm p {
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+.sf-confirm .sf-btn-row {
+  justify-content: flex-end;
 }
 
 /* a card's own extras (똑딱서명's video) sit over it, outside its button */

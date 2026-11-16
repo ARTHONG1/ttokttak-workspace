@@ -4225,6 +4225,14 @@ export function registerAiIpc(): void {
     try {
       const config = provider === 'local' ? await ensureLocalAiRuntime() : target.config
       let stopReason: string | undefined
+      // a grammar only means something to the built-in llama-server; capped so a renderer cannot
+      // hand it an unbounded string
+      const grammar =
+        provider === 'local' &&
+        typeof request.grammar === 'string' &&
+        request.grammar.length <= 200_000
+          ? request.grammar
+          : ''
       await streamForProvider(
         provider,
         config,
@@ -4245,6 +4253,7 @@ export function registerAiIpc(): void {
           onUsage: (usage) => out.push({ requestId, type: 'usage', usage }),
           ...subscriptionStreamCallbacks(requestId, out.push),
         },
+        grammar ? { bodyExtras: { grammar } } : {},
       )
       out.push({ requestId, type: 'done', stopReason })
     } catch (err) {

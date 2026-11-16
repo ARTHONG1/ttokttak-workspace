@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { PUMUI_FILE_EXTENSION } from '@genoffice/ttokttak-extension/package'
 import type { CartFileKind } from '../../shared/home-api'
 import { isWebEdition } from './edition'
-import { PARSE_SYSTEM } from './proposal-prompts'
+import { PARSE_SYSTEM, PUMUI_EXTRACT_SYSTEM } from './proposal-prompts'
 import { pumuiPackageFromWork, sendPumui, workProblem } from './pumui-send'
+import { computeRows, parseExtractReply } from './pumui/compute'
+import { extractGrammar } from './pumui/grammar'
+import { flagText, flagTexts, STATUS_TEXT } from './pumui/messages'
+import { normalize, prepareCart } from './pumui/normalize'
+import type { EstimateRow, PumuiFlag, PumuiStatus } from './pumui/types'
+import { check } from './pumui/verifier'
 import {
   Back,
+  Modal,
   SaveTools,
   SpecialAiPicker,
   ToastView,
@@ -93,16 +100,6 @@ const CARD_VISUAL: Record<
   },
 }
 
-/** one row of the 품의 목록; the field names are the original's estimateData */
-interface EstimateRow {
-  description: string
-  specification: string
-  unit: string
-  quantity: number
-  unitPrice: number
-  amount: number
-}
-
 /** what 임시 저장 keeps, under the original's key and shape */
 interface StoredWork {
   title: string
@@ -112,6 +109,54 @@ interface StoredWork {
 }
 
 const STORAGE_KEY = 'procurement_temp_storage'
+
+/**
+ * Which way 품의서 생성 reads a cart: 'legacy' asks PARSE_SYSTEM for finished rows; 'v3' asks
+ * PUMUI_EXTRACT_SYSTEM for the written values and computes the rows (pumui/compute.ts). A
+ * hidden switch for testing the next built-in model: Option(Alt)-click the page title.
+ */
+const EXTRACT_MODE_KEY = 'pumui_extract_mode'
+type ExtractMode = 'legacy' | 'v3'
+const readExtractMode = (): ExtractMode => {
+  try {
+    return localStorage.getItem(EXTRACT_MODE_KEY) === 'v3' ? 'v3' : 'legacy'
+  } catch {
+    return 'legacy'
+  }
+}
+
+/** the money check of the rows on screen: the verifier plus the v3 computation's own flags */
+interface Verdict {
+  status: PumuiStatus
+  flags: PumuiFlag[]
+}
+
+function verdictOf(
+  source: string,
+  rows: EstimateRow[],
+  computed: WeakMap<EstimateRow, string[]>,
+): Verdict {
+  const result = check(
+    source,
+    rows.map(({ description, specification, unit, quantity, unitPrice }) => ({
+      description,
+      specification,
+      unit,
+      quantity,
+      unitPrice,
+    })),
+  )
+  const fromCompute = rows.flatMap((row, i) =>
+    (computed.get(row) ?? []).map((reason) => ({ row: i, reason })),
+  )
+  const flagged = new Set(fromCompute.map((f) => f.row))
+  // a row the computation could not finish also fails the verifier's format check: say it once
+  const flags = [
+    ...fromCompute,
+    ...result.flags.filter((f) => !(f.reason === 'format' && f.row !== null && flagged.has(f.row))),
+  ]
+  return { status: flags.length ? 'needs_review' : result.status, flags }
+}
 
 const won = (n: number): string => n.toLocaleString('ko-KR')
 
@@ -371,6 +416,51 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   }, [])
   const [article, setArticle] = useState<string | null>(null)
   const [rows, setRows] = useState<EstimateRow[]>([])
+  // the text the AI read (tidied, without recommendation areas); the rows are checked against it
+  const [checkSource, setCheckSource] = useState<string | null>(null)
+  const [cropped, setCropped] = useState(0)
+  const [mode, setMode] = useState<ExtractMode>(readExtractMode)
+  const [confirmSend, setConfirmSend] = useState(false)
+  // the v3 computation's flags live on the row objects: an edited row is a new object and drops them
+  const computed = useRef(new WeakMap<EstimateRow, string[]>())
+  const verdict = useMemo(
+    () =>
+      checkSource !== null && rows.length > 0
+        ? verdictOf(checkSource, rows, computed.current)
+        : null,
+    [checkSource, rows],
+  )
+  const rowFlags = useMemo(() => {
+    const map = new Map<number, string[]>()
+    for (const flag of verdict?.flags ?? []) {
+      if (flag.row === null) continue
+      const texts = map.get(flag.row) ?? []
+      const text = flagText(flag)
+      if (!texts.includes(text)) texts.push(text)
+      map.set(flag.row, texts)
+    }
+    return map
+  }, [verdict])
+  const listTexts = flagTexts((verdict?.flags ?? []).filter((f) => f.row === null))
+
+  // the hidden v3 switch: Option(Alt)+Shift+V while this page is open
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.altKey && e.shiftKey && e.code === 'KeyV')) return
+      e.preventDefault()
+      setMode((prev) => {
+        const next: ExtractMode = prev === 'v3' ? 'legacy' : 'v3'
+        try {
+          localStorage.setItem(EXTRACT_MODE_KEY, next)
+        } catch {
+          // a browser without storage keeps the choice for this page only
+        }
+        return next
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const [toast, say] = useToast()
   const [sendNote, setSendNote] = useState<{ ok: boolean; text: string; pkgText: string } | null>(
     null,
@@ -381,9 +471,11 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
 
   // 품의서 생성 → K-에듀파인: the desktop app holds it for the extension, the web app hands
   // it to the extension in this browser; the note below always offers clipboard and file too
-  const sendToEdufine = async () => {
+  const sendToEdufine = async (confirmed = false) => {
     const problem = workProblem(title, rows)
     if (problem) return say(problem, true)
+    // flagged amounts go to K-에듀파인 only after one more yes
+    if (!confirmed && verdict?.status === 'needs_review') return setConfirmSend(true)
     const pkgText = JSON.stringify(
       pumuiPackageFromWork({ title, estimateData: rows, generatedArticle: article }),
     )
@@ -459,10 +551,36 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     if (found.title || found.cart) return
     setBusy(true)
     try {
-      const parsed = parseRows(await askAi(PARSE_SYSTEM, cart))
+      const prepared = prepareCart(cart)
+      const work = prepared.text.trim() ? prepared : { text: normalize(cart), removed: 0 }
+      const marks = new WeakMap<EstimateRow, string[]>()
+      let parsed: EstimateRow[]
+      if (mode === 'v3') {
+        const reply = await askAi(PUMUI_EXTRACT_SYSTEM, work.text, [], 4000, {
+          feature: 'pumui',
+          ...(usingLocal ? { grammar: extractGrammar(work.text) } : {}),
+        })
+        const out = computeRows(parseExtractReply(reply))
+        if (out.rows.length === 0)
+          throw new Error('장바구니에서 품목을 찾지 못했어요. 내용을 확인해 주세요.')
+        for (const flag of out.flags) {
+          if (flag.row === null) continue
+          const row = out.rows[flag.row]
+          marks.set(row, [...(marks.get(row) ?? []), flag.reason])
+        }
+        parsed = out.rows
+      } else {
+        parsed = parseRows(await askAi(PARSE_SYSTEM, work.text, [], 4000, { feature: 'pumui' }))
+      }
+      computed.current = marks
+      setCheckSource(work.text)
+      setCropped(work.removed)
       setRows(parsed)
       setArticle(proposalArticle(title.trim(), parsed))
-      say('품의서를 만들었어요.')
+      say(
+        '품의서를 만들었어요.' +
+          (work.removed > 0 ? ' 추천 상품 구역 ' + work.removed + '줄을 빼고 읽었어요.' : ''),
+      )
       requestAnimationFrame(() =>
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       )
@@ -495,7 +613,12 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       const work = JSON.parse(raw) as Partial<StoredWork>
       setTitle(work.title || '')
       setCart(work.shoppingCartText || '')
-      setRows(Array.isArray(work.estimateData) ? work.estimateData : [])
+      const loaded = Array.isArray(work.estimateData) ? work.estimateData : []
+      computed.current = new WeakMap()
+      // a saved work is checked again against its saved cart (the saved shape is unchanged)
+      setCheckSource(loaded.length > 0 ? prepareCart(work.shoppingCartText || '').text : null)
+      setCropped(0)
+      setRows(loaded)
       setArticle(work.generatedArticle || null)
       setErrors({})
       say('저장된 작업을 불러왔어요.')
@@ -514,6 +637,8 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     setCart('')
     setRows([])
     setArticle(null)
+    setCheckSource(null)
+    setCropped(0)
     setErrors({})
     say('모든 내용을 지웠어요.')
   }
@@ -529,7 +654,14 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
           <ProposalIcon />
         </span>
         <div className="sf-page-title">
-          <h1>품의서 생성</h1>
+          <h1>
+            품의서 생성
+            {mode === 'v3' && (
+              <span className="sf-mode-badge" data-testid="pumui-mode">
+                옮겨 적기(v3)
+              </span>
+            )}
+          </h1>
           <p>장바구니 내용을 붙여 넣으면 AI가 품의 기안문과 품의 목록을 만들어요.</p>
         </div>
         <SaveTools onSave={saveTemp} onLoad={loadTemp} onDelete={deleteTemp} />
@@ -707,6 +839,27 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
 
             <div className="sf-field">
               <span>품의 목록</span>
+              {verdict && (
+                <div
+                  className={'sf-check sf-check-' + verdict.status}
+                  role="status"
+                  data-testid="pumui-check"
+                  data-status={verdict.status}
+                >
+                  <p className="sf-check-title">{STATUS_TEXT[verdict.status]}</p>
+                  {(listTexts.length > 0 || rowFlags.size > 0 || cropped > 0) && (
+                    <ul>
+                      {listTexts.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                      {rowFlags.size > 0 && (
+                        <li>표에서 표시한 줄 {rowFlags.size}개를 원문과 비교해 주세요</li>
+                      )}
+                      {cropped > 0 && <li>추천 상품 구역 {cropped}줄을 빼고 읽었어요</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
               <div className="sf-table-wrap">
                 <table className="sf-table" data-testid="proposal-table">
                   <thead>
@@ -723,57 +876,68 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                   </thead>
                   <tbody>
                     {rows.map((r, i) => (
-                      <tr key={i}>
-                        <td className="sf-col-no">{i + 1}</td>
-                        <td>
-                          <input
-                            aria-label={i + 1 + '번 품명'}
-                            value={r.description}
-                            onChange={(e) => editRow(i, 'description', e.target.value)}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            aria-label={i + 1 + '번 규격'}
-                            value={r.specification}
-                            onChange={(e) => editRow(i, 'specification', e.target.value)}
-                          />
-                        </td>
-                        <td className="sf-col-unit">
-                          <input
-                            aria-label={i + 1 + '번 단위'}
-                            value={r.unit}
-                            onChange={(e) => editRow(i, 'unit', e.target.value)}
-                          />
-                        </td>
-                        <td className="sf-col-qty">
-                          <input
-                            aria-label={i + 1 + '번 수량'}
-                            inputMode="numeric"
-                            value={String(r.quantity)}
-                            onChange={(e) => editRow(i, 'quantity', e.target.value)}
-                          />
-                        </td>
-                        <td className="sf-col-num">
-                          <input
-                            aria-label={i + 1 + '번 단가'}
-                            inputMode="numeric"
-                            value={String(r.unitPrice)}
-                            onChange={(e) => editRow(i, 'unitPrice', e.target.value)}
-                          />
-                        </td>
-                        <td className="sf-col-num sf-amount">{won(r.amount)}</td>
-                        <td className="sf-col-del">
-                          <button
-                            type="button"
-                            className="sf-icon-btn"
-                            aria-label={i + 1 + '번 줄 지우기'}
-                            onClick={() => changeRows(rows.filter((_, j) => j !== i))}
-                          >
-                            ×
-                          </button>
-                        </td>
-                      </tr>
+                      <Fragment key={i}>
+                        <tr
+                          className={rowFlags.has(i) ? 'sf-row-flag' : undefined}
+                          data-testid={rowFlags.has(i) ? 'pumui-flagged-row' : undefined}
+                        >
+                          <td className="sf-col-no">{i + 1}</td>
+                          <td>
+                            <input
+                              aria-label={i + 1 + '번 품명'}
+                              value={r.description}
+                              onChange={(e) => editRow(i, 'description', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              aria-label={i + 1 + '번 규격'}
+                              value={r.specification}
+                              onChange={(e) => editRow(i, 'specification', e.target.value)}
+                            />
+                          </td>
+                          <td className="sf-col-unit">
+                            <input
+                              aria-label={i + 1 + '번 단위'}
+                              value={r.unit}
+                              onChange={(e) => editRow(i, 'unit', e.target.value)}
+                            />
+                          </td>
+                          <td className="sf-col-qty">
+                            <input
+                              aria-label={i + 1 + '번 수량'}
+                              inputMode="numeric"
+                              value={String(r.quantity)}
+                              onChange={(e) => editRow(i, 'quantity', e.target.value)}
+                            />
+                          </td>
+                          <td className="sf-col-num">
+                            <input
+                              aria-label={i + 1 + '번 단가'}
+                              inputMode="numeric"
+                              value={String(r.unitPrice)}
+                              onChange={(e) => editRow(i, 'unitPrice', e.target.value)}
+                            />
+                          </td>
+                          <td className="sf-col-num sf-amount">{won(r.amount)}</td>
+                          <td className="sf-col-del">
+                            <button
+                              type="button"
+                              className="sf-icon-btn"
+                              aria-label={i + 1 + '번 줄 지우기'}
+                              onClick={() => changeRows(rows.filter((_, j) => j !== i))}
+                            >
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                        {rowFlags.has(i) && (
+                          <tr className="sf-row-why">
+                            <td />
+                            <td colSpan={7}>{rowFlags.get(i)?.join(' · ')}</td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                   <tfoot>
@@ -814,6 +978,36 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       </div>
 
       <ToastView toast={toast} />
+      {confirmSend && (
+        <Modal title="확인이 필요한 곳이 남아 있어요" onClose={() => setConfirmSend(false)}>
+          <div className="sf-confirm" data-testid="pumui-send-confirm">
+            <p>
+              금액 확인에서 걸린 곳이 있어요. 표시한 줄을 원문과 비교하셨나요? 그래도 K-에듀파인으로
+              보낼까요?
+            </p>
+            <div className="sf-btn-row">
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                onClick={() => setConfirmSend(false)}
+              >
+                돌아가서 확인
+              </button>
+              <button
+                type="button"
+                className="sf-primary sf-sm"
+                data-testid="pumui-send-anyway"
+                onClick={() => {
+                  setConfirmSend(false)
+                  void sendToEdufine(true)
+                }}
+              >
+                그래도 보내기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

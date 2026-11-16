@@ -66,12 +66,16 @@ export function aiErrorText(chunk: AiStreamChunk): string {
   }
 }
 
-/** one model turn over the shell's shared ai:stream handler, as the AI 질문 panel uses it */
+/**
+ * one model turn over the shell's shared ai:stream handler, as the AI 질문 panel uses it;
+ * grammar only reaches the built-in model, feature names the tool asking (see AiStreamRequest)
+ */
 export async function askAi(
   system: string,
   text: string,
   images: { base64: string; mime: string }[] = [],
   maxTokens = 4000,
+  extra: { grammar?: string; feature?: string } = {},
 ): Promise<string> {
   const api = window.aiOffice
   if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
@@ -98,6 +102,8 @@ export async function askAi(
         messages: [{ role: 'user', text, ...(images.length ? { images } : {}) }],
         tools: [],
         maxTokens,
+        ...(extra.grammar ? { grammar: extra.grammar } : {}),
+        ...(extra.feature ? { feature: extra.feature } : {}),
       })
       .catch((error: unknown) => {
         off()

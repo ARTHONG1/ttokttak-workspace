@@ -29,3 +29,5 @@ tools/ooxml-validate/schemas/
 
 # Built-in skills: third-party skill files kept byte-identical to upstream (see NOTICE).
 apps/shell/resources/builtin-skills/*/
+# copied byte for byte from the model project; its sha256 is pinned in tests/pumui-verifier.test.ts
+apps/shell/tests/fixtures/pumui-verifier-vectors.json

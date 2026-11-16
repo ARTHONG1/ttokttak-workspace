@@ -24,6 +24,8 @@ export async function streamForProvider(
   tools: AgentToolDef[],
   maxTokens: number,
   cb: StreamCallbacks,
+  /** extra body fields for an OpenAI-compatible endpoint (the built-in model's grammar) */
+  extras: { bodyExtras?: Record<string, unknown> } = {},
 ): Promise<void> {
   const endpoint = getProviderAdapter(provider).resolveEndpoint(config)
   const { baseUrl } = endpoint
@@ -35,6 +37,10 @@ export async function streamForProvider(
     return streamClaudeCodeCli(config, system, messages, tools, maxTokens, cb)
   }
   const protocol: Exclude<AiProtocol, 'codex-app-server' | 'claude-code-cli'> = endpoint.protocol
+  const bodyExtras =
+    endpoint.bodyExtras || extras.bodyExtras
+      ? { ...endpoint.bodyExtras, ...extras.bodyExtras }
+      : undefined
   return withOutputCapFallback(baseUrl, config.model, maxTokens, (cap) => {
     switch (protocol) {
       case 'anthropic':
@@ -47,7 +53,7 @@ export async function streamForProvider(
         return streamOpenAiCompatible(baseUrl, config, system, messages, tools, cap, cb, {
           omitTemperature: endpoint.omitTemperature,
           useMaxCompletionTokens: endpoint.useMaxCompletionTokens,
-          bodyExtras: endpoint.bodyExtras,
+          bodyExtras,
         })
     }
   })

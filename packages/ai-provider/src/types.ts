@@ -321,6 +321,16 @@ export interface AiStreamRequest {
   messages: AgentMessage[]
   tools?: AgentToolDef[]
   maxTokens?: number
+  /**
+   * llama.cpp GBNF that fixes the shape of the answer. Only the built-in model (llama-server)
+   * receives it; every other provider ignores it.
+   */
+  grammar?: string
+  /**
+   * The feature asking, e.g. 'pumui' for 품의서 생성. Reserved for picking a per-feature adapter
+   * of the built-in model later; today it does not change the request.
+   */
+  feature?: string
 }
 
 /** Token usage a provider reported for one model turn. Both fields are best-effort:
