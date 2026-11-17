@@ -265,6 +265,48 @@ const homeApi: HomeApi = {
     ipcRenderer.on(HOME_CHANNELS.convertProgress, listener)
     return () => ipcRenderer.removeListener(HOME_CHANNELS.convertProgress, listener)
   },
+  async openOrganizeDocuments() {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeOpen)) as Awaited<
+      ReturnType<HomeApi['openOrganizeDocuments']>
+    >
+  },
+  async addOrganizeDocuments(token) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeAdd, token)) as Awaited<
+      ReturnType<HomeApi['addOrganizeDocuments']>
+    >
+  },
+  async organizeUnits(token, fileId) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeUnits, token, fileId)) as Awaited<
+      ReturnType<HomeApi['organizeUnits']>
+    >
+  },
+  async organizePdfBytes(token, fileId) {
+    const bytes: unknown = await ipcRenderer.invoke(HOME_CHANNELS.organizePdfBytes, token, fileId)
+    return bytes instanceof Uint8Array ? bytes : null
+  },
+  async organizePageSvg(token, fileId, page) {
+    const svg: unknown = await ipcRenderer.invoke(
+      HOME_CHANNELS.organizePageSvg,
+      token,
+      fileId,
+      page,
+    )
+    return typeof svg === 'string' ? svg : null
+  },
+  async runOrganize(request) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeRun, request)) as Awaited<
+      ReturnType<HomeApi['runOrganize']>
+    >
+  },
+  onOrganizeProgress(handler) {
+    const listener = (_event: IpcRendererEvent, progress: unknown) =>
+      handler(progress as Parameters<typeof handler>[0])
+    ipcRenderer.on(HOME_CHANNELS.organizeProgress, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.organizeProgress, listener)
+  },
+  async closeOrganize(token) {
+    await ipcRenderer.invoke(HOME_CHANNELS.organizeClose, token)
+  },
   async workSend(feature, text) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.workSend, feature, text)) as Awaited<
       ReturnType<HomeApi['workSend']>

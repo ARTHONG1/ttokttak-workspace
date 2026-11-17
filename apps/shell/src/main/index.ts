@@ -162,6 +162,7 @@ import {
   type SourceKind,
 } from './document-convert/routes'
 import { runConversion } from './document-convert/run'
+import { registerOrganizeIpc } from './organize/organize-ipc'
 import { nodeConvertDeps } from './document-convert/node-steps'
 import {
   appExportLaunch,
@@ -5904,6 +5905,9 @@ function registerHomeIpc(): void {
       convertRunning = false
     }
   })
+
+  // 똑딱업무 > 똑딱정리: documents picked here and kept in this process; the page asks by token
+  registerOrganizeIpc(() => shellWindow)
 
   // 특화 기능's exports: the page makes the bytes, the user picks where they go
   ipcMain.handle(HOME_CHANNELS.saveFeatureFile, async (event, raw: unknown) => {

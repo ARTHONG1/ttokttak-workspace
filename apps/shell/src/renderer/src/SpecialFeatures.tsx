@@ -26,6 +26,7 @@ import { QuizGenerator, QuizIcon } from './QuizGenerator'
 import { TtokSign } from './sign/TtokSign'
 import { SignVideoPreview } from './sign/sign-video'
 import { ConvertIcon, TtokConvert } from './convert/TtokConvert'
+import { OrganizeIcon, TtokOrganize } from './organize/TtokOrganize'
 import { RecordIcon, SchoolRecord } from './record/SchoolRecord'
 import './special-features.css'
 import './quiz-generator.css'
@@ -41,7 +42,7 @@ import './quiz-generator.css'
  * always the table's total.
  */
 
-type FeatureId = 'proposal' | 'quiz' | 'sign' | 'convert' | 'record'
+type FeatureId = 'proposal' | 'quiz' | 'sign' | 'convert' | 'organize' | 'record'
 
 interface Feature {
   id: FeatureId
@@ -77,6 +78,13 @@ export const FEATURES: Feature[] = [
     tags: ['한글·워드·PDF·PPT', '카드로 고르기', '변환 과정 보기'],
   },
   {
+    id: 'organize',
+    title: '똑딱정리',
+    summary:
+      '문서를 올리면 할 수 있는 정리를 카드로 보여 주고, 합치기·나누기·쪽 지우기·용량 줄이기를 원래 형식 그대로 해요.',
+    tags: ['한글·워드·PDF·PPT', '원래 형식 유지', '어디에도 저장 안 함'],
+  },
+  {
     id: 'record',
     title: '생기부',
     summary:
@@ -93,6 +101,7 @@ const CARD_VISUAL: Record<
   proposal: { kicker: '문서 작성', stamp: 'AI', caption: '장바구니에서 기안문까지' },
   quiz: { kicker: '학습 자료', stamp: 'Q & A', caption: '자료 하나로 다채로운 퀴즈' },
   convert: { kicker: '형식 바꾸기', stamp: 'HWP→PDF', caption: '올리고, 고르고, 내려받기' },
+  organize: { kicker: '문서 정리', stamp: '합치기·나누기', caption: '쪽 지우기와 용량 줄이기까지' },
   record: {
     kicker: '학교생활기록부',
     stamp: '세특·행발',
@@ -334,6 +343,8 @@ function FeatureList({ onOpen }: { onOpen: (id: FeatureId) => void }): ReactElem
                     <QuizIcon />
                   ) : f.id === 'convert' ? (
                     <ConvertIcon />
+                  ) : f.id === 'organize' ? (
+                    <OrganizeIcon />
                   ) : f.id === 'record' ? (
                     <RecordIcon />
                   ) : (
@@ -1044,6 +1055,8 @@ export function SpecialFeatures({
         <TtokSign onBack={() => setOpen(null)} />
       ) : open === 'convert' ? (
         <TtokConvert onBack={() => setOpen(null)} />
+      ) : open === 'organize' ? (
+        <TtokOrganize onBack={() => setOpen(null)} />
       ) : open === 'record' ? (
         <SchoolRecord onBack={() => setOpen(null)} />
       ) : (

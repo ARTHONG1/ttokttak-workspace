@@ -16,6 +16,13 @@ import type {
 } from '@genoffice/ai-provider'
 import type { UpdateChannel, UpdateUiState } from './update-api'
 import type {
+  OrganizeOpenResult,
+  OrganizeProgress,
+  OrganizeRunRequest,
+  OrganizeRunResult,
+  OrganizeUnitsResult,
+} from './organize-api'
+import type {
   ConvertFormat,
   ConvertOpenResult,
   ConvertProgress,
@@ -303,6 +310,22 @@ export interface HomeApi {
   runConvert(token: string, format: ConvertFormat): Promise<ConvertRunResult>
   /** 문서 변환: which step of the running conversion has started; returns the unsubscribe */
   onConvertProgress(handler: (progress: ConvertProgress) => void): () => void
+  /** 똑딱정리: pick documents (one, or several of one kind) and get the cards they can have (null = canceled) */
+  openOrganizeDocuments(): Promise<OrganizeOpenResult | null>
+  /** 똑딱정리: more documents of the same kind, for a join (null = canceled) */
+  addOrganizeDocuments(token: string): Promise<OrganizeOpenResult | null>
+  /** 똑딱정리: the pages (slides, parts) of one picked document, for the picker */
+  organizeUnits(token: string, fileId: string): Promise<OrganizeUnitsResult>
+  /** 똑딱정리: a picked PDF's bytes, for the picker's page pictures */
+  organizePdfBytes(token: string, fileId: string): Promise<Uint8Array | null>
+  /** 똑딱정리: one page of a picked Hangul document as SVG, for the picker */
+  organizePageSvg(token: string, fileId: string, page: number): Promise<string | null>
+  /** 똑딱정리: do one tidy-up and get the result to save */
+  runOrganize(request: OrganizeRunRequest): Promise<OrganizeRunResult>
+  /** 똑딱정리: what the running tidy-up is doing; returns the unsubscribe */
+  onOrganizeProgress(handler: (progress: OrganizeProgress) => void): () => void
+  /** 똑딱정리: the page went away; the picked files are let go */
+  closeOrganize(token: string): Promise<void>
   /** 특화 기능: save bytes the page made where the user picks; resolves to the path (null = canceled) */
   saveFeatureFile(request: QuizSaveRequest): Promise<string | null>
   /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
@@ -603,6 +626,14 @@ export const HOME_CHANNELS = {
   openConvertDocument: 'home:open-convert-document',
   runConvert: 'home:run-convert',
   convertProgress: 'home:convert-progress',
+  organizeOpen: 'home:organize-open',
+  organizeAdd: 'home:organize-add',
+  organizeUnits: 'home:organize-units',
+  organizePdfBytes: 'home:organize-pdf-bytes',
+  organizePageSvg: 'home:organize-page-svg',
+  organizeRun: 'home:organize-run',
+  organizeProgress: 'home:organize-progress',
+  organizeClose: 'home:organize-close',
   saveFeatureFile: 'home:save-feature-file',
   readFeatureAsset: 'home:read-feature-asset',
   openFeatureLink: 'home:open-feature-link',

@@ -3,8 +3,16 @@ import { FEATURES, proposalArticle } from '../src/renderer/src/SpecialFeatures'
 
 describe('똑딱업무 tools', () => {
   it('lists 문서 변환 after 똑딱서명, then 생기부', () => {
-    expect(FEATURES.map((f) => f.id)).toEqual(['proposal', 'quiz', 'sign', 'convert', 'record'])
+    expect(FEATURES.map((f) => f.id)).toEqual([
+      'proposal',
+      'quiz',
+      'sign',
+      'convert',
+      'organize',
+      'record',
+    ])
     expect(FEATURES.find((f) => f.id === 'convert')?.title).toBe('문서 변환')
+    expect(FEATURES.find((f) => f.id === 'organize')?.title).toBe('똑딱정리')
     expect(FEATURES.find((f) => f.id === 'record')?.title).toBe('생기부')
   })
 })
