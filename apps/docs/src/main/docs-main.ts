@@ -126,7 +126,12 @@ import {
 } from '@genoffice/ai-provider'
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
-import { ensureLocalAiRuntime, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
+import {
+  ensureLocalAiRuntime,
+  localAiAvailable,
+  localAiLoraFor,
+  stopLocalAiRuntime,
+} from './local-ai-runtime'
 import {
   localExactEditFollowup,
   localExactSlideStep,
@@ -136,7 +141,11 @@ import {
   planLocalExactFormat,
   planLocalHwpContextualEdit,
 } from './local-ai-exact-edit'
-import { LOCAL_PLAIN_MAX_TOKENS, prepareLocalAiTurn } from './local-ai-turn'
+import {
+  LOCAL_EXTRACT_MAX_TOKENS,
+  LOCAL_PLAIN_MAX_TOKENS,
+  prepareLocalAiTurn,
+} from './local-ai-turn'
 import {
   LOCAL_DRAFT_SYSTEM,
   LOCAL_DRAFT_RETRY_SYSTEM,
@@ -4202,11 +4211,18 @@ export function registerAiIpc(): void {
     // Small local models benefit from short edits; the hard cap also prevents
     // unbounded generation on low-memory machines. A plain writing request (no
     // tools, e.g. a 생기부 paragraph of up to 1,500 NEIS bytes) needs more room.
+    // 품의서 생성 on the built-in model asks for a whole cart as JSON under its grammar: it gets
+    // the room and the settings its adapter was measured with (temperature 0).
+    const localExtract = provider === 'local' && request.feature === 'pumui'
     const maxTokens =
       provider === 'local'
         ? Math.min(
             request.maxTokens ?? maxOutputTokensOf(settings),
-            tools.length === 0 ? LOCAL_PLAIN_MAX_TOKENS : 512,
+            localExtract
+              ? LOCAL_EXTRACT_MAX_TOKENS
+              : tools.length === 0
+                ? LOCAL_PLAIN_MAX_TOKENS
+                : 512,
           )
         : (request.maxTokens ?? maxOutputTokensOf(settings))
     const controller = new AbortController()
@@ -4233,6 +4249,13 @@ export function registerAiIpc(): void {
         request.grammar.length <= 200_000
           ? request.grammar
           : ''
+      // the feature's own adapter (똑딱AI 5세대: 품의), for this request only
+      const lora = provider === 'local' ? localAiLoraFor(request.feature) : null
+      const bodyExtras = {
+        ...(grammar ? { grammar } : {}),
+        ...(lora ? { lora } : {}),
+        ...(localExtract ? { temperature: 0 } : {}),
+      }
       await streamForProvider(
         provider,
         config,
@@ -4253,7 +4276,7 @@ export function registerAiIpc(): void {
           onUsage: (usage) => out.push({ requestId, type: 'usage', usage }),
           ...subscriptionStreamCallbacks(requestId, out.push),
         },
-        grammar ? { bodyExtras: { grammar } } : {},
+        Object.keys(bodyExtras).length > 0 ? { bodyExtras } : {},
       )
       out.push({ requestId, type: 'done', stopReason })
     } catch (err) {

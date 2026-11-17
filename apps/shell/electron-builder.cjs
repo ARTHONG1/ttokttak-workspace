@@ -904,6 +904,12 @@ const config = {
       ]) {
         if (!existsSync(join(bundled, name))) throw new Error(`Offline AI bundle missing ${name}`)
       }
+      // 똑딱AI 5세대: the per-feature adapters the runtime loads beside the base
+      for (const adapter of Object.values(manifest.adapters ?? {})) {
+        if (!existsSync(join(bundled, adapter.file))) {
+          throw new Error(`Offline AI bundle missing ${adapter.file}`)
+        }
+      }
     }
     ensureThirdPartyNotices()
     assertModuleTreesPresent()

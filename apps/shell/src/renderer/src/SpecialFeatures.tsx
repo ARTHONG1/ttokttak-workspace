@@ -122,7 +122,8 @@ const STORAGE_KEY = 'procurement_temp_storage'
 /**
  * Which way 품의서 생성 reads a cart: 'legacy' asks PARSE_SYSTEM for finished rows; 'v3' asks
  * PUMUI_EXTRACT_SYSTEM for the written values and computes the rows (pumui/compute.ts). A
- * hidden switch for testing the next built-in model: Option(Alt)-click the page title.
+ * hidden switch (Option+Shift+V) picks it for the other AIs; the built-in 똑딱AI always reads
+ * the v3 way, the only way its 품의 adapter (5세대, final200-v1) was trained.
  */
 const EXTRACT_MODE_KEY = 'pumui_extract_mode'
 type ExtractMode = 'legacy' | 'v3'
@@ -573,7 +574,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       const work = prepared
       const marks = new WeakMap<EstimateRow, string[]>()
       let parsed: EstimateRow[]
-      if (mode === 'v3') {
+      if (mode === 'v3' || usingLocal) {
         const reply = await askAi(PUMUI_EXTRACT_SYSTEM, work.text, [], 4000, {
           feature: 'pumui',
           ...(usingLocal ? { grammar: extractGrammar(work.text) } : {}),

@@ -19,6 +19,11 @@ const MAX_PLAIN_BYTES = 7000
 const MAX_PLAIN_SYSTEM_BYTES = 2400
 /** the output cap of a plain writing request; editor turns keep their short cap */
 export const LOCAL_PLAIN_MAX_TOKENS = 1024
+/**
+ * the output cap of 품의서 생성's cart reading on the built-in model: a 20-item cart comes to
+ * about 700 tokens of JSON; the rest of the 4,096-token context holds the cart itself
+ */
+export const LOCAL_EXTRACT_MAX_TOKENS = 3072
 
 type LocalTurn = {
   system: string

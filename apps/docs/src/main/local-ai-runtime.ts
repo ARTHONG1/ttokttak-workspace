@@ -8,11 +8,30 @@ import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { availableParallelism } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 export const LOCAL_AI_MODEL = 'qwen3.5-2b-local'
 export type LocalAiEndpoint = { baseUrl: string; apiKey: string; model: string }
-type LocalAiFiles = { executable: string; model: string }
+
+/**
+ * 똑딱AI's per-feature adapters (LoRA), in the order llama-server numbers them. The first is
+ * on for every request (the document adapter: 한글 editing, 생기부 and the rest); a feature with
+ * an adapter of its own turns that one on instead, for its own requests only.
+ */
+export const LOCAL_AI_ADAPTERS = ['document', 'pumui'] as const
+export type LocalAiAdapter = (typeof LOCAL_AI_ADAPTERS)[number]
+type LocalAiFiles = {
+  executable: string
+  model: string
+  /** the adapters found next to the model, in LOCAL_AI_ADAPTERS order; empty for a merged model */
+  adapters: { name: LocalAiAdapter; path: string }[]
+}
+
+/** the adapters of a bundle: all of them, or none (a single merged model, as before 5세대) */
+export function adapterFiles(dir: string): LocalAiFiles['adapters'] {
+  const found = LOCAL_AI_ADAPTERS.map((name) => ({ name, path: join(dir, name + '.gguf') }))
+  return found.every((a) => existsSync(a.path)) ? found : []
+}
 
 // Environment paths are developer-only overrides. Installer resources sit outside ASAR.
 export function localAiFiles(): LocalAiFiles | null {
@@ -25,14 +44,21 @@ export function localAiFiles(): LocalAiFiles | null {
     )
   const model =
     process.env.GENOFFICE_LOCAL_AI_MODEL || join(process.resourcesPath, 'local-ai', 'model.gguf')
-  return existsSync(runtime) && existsSync(model) ? { executable: runtime, model } : null
+  const adapters = adapterFiles(
+    process.env.GENOFFICE_LOCAL_AI_ADAPTERS || join(dirname(model), 'adapters'),
+  )
+  return existsSync(runtime) && existsSync(model) ? { executable: runtime, model, adapters } : null
 }
 
 export function localAiAvailable(): boolean {
   return localAiFiles() !== null
 }
 
-let current: { process: ChildProcess; endpoint: LocalAiEndpoint } | null = null
+let current: {
+  process: ChildProcess
+  endpoint: LocalAiEndpoint
+  adapters: LocalAiAdapter[]
+} | null = null
 let starting: Promise<LocalAiEndpoint> | null = null
 let startingChild: ChildProcess | null = null
 let shuttingDown = false
@@ -47,6 +73,33 @@ function availablePort(): Promise<number> {
       server.close((error) => (error ? reject(error) : resolve(port)))
     })
   })
+}
+
+/**
+ * The server arguments that load the adapters: all at once, the first at full strength and
+ * the rest off. Paths are given relative to the folder the server runs in, because the
+ * FNAME:SCALE form cannot carry a Windows drive letter or a comma.
+ */
+export function adapterArgs(adapters: LocalAiFiles['adapters'], cwd: string): string[] {
+  if (adapters.length === 0) return []
+  return [
+    '--lora-scaled',
+    adapters.map((a, i) => relative(cwd, a.path) + ':' + (i === 0 ? 1 : 0)).join(','),
+  ]
+}
+
+/**
+ * The per-request adapter choice for a feature, for the running server: only that feature's
+ * adapter on. Null when the feature has none (the default, the document adapter, stays on)
+ * or the model is a single merged file.
+ */
+export function localAiLoraFor(
+  feature: string | undefined,
+  loaded: readonly string[] = current?.adapters ?? [],
+): { id: number; scale: number }[] | null {
+  const at = feature ? loaded.indexOf(feature) : -1
+  if (at <= 0) return null
+  return loaded.map((_, id) => ({ id, scale: id === at ? 1 : 0 }))
 }
 
 async function start(): Promise<LocalAiEndpoint> {
@@ -67,6 +120,7 @@ async function start(): Promise<LocalAiEndpoint> {
       : Math.min(4, Math.max(1, availableParallelism() - 1))
   const gpu = Number(process.env.GENOFFICE_LOCAL_AI_GPU_LAYERS ?? 0)
   const layers = Number.isInteger(gpu) && gpu >= 0 && gpu <= 99 ? gpu : 0
+  const cwd = dirname(files.model)
   const args = [
     '--model',
     files.model,
@@ -91,8 +145,10 @@ async function start(): Promise<LocalAiEndpoint> {
     '--reasoning',
     'off',
     '--jinja',
+    ...adapterArgs(files.adapters, cwd),
   ]
   const child = spawn(files.executable, args, {
+    cwd,
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
   })
@@ -122,7 +178,7 @@ async function start(): Promise<LocalAiEndpoint> {
         })
         if (response.ok) {
           if (shuttingDown) throw new Error('The local AI runtime is shutting down')
-          current = { process: child, endpoint }
+          current = { process: child, endpoint, adapters: files.adapters.map((a) => a.name) }
           child.once('exit', () => {
             if (current?.process === child) current = null
           })
