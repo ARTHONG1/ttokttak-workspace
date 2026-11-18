@@ -254,6 +254,16 @@ const homeApi: HomeApi = {
       ReturnType<HomeApi['openConvertDocument']>
     >
   },
+  async openSignPath(paths) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.openSignPath, paths)) as Awaited<
+      ReturnType<HomeApi['openSignPath']>
+    >
+  },
+  async openConvertPath(paths) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.openConvertPath, paths)) as Awaited<
+      ReturnType<HomeApi['openConvertPath']>
+    >
+  },
   async runConvert(token, format) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.runConvert, token, format)) as Awaited<
       ReturnType<HomeApi['runConvert']>
@@ -273,6 +283,16 @@ const homeApi: HomeApi = {
   async addOrganizeDocuments(token) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.organizeAdd, token)) as Awaited<
       ReturnType<HomeApi['addOrganizeDocuments']>
+    >
+  },
+  async openOrganizePaths(paths) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeOpenPaths, paths)) as Awaited<
+      ReturnType<HomeApi['openOrganizePaths']>
+    >
+  },
+  async addOrganizePaths(token, paths) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.organizeAddPaths, token, paths)) as Awaited<
+      ReturnType<HomeApi['addOrganizePaths']>
     >
   },
   async organizeUnits(token, fileId) {

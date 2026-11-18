@@ -88,6 +88,11 @@
   text-align: center;
   color: var(--sf-work);
 }
+/* a document dragged over the page (use-file-drop.ts) */
+.ts-empty.is-over {
+  border-color: var(--sf-accent);
+  border-style: solid;
+}
 .ts-empty h2 {
   margin: 4px 0 0;
   font-size: 18px;

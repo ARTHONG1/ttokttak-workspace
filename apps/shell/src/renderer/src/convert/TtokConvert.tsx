@@ -9,6 +9,7 @@ import type {
   ConvertTarget,
 } from '../../../shared/convert-api'
 import { Back, ToastView, useToast } from '../special-common'
+import { useFileDrop } from '../use-file-drop'
 import './ttok-convert.css'
 
 /**
@@ -196,11 +197,11 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
     })
   }, [])
 
-  const pickDocument = async (): Promise<void> => {
+  const openWith = async (get: () => Promise<ConvertOpenResult | null>): Promise<void> => {
     setError(null)
     setBusy(true)
     try {
-      const result = await window.aiOffice.openConvertDocument()
+      const result = await get()
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -214,6 +215,12 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
       setBusy(false)
     }
   }
+  const pickDocument = (): Promise<void> => openWith(() => window.aiOffice.openConvertDocument())
+  // a document dragged onto the page is converted here, never opened as an editor tab
+  const { over: dropOver, handlers: dropHandlers } = useFileDrop((paths) => {
+    if (busy || view.at === 'running') return say('변환 중이에요. 끝난 뒤 올려 주세요.')
+    void openWith(() => window.aiOffice.openConvertPath(paths))
+  })
 
   const convert = async (doc: Picked, target: ConvertTarget): Promise<void> => {
     setView({ at: 'running', doc, target, step: 1 })
@@ -248,7 +255,12 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
   const stage = stageOf(view)
 
   return (
-    <div className="sf-page tc-root" data-convert-token={token ?? undefined}>
+    <div
+      className={'sf-page tc-root' + (dropOver ? ' is-drop-over' : '')}
+      data-convert-token={token ?? undefined}
+      data-testid="tc-root"
+      {...dropHandlers}
+    >
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
       </div>
@@ -272,12 +284,13 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
       </ol>
 
       {view.at === 'pick' ? (
-        <section className="tc-drop">
+        <section className={'tc-drop' + (dropOver ? ' is-over' : '')}>
           <span className="tc-drop-icon">
             <ConvertIcon />
           </span>
           <h2>변환할 문서를 올려 주세요</h2>
           <p>한글·워드·ODT·엑셀·PPT·PDF·HTML·Markdown·사진을 올릴 수 있어요.</p>
+          <p>여기에 끌어다 놓거나 [문서 올리기]로 고르세요.</p>
           <button
             type="button"
             className="sf-primary tc-drop-button"

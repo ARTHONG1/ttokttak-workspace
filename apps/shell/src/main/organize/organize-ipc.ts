@@ -4,12 +4,13 @@ import { showOpenDialogWithMemory } from '@genoffice/electron-utils'
 import { HOME_CHANNELS } from '../../shared/home-api'
 import { recodeWithChromium } from '../pdf-tools/image-recode'
 import { fittedSize, recodePdfImageInJs, recodePictureInJs, type PictureRecoder } from './pictures'
+import { droppedPaths } from '../dropped-paths'
 import { FAMILY_NAME, ORGANIZE_EXTENSIONS, OrganizeService, checkRequest } from './service'
 
 /**
- * 똑딱정리's channels. The files come from the open dialog only (on the web edition, the
- * browser's upload into this session's own folder); the page gets a token and ids, never a
- * path, and the results go back as bytes for the save dialog the page opens.
+ * 똑딱정리's channels. The files come from the open dialog or a drop on the page (on the web
+ * edition, the browser's upload into this session's own folder); the page gets a token and
+ * ids, never a path back, and the results go back as bytes for the save dialog the page opens.
  */
 
 /** Chromium's decoder, resizer and encoders: a picture back in its own format */
@@ -76,6 +77,25 @@ export function registerOrganizeIpc(fallbackWindow: () => BrowserWindow | null):
     if (!family) return { ok: false, error: '문서를 다시 올려 주세요.' }
     const paths = await pick(event.sender, family)
     return paths ? service.add(token, paths) : null
+  })
+
+  // documents dropped on the page: the same checks as picked ones; the web edition takes
+  // only its own session's uploads
+  const sessionDir = process.env.WEB_SESSION_DIR || undefined
+  const DROP_REFUSED = {
+    ok: false,
+    error: '놓은 파일을 읽지 못했어요. [문서 올리기]로 골라 주세요.',
+  }
+  ipcMain.handle(HOME_CHANNELS.organizeOpenPaths, async (_event, raw: unknown) => {
+    if (service.busy) return { ok: false, error: '정리하는 중이에요. 끝난 뒤 올려 주세요.' }
+    const paths = droppedPaths(raw, sessionDir)
+    return paths ? service.open(paths) : DROP_REFUSED
+  })
+  ipcMain.handle(HOME_CHANNELS.organizeAddPaths, async (_event, token: unknown, raw: unknown) => {
+    if (typeof token !== 'string' || !service.familyOf(token))
+      return { ok: false, error: '문서를 다시 올려 주세요.' }
+    const paths = droppedPaths(raw, sessionDir)
+    return paths ? service.add(token, paths) : DROP_REFUSED
   })
 
   ipcMain.handle(HOME_CHANNELS.organizeUnits, (_event, token: unknown, id: unknown) =>

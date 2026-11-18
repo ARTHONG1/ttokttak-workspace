@@ -8,6 +8,7 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/legacy/build/pdf.mj
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { Back, ToastView, useToast } from '../special-common'
+import { useFileDrop } from '../use-file-drop'
 import { cleanSignature } from './sign-image'
 import { SignPad, type PadPicture } from './SignPad'
 import { SignVideoButton } from './sign-video'
@@ -448,11 +449,14 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     return best
   }
 
-  const openDocument = async () => {
+  const openDocument = async (
+    get: () => Promise<Awaited<ReturnType<typeof window.aiOffice.openSignDocument>>> = () =>
+      window.aiOffice.openSignDocument(),
+  ) => {
     setError(null)
     setBusy('doc')
     try {
-      const result = await window.aiOffice.openSignDocument()
+      const result = await get()
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -487,6 +491,13 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       setBusy(null)
     }
   }
+  // a document dragged onto the page opens here, never as an editor tab; with a document up
+  // (and maybe signatures on it) a drop does not replace it
+  const { over: dropOver, handlers: dropHandlers } = useFileDrop((paths) => {
+    if (busy !== null) return say('문서를 PDF로 바꾸는 중이에요. 잠시만 기다려 주세요.')
+    if (doc) return say('다른 문서에 서명하려면 [다른 문서 올리기]를 눌러 주세요.')
+    void openDocument(() => window.aiOffice.openSignPath(paths))
+  })
 
   const place = (picture: SignPicture) => {
     if (!doc) {
@@ -609,7 +620,11 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
   const step = !doc ? 1 : pictures.length === 0 ? 2 : items.length === 0 ? 3 : 4
 
   return (
-    <div className="sf-page ts-root">
+    <div
+      className={'sf-page ts-root' + (dropOver ? ' is-drop-over' : '')}
+      data-testid="ts-root"
+      {...dropHandlers}
+    >
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
       </div>
@@ -636,10 +651,11 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       <div className="ts-layout">
         <div className="ts-pages" ref={pagesRef}>
           {!doc ? (
-            <div className="ts-empty">
+            <div className={'ts-empty' + (dropOver ? ' is-over' : '')}>
               <SignIcon />
               <h2>서명할 문서를 올려 주세요</h2>
               <p>PDF·한글·워드·엑셀·PPT·사진을 올리면 PDF로 바꿔서 보여 드려요.</p>
+              <p>여기에 끌어다 놓거나 [문서 올리기]로 고르세요.</p>
               <button
                 type="button"
                 className="sf-primary"

@@ -9,6 +9,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { openPptx } from '@genoffice/pptx-engine'
 import { hwpToText } from '@genoffice/file-parse'
 import { OrganizeService, cardsFor, piecesOf, rangeLabel } from '../src/main/organize/service'
+import { droppedPaths } from '../src/main/dropped-paths'
 import { recodePdfImageInJs, recodePictureInJs } from '../src/main/organize/pictures'
 import { docxText } from '../src/main/organize/docx'
 import { readZip } from '../src/main/organize/zip'
@@ -20,6 +21,36 @@ const HWP = join(ROOT, 'apps', 'hwp', 'tests', 'fixtures')
 const PPTX = join(ROOT, 'packages', 'pptx-engine', 'tests', 'fixtures')
 const SAMPLES = join(ROOT, 'web', 'runtime', 'samples')
 const dir = mkdtempSync(join(tmpdir(), 'organize-'))
+
+describe('documents dropped on a 똑딱업무 page', () => {
+  it('takes absolute paths of the kinds it tidies, in order', () => {
+    expect(droppedPaths(['/a/첫 문서.hwp', '/b/둘째.HWPX'])).toEqual([
+      '/a/첫 문서.hwp',
+      '/b/둘째.HWPX',
+    ])
+  })
+
+  it('refuses what is not a list of absolute paths', () => {
+    expect(droppedPaths('/a/x.pdf')).toBeNull()
+    expect(droppedPaths([])).toBeNull()
+    expect(droppedPaths(['x.pdf'])).toBeNull()
+    expect(droppedPaths(['/a/x.pdf', 3])).toBeNull()
+  })
+
+  it('leaves the kind check to the service: a spreadsheet still gets its message', () => {
+    expect(droppedPaths(['/a/표.xlsx'])).toEqual(['/a/표.xlsx'])
+  })
+
+  it("on the web edition takes only the session's own uploads", () => {
+    const session = '/srv/sessions/s1'
+    expect(droppedPaths([session + '/home/업로드/2026/x.pdf'], session)).toEqual([
+      session + '/home/업로드/2026/x.pdf',
+    ])
+    expect(droppedPaths(['/etc/secret.pdf'], session)).toBeNull()
+    expect(droppedPaths([session + '/../s2/home/x.pdf'], session)).toBeNull()
+    expect(droppedPaths(['/srv/sessions/s10/x.pdf'], session)).toBeNull()
+  })
+})
 
 const service = (): OrganizeService =>
   new OrganizeService({

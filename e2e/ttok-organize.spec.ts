@@ -138,7 +138,7 @@ test('똑딱정리 shows the cards a document can have and hands each result out
       await answerDialogs(app, files, save)
       const first = page.getByTestId('to-open')
       if (await first.isVisible()) await first.click()
-      else await page.getByRole('button', { name: '다른 문서 올리기' }).click()
+      else await page.getByRole('button', { name: '다른 문서로 바꾸기' }).click()
     }
     /** save through the stubbed dialog and wait for the file */
     const download = async (path: string): Promise<void> => {
@@ -204,5 +204,82 @@ test('똑딱정리 shows the cards a document can have and hands each result out
     await expect(page.getByRole('alert')).toContainText('같은 종류의 문서끼리만')
   } finally {
     await closeAndSaveVideo(launched, 'ttok-organize')
+  }
+})
+
+test('똑딱정리 keeps documents dragged onto it and adds more for a merge', async () => {
+  test.setTimeout(3 * 60_000)
+  const dir = await mkdtemp(join(tmpdir(), 'ttok-organize-drop-'))
+  const at = (name: string) => join(dir, name)
+  await pdf(at('하나.pdf'), 'one', 1)
+  await pdf(at('둘.pdf'), 'two', 2)
+  await pdf(at('셋.pdf'), 'three', 1)
+
+  const launched = await launchShell({
+    videoDir: 'ttok-organize-drop',
+    onboardingSeen: true,
+    lang: 'ko',
+  })
+  const { app, page } = launched
+  try {
+    const start = page
+      .frameLocator('iframe[title="똑딱작업실 소개"]')
+      .locator('.cta [data-action="start"]')
+    if (
+      await start.waitFor({ state: 'visible', timeout: 10_000 }).then(
+        () => true,
+        () => false,
+      )
+    ) {
+      await start.click()
+    }
+    await page
+      .getByRole('button', { name: /똑딱업무/ })
+      .first()
+      .click()
+    await page.getByTestId('special-feature-organize').click()
+    await expect(page.getByRole('heading', { name: '똑딱정리' })).toBeVisible()
+    const views = () => app.evaluate(({ webContents }) => webContents.getAllWebContents().length)
+    const before = await views()
+
+    // a drop on the page is the page's: it never opens an editor tab (a file made in the page
+    // has no path on disk, so it is refused here with a message)
+    const claimed = await page.getByTestId('to-root').evaluate((root) => {
+      const transfer = new DataTransfer()
+      transfer.items.add(new File(['%PDF-1.4'], '놓은 문서.pdf', { type: 'application/pdf' }))
+      const drop = new DragEvent('drop', {
+        dataTransfer: transfer,
+        bubbles: true,
+        cancelable: true,
+      })
+      root.dispatchEvent(drop)
+      return drop.defaultPrevented
+    })
+    expect(claimed).toBe(true)
+    await expect(page.getByRole('alert')).toContainText('놓은 파일을 읽지 못했어요')
+    await page.waitForTimeout(1500)
+    expect(await views()).toBe(before)
+
+    // what a real drop of two files hands over: their paths, taken as one set to merge
+    const dropped = await page.evaluate(
+      async ([a, b]) => {
+        const out = await window.aiOffice.openOrganizePaths([a!, b!])
+        return out.ok ? out.cards.map((c) => c.action) : out.error
+      },
+      [at('하나.pdf'), at('둘.pdf')],
+    )
+    expect(dropped).toEqual(['merge'])
+
+    // one document up, then 더 올리기 joins a second one for a merge
+    await answerDialogs(app, [at('하나.pdf')], at('unused'))
+    await page.getByTestId('to-open').click()
+    await expect(page.getByTestId('to-card-merge')).toBeVisible()
+    await answerDialogs(app, [at('둘.pdf'), at('셋.pdf')], at('unused'))
+    await page.getByTestId('to-add-more').click()
+    await expect(page.getByTestId('to-setup-merge')).toBeVisible()
+    await expect(page.locator('.to-order li')).toHaveCount(3)
+    await page.screenshot({ path: screenshotPath('ttok-organize-add-more') })
+  } finally {
+    await closeAndSaveVideo(launched, 'ttok-organize-drop')
   }
 })

@@ -64,6 +64,11 @@
   background: linear-gradient(135deg, var(--tc-accent-soft), var(--sf-card) 70%);
   text-align: center;
 }
+/* documents dragged over the page (use-file-drop.ts): the place says it will take them */
+.tc-drop.is-over {
+  border-color: var(--tc-accent);
+  border-style: solid;
+}
 .tc-drop-icon {
   display: grid;
   place-items: center;

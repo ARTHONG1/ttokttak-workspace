@@ -17,6 +17,7 @@ import type {
 } from '../../../shared/organize-api'
 import { isWebEdition } from '../edition'
 import { Back, ToastView, useToast } from '../special-common'
+import { useFileDrop } from '../use-file-drop'
 import '../convert/ttok-convert.css'
 import './ttok-organize.css'
 
@@ -401,11 +402,11 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
     }
   }, [token])
 
-  const pickDocuments = async (): Promise<void> => {
+  const openWith = async (get: () => Promise<OrganizeOpenResult | null>): Promise<void> => {
     setError(null)
     setBusy(true)
     try {
-      const result = await window.aiOffice.openOrganizeDocuments()
+      const result = await get()
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -419,12 +420,13 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
       setBusy(false)
     }
   }
+  const pickDocuments = (): Promise<void> => openWith(() => window.aiOffice.openOrganizeDocuments())
 
-  const addDocuments = async (doc: Opened): Promise<void> => {
+  const addWith = async (get: () => Promise<OrganizeOpenResult | null>): Promise<void> => {
     setError(null)
     setBusy(true)
     try {
-      const result = await window.aiOffice.addOrganizeDocuments(doc.token)
+      const result = await get()
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -433,10 +435,29 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
       const merge = result.cards.find((c) => c.action === 'merge')!
       setOrder(result.files.map((f) => f.id))
       setView({ at: 'setup', doc: result, card: merge })
+    } catch (err) {
+      console.warn('[organize] add failed', err)
+      setError('문서를 더하지 못했어요. 다시 해 주세요.')
     } finally {
       setBusy(false)
     }
   }
+  const addDocuments = (doc: Opened): Promise<void> =>
+    addWith(() => window.aiOffice.addOrganizeDocuments(doc.token))
+
+  // documents dragged onto the page: taken here, so they do not open as editor tabs. On the
+  // first step they are the documents to tidy; with documents up (cards or a setup) they join
+  // them for a merge; after a result they start a new set
+  const dropDocuments = (paths: string[]): void => {
+    if (busy || view.at === 'running') return say('정리하는 중이에요. 끝난 뒤 올려 주세요.')
+    if (paths.length === 0)
+      return setError('놓은 파일을 읽지 못했어요. [문서 올리기]로 골라 주세요.')
+    if (view.at === 'choose' || view.at === 'setup') {
+      const doc = view.doc
+      void addWith(() => window.aiOffice.addOrganizePaths(doc.token, paths))
+    } else void openWith(() => window.aiOffice.openOrganizePaths(paths))
+  }
+  const { over: dropOver, handlers: dropHandlers } = useFileDrop(dropDocuments)
 
   const run = async (doc: Opened, card: OrganizeCard): Promise<void> => {
     setView({ at: 'running', doc, card, label: '준비하는 중' })
@@ -539,7 +560,12 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   return (
-    <div className="sf-page tc-root to-root" data-organize-token={token ?? undefined}>
+    <div
+      className={'sf-page tc-root to-root' + (dropOver ? ' is-drop-over' : '')}
+      data-organize-token={token ?? undefined}
+      data-testid="to-root"
+      {...dropHandlers}
+    >
       <div className="sf-page-bar">
         <Back onClick={onBack} label="똑딱업무" />
       </div>
@@ -568,14 +594,15 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
       <PrivacyNote />
 
       {view.at === 'pick' ? (
-        <section className="tc-drop">
+        <section className={'tc-drop' + (dropOver ? ' is-over' : '')}>
           <span className="tc-drop-icon">
             <OrganizeIcon />
           </span>
           <h2>정리할 문서를 올려 주세요</h2>
           <p>한글(HWP·HWPX)·워드(DOCX)·PPT(PPTX)·PDF를 올릴 수 있어요.</p>
           <p className="to-drop-hint">
-            같은 종류 문서를 여러 개 한 번에 고르면 합치기를 할 수 있어요.
+            여기에 끌어다 놓거나 [문서 올리기]로 고르세요. 같은 종류 문서를 여러 개 올리면 합치기를
+            할 수 있어요.
           </p>
           <button
             type="button"
@@ -609,14 +636,27 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
                 </li>
               ))}
             </ul>
-            <button
-              type="button"
-              className="sf-secondary tc-file-change"
-              disabled={view.at === 'running' || busy}
-              onClick={() => void pickDocuments()}
-            >
-              다른 문서 올리기
-            </button>
+            <div className="to-file-actions">
+              {view.at === 'choose' && (
+                <button
+                  type="button"
+                  className="sf-secondary tc-file-change"
+                  data-testid="to-add-more"
+                  disabled={busy}
+                  onClick={() => void addDocuments(view.doc)}
+                >
+                  {FAMILY_LABEL[view.doc.family]} 문서 더 올리기
+                </button>
+              )}
+              <button
+                type="button"
+                className="sf-secondary tc-file-change"
+                disabled={view.at === 'running' || busy}
+                onClick={() => void pickDocuments()}
+              >
+                다른 문서로 바꾸기
+              </button>
+            </div>
           </div>
           {error && (
             <em className="sf-error" role="alert">

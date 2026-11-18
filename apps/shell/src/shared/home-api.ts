@@ -300,8 +300,12 @@ export interface HomeApi {
   readYoutubeTranscript(url: string): Promise<QuizSourceResult>
   /** 똑딱서명: pick a document and get it as a PDF (null = canceled) */
   openSignDocument(): Promise<SignDocumentResult | null>
+  /** 똑딱서명: a document dropped on the page (a path from pathForFile) */
+  openSignPath(paths: string[]): Promise<SignDocumentResult>
   /** 문서 변환: pick a document and get the formats it can be made into (null = canceled) */
   openConvertDocument(): Promise<ConvertOpenResult | null>
+  /** 문서 변환: a document dropped on the page (a path from pathForFile) */
+  openConvertPath(paths: string[]): Promise<ConvertOpenResult>
   /** 문서 변환: make the picked document (by its token) into one format */
   runConvert(token: string, format: ConvertFormat): Promise<ConvertRunResult>
   /** 문서 변환: which step of the running conversion has started; returns the unsubscribe */
@@ -310,6 +314,10 @@ export interface HomeApi {
   openOrganizeDocuments(): Promise<OrganizeOpenResult | null>
   /** 똑딱정리: more documents of the same kind, for a join (null = canceled) */
   addOrganizeDocuments(token: string): Promise<OrganizeOpenResult | null>
+  /** 똑딱정리: documents dropped on the page (paths from pathForFile) */
+  openOrganizePaths(paths: string[]): Promise<OrganizeOpenResult>
+  /** 똑딱정리: documents dropped on the page while some are up, for a join */
+  addOrganizePaths(token: string, paths: string[]): Promise<OrganizeOpenResult>
   /** 똑딱정리: the pages (slides, parts) of one picked document, for the picker */
   organizeUnits(token: string, fileId: string): Promise<OrganizeUnitsResult>
   /** 똑딱정리: a picked PDF's bytes, for the picker's page pictures */
@@ -618,11 +626,15 @@ export const HOME_CHANNELS = {
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
   openSignDocument: 'home:open-sign-document',
+  openSignPath: 'home:open-sign-path',
   openConvertDocument: 'home:open-convert-document',
+  openConvertPath: 'home:open-convert-path',
   runConvert: 'home:run-convert',
   convertProgress: 'home:convert-progress',
   organizeOpen: 'home:organize-open',
   organizeAdd: 'home:organize-add',
+  organizeOpenPaths: 'home:organize-open-paths',
+  organizeAddPaths: 'home:organize-add-paths',
   organizeUnits: 'home:organize-units',
   organizePdfBytes: 'home:organize-pdf-bytes',
   organizePageSvg: 'home:organize-page-svg',

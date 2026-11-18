@@ -161,6 +161,7 @@ import {
 } from './document-convert/routes'
 import { runConversion } from './document-convert/run'
 import { registerOrganizeIpc } from './organize/organize-ipc'
+import { droppedPaths } from './dropped-paths'
 import { nodeConvertDeps } from './document-convert/node-steps'
 import {
   appExportLaunch,
@@ -5801,27 +5802,29 @@ function registerHomeIpc(): void {
       : { ok: false, error: '유튜브 주소를 확인해 주세요.' },
   )
 
-  // 똑딱업무 > 똑딱서명: the document comes from a file the user picks here and goes back as a
-  // PDF; other formats pass through the dialog-free PDF export, one document at a time
+  // a document dropped on a 똑딱업무 page: the web edition takes only its session's uploads
+  const droppedDocument = (raw: unknown): string | null => {
+    const paths = droppedPaths(raw, process.env.WEB_SESSION_DIR || undefined)
+    return paths && paths.length === 1 ? paths[0]! : null
+  }
+  const DROP_ONE = {
+    ok: false,
+    error:
+      '문서는 하나만 끌어다 놓아 주세요. 놓은 파일을 읽지 못했다면 [문서 올리기]로 골라 주세요.',
+  }
+
+  // 똑딱업무 > 똑딱서명: the document comes from a file the user picks or drops here and goes
+  // back as a PDF; other formats pass through the dialog-free PDF export, one document at a time
   let signConverting = false
-  ipcMain.handle(HOME_CHANNELS.openSignDocument, async (event) => {
-    if (signConverting)
-      return { ok: false, error: '문서를 PDF로 바꾸는 중이에요. 잠시만 기다려 주세요.' }
-    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
-    if (!win) return null
-    const picked = await showOpenDialogWithMemory(dialog, win, {
-      title: '서명할 문서 고르기',
-      filters: [{ name: '서명할 문서', extensions: [...SIGN_DOCUMENT_EXTENSIONS] }],
-      properties: ['openFile'],
-    })
-    if (picked.canceled || !picked.filePaths[0]) return null
+  const SIGN_BUSY = { ok: false, error: '문서를 PDF로 바꾸는 중이에요. 잠시만 기다려 주세요.' }
+  const signDocumentAt = async (document: string) => {
     signConverting = true
     // the web edition runs this process per session (WEB_SESSION_DIR): its server converts
     // (sign-document.ts webCanConvert), and says so at once when it has no converter
     const web = Boolean(process.env.WEB_SESSION_DIR)
     try {
       return await documentToPdf(
-        picked.filePaths[0],
+        document,
         nodeSignDeps({
           convertToPdf: pdfConverterFor(process.env, documentPdf),
           // a photographed page lands on A4 (landscape for a wide photo), edge to edge
@@ -5833,6 +5836,27 @@ function registerHomeIpc(): void {
     } finally {
       signConverting = false
     }
+  }
+  ipcMain.handle(HOME_CHANNELS.openSignDocument, async (event) => {
+    if (signConverting) return SIGN_BUSY
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const picked = await showOpenDialogWithMemory(dialog, win, {
+      title: '서명할 문서 고르기',
+      filters: [{ name: '서명할 문서', extensions: [...SIGN_DOCUMENT_EXTENSIONS] }],
+      properties: ['openFile'],
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+    return signDocumentAt(picked.filePaths[0])
+  })
+  ipcMain.handle(HOME_CHANNELS.openSignPath, async (_event, raw: unknown) => {
+    if (signConverting) return SIGN_BUSY
+    const document = droppedDocument(raw)
+    if (!document) return DROP_ONE
+    const ext = extname(document).slice(1).toLowerCase()
+    if (!(SIGN_DOCUMENT_EXTENSIONS as readonly string[]).includes(ext))
+      return { ok: false, error: '이 파일은 서명할 문서로 열 수 없어요.' }
+    return signDocumentAt(document)
   })
 
   // 똑딱업무 > 문서 변환: the document comes from a file the user picks here and stays in
@@ -5846,17 +5870,8 @@ function registerHomeIpc(): void {
     canMakePdf: boolean
   } | null = null
   let convertRunning = false
-  ipcMain.handle(HOME_CHANNELS.openConvertDocument, async (event) => {
-    if (convertRunning) return { ok: false, error: '변환 중이에요. 끝난 뒤 올려 주세요.' }
-    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
-    if (!win) return null
-    const picked = await showOpenDialogWithMemory(dialog, win, {
-      title: '변환할 문서 고르기',
-      filters: [{ name: '변환할 문서', extensions: [...CONVERT_EXTENSIONS] }],
-      properties: ['openFile'],
-    })
-    if (picked.canceled || !picked.filePaths[0]) return null
-    const path = picked.filePaths[0]
+  const CONVERT_BUSY = { ok: false, error: '변환 중이에요. 끝난 뒤 올려 주세요.' }
+  const convertSourceAt = (path: string) => {
     const kind = sourceKindOf(path)
     if (!kind) return { ok: false, error: '이 파일은 변환할 수 없어요.' }
     let size: number
@@ -5877,6 +5892,23 @@ function registerHomeIpc(): void {
       size,
       targets: targetsFor(kind, convertEdition, canMakePdf),
     }
+  }
+  ipcMain.handle(HOME_CHANNELS.openConvertDocument, async (event) => {
+    if (convertRunning) return CONVERT_BUSY
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return null
+    const picked = await showOpenDialogWithMemory(dialog, win, {
+      title: '변환할 문서 고르기',
+      filters: [{ name: '변환할 문서', extensions: [...CONVERT_EXTENSIONS] }],
+      properties: ['openFile'],
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+    return convertSourceAt(picked.filePaths[0])
+  })
+  ipcMain.handle(HOME_CHANNELS.openConvertPath, (_event, raw: unknown) => {
+    if (convertRunning) return CONVERT_BUSY
+    const document = droppedDocument(raw)
+    return document ? convertSourceAt(document) : DROP_ONE
   })
 
   ipcMain.handle(HOME_CHANNELS.runConvert, async (event, token: unknown, format: unknown) => {

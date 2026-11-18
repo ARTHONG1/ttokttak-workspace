@@ -10,6 +10,17 @@
 }
 
 /* where the documents go */
+/* documents dragged over the page: the drop place says it will take them */
+.to-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.to-root.is-drop-over .to-files {
+  outline: 2px dashed var(--tc-accent);
+  outline-offset: 4px;
+}
+
 .to-privacy {
   display: flex;
   align-items: flex-start;
