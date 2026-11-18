@@ -451,9 +451,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     saveCsv(studentsToCsv(work.students, mode), CSV_NAME[mode])
   }
 
-  // 생기부 → 나이스: the desktop app holds the class for the extension and opens the
-  // browser on NEIS, the web app hands it to the extension in this browser; the note
-  // below always offers the clipboard too
+  // Desktop uses the local browser driver; web uses the browser extension.
   const sendToNeis = async () => {
     const found = recordSendProblem(mode, work)
     if (found) return say(found, true)
@@ -463,9 +461,10 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     try {
       const out = await sendRecord(pkgText, {
         web: isWebEdition(),
-        workSend: typeof api?.workSend === 'function' ? (f, t) => api.workSend(f, t) : undefined,
-        openWorkSite:
-          typeof api?.openWorkSite === 'function' ? (f) => api.openWorkSite(f) : undefined,
+        directTransfer:
+          typeof api?.directTransfer === 'function'
+            ? (f, t) => api.directTransfer(f, t)
+            : undefined,
         runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
       })
       setSendNote({ mode, ok: out.ok, text: out.message, pkgText })
@@ -827,23 +826,26 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                 >
                   <p>{sendNote.text}</p>
                   <p className="sr-send-sub">
-                    나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요. 글을 고쳤다면 다시
-                    보내 주세요.
+                    나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요.
+                    {!isWebEdition() &&
+                      ' 앱이 연 전용 브라우저를 사용해 주세요. 기존 칸에 다른 글이 있으면 덮어쓰지 않고 멈춰요.'}
                   </p>
                   <div className="sf-btn-row">
-                    <button
-                      type="button"
-                      className="sf-secondary sf-sm"
-                      onClick={() =>
-                        void copyText(sendNote.pkgText).then(() =>
-                          say(
-                            '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
-                          ),
-                        )
-                      }
-                    >
-                      클립보드로 복사
-                    </button>
+                    {isWebEdition() && (
+                      <button
+                        type="button"
+                        className="sf-secondary sf-sm"
+                        onClick={() =>
+                          void copyText(sendNote.pkgText).then(() =>
+                            say(
+                              '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
+                            ),
+                          )
+                        }
+                      >
+                        클립보드로 복사
+                      </button>
+                    )}
                     <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
                       닫기
                     </button>

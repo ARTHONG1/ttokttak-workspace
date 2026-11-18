@@ -56,7 +56,7 @@ export default defineConfig({
   main: {
     plugins: [kordocCfbImport],
     // node:sqlite is a Node 22+ builtin the bundler's builtin list may predate
-    build: { rollupOptions: { external: ['node:sqlite', ...KORDOC_UNUSED] } },
+    build: { rollupOptions: { external: ['node:sqlite', 'playwright-core', ...KORDOC_UNUSED] } },
     // the Google client for Drive (decision 0033) comes from the build's
     // environment only; without it the build offers no Drive at all
     define: {

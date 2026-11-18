@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { controlHandler, type ControlHost } from '../src/main/control-handlers'
 import { parseEnvelope } from '../src/main/control-server'
 
-const host = (text: string | null, asked: string[] = []): ControlHost => ({
+const host: ControlHost = {
   reveal: () => {},
   openDocument: () => false,
   activateTab: () => {},
   findTab: () => undefined,
-  takeWork: (feature) => (asked.push(feature), text),
-})
+}
 
 describe('control channel: work-take (and pumui-take from before task names)', () => {
   it('accepts work-take with a task name, and pumui-take, without a path', () => {
@@ -26,16 +25,15 @@ describe('control channel: work-take (and pumui-take from before task names)', (
     expect(parseEnvelope('{"token":"t","request":{"cmd":"work-take","feature":"../x"}}')).toBeNull()
   })
 
-  it("answers with the task's waiting work, or null", async () => {
-    const asked: string[] = []
-    expect(
-      await controlHandler(host('{"x":1}', asked))({ cmd: 'work-take', feature: 'edufine-pumui' }),
-    ).toEqual({ ok: true, result: { text: '{"x":1}' } })
-    expect(await controlHandler(host(null, asked))({ cmd: 'pumui-take' })).toEqual({
+  it('has no work waiting for an extension: the desktop app fills the sites itself', async () => {
+    expect(await controlHandler(host)({ cmd: 'work-take', feature: 'edufine-pumui' })).toEqual({
       ok: true,
       result: { text: null },
     })
-    expect(asked).toEqual(['edufine-pumui', 'edufine-pumui'])
+    expect(await controlHandler(host)({ cmd: 'pumui-take' })).toEqual({
+      ok: true,
+      result: { text: null },
+    })
   })
 
   it('still refuses unknown commands', () => {

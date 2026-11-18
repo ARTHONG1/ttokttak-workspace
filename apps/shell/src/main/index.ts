@@ -144,9 +144,7 @@ import {
   isCartFileKind,
   readCartFile,
 } from './cart-file'
-import { workOutbox } from './work-outbox'
-import { goUrl } from '@genoffice/ttokttak-extension/ids'
-import { realRegisterEnv, registerNativeHost } from '@genoffice/cli/edufine-register'
+import { realRegisterEnv, unregisterNativeHost } from '@genoffice/cli/edufine-register'
 import { readQuizFile, readYoutubeTranscript } from './quiz-source'
 import {
   SIGN_DOCUMENT_EXTENSIONS,
@@ -397,6 +395,11 @@ import type {
   FileSearchSettings,
 } from '../shared/home-api'
 import { HOME_CHANNELS } from '../shared/home-api'
+import {
+  createDirectTransferDriver,
+  directTransferRequest,
+  type PlaywrightDirectTransferDriver,
+} from './direct-transfer'
 import {
   normalizeAiPanelPrefs,
   sameAiPanelPrefs,
@@ -4191,6 +4194,7 @@ const tm = (key: Parameters<typeof tMain>[1], params?: Parameters<typeof tMain>[
 // ---- the shell window + its tab manager (recreated if the user closes it on macOS) ----
 
 let shellWindow: BrowserWindow | null = null
+let directTransferDriver: PlaywrightDirectTransferDriver | undefined
 let tabManager: TabManager | null = null
 
 /**
@@ -5755,19 +5759,24 @@ function registerHomeIpc(): void {
     return readCartFile(result.filePaths[0], kind)
   })
 
-  // 특화 기능 → a work site (품의서 생성 → K-에듀파인): the work waits here, per task, until the
-  // extension takes it through native messaging (edufine-host → control 'work-take');
-  // checked on the way in
-  ipcMain.handle(HOME_CHANNELS.workSend, (_event, feature: unknown, text: unknown) =>
-    typeof feature === 'string' && typeof text === 'string' && text.length <= 100_000
-      ? workOutbox.enqueue(feature, text)
-      : { ok: false, reason: '보낼 내용을 읽지 못했어요.' },
-  )
-  // then the browser: the web app's /go page asks the 똑딱작업실 extension to bring the
-  // task's site forward (this process cannot reach the browser's tabs)
-  ipcMain.handle(HOME_CHANNELS.openWorkSite, async (_event, feature: unknown) => {
-    if (typeof feature !== 'string' || !/^[a-z0-9-]{1,40}$/.test(feature)) return
-    await shell.openExternal(goUrl(feature)).catch(() => undefined)
+  // 똑딱업무 → a work site (품의서 생성 → K-에듀파인, 생기부 → 나이스): the desktop app fills
+  // the site itself in its own Chrome/Edge window (direct-transfer.ts); no extension is involved
+  ipcMain.handle(HOME_CHANNELS.directTransfer, async (event, feature: unknown, text: unknown) => {
+    if (
+      process.env.WEB_SESSION_DIR ||
+      !shellWindow ||
+      shellWindow.isDestroyed() ||
+      event.sender !== shellWindow.webContents
+    )
+      return {
+        ok: false,
+        route: 'direct',
+        message: '데스크톱 홈 화면에서만 직접 전송할 수 있어요.',
+      }
+    if (typeof feature !== 'string' || typeof text !== 'string' || text.length > 100_000)
+      return { ok: false, route: 'direct', message: '보낼 내용을 읽지 못했어요.' }
+    directTransferDriver ??= createDirectTransferDriver(app.getPath('userData'))
+    return directTransferRequest(feature, text, directTransferDriver)
   })
 
   // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
@@ -9444,7 +9453,6 @@ app.whenReady().then(async () => {
         if (!activateDetached(id)) tabManager?.activateTab(id)
       },
       findTab: (path) => tabManager?.findTabByPath(path) ?? findDetachedTabByPath(path),
-      takeWork: (feature) => workOutbox.take(feature),
     }),
   ).then(
     (server) => {
@@ -9453,15 +9461,14 @@ app.whenReady().then(async () => {
     (err: unknown) => console.warn('[control] not listening:', err),
   )
 
-  // the 똑딱작업실 extension reaches this app through Chrome/Edge native messaging;
-  // the Windows installer registers the host once, this repeats it for a browser
-  // installed later (installed app only: a dev run has no launcher next to the CLI)
+  // the desktop app no longer talks to the 똑딱작업실 extension: remove the Chrome/Edge
+  // native messaging host an earlier version registered (installed app only)
   if (app.isPackaged) {
     setTimeout(() => {
       try {
-        registerNativeHost(realRegisterEnv(join(process.resourcesPath, 'cli')))
+        unregisterNativeHost(realRegisterEnv(join(process.resourcesPath, 'cli')))
       } catch (err) {
-        console.warn('[edufine] native messaging host not registered:', err)
+        console.warn('[edufine] old native messaging host not removed:', err)
       }
     }, 3000)
   }
@@ -9501,6 +9508,7 @@ app.on('will-quit', () => {
 
 /** what every way out of a normal run releases (will-quit, and an OS session end) */
 function releaseAppResources(): void {
+  void directTransferDriver?.close().catch(() => undefined)
   fileIndexer?.stop()
   fileIndexStore?.close()
   for (const watcher of folderWatchers.values()) watcher.close()

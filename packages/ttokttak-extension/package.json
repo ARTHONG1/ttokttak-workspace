@@ -6,6 +6,7 @@
   "type": "module",
   "description": "똑딱작업실 Chrome extension: school work tasks on their own sites: 에듀파인 품의 (fills the K-에듀파인 품의등록 screen) and 생기부 나이스 입력 (types 세특 and 행발 into the NEIS grid)",
   "exports": {
+    "./screen-map": "./src/sites/edufine/screen-map.ts",
     "./package": "./src/features/edufine-pumui/package.ts",
     "./record": "./src/features/neis-record/package.ts",
     "./ids": "./src/core/ids.ts",

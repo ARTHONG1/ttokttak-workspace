@@ -53,23 +53,18 @@ export function recordSendProblem(mode: RecordMode, work: Work): string | null {
 }
 
 export interface RecordSendDeps {
+  /** the desktop app fills NEIS itself (window.aiOffice.directTransfer); no extension */
+  directTransfer?: import('../../../shared/direct-transfer-api').DirectTransfer
   /** true in the web edition: the extension in this browser is the only route */
   web: boolean
-  /** the desktop app's queue (window.aiOffice.workSend) */
-  workSend?: (
-    feature: string,
-    text: string,
-  ) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
-  /** the desktop app opens the browser on the task's site (window.aiOffice.openWorkSite) */
-  openWorkSite?: (feature: string) => Promise<unknown>
-  /** window.chrome.runtime when an extension lets this page talk to it */
+  /** web edition: window.chrome.runtime when an extension lets this page talk to it */
   runtime?: ExtensionRuntime
   timeoutMs?: number
 }
 
 export type RecordSendOutcome =
-  | { ok: true; route: 'desktop' | 'extension'; message: string }
-  | { ok: false; route: 'desktop' | 'none'; message: string }
+  | { ok: true; route: 'direct' | 'extension'; message: string }
+  | { ok: false; route: 'direct' | 'none'; message: string }
 
 const HOW_TO_FILL =
   '나이스 입력 화면의 표에서 첫 학생 줄을 누른 뒤, [똑딱] 창의 [나이스에 채우기]를 누르세요.'
@@ -96,17 +91,12 @@ function movedMessage(moved: unknown): string {
 }
 
 export async function sendRecord(text: string, deps: RecordSendDeps): Promise<RecordSendOutcome> {
-  if (!deps.web && deps.workSend) {
-    const r = await deps.workSend(NEIS_RECORD, text)
-    if (!r.ok) return { ok: false, route: 'desktop', message: r.reason }
-    if (!deps.openWorkSite) {
-      return { ok: true, route: 'desktop', message: '똑딱작업실이 준비했어요. ' + TAKE_HINT }
-    }
-    await deps.openWorkSite(NEIS_RECORD).catch(() => undefined)
+  if (!deps.web) {
+    if (deps.directTransfer) return deps.directTransfer(NEIS_RECORD, text)
     return {
-      ok: true,
-      route: 'desktop',
-      message: '준비하고 브라우저에서 나이스로 옮겼어요. ' + HOW_TO_FILL,
+      ok: false,
+      route: 'direct',
+      message: '직접 전송을 사용할 수 없어요. 데스크톱 앱을 업데이트해 주세요.',
     }
   }
   const rt = deps.runtime

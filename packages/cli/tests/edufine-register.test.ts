@@ -96,4 +96,18 @@ describe('native messaging registration', () => {
     unregisterNativeHost(m.env)
     expect(m.removed).toHaveLength(3)
   })
+
+  it('removes the Edge key and the manifest even when the Chrome key is already gone', () => {
+    const w = fakeEnv('win32', 'C:\\cli', 'C:\\Users\\t')
+    // reg delete fails for a key that is not there
+    w.env.run = (cmd, args) => {
+      w.runs.push([cmd, ...args])
+      if (args[1]?.includes('Google'))
+        throw new Error('ERROR: The system was unable to find the key')
+    }
+    expect(() => unregisterNativeHost(w.env)).not.toThrow()
+    expect(w.runs).toHaveLength(2)
+    expect(w.runs[1]?.[2]).toContain('Microsoft\\Edge')
+    expect(w.removed).toEqual(['C:\\cli\\kr.ttokttak.edufine.json'])
+  })
 })

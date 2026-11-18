@@ -477,12 +477,13 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   const [sendNote, setSendNote] = useState<{ ok: boolean; text: string; pkgText: string } | null>(
     null,
   )
+  const [sending, setSending] = useState(false)
   const resultRef = useRef<HTMLElement>(null)
 
   const total = totalOf(rows)
 
-  // 품의서 생성 → K-에듀파인: the desktop app holds it for the extension, the web app hands
-  // it to the extension in this browser; the note below always offers clipboard and file too
+  // 품의서 생성 → K-에듀파인: the desktop app fills it itself through its own browser window
+  // (no extension); the web app hands it to the extension in this browser
   const sendToEdufine = async (confirmed = false) => {
     const problem = workProblem(title, rows)
     if (problem) return say(problem, true)
@@ -492,14 +493,26 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       pumuiPackageFromWork({ title, estimateData: rows, generatedArticle: article }),
     )
     const api = window.aiOffice
-    const out = await sendPumui(pkgText, {
-      web: isWebEdition(),
-      workSend: typeof api?.workSend === 'function' ? (f, t) => api.workSend(f, t) : undefined,
-      openWorkSite:
-        typeof api?.openWorkSite === 'function' ? (f) => api.openWorkSite(f) : undefined,
-      runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
-    })
-    setSendNote({ ok: out.ok, text: out.message, pkgText })
+    setSending(true)
+    try {
+      const out = await sendPumui(pkgText, {
+        web: isWebEdition(),
+        directTransfer:
+          typeof api?.directTransfer === 'function'
+            ? (f, t) => api.directTransfer(f, t)
+            : undefined,
+        runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
+      })
+      setSendNote({ ok: out.ok, text: out.message, pkgText })
+    } catch {
+      setSendNote({
+        ok: false,
+        text: '전송 연결을 확인하지 못했어요. 화면에 들어간 내용을 먼저 확인해 주세요.',
+        pkgText,
+      })
+    } finally {
+      setSending(false)
+    }
   }
 
   const appendCart = (piece: string) =>
@@ -800,10 +813,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                   type="button"
                   className="sf-primary sf-sm"
                   data-testid="pumui-send"
-                  disabled={rows.length === 0}
+                  disabled={rows.length === 0 || sending}
                   onClick={() => void sendToEdufine()}
                 >
-                  K-에듀파인으로 보내기
+                  {sending ? '입력 확인 중…' : 'K-에듀파인으로 보내기'}
                 </button>
               </div>
             </div>
@@ -815,20 +828,28 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                 data-testid="pumui-send-note"
               >
                 <p>{sendNote.text}</p>
+                {!isWebEdition() && (
+                  <p>
+                    앱이 연 전용 브라우저에서 로그인해 주세요. 저장·결재는 입력 내용을 확인한 뒤
+                    직접 진행해 주세요.
+                  </p>
+                )}
                 <div className="sf-btn-row">
-                  <button
-                    type="button"
-                    className="sf-secondary sf-sm"
-                    onClick={() =>
-                      void copyText(sendNote.pkgText).then(() =>
-                        say(
-                          '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [복사했거나 파일로 받은 품의 넣기]에 붙여 넣어 주세요.',
-                        ),
-                      )
-                    }
-                  >
-                    클립보드로 복사
-                  </button>
+                  {isWebEdition() && (
+                    <button
+                      type="button"
+                      className="sf-secondary sf-sm"
+                      onClick={() =>
+                        void copyText(sendNote.pkgText).then(() =>
+                          say(
+                            '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [복사했거나 파일로 받은 품의 넣기]에 붙여 넣어 주세요.',
+                          ),
+                        )
+                      }
+                    >
+                      클립보드로 복사
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="sf-secondary sf-sm"

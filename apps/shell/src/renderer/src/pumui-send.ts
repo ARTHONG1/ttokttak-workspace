@@ -46,23 +46,18 @@ export function pumuiPackageFromWork(
 }
 
 export interface SendDeps {
+  /** the desktop app fills K-에듀파인 itself (window.aiOffice.directTransfer); no extension */
+  directTransfer?: import('../../shared/direct-transfer-api').DirectTransfer
   /** true in the web edition: the extension in this browser is the only route */
   web: boolean
-  /** the desktop app's queue (window.aiOffice.workSend) */
-  workSend?: (
-    feature: string,
-    text: string,
-  ) => Promise<{ ok: true; title: string } | { ok: false; reason: string }>
-  /** the desktop app opens the browser on the task's site (window.aiOffice.openWorkSite) */
-  openWorkSite?: (feature: string) => Promise<unknown>
-  /** window.chrome.runtime when an extension lets this page talk to it */
+  /** web edition: window.chrome.runtime when an extension lets this page talk to it */
   runtime?: ExtensionRuntime
   timeoutMs?: number
 }
 
 export type SendOutcome =
-  | { ok: true; route: 'desktop' | 'extension'; message: string }
-  | { ok: false; route: 'desktop' | 'none'; message: string }
+  | { ok: true; route: 'direct' | 'extension'; message: string }
+  | { ok: false; route: 'direct' | 'none'; message: string }
 
 const TAKE_HINT = 'K-에듀파인 품의등록 화면 오른쪽 아래 [똑딱]을 누르면 바로 보여요'
 const CHECK_AND_FILL = '[똑딱] 창에서 확인한 뒤 [K-에듀파인에 채우기]를 누르세요.'
@@ -83,20 +78,12 @@ export const NO_EXTENSION =
   '이 브라우저에 「똑딱작업실」 확장 프로그램이 없어요. 설치하거나, 아래 [클립보드로 복사]·[품의 파일 저장]으로 넘겨 주세요.'
 
 export async function sendPumui(text: string, deps: SendDeps): Promise<SendOutcome> {
-  if (!deps.web && deps.workSend) {
-    const r = await deps.workSend(PUMUI, text)
-    if (!r.ok) return { ok: false, route: 'desktop', message: r.reason }
-    if (!deps.openWorkSite)
-      return {
-        ok: true,
-        route: 'desktop',
-        message: '똑딱작업실이 품의를 준비했어요. ' + TAKE_HINT + '.',
-      }
-    await deps.openWorkSite(PUMUI).catch(() => undefined)
+  if (!deps.web) {
+    if (deps.directTransfer) return deps.directTransfer(PUMUI, text)
     return {
-      ok: true,
-      route: 'desktop',
-      message: '품의를 준비하고 브라우저에서 K-에듀파인으로 옮겼어요. ' + CHECK_AND_FILL,
+      ok: false,
+      route: 'direct',
+      message: '직접 전송을 사용할 수 없어요. 데스크톱 앱을 업데이트해 주세요.',
     }
   }
   const rt = deps.runtime

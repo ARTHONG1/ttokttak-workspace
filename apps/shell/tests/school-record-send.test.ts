@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { EXTENSION_ID } from '@genoffice/ttokttak-extension/ids'
 import { parseRecordPackage } from '@genoffice/ttokttak-extension/record'
-import { WorkOutbox } from '../src/main/work-outbox'
 import { emptyInfo, type Student, type Work } from '../src/renderer/src/record/record-core'
 import {
-  NEIS_RECORD,
   NO_RECORD_EXTENSION,
   recordPackageFromWork,
   recordSendProblem,
@@ -58,49 +56,39 @@ describe('생기부 → 생기부 꾸러미', () => {
     ).toMatch(/^2번 학생의 글이 1,500바이트를 넘어요/)
   })
 
-  it("is work the desktop app's queue holds for the extension", () => {
-    const box = new WorkOutbox()
+  it('is a NEIS package the senders accept', () => {
     const text = JSON.stringify(recordPackageFromWork('behavior', CLASS))
-    expect(box.enqueue(NEIS_RECORD, text, 0)).toEqual({ ok: true, title: '행발 · 3명' })
-    expect(box.take(NEIS_RECORD, 1)).toBe(text)
-    expect(box.enqueue(NEIS_RECORD, '{"kind":"ttokttak.pumui"}', 0)).toMatchObject({ ok: false })
+    const parsed = parseRecordPackage(text, new Date())
+    expect(parsed.ok && parsed.pkg.title).toBe('행발 · 3명')
+    expect(parseRecordPackage('{"kind":"ttokttak.pumui"}', new Date())).toMatchObject({ ok: false })
   })
 })
 
 describe('sendRecord', () => {
   const text = JSON.stringify(recordPackageFromWork('subject', CLASS))
 
-  it('holds the work in the desktop app and opens the browser on NEIS', async () => {
+  it('uses the desktop driver without an extension', async () => {
     const calls: string[][] = []
+    const extension: unknown[] = []
     const out = await sendRecord(text, {
       web: false,
-      workSend: async (feature, t) => {
+      directTransfer: async (feature, t) => {
         calls.push(['send', feature, t])
-        return { ok: true, title: 't' }
+        return { ok: true, route: 'direct', message: '입력 완료', written: 2, next: 3 }
       },
-      openWorkSite: async (feature) => {
-        calls.push(['open', feature])
-      },
+      runtime: { sendMessage: (...args: unknown[]) => void extension.push(args) },
     })
-    expect(calls).toEqual([
-      ['send', 'neis-record', text],
-      ['open', 'neis-record'],
-    ])
-    expect(out).toMatchObject({ ok: true, route: 'desktop' })
-    expect(out.message).toContain('나이스로 옮겼어요')
+    expect(calls).toEqual([['send', 'neis-record', text]])
+    expect(extension).toEqual([])
+    expect(out).toMatchObject({ ok: true, route: 'direct', message: '입력 완료' })
   })
 
-  it("passes on the desktop app's refusal without opening the browser", async () => {
-    let opened = false
+  it("passes on the desktop app's refusal", async () => {
     const out = await sendRecord(text, {
       web: false,
-      workSend: async () => ({ ok: false, reason: '알 수 없는 업무예요.' }),
-      openWorkSite: async () => {
-        opened = true
-      },
+      directTransfer: async () => ({ ok: false, route: 'direct', message: '알 수 없는 업무예요.' }),
     })
-    expect(out).toEqual({ ok: false, route: 'desktop', message: '알 수 없는 업무예요.' })
-    expect(opened).toBe(false)
+    expect(out).toEqual({ ok: false, route: 'direct', message: '알 수 없는 업무예요.' })
   })
 
   const runtime = (reply: unknown) => {
@@ -115,6 +103,15 @@ describe('sendRecord', () => {
       },
     }
   }
+
+  it('never falls back to the extension when desktop support is missing', async () => {
+    const { rt, seen } = runtime({ ok: true })
+    expect(await sendRecord(text, { web: false, runtime: rt })).toMatchObject({
+      ok: false,
+      route: 'direct',
+    })
+    expect(seen).toEqual([])
+  })
 
   it('hands the work to the extension in the web edition', async () => {
     const { rt, seen } = runtime({ ok: true, moved: 'focused' })

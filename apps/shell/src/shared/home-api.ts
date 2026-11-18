@@ -30,6 +30,7 @@ import type {
 } from './convert-api'
 import type { KbFileInfo, KbReadPage, KbSearchHit } from '@genoffice/agent-core'
 import type { AiPanelPrefs } from '@genoffice/ui/ai-panel-prefs'
+import type { DirectTransfer } from './direct-transfer-api'
 
 /** UI language; kept self-contained here (mirrors Lang in @genoffice/i18n) */
 
@@ -244,6 +245,8 @@ export interface DefaultAppStatus {
 }
 
 export interface HomeApi {
+  /** Desktop-only deterministic browser input; never invokes AI or an extension. */
+  directTransfer: DirectTransfer
   /** unified recents across document types, newest first (paged) */
   recents(query?: RecentQuery): Promise<RecentPage>
   /** search indexed files by name, folder and content */
@@ -291,13 +294,6 @@ export interface HomeApi {
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
   /** 특화 기능 > 품의서 생성: pick a file of one kind and read its cart text (null = canceled) */
   readCartFile(kind: CartFileKind): Promise<CartFileResult | null>
-  /** 특화 기능: hold a task's work (품의서 생성: a 품의, JSON text) for the 똑딱작업실 extension */
-  workSend(
-    feature: string,
-    text: string,
-  ): Promise<{ ok: true; title: string } | { ok: false; reason: string }>
-  /** 특화 기능: open the browser on the task's site (via the web app's /go page) */
-  openWorkSite(feature: string): Promise<void>
   /** 특화 기능 > 퀴즈 생성기: pick a PDF or Hangul file and read its text (null = canceled) */
   readQuizFile(kind: 'pdf' | 'hwp'): Promise<QuizSourceResult | null>
   /** 특화 기능 > 퀴즈 생성기: the captions of a YouTube video */
@@ -618,8 +614,7 @@ export const HOME_CHANNELS = {
   openPath: 'home:open-path',
   browse: 'home:browse',
   readCartFile: 'home:read-cart-file',
-  workSend: 'home:work-send',
-  openWorkSite: 'home:open-work-site',
+  directTransfer: 'home:direct-transfer',
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
   openSignDocument: 'home:open-sign-document',

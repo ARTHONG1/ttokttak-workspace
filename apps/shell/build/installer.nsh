@@ -167,8 +167,9 @@
   !insertmacro GenOfficeRegisterOpenWithMindmap
   !insertmacro GenOfficeRegisterOpenWithEpub
   !insertmacro GenOfficeRegisterApplicationCapabilities
-  ; native messaging host for the 똑딱작업실 Chrome/Edge extension (HKCU, no admin)
-  nsExec::Exec '"$INSTDIR\resources\cli\ttokttak.cmd" edufine-register'
+  ; the desktop app fills K-에듀파인 and 나이스 itself: remove the Chrome/Edge extension
+  ; host an earlier version registered (HKCU, no admin)
+  nsExec::Exec '"$INSTDIR\resources\cli\ttokttak.cmd" edufine-unregister'
   Pop $0
   !insertmacro UPDATEFILEASSOC
 !macroend

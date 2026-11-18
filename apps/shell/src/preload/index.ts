@@ -307,13 +307,10 @@ const homeApi: HomeApi = {
   async closeOrganize(token) {
     await ipcRenderer.invoke(HOME_CHANNELS.organizeClose, token)
   },
-  async workSend(feature, text) {
-    return (await ipcRenderer.invoke(HOME_CHANNELS.workSend, feature, text)) as Awaited<
-      ReturnType<HomeApi['workSend']>
+  async directTransfer(feature, text) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.directTransfer, feature, text)) as Awaited<
+      ReturnType<HomeApi['directTransfer']>
     >
-  },
-  async openWorkSite(feature) {
-    await ipcRenderer.invoke(HOME_CHANNELS.openWorkSite, feature)
   },
   async readQuizFile(kind) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<

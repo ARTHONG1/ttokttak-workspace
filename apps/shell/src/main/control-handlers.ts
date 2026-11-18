@@ -15,8 +15,6 @@ export interface ControlHost {
   openDocument(path: string): boolean
   activateTab(id: string): void
   findTab(path: string): { id: string; kind: TabKind; webContents: WebContents } | undefined
-  /** the newest work of a task waiting for the 똑딱작업실 extension, removed once taken */
-  takeWork?(feature: string): string | null
   /** ms to keep asking a renderer that has not loaded its document yet */
   readyTimeoutMs?: number
 }
@@ -37,8 +35,8 @@ const TARGET_KIND_BY_TAB: Partial<Record<TabKind, ControlTarget['kind']>> = {
 export function controlHandler(host: ControlHost): (req: ControlRequest) => Promise<ControlReply> {
   return async (req) => {
     if (req.cmd === 'work-take' || req.cmd === 'pumui-take') {
-      const feature = req.cmd === 'work-take' ? req.feature : 'edufine-pumui'
-      return { ok: true, result: { text: host.takeWork?.(feature) ?? null } }
+      // an extension from before the desktop app filled the sites itself: nothing waits here
+      return { ok: true, result: { text: null } }
     }
     if (!existsSync(req.path)) {
       return fail('file_not_found', `file not found: ${req.path}`)

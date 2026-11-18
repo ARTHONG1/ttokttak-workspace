@@ -1,10 +1,10 @@
 name: K-에듀파인 연결 (Windows)
 
-# The 똑딱 에듀파인 연결 extension and the desktop app's native messaging host, proved on
-# Windows where school PCs run them: the extension against a fake K-에듀파인 page in
-# Chromium (direct, paste, file and native messaging through the registry), and the real
-# installer: a silent install registers the host for Chrome and Edge, the installed
-# launcher answers, and the uninstaller removes the registration again.
+# The 똑딱작업실 extension (the web edition's route), proved on Windows where school PCs
+# run it: the extension against a fake K-에듀파인 page in Chromium (direct, paste, file and
+# native messaging through the registry). And the real installer: the desktop app fills
+# K-에듀파인 and 나이스 itself, so a silent install removes the native messaging host an
+# earlier version registered for Chrome and Edge and ships no host launcher.
 #
 # The installer goes into a folder with Korean letters and a space: on a school PC the
 # per-user install sits under C:\Users\<Korean name>\AppData\Local\Programs, and the
@@ -106,6 +106,14 @@ jobs:
       - name: Package
         run: npm run dist:win -w @genoffice/shell -- --publish never
 
+      - name: An earlier version's host registration
+        shell: pwsh
+        run: |
+          foreach ($key in 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') {
+            New-Item -Path $key -Force | Out-Null
+            Set-ItemProperty -Path $key -Name '(default)' -Value 'C:\똑딱 설치\resources\cli\kr.ttokttak.edufine.json'
+          }
+
       - name: Silent install
         shell: pwsh
         run: |
@@ -113,33 +121,21 @@ jobs:
           $installer = "apps/shell/release/HangulAIWorkbench-Setup-$version.exe"
           # /D= must be last and unquoted, even with a space in it (NSIS rule)
           Start-Process -FilePath $installer -ArgumentList '/S', '/D=C:\똑딱 설치' -Wait
-          if (-not (Test-Path -LiteralPath 'C:\똑딱 설치\resources\cli\edufine-host.cmd')) { throw 'edufine-host.cmd not installed' }
+          if (-not (Test-Path -LiteralPath 'C:\똑딱 설치\resources\cli\ttokttak.cmd')) { throw 'ttokttak.cmd not installed' }
+          if (Test-Path -LiteralPath 'C:\똑딱 설치\resources\cli\edufine-host.cmd') { throw 'the extension host launcher is still shipped' }
 
-      - name: The install registered the host for Chrome and Edge
+      - name: The install removed the earlier registration
         shell: pwsh
         run: |
-          foreach ($key in 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') {
-            $manifestPath = (Get-ItemProperty -Path $key).'(default)'
-            if (-not $manifestPath) { throw "no registration at $key" }
-            $m = Get-Content -LiteralPath $manifestPath -Raw -Encoding utf8 | ConvertFrom-Json
-            if ($m.path -ne 'C:\똑딱 설치\resources\cli\edufine-host.cmd') { throw "manifest path is $($m.path)" }
-            if ($m.allowed_origins[0] -ne 'chrome-extension://ebjaejdjilpnbcbcejmeeneahkngcmnm/') { throw "allowed origin is $($m.allowed_origins)" }
-          }
+          if (Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Chrome registration left behind' }
+          if (Test-Path 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Edge registration left behind' }
 
-      - name: The installed host answers (app not running)
-        run: |
-          set -euo pipefail
-          reply=$(node packages/ttokttak-extension/scripts/host-roundtrip.mjs 'C:\똑딱 설치\resources\cli\edufine-host.cmd' ping)
-          echo "$reply"
-          echo "$reply" | grep -q '"state":"off"'
-
-      - name: Silent uninstall removes the registration
+      - name: Silent uninstall
         shell: pwsh
         run: |
           Start-Process -FilePath 'C:\똑딱 설치\Uninstall HangulAIWorkbench.exe' -ArgumentList '/S' -Wait
           Start-Sleep -Seconds 5
-          if (Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Chrome registration left behind' }
-          if (Test-Path 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\kr.ttokttak.edufine') { throw 'Edge registration left behind' }
+          if (Test-Path -LiteralPath 'C:\똑딱 설치\HangulAIWorkbench.exe') { throw 'the app is still installed' }
 
       - name: Upload the installer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

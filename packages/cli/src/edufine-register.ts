@@ -89,7 +89,15 @@ export function registerNativeHost(env: RegisterEnv): {
 
 export function unregisterNativeHost(env: RegisterEnv): void {
   if (env.platform === 'win32') {
-    for (const key of WIN_KEYS) env.run('reg', ['delete', key, '/f'])
+    // each key on its own: reg delete fails for a key that is already gone (the desktop app
+    // runs this at every start to clear what an earlier version registered)
+    for (const key of WIN_KEYS) {
+      try {
+        env.run('reg', ['delete', key, '/f'])
+      } catch {
+        // not registered for this browser
+      }
+    }
     env.remove(win32.join(env.cliDir, NATIVE_HOST_NAME + '.json'))
     return
   }

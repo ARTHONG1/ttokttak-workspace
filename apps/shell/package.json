@@ -19,6 +19,9 @@
     "dist:win": "npm run notices && electron-vite build && electron-builder --win",
     "dist:linux": "npm run notices && electron-vite build && electron-builder --linux"
   },
+  "dependencies": {
+    "playwright-core": "^1.61.1"
+  },
   "devDependencies": {
     "@genoffice/agent-core": "*",
     "@genoffice/ai-provider": "*",
