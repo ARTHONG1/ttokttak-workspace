@@ -6,7 +6,8 @@ import { FEATURES } from '../../src/core/registry'
 
 /**
  * A task is more than its line in core/registry.ts: the page part, the extension's check of
- * its work, the desktop app's queue check and a browser test must all know it. This test
+ * its work, the desktop app's direct transfer (the desktop app fills the site itself, without
+ * the extension) and a browser test must all know it. This test
  * names what is missing when a task is added halfway (see ADDING-A-FEATURE.ko.md).
  */
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -27,8 +28,10 @@ describe('every registered task is wired through', () => {
         expect(read('src/ext/background.ts')).toContain("'" + f.id + "':")
       })
 
-      it("has the desktop app's queue check", () => {
-        expect(read('../../apps/shell/src/main/work-outbox.ts')).toContain("'" + f.id + "':")
+      it("has the desktop app's direct transfer", () => {
+        expect(read('../../apps/shell/src/main/direct-transfer.ts')).toContain(
+          "feature === '" + f.id + "'",
+        )
       })
 
       it('has a browser test', () => {
