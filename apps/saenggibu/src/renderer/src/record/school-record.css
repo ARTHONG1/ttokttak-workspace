@@ -1,5 +1,16 @@
 /* 똑딱업무 > 생기부 (record/SchoolRecord.tsx). Colours come from special-features.css's
    --sf tokens, so the page follows the home's light and dark themes. */
+:root {
+  /* colours this app keeps from 똑딱작업실's 생기부 styles (one definition each) */
+  --sg-color-1: rgb(15 23 42 / 12%);
+  --sg-color-2: rgb(234 110 24 / 12%);
+  --sg-color-3: #b0480a;
+  --sg-color-4: rgb(234 110 24 / 14%);
+  --sg-color-5: #c2500a;
+  --sg-color-6: rgb(217 45 58 / 13%);
+  --sg-color-7: rgb(250 204 21 / 42%);
+}
+
 .sr-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -88,7 +99,7 @@
 .sr-seg.is-on {
   background: var(--sf-card);
   color: var(--sf-accent);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 12%);
+  box-shadow: 0 1px 2px var(--sg-color-1);
 }
 
 .sr-grid {
@@ -140,10 +151,10 @@
   margin: 8px 0 0;
   padding: 6px 6px 6px 12px;
   border-radius: 9px;
-  background: rgb(234 110 24 / 12%);
+  background: var(--sg-color-2);
   font-size: 13px;
   font-weight: 600;
-  color: #b0480a;
+  color: var(--sg-color-3);
 }
 .sr-alike span {
   flex: 1;
@@ -157,7 +168,7 @@
   margin-bottom: 12px;
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgb(234 110 24 / 12%);
+  background: var(--sg-color-2);
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--sf-ink);
@@ -213,11 +224,11 @@
   font-variant-numeric: tabular-nums;
 }
 .sr-sim-percent.is-mid {
-  background: rgb(234 110 24 / 14%);
-  color: #c2500a;
+  background: var(--sg-color-4);
+  color: var(--sg-color-5);
 }
 .sr-sim-percent.is-high {
-  background: rgb(217 45 58 / 13%);
+  background: var(--sg-color-6);
   color: var(--sf-danger);
 }
 .sr-sim-names {
@@ -246,7 +257,7 @@
 }
 .sr-sim-text mark {
   border-radius: 3px;
-  background: rgb(250 204 21 / 42%);
+  background: var(--sg-color-7);
   color: var(--sf-ink);
 }
 @media (max-width: 720px) {

@@ -1,5 +1,10 @@
 /* 똑딱생기부's frame around the 생기부 page (special-features.css + record/school-record.css) */
 :root {
+  /* colours this app keeps from 똑딱작업실's 생기부 styles (one definition each) */
+  --sg-page: #fafafa;
+}
+
+:root {
   color-scheme: light;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR',
@@ -12,7 +17,7 @@ body,
   margin: 0;
 }
 body {
-  background: var(--sf-bg, #fafafa);
+  background: var(--sg-page);
 }
 .sg-app {
   display: flex;
