@@ -4,6 +4,10 @@
 
 <!-- GITHUB-RELEASES:START -->
 
+### [v0.16.12](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.12) · 2026-11-18
+
+똑딱작업실 0.16.12는 문서를 원래 형식 그대로 합치고 나누고 줄이는 '똑딱정리'를 더하고, 내장 똑딱AI를 기능별로 따로 학습한 5세대로 바꾼 업데이트입니다. 품의서 생성은 AI가 만든 표의 금액을 장바구니 원문과 맞춰 보고 결과를 알려 줍니다.
+
 ### [v0.16.11](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.11) · 2026-11-12
 
 똑딱작업실 0.16.11은 똑딱업무에서도 문서 편집과 똑같이 연결된 AI를 고르게 하고, 내장 AI 이름을 '똑딱AI'로 바꾸며, 똑딱AI로 똑딱업무를 쓸 때 엉뚱한 글이 나오던 버그를 고친 업데이트입니다.
