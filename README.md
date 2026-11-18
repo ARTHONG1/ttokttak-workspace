@@ -54,7 +54,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.12](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.12) · 2026-11-18** — 똑딱작업실 0.16.12는 문서를 원래 형식 그대로 합치고 나누고 줄이는 '똑딱정리'를 더하고, 내장 똑딱AI를 기능별로 따로 학습한 5세대로 바꾼 업데이트입니다. 품의서 생성은 AI가 만든 표의 금액을 장바구니 원문과 맞춰 보고 결과를 알려 줍니다.
+**[v0.16.13](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.13) · 2026-11-18** — 똑딱작업실 0.16.13은 설치판(Mac·Windows)이 크롬 확장 프로그램 없이 K-에듀파인과 나이스에 직접 채우도록 바꾸고, 똑딱정리에 문서를 끌어다 놓으면 편집기로 열리던 문제를 고친 업데이트입니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
