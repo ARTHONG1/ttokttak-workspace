@@ -50,6 +50,15 @@ function staleOutputs(outputs, sources) {
     .map((o) => ({ output: o.path, newerSource: newest.path }))
 }
 
+/**
+ * Apps in this repository that ship on their own (똑딱생기부, apps/saenggibu): their sources
+ * are no part of 똑딱작업실's bundle, so a change there does not make it stale.
+ */
+const STANDALONE_APPS = ['saenggibu']
+function guardedSources(paths) {
+  return paths.filter((p) => !STANDALONE_APPS.some((app) => p.startsWith('apps/' + app + '/')))
+}
+
 function git(root, args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 }
@@ -108,8 +117,9 @@ function checkReleaseTree(root, apps = APPS) {
     ])
       .split('\0')
       .filter(Boolean)
+    const guarded = guardedSources(tracked)
     const sources = []
-    for (const rel of tracked) {
+    for (const rel of guarded) {
       const file = join(root, rel)
       if (existsSync(file)) sources.push({ path: rel, mtimeMs: statSync(file).mtimeMs })
     }
@@ -145,4 +155,11 @@ function assertReleaseTree(root, what, apps) {
   throw new Error(text)
 }
 
-module.exports = { APPS, nonAsciiProductNames, staleOutputs, checkReleaseTree, assertReleaseTree }
+module.exports = {
+  APPS,
+  nonAsciiProductNames,
+  staleOutputs,
+  guardedSources,
+  checkReleaseTree,
+  assertReleaseTree,
+}

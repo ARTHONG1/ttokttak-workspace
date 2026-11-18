@@ -1,0 +1,35 @@
+{
+  "name": "@ttokttak/saenggibu",
+  "productName": "TtokttakSaenggibu",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "description": "똑딱생기부: a standalone desktop app for 생기부 (교과 세특, 행발, similarity check, NEIS entry) on the built-in 똑딱AI",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite build && electron .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepare:ai": "node scripts/prepare-ai.mjs",
+    "dist:mac": "electron-vite build && electron-builder --config electron-builder.cjs --mac",
+    "dist:win": "electron-vite build && electron-builder --config electron-builder.cjs --win"
+  },
+  "dependencies": {
+    "playwright-core": "^1.61.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "^43.7.6",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^5.0.0",
+    "esbuild": "^0.25.12",
+    "jszip": "^3.10.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vite": "^7.3.1",
+    "vitest": "^4.1.11"
+  }
+}

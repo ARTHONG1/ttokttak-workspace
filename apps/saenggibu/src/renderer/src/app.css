@@ -1,0 +1,63 @@
+/* 똑딱생기부's frame around the 생기부 page (special-features.css + record/school-record.css) */
+:root {
+  color-scheme: light;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR',
+    sans-serif;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--sf-bg, #fafafa);
+}
+.sg-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--sf-bg);
+}
+.sg-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--sf-line);
+  background: var(--sf-card);
+}
+.sg-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-work);
+}
+.sg-version {
+  font-size: 12px;
+  color: var(--sf-ink-3);
+}
+.sg-ai {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--sf-soft);
+  color: var(--sf-ink-2);
+}
+.sg-ai.is-ready {
+  background: var(--sf-ok-soft);
+  color: var(--sf-ok);
+}
+.sg-ai.is-failed,
+.sg-ai.is-missing {
+  background: var(--sf-warn-soft);
+  color: var(--sf-danger);
+}
+.sg-main {
+  flex: 1;
+  padding: 8px 0 32px;
+}
