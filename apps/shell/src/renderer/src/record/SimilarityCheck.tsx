@@ -119,7 +119,11 @@ export function SimilarityCheck({
       .filter((_, i) => i !== index)
       .map((e) => e.text)
       .filter((t) => similarity(self.text, t) >= Math.min(floor, 30))
-    const reply = cleanReply(await askAi(REWORD_SYSTEM, rewordRequest(self.text, others)))
+    const reply = cleanReply(
+      await askAi(REWORD_SYSTEM, rewordRequest(self.text, others), [], 4000, {
+        feature: 'school_record',
+      }),
+    )
     if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
     const key = keyOf(index)
     setBefore((prev) => (key in prev ? prev : { ...prev, [key]: self.text }))

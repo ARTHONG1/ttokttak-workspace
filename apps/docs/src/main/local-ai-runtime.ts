@@ -15,10 +15,10 @@ export type LocalAiEndpoint = { baseUrl: string; apiKey: string; model: string }
 
 /**
  * 똑딱AI's per-feature adapters (LoRA), in the order llama-server numbers them. The first is
- * on for every request (the document adapter: 한글 editing, 생기부 and the rest); a feature with
- * an adapter of its own turns that one on instead, for its own requests only.
+ * on for every request (the document adapter: 한글 editing and the rest); a feature with an
+ * adapter of its own (품의서 생성, 생기부) turns that one on instead, for its own requests only.
  */
-export const LOCAL_AI_ADAPTERS = ['document', 'pumui'] as const
+export const LOCAL_AI_ADAPTERS = ['document', 'pumui', 'school_record'] as const
 export type LocalAiAdapter = (typeof LOCAL_AI_ADAPTERS)[number]
 type LocalAiFiles = {
   executable: string

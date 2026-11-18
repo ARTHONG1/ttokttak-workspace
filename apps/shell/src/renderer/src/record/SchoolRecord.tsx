@@ -271,8 +271,17 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         ? await askAi(
             SUBJECT_SYSTEM,
             subjectRequest(w.info, w.length, w.instructions, student, order),
+            [],
+            4000,
+            { feature: 'school_record' },
           )
-        : await askAi(BEHAVIOR_SYSTEM, behaviorRequest(w.length, w.instructions, student, order))
+        : await askAi(
+            BEHAVIOR_SYSTEM,
+            behaviorRequest(w.length, w.instructions, student, order),
+            [],
+            4000,
+            { feature: 'school_record' },
+          )
     const out = cleanReply(reply)
     if (!out) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
     return out

@@ -4214,6 +4214,9 @@ export function registerAiIpc(): void {
     // 품의서 생성 on the built-in model asks for a whole cart as JSON under its grammar: it gets
     // the room and the settings its adapter was measured with (temperature 0).
     const localExtract = provider === 'local' && request.feature === 'pumui'
+    // 생기부 on the built-in model: its own adapter, measured at temperature 0 as well
+    const localMeasured =
+      localExtract || (provider === 'local' && request.feature === 'school_record')
     const maxTokens =
       provider === 'local'
         ? Math.min(
@@ -4254,7 +4257,7 @@ export function registerAiIpc(): void {
       const bodyExtras = {
         ...(grammar ? { grammar } : {}),
         ...(lora ? { lora } : {}),
-        ...(localExtract ? { temperature: 0 } : {}),
+        ...(localMeasured ? { temperature: 0 } : {}),
       }
       await streamForProvider(
         provider,

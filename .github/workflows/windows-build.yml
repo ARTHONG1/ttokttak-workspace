@@ -117,10 +117,11 @@ jobs:
             || { echo "upload the Apple Silicon build of v$version to its release first"; exit 1; }
           zip="$work/HangulAIWorkbench-$version-arm64-mac.zip"
           res="HangulAIWorkbench.app/Contents/Resources/local-ai"
-          7z e "$zip" "$res/model.gguf" "$res/adapters/document.gguf" "$res/adapters/pumui.gguf" -o"$work/model" >/dev/null
+          7z e "$zip" "$res/model.gguf" "$res/adapters/document.gguf" "$res/adapters/pumui.gguf" \
+            "$res/adapters/school_record.gguf" -o"$work/model" >/dev/null
           rm -f "$zip" "$work/llama-win.zip"
           node tools/prepare-embedded-ai.mjs "$work/model/model.gguf" "$work/runtime" \
-            "$work/model/document.gguf" "$work/model/pumui.gguf"
+            "$work/model/document.gguf" "$work/model/pumui.gguf" "$work/model/school_record.gguf"
           rm -rf "$work"
 
       - name: Package
@@ -142,6 +143,7 @@ jobs:
             "$dir/resources/local-ai/model.gguf" \
             "$dir/resources/local-ai/adapters/document.gguf" \
             "$dir/resources/local-ai/adapters/pumui.gguf" \
+            "$dir/resources/local-ai/adapters/school_record.gguf" \
             "$dir/resources/local-ai/manifest.json"; do
             test -f "$bin" || { echo "missing: $bin"; exit 1; }
           done
@@ -172,7 +174,7 @@ jobs:
             "$exe" --headless-export "$work/$input" --to pdf --out "$work/$input.pdf" --json
             test -s "$work/$input.pdf"
           done
-          # the way the app starts it: from its own folder, both adapters loaded
+          # the way the app starts it: from its own folder, all adapters loaded
           pushd "$dir/resources/local-ai" >/dev/null
           ./llama-server.exe \
             --model model.gguf \
@@ -180,7 +182,7 @@ jobs:
             --host 127.0.0.1 --port 18899 \
             --ctx-size 2048 --threads 4 --parallel 1 --n-gpu-layers 0 \
             --reasoning off --jinja --no-webui --log-disable \
-            --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0 &
+            --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0,adapters/school_record.gguf:0 &
           srv=$!
           popd >/dev/null
           trap "kill $srv 2>/dev/null || true" EXIT
@@ -196,9 +198,10 @@ jobs:
           # the 품의 request turns on its own adapter for itself only
           reply=$(curl -sf http://127.0.0.1:18899/v1/chat/completions \
             -H 'Content-Type: application/json' \
-            -d '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1}]}')
+            -d '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1},{"id":2,"scale":0}]}')
           echo "$reply" | grep -q '"choices"'
           curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'pumui.gguf'
+          curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'school_record.gguf'
           kill $srv 2>/dev/null || true
           trap - EXIT
 
