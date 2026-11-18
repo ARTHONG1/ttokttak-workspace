@@ -48,7 +48,12 @@ for (const app of APPS) {
   await copy('apps/' + app + '/resources')
   await copy('apps/' + app + '/package.json')
 }
-await copy('apps/shell/build', (src) => !/\.(icns|ico)$/.test(src))
+// build/local-ai is the built-in model staged for desktop packaging (1.6 GB); the web edition
+// answers with Vertex AI and never starts it
+await copy(
+  'apps/shell/build',
+  (src) => !/\.(icns|ico)$/.test(src) && !/[\\/]build[\\/]local-ai([\\/]|$)/.test(src),
+)
 await copy('apps/docs/build')
 await copy('packages/ui/template-fonts')
 await copy('packages/cli/package.json')
