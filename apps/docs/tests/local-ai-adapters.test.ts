@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { adapterArgs, adapterFiles, localAiLoraFor } from '../src/main/local-ai-runtime'
 
 /**
- * 똑딱AI 5세대: one Q8 base and per-feature adapters. The server loads them all with the
+ * 똑딱AI 5세대: one Q6_K base and per-feature adapters. The server loads them all with the
  * document adapter on; 품의서 생성 turns on its own adapter for its requests only.
  */
 describe('똑딱AI adapters', () => {

@@ -109,7 +109,7 @@ jobs:
           7z x "$work/llama-win.zip" -o"$work/runtime" >/dev/null
           curl -sSfL --retry 5 -o "$work/runtime/LICENSE" \
             https://raw.githubusercontent.com/ggml-org/llama.cpp/b12167/LICENSE
-          # 똑딱AI 5세대: the Q8 base and the per-feature adapters come from this version's
+          # 똑딱AI 5세대: the Q6_K base and the per-feature adapters come from this version's
           # Apple Silicon build on the same release (verified and uploaded first);
           # prepare-embedded-ai.mjs refuses any file whose SHA256 is not the pinned one
           version=$(node -p "require('./apps/shell/package.json').version")

@@ -1,10 +1,10 @@
 /**
  * Stage one platform's verified 똑딱AI and llama.cpp runtime for electron-builder.
- * 5세대: one fixed Q8_0 base and per-feature LoRA adapters (document, pumui).
- * Usage: node tools/prepare-embedded-ai.mjs /path/base-Q8_0.gguf /path/to/llama/bin \
+ * 5세대: one fixed Q6_K base and per-feature LoRA adapters (document, pumui).
+ * Usage: node tools/prepare-embedded-ai.mjs /path/base-Q6_K.gguf /path/to/llama/bin \
  *          /path/document-adapter.gguf /path/pumui-adapter.gguf
  * Then: GENOFFICE_EMBED_LOCAL_AI=1 npm run dist:mac (or dist:win).
- * The staged 1.28 GB model is deliberately excluded from Git.
+ * The staged 1.57 GB model is deliberately excluded from Git.
  */
 import {
   copyFileSync,
@@ -44,12 +44,15 @@ async function sha256Of(path) {
   return hash.digest('hex')
 }
 // The pinned built-in model: 똑딱AI fifth generation. The base is the unchanged Qwen3.5-2B
-// Q8_0 GGUF; each feature's LoRA is a separate file the server loads beside it. The document
+// Q6_K GGUF; each feature's LoRA is a separate file the server loads beside it. The document
 // adapter is the fourth generation's (2,000 steps, the 0.16.10 model before fusing); the 품의
 // adapter is final200-v1 step 157, promoted by the user's direction on 2026-11-18 (registry
 // ddak_features.json in the model project). A replacement needs a new provenance entry.
+// Q6_K rather than the Q8_0 the adapters were measured on: a release file must stay under
+// GitHub's 2 GiB limit and the Q8 build (2.23 GB) does not. On the same frozen 200 품의 carts
+// Q6_K scored money 157 and rows 113 (Q8_0: 157 and 116), with no confirmed wrong amount.
 const PINNED = {
-  base: '1b04acba824817554f4ce23639bc8495ff70453b8fcb047900c731521021f2c1',
+  base: 'fc90339420b4298887aafb307a4291c55440b730133bbffe6ba9630503dcb548',
   document: '76fac99858b21d136835cc4bdda02edf8721adaf820280ef5aba31c8d506ace9',
   pumui: '7f4304879415d92d87b1c9401819135383a06c2e6e1e39c74e321c44cf7b99ac',
 }
@@ -91,7 +94,7 @@ writeFileSync(
     'Upstream: https://huggingface.co/Qwen/Qwen3.5-2B',
     'GGUF conversion: https://huggingface.co/unsloth/Qwen3.5-2B-GGUF',
     'GGUF revision: f6d5376be1edb4d416d56da11e5397a961aca8ae',
-    'Base Q8_0, unchanged, SHA256: ' + hash,
+    'Base Q6_K, unchanged, SHA256: ' + hash,
     'Modified by 똑딱작업실 (똑딱AI, fifth generation): per-feature LoRA adapters the',
     'server loads beside the unchanged base (llama.cpp --lora-scaled), one on per request.',
     'document adapter (adapters/document.gguf): the fourth generation 2,000-step LoRA on the',
