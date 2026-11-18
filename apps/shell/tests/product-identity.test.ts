@@ -66,7 +66,11 @@ describe('one product name', () => {
   })
 
   it('titles every window document with the product name before any script runs', () => {
-    const apps = readdirSync(join(ROOT, 'apps'))
+    // 똑딱생기부 (apps/saenggibu) ships on its own under its own name
+    const { STANDALONE_APPS } = createRequire(import.meta.url)(
+      join(ROOT, 'scripts/release-guard.cjs'),
+    ) as { STANDALONE_APPS: string[] }
+    const apps = readdirSync(join(ROOT, 'apps')).filter((app) => !STANDALONE_APPS.includes(app))
     const pages = apps.flatMap((app) => {
       const dir = join(ROOT, 'apps', app, 'src/renderer')
       return readdirSync(dir)

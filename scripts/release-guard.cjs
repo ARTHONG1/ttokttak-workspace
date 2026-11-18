@@ -157,6 +157,7 @@ function assertReleaseTree(root, what, apps) {
 
 module.exports = {
   APPS,
+  STANDALONE_APPS,
   nonAsciiProductNames,
   staleOutputs,
   guardedSources,
