@@ -16,11 +16,12 @@ export const RECORD_MAX_STUDENTS = 60
 /** NEIS takes 1,500 bytes for one entry */
 export const NEIS_BYTE_LIMIT = 1500
 
-export type RecordMode = 'subject' | 'behavior'
+export type RecordMode = 'subject' | 'behavior' | 'activity'
 
 export const RECORD_MODE_NAME: Readonly<Record<RecordMode, string>> = {
   subject: '교과 세특',
   behavior: '행발',
+  activity: '창체',
 }
 
 export interface RecordStudent {
@@ -96,7 +97,7 @@ export function parseRecordPackage(text: string, now: Date = new Date()): Parsed
   if (p.version !== RECORD_VERSION) {
     return fail('이 작업은 더 새로운 똑딱작업실에서 만들었어요. 확장 프로그램을 업데이트해 주세요.')
   }
-  if (p.mode !== 'subject' && p.mode !== 'behavior') return fail(NOT_OURS)
+  if (p.mode !== 'subject' && p.mode !== 'behavior' && p.mode !== 'activity') return fail(NOT_OURS)
   if (!Array.isArray(p.students) || p.students.length === 0) return fail('학생이 한 명도 없어요.')
   if (p.students.length > RECORD_MAX_STUDENTS) {
     return fail('학생은 한 번에 ' + RECORD_MAX_STUDENTS + '명까지 보낼 수 있어요.')

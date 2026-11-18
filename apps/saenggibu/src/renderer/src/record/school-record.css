@@ -13,7 +13,8 @@
 
 .sr-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 교과 세특, 행발, 창체 and 유사도 검사 on one row */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }

@@ -37,7 +37,11 @@ export async function directTransferRequest(
     const names = payload.students.map((s) => s.name.replace(/\s/g, ''))
     if (names.some((n) => !n) || new Set(names).size !== names.length)
       return fail('직접 전송은 모든 학생의 이름이 필요해요. 동명이인은 한 명씩 나누어 보내 주세요.')
-    if (payload.students.some((s) => neisBytes(s.text) > NEIS_BYTE_LIMIT))
+    // 창체 is capped by the page per school level (초등 has no cap)
+    if (
+      payload.mode !== 'activity' &&
+      payload.students.some((s) => neisBytes(s.text) > NEIS_BYTE_LIMIT)
+    )
       return fail('1,500바이트를 넘는 학생 글이 있어요. 줄인 뒤 보내 주세요.')
   } else if (feature === 'edufine-pumui') {
     const parsed = parsePumuiPackage(text)

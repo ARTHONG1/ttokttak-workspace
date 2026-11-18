@@ -34,7 +34,11 @@ export async function neisRequest(text: string, driver: NeisDriver): Promise<Nei
     return fail(
       '나이스로 보내려면 모든 학생의 이름이 필요해요. 동명이인은 한 명씩 나누어 보내 주세요.',
     )
-  if (payload.students.some((s) => neisBytes(s.text) > NEIS_BYTE_LIMIT))
+  // 창체 is capped by the page per school level (초등 has no cap)
+  if (
+    payload.mode !== 'activity' &&
+    payload.students.some((s) => neisBytes(s.text) > NEIS_BYTE_LIMIT)
+  )
     return fail('1,500바이트를 넘는 학생 글이 있어요. 줄인 뒤 보내 주세요.')
   try {
     const result = await driver.send(payload)

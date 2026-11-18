@@ -60,6 +60,32 @@ test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', asyn
     await expect(subject).not.toHaveValue('', { timeout: 120_000 })
     expect(await subject.inputValue()).toMatch(NOMINAL)
     await page.screenshot({ path: join(APP, 'test-results/saenggibu-subject.png') })
+
+    // 창체: the school level gives the areas; one 동아리활동 entry
+    await page.getByRole('tab', { name: /창체/ }).click()
+    await expect(page.getByTestId('record-area')).toBeDisabled()
+    await page.getByTestId('record-activity-school').selectOption({ label: '고등학교' })
+    await page.getByTestId('record-activity-grade').fill('2')
+    await page.getByTestId('record-area').selectOption({ label: '동아리활동' })
+    await page.getByTestId('record-activity-name').fill('과학탐구반')
+    await page
+      .getByTestId('record-activity-content')
+      .fill('학교 앞 하천의 수질을 4주 동안 측정하고 결과를 학급 게시판에 공유함.')
+    await expect(page.getByTestId('record-activity-rule')).toContainText('1,500바이트')
+    await page.getByTestId('record-name').first().fill('박구름')
+    await page
+      .getByTestId('record-notes')
+      .first()
+      .fill('측정 결과를 표로 정리하고 부원들에게 설명함.')
+    await page.getByTestId('record-generate-one').first().click()
+    const activity = page.getByTestId('record-result').first()
+    await expect(activity).not.toHaveValue('', { timeout: 120_000 })
+    expect(await activity.inputValue()).toMatch(NOMINAL)
+    await expect(page.getByTestId('record-bytes').first()).toContainText('/ 1,500 바이트')
+    await page.screenshot({
+      path: join(APP, 'test-results/saenggibu-activity.png'),
+      fullPage: true,
+    })
   } finally {
     await app.close()
   }

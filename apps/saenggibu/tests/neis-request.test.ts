@@ -72,3 +72,21 @@ describe('나이스로 보내기', () => {
     )
   })
 })
+
+describe('나이스로 보내기: 창체', () => {
+  const activityWork = (school: 'elementary' | 'high', result: string): Work =>
+    ({
+      info: { ...emptyInfo(), schoolLevel: school, area: 'career', activityContent: '진로 탐색' },
+      length: 'medium',
+      instructions: '',
+      students: [{ id: 'a', name: '김하늘', level: '상', notes: '', result }],
+    }) as Work
+
+  it('sends a long 초등 창체 entry (no cap) and stops a 중·고 one over 1,500 bytes', async () => {
+    const long = '가'.repeat(600)
+    expect(recordSendProblem('activity', activityWork('elementary', long))).toBeNull()
+    expect(recordSendProblem('activity', activityWork('high', long))).toContain('1,500바이트')
+    const text = JSON.stringify(recordPackageFromWork('activity', activityWork('elementary', long)))
+    expect(await neisRequest(text, driver())).toMatchObject({ ok: true, written: 1 })
+  })
+})

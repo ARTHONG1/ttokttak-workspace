@@ -10,7 +10,7 @@ import {
   type RecordPackage,
 } from '@genoffice/ttokttak-extension/record'
 import { sendWorkToExtension, type ExtensionRuntime } from '../work-send'
-import { NEIS_BYTE_LIMIT, neisBytes, sessionTitle, type RecordMode, type Work } from './record-core'
+import { byteLimit, neisBytes, sessionTitle, type RecordMode, type Work } from './record-core'
 
 /** this task's id in the 똑딱작업실 extension */
 export const NEIS_RECORD = 'neis-record'
@@ -39,13 +39,16 @@ export function recordSendProblem(mode: RecordMode, work: Work): string | null {
   if (writtenCount(pkg.students) === 0) {
     return '나이스로 보낼 글이 없어요. 먼저 글을 만들어 주세요.'
   }
-  const over = work.students.findIndex((s) => neisBytes(s.result.trim()) > NEIS_BYTE_LIMIT)
-  if (over >= 0) {
+  // 초등 창체 has no cap
+  const limit = byteLimit(mode, work.info)
+  const over =
+    limit === null ? -1 : work.students.findIndex((s) => neisBytes(s.result.trim()) > limit)
+  if (over >= 0 && limit !== null) {
     return (
       over +
       1 +
       '번 학생의 글이 ' +
-      NEIS_BYTE_LIMIT.toLocaleString('ko-KR') +
+      limit.toLocaleString('ko-KR') +
       '바이트를 넘어요. 줄인 뒤 보내 주세요.'
     )
   }

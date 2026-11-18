@@ -26,6 +26,7 @@ const SEND_FIRST =
 const SCREEN_NAME = {
   subject: '교과 세특(세부능력 및 특기사항)',
   behavior: '행동특성 및 종합의견',
+  activity: '창의적 체험활동 특기사항',
 } as const
 
 const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))

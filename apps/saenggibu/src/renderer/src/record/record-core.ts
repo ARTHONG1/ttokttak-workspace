@@ -2,14 +2,16 @@
  * 똑딱업무 > 생기부: what the page computes without the screen. It follows the author's
  * ACE 세특&행발: 교과 세특 (세부능력 및 특기사항) from the task, the achievement standard
  * and each student's level, and 행발 (행동특성 및 종합의견) from the teacher's observation
- * notes, one AI turn per student. A student's name never goes into a request.
+ * notes, and 창체 (창의적 체험활동 특기사항) from the area, the activity and each student's
+ * part in it, one AI turn per student. A student's name never goes into a request.
  */
 
-export type RecordMode = 'subject' | 'behavior'
+export type RecordMode = 'subject' | 'behavior' | 'activity'
 
 export const MODES: { id: RecordMode; label: string; long: string }[] = [
   { id: 'subject', label: '교과 세특', long: '교과 세부능력 및 특기사항' },
   { id: 'behavior', label: '행발', long: '행동특성 및 종합의견' },
+  { id: 'activity', label: '창체', long: '창의적 체험활동 특기사항' },
 ]
 
 export type LengthId = 'very-short' | 'short' | 'medium' | 'long' | 'very-long'
@@ -34,6 +36,32 @@ export const SCHOOL_LEVELS: { id: SchoolLevel; label: string }[] = [
 ]
 
 export const SUBJECTS = ['국어', '수학', '사회', '과학', '영어', '미술', '음악', '체육'] as const
+
+/**
+ * 창체's areas (2026 학교생활기록부 기재요령, 2022 개정 교육과정): 자율·자치활동, 동아리활동
+ * and 진로활동 each have an entry in 중·고; in 초등 자율·자치활동 and 동아리활동 share one.
+ * 봉사활동 is no longer an area of its own.
+ */
+export type ActivityArea = 'autonomy' | 'club' | 'career' | 'autonomy-club'
+
+const AREA_LABEL: Record<ActivityArea, string> = {
+  autonomy: '자율·자치활동',
+  club: '동아리활동',
+  career: '진로활동',
+  'autonomy-club': '자율·자치활동 및 동아리활동',
+}
+
+export function activityAreas(school: SchoolLevel | ''): { id: ActivityArea; label: string }[] {
+  const ids: ActivityArea[] =
+    school === 'elementary'
+      ? ['autonomy-club', 'career']
+      : school
+        ? ['autonomy', 'club', 'career']
+        : []
+  return ids.map((id) => ({ id, label: AREA_LABEL[id] }))
+}
+
+const isArea = (value: string): value is ActivityArea => value in AREA_LABEL
 
 /** the subject select's value for a subject the teacher types */
 export const CUSTOM_SUBJECT = 'custom'
@@ -65,6 +93,10 @@ export interface CommonInfo {
   unitName: string
   assignmentDesc: string
   achievementStandard: string
+  /** 창체 only: the area, the activity's name and what the students did */
+  area: ActivityArea | ''
+  activityName: string
+  activityContent: string
 }
 
 export const emptyInfo = (): CommonInfo => ({
@@ -75,13 +107,16 @@ export const emptyInfo = (): CommonInfo => ({
   unitName: '',
   assignmentDesc: '',
   achievementStandard: '',
+  area: '',
+  activityName: '',
+  activityContent: '',
 })
 
 /** one mode's work: its settings and its students */
 export interface Work {
   length: LengthId
   instructions: string
-  /** 교과 세특 only */
+  /** 교과 세특 and 창체 */
   info: CommonInfo
   students: Student[]
 }
@@ -108,6 +143,42 @@ export function commonProblem(info: CommonInfo): string | null {
   if (!info.assignmentDesc.trim()) return '과제 설명을 입력해 주세요.'
   if (!info.achievementStandard.trim()) return '관련 성취기준을 입력해 주세요.'
   return null
+}
+
+const gradeNumber = (grade: string): number | null => {
+  const m = /^\s*(\d+)/.exec(grade)
+  return m ? Number(m[1]) : null
+}
+
+/**
+ * The area's name as NEIS shows it this year: in 2026 the 3학년 of 중·고 are still on the
+ * 2015 curriculum, whose 자율·자치활동 is 자율활동.
+ */
+export function areaLabel(info: CommonInfo): string {
+  if (!info.area) return ''
+  if (
+    info.area === 'autonomy' &&
+    info.schoolLevel !== 'elementary' &&
+    gradeNumber(info.grade) === 3
+  )
+    return '자율활동'
+  return AREA_LABEL[info.area]
+}
+
+/** what 창체 still needs before the AI can write, or null */
+export function activityProblem(info: CommonInfo): string | null {
+  if (!info.schoolLevel) return '학교급을 골라 주세요.'
+  if (!activityAreas(info.schoolLevel).some((a) => a.id === info.area)) return '영역을 골라 주세요.'
+  if (!info.activityContent.trim()) return '활동 내용을 입력해 주세요.'
+  return null
+}
+
+/**
+ * The bytes NEIS takes for one entry: 1,500 (500자) for 세특, 행발 and each 중·고 창체 area;
+ * 초등 창체 has no cap (null).
+ */
+export function byteLimit(mode: RecordMode, info: CommonInfo): number | null {
+  return mode === 'activity' && info.schoolLevel === 'elementary' ? null : NEIS_BYTE_LIMIT
 }
 
 const lengthLabel = (id: LengthId): string => LENGTHS.find((l) => l.id === id)?.label ?? '보통'
@@ -168,6 +239,33 @@ export const BEHAVIOR_SYSTEM = [
   '- 보통: 3~4문장 (300~400자 내외)',
   '- 길게: 4~5문장 (450자 내외)',
   '- 매우 길게: 5문장 이상 (500자 이내)',
+].join('\n')
+
+/**
+ * 창체 특기사항. Not yet among the instructions the built-in 똑딱AI's 생기부 adapter was
+ * trained on (tests/prompt-contract.test.ts pins those): its answers here are a draft to read.
+ */
+export const ACTIVITY_SYSTEM = [
+  '당신은 대한민국 학교생활기록부 기재요령을 잘 아는 교사입니다. 학생의 「창의적 체험활동 상황」 특기사항을 작성합니다.',
+  '',
+  '[중요] 최우선 작성 지침',
+  "사용자가 별도의 '사용자(교사)의 최우선 지시사항'을 제공한 경우, 아래의 일반 원칙보다 해당 지시사항을 우선하여 반영하십시오.",
+  '',
+  '[작성 원칙]',
+  '1. 주어진 영역(자율·자치활동, 동아리활동, 진로활동 등)의 특기사항만 씁니다. 다른 영역의 활동을 섞지 마십시오.',
+  '2. 공통 활동 내용 가운데 이 학생이 실제로 한 역할과 관찰된 행동을 중심으로, 참여 과정과 그 활동에서 드러난 태도·역량을 구체적으로 서술하십시오.',
+  '3. 관찰 기록과 활동 내용에 없는 사실(새 활동, 직책, 수상, 결과, 수치)을 지어내지 마십시오.',
+  '4. 교외 수상, 자격증, 특정 대학·기관·상호명, 부모의 직업이나 사회·경제적 지위처럼 학교생활기록부에 적을 수 없는 내용은 쓰지 마십시오.',
+  '5. 문장 끝은 "~함", "~임", "~음", "~됨", "~보임"과 같은 학교생활기록부 전용 종결 어미를 사용하고, "~입니다", "~해요"는 쓰지 마십시오.',
+  '6. "위 학생은", "이 학생은"으로 시작하지 말고, 학생의 이름이나 번호를 쓰지 마십시오.',
+  "7. '#', '**' 같은 마크다운 기호, 제목, 영역 이름 머리말 없이 줄을 바꾸지 않은 한 문단으로만 출력하십시오.",
+  '',
+  '[분량 가이드]',
+  '- 매우 짧게: 1문장',
+  '- 짧게: 2문장',
+  '- 보통: 3문장',
+  '- 길게: 4문장',
+  '- 매우 길게: 5문장 (500자 이내)',
 ].join('\n')
 
 const instructionBlock = (instructions: string, fallback: string): string[] => [
@@ -240,6 +338,38 @@ export function behaviorRequest(
     '',
     '위의 [사용자(교사)의 최우선 지시사항]을 절대적으로 우선하여 반영하고, 나이스 입력용 행동특성 및 종합의견을 작성하십시오.',
   ].join('\n')
+}
+
+/** one student's 창체 request: the area, the activity and the student's part in it */
+export function activityRequest(
+  info: CommonInfo,
+  length: LengthId,
+  instructions: string,
+  student: Student,
+  order?: number,
+): string {
+  const school = SCHOOL_LEVELS.find((s) => s.id === info.schoolLevel)?.label ?? ''
+  const lines = [
+    ...instructionBlock(instructions, '작성 원칙에 따름'),
+    '',
+    '[생성 정보]',
+    '- 학교급: ' + school,
+  ]
+  if (info.grade.trim()) lines.push('- 학년: ' + gradeText(info.grade))
+  lines.push('- 영역: ' + areaLabel(info))
+  if (info.activityName.trim()) lines.push('- 활동명: ' + info.activityName.trim())
+  lines.push(
+    '- 활동 내용: ' + info.activityContent.trim(),
+    '- 요청된 분량 수준: ' + lengthLabel(length),
+  )
+  if (student.notes.trim()) lines.push('- 학생 역할 및 관찰 기록: ' + student.notes.trim())
+  lines.push(...variationLine(order))
+  lines.push(
+    '',
+    '위의 정보와 [사용자(교사)의 최우선 지시사항]을 반드시 확인하고, 나이스에 입력할 이 영역의 특기사항을 작성하십시오.',
+    '불필요한 제목, 기호, 번호 없이 오직 나이스에 입력할 문장들만 깨끗하게 출력하십시오.',
+  )
+  return lines.join('\n')
 }
 
 /** the AI's answer as NEIS takes it: no markdown, no heading, one paragraph */
@@ -321,20 +451,29 @@ export function decodeCsvBytes(bytes: Uint8Array): string {
 }
 
 const NAME_HEADERS = ['이름', '성명', '학생명', '학생이름']
-const NOTES_HEADERS = ['개별관찰및특성기록', '개별관찰기록', '학생관찰및특성기록', '관찰기록']
+const NOTES_HEADERS = [
+  '개별관찰및특성기록',
+  '개별관찰기록',
+  '학생관찰및특성기록',
+  '관찰기록',
+  '학생역할및관찰기록',
+]
 const RESULT_HEADERS: Record<RecordMode, string[]> = {
   subject: ['세특', '교과세특'],
   behavior: ['행동특성및종합의견', '행발'],
+  activity: ['창체특기사항', '특기사항', '창의적체험활동특기사항'],
 }
 const LEVEL_HEADERS = ['성취수준', '성취도']
 
 const NOTES_TITLE: Record<RecordMode, string> = {
   subject: '개별 관찰 및 특성 기록',
   behavior: '학생 관찰 및 특성 기록',
+  activity: '학생 역할 및 관찰 기록',
 }
 const RESULT_TITLE: Record<RecordMode, string> = {
   subject: '세특',
   behavior: '행동 특성 및 종합의견',
+  activity: '창체 특기사항',
 }
 
 const headerKey = (cell: string): string => cell.replace(/\s+/g, '')
@@ -471,7 +610,12 @@ export const MAX_SESSIONS = 30
 
 export function sessionTitle(mode: RecordMode, work: Work): string {
   const count = work.students.filter(hasContent).length
-  const head = mode === 'subject' ? (subjectOf(work.info) || '교과') + ' 세특' : '행발'
+  const head =
+    mode === 'subject'
+      ? (subjectOf(work.info) || '교과') + ' 세특'
+      : mode === 'activity'
+        ? areaLabel(work.info) || '창체'
+        : '행발'
   return head + ' · ' + count + '명'
 }
 
@@ -496,6 +640,9 @@ export function workFrom(raw: unknown, newId: () => string): Work {
       unitName: text(info.unitName),
       assignmentDesc: text(info.assignmentDesc),
       achievementStandard: text(info.achievementStandard),
+      area: isArea(text(info.area)) ? (text(info.area) as ActivityArea) : '',
+      activityName: text(info.activityName),
+      activityContent: text(info.activityContent),
     },
     students: students.slice(0, MAX_STUDENTS).map((item): Student => {
       const s = (item ?? {}) as Record<string, unknown>
@@ -523,7 +670,7 @@ export function sessionsFrom(raw: string | null, newId: () => string): SavedSess
   return data
     .map((item): SavedSession | null => {
       const s = (item ?? {}) as Record<string, unknown>
-      if (s.mode !== 'subject' && s.mode !== 'behavior') return null
+      if (s.mode !== 'subject' && s.mode !== 'behavior' && s.mode !== 'activity') return null
       return {
         id: text(s.id) || newId(),
         mode: s.mode,

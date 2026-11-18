@@ -9,7 +9,7 @@ import {
   type RecordPackage,
 } from '../../../shared/record-package'
 import type { NeisResult } from '../../../shared/api'
-import { NEIS_BYTE_LIMIT, neisBytes, sessionTitle, type RecordMode, type Work } from './record-core'
+import { byteLimit, neisBytes, sessionTitle, type RecordMode, type Work } from './record-core'
 
 /**
  * The students in the order of the list, which is the order of the NEIS grid. A student
@@ -35,13 +35,16 @@ export function recordSendProblem(mode: RecordMode, work: Work): string | null {
   if (writtenCount(pkg.students) === 0) {
     return '나이스로 보낼 글이 없어요. 먼저 글을 만들어 주세요.'
   }
-  const over = work.students.findIndex((s) => neisBytes(s.result.trim()) > NEIS_BYTE_LIMIT)
-  if (over >= 0) {
+  // 초등 창체 has no cap
+  const limit = byteLimit(mode, work.info)
+  const over =
+    limit === null ? -1 : work.students.findIndex((s) => neisBytes(s.result.trim()) > limit)
+  if (over >= 0 && limit !== null) {
     return (
       over +
       1 +
       '번 학생의 글이 ' +
-      NEIS_BYTE_LIMIT.toLocaleString('ko-KR') +
+      limit.toLocaleString('ko-KR') +
       '바이트를 넘어요. 줄인 뒤 보내 주세요.'
     )
   }

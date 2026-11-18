@@ -69,13 +69,18 @@ export function SimilarityCheck({
   onReword: (mode: RecordMode, id: string, text: string) => void
   say: (text: string, bad?: boolean) => void
 }): ReactElement {
-  const written = { subject: entriesOf(works.subject), behavior: entriesOf(works.behavior) }
+  const written: Record<RecordMode, Entry[]> = {
+    subject: entriesOf(works.subject),
+    behavior: entriesOf(works.behavior),
+    activity: entriesOf(works.activity),
+  }
+  // the tab the teacher came from, else the first item with two texts to compare
   const [source, setSource] = useState<Source>(
     initialSource && written[initialSource].length >= 2
       ? initialSource
-      : written.subject.length < 2 && written.behavior.length >= 2
-        ? 'behavior'
-        : (initialSource ?? 'subject'),
+      : ((['subject', 'behavior', 'activity'] as const).find((m) => written[m].length >= 2) ??
+          initialSource ??
+          'subject'),
   )
   const [file, setFile] = useState<{ name: string; entries: Entry[] } | null>(null)
   const [reading, setReading] = useState(false)
@@ -229,6 +234,7 @@ export function SimilarityCheck({
   const sources: { id: Source; label: string }[] = [
     { id: 'subject', label: '교과 세특 (' + written.subject.length + '명)' },
     { id: 'behavior', label: '행발 (' + written.behavior.length + '명)' },
+    { id: 'activity', label: '창체 (' + written.activity.length + '명)' },
     { id: 'file', label: file ? '파일 (' + file.entries.length + '명)' : '파일' },
   ]
   const working = busy.length > 0

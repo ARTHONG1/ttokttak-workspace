@@ -12,6 +12,7 @@ import {
   useToast,
 } from '../special-common'
 import {
+  ACTIVITY_SYSTEM,
   BEHAVIOR_SYSTEM,
   CUSTOM_SUBJECT,
   GENERATE_AT_ONCE,
@@ -20,13 +21,17 @@ import {
   MAX_SESSIONS,
   MAX_STUDENTS,
   MODES,
-  NEIS_BYTE_LIMIT,
   SCHOOL_LEVELS,
   SESSIONS_KEY,
   SETTINGS_KEY,
   SUBJECTS,
   SUBJECT_SYSTEM,
+  activityAreas,
+  activityProblem,
+  activityRequest,
+  areaLabel,
   behaviorRequest,
+  byteLimit,
   cleanReply,
   commonProblem,
   decodeCsvBytes,
@@ -43,6 +48,7 @@ import {
   subjectRequest,
   templateCsv,
   workFrom,
+  type ActivityArea,
   type CommonInfo,
   type Level,
   type RecordMode,
@@ -88,14 +94,14 @@ type Works = Record<RecordMode, Work>
 
 /** the settings of the last visit; the students start empty */
 function initialWorks(): Works {
-  const works: Works = { subject: emptyWork(), behavior: emptyWork() }
+  const works: Works = { subject: emptyWork(), behavior: emptyWork(), activity: emptyWork() }
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null') as Record<
       string,
       unknown
     > | null
     if (saved) {
-      for (const mode of ['subject', 'behavior'] as const) {
+      for (const mode of ['subject', 'behavior', 'activity'] as const) {
         const kept = workFrom(saved[mode], newId)
         works[mode] = { ...kept, students: [newStudent()] }
       }
@@ -106,19 +112,26 @@ function initialWorks(): Works {
   return works
 }
 
-const RESULT_NAME: Record<RecordMode, string> = { subject: '세특', behavior: '행발' }
+const RESULT_NAME: Record<RecordMode, string> = {
+  subject: '세특',
+  behavior: '행발',
+  activity: '특기사항',
+}
 const NOTES_LABEL: Record<RecordMode, string> = {
   subject: '개별 관찰 및 특성 기록 (선택)',
   behavior: '학생 관찰 및 특성 기록',
+  activity: '학생 역할 및 관찰 기록 (선택)',
 }
 const NOTES_HINT: Record<RecordMode, string> = {
   subject: '예: 평소 질문이 많고 호기심이 강함. 실험 과정에서 변인 통제 능력이 탁월함.',
   behavior:
     '예: 수업 시간에 적극적으로 질문하고 친구들에게 친절하게 설명해 줌. 맡은 일을 끝까지 해냄.',
+  activity: '예: 모둠장으로 실험 순서를 정하고 측정 결과를 표로 정리해 발표함.',
 }
 const CSV_NAME: Record<RecordMode, string> = {
   subject: '학생_세특.csv',
   behavior: '학생_행동특성_및_종합의견.csv',
+  activity: '학생_창체_특기사항.csv',
 }
 
 const savedAtText = (iso: string): string => {
@@ -184,12 +197,21 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const worksRef = useRef(works)
   worksRef.current = works
   /** the students being written, and whether a whole-class run is going */
-  const [busy, setBusy] = useState<Record<RecordMode, string[]>>({ subject: [], behavior: [] })
+  const [busy, setBusy] = useState<Record<RecordMode, string[]>>({
+    subject: [],
+    behavior: [],
+    activity: [],
+  })
   const [running, setRunning] = useState<Record<RecordMode, boolean>>({
     subject: false,
     behavior: false,
+    activity: false,
   })
-  const stop = useRef<Record<RecordMode, boolean>>({ subject: false, behavior: false })
+  const stop = useRef<Record<RecordMode, boolean>>({
+    subject: false,
+    behavior: false,
+    activity: false,
+  })
   const [sessions, setSessions] = useState<SavedSession[]>(() =>
     sessionsFrom(localStorage.getItem(SESSIONS_KEY), newId),
   )
@@ -223,7 +245,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       students: w.students.map((s) => (s.id === id ? { ...s, ...fields } : s)),
     }))
   const patchInfo = (fields: Partial<CommonInfo>) =>
-    patch('subject', (w) => ({ ...w, info: { ...w.info, ...fields } }))
+    patch(mode, (w) => ({ ...w, info: { ...w.info, ...fields } }))
 
   // the length, the instruction and the common information come back on the next visit;
   // the students are kept only when the teacher saves them
@@ -234,6 +256,11 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       info: works.subject.info,
     },
     behavior: { length: works.behavior.length, instructions: works.behavior.instructions },
+    activity: {
+      length: works.activity.length,
+      instructions: works.activity.instructions,
+      info: works.activity.info,
+    },
   })
   useEffect(() => {
     try {
@@ -243,7 +270,10 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     }
   }, [settings])
 
-  const problem = mode === 'subject' ? commonProblem(work.info) : null
+  const infoProblem = (m: RecordMode, info: CommonInfo): string | null =>
+    m === 'subject' ? commonProblem(info) : m === 'activity' ? activityProblem(info) : null
+  const problem = infoProblem(mode, work.info)
+  const limit = byteLimit(mode, work.info)
 
   // a student whose text reads like another's is warned beside the text
   const resultsKey = work.students.map((s) => s.id + '\u0000' + s.result).join('\u0001')
@@ -275,21 +305,29 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             4000,
             { feature: 'school_record' },
           )
-        : await askAi(
-            BEHAVIOR_SYSTEM,
-            behaviorRequest(w.length, w.instructions, student, order),
-            [],
-            4000,
-            { feature: 'school_record' },
-          )
+        : m === 'activity'
+          ? await askAi(
+              ACTIVITY_SYSTEM,
+              activityRequest(w.info, w.length, w.instructions, student, order),
+              [],
+              4000,
+              { feature: 'school_record' },
+            )
+          : await askAi(
+              BEHAVIOR_SYSTEM,
+              behaviorRequest(w.length, w.instructions, student, order),
+              [],
+              4000,
+              { feature: 'school_record' },
+            )
     const out = cleanReply(reply)
     if (!out) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
     return out
   }
 
   const generate = async (m: RecordMode, targets: Student[], whole: boolean) => {
-    if (m === 'subject') {
-      const found = commonProblem(worksRef.current[m].info)
+    {
+      const found = infoProblem(m, worksRef.current[m].info)
       if (found) {
         setShowProblem(true)
         return say(found, true)
@@ -361,7 +399,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   // a whole-class run writes the students who have nothing yet; once everyone has a
   // text it writes them all again
-  const writable = work.students.filter((s) => mode === 'subject' || s.notes.trim())
+  const writable = work.students.filter((s) => mode !== 'behavior' || s.notes.trim())
   const unwritten = writable.filter((s) => !s.result.trim())
   const wholeTargets = unwritten.length > 0 ? unwritten : writable
   const wholeLabel =
@@ -523,7 +561,10 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         </span>
         <div className="sf-page-title">
           <h1>생기부</h1>
-          <p>과제와 성취 수준, 관찰 기록을 넣으면 AI가 나이스에 넣을 세특과 행발 초안을 써요.</p>
+          <p>
+            과제와 성취 수준, 활동, 관찰 기록을 넣으면 AI가 나이스에 넣을 세특·행발·창체 초안을
+            써요.
+          </p>
         </div>
         <div
           className="sf-save"
@@ -583,7 +624,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         <>
           <p className="sr-note">
             AI가 쓴 글은 초안이에요. 나이스에 넣기 전에 꼭 읽고 고쳐 주세요. 학생 이름은 AI에 보내지
-            않고, 관찰 기록과 {mode === 'subject' ? '공통 정보' : '지시사항'}만 보내요.
+            않고, 관찰 기록과 {mode === 'behavior' ? '지시사항' : '공통 정보'}만 보내요.
           </p>
 
           <div className="sf-stack">
@@ -725,6 +766,100 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
               </section>
             )}
 
+            {mode === 'activity' && (
+              <section className="sf-box" aria-labelledby="sr-activity-title">
+                <div className="sf-box-head">
+                  <div>
+                    <h2 id="sr-activity-title">활동 정보</h2>
+                    <p className="sf-box-sub">
+                      학생들이 이 영역에서 함께 한 활동이에요. 영역마다 따로 써서 나이스의 그 영역
+                      칸에 넣어요.
+                    </p>
+                  </div>
+                </div>
+                <div className="sr-grid">
+                  <label className="sf-field">
+                    <span>학교급</span>
+                    <select
+                      data-testid="record-activity-school"
+                      value={work.info.schoolLevel}
+                      aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
+                      onChange={(e) => {
+                        const schoolLevel = e.target.value as SchoolLevel | ''
+                        // an area the new school level does not have is cleared
+                        const keep = activityAreas(schoolLevel).some((a) => a.id === work.info.area)
+                        patchInfo({ schoolLevel, area: keep ? work.info.area : '' })
+                      }}
+                    >
+                      <option value="">학교급 선택</option>
+                      {SCHOOL_LEVELS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sf-field">
+                    <span>학년 (선택)</span>
+                    <input
+                      data-testid="record-activity-grade"
+                      value={work.info.grade}
+                      onChange={(e) => patchInfo({ grade: e.target.value })}
+                      placeholder="예: 2"
+                    />
+                  </label>
+                  <label className="sf-field">
+                    <span>영역</span>
+                    <select
+                      data-testid="record-area"
+                      value={work.info.area}
+                      disabled={!work.info.schoolLevel}
+                      aria-invalid={showProblem && !work.info.area ? true : undefined}
+                      onChange={(e) => patchInfo({ area: e.target.value as ActivityArea | '' })}
+                    >
+                      <option value="">
+                        {work.info.schoolLevel ? '영역 선택' : '학교급을 먼저 골라 주세요'}
+                      </option>
+                      {activityAreas(work.info.schoolLevel).map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {areaLabel({ ...work.info, area: a.id })}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sf-field">
+                    <span>활동명 (선택)</span>
+                    <input
+                      data-testid="record-activity-name"
+                      value={work.info.activityName}
+                      onChange={(e) => patchInfo({ activityName: e.target.value })}
+                      placeholder="예: 과학탐구반, 학급 자치회의"
+                    />
+                  </label>
+                </div>
+                <label className="sf-field">
+                  <span>활동 내용</span>
+                  <textarea
+                    rows={3}
+                    data-testid="record-activity-content"
+                    value={work.info.activityContent}
+                    aria-invalid={
+                      showProblem && !work.info.activityContent.trim() ? true : undefined
+                    }
+                    onChange={(e) => patchInfo({ activityContent: e.target.value })}
+                    placeholder="예: 학교 앞 하천의 수질을 4주 동안 측정하고 결과를 학급 게시판에 공유함."
+                  />
+                </label>
+                <p className="sf-box-sub" data-testid="record-activity-rule">
+                  {work.info.schoolLevel === 'elementary'
+                    ? '초등학교는 자율·자치활동과 동아리활동을 한 칸에 쓰고, 글자 수 제한이 없어요.'
+                    : '중·고등학교는 영역마다 500자(1,500바이트)까지 써요. 2026학년도 3학년은 자율·자치활동 대신 자율활동으로 적어요.'}{' '}
+                  창체는 내장 똑딱AI가 아직 따로 배우지 않은 항목이라, 초안을 꼭 읽고 고쳐 주세요.
+                </p>
+                {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
+              </section>
+            )}
+
             <section className="sf-box" aria-labelledby="sr-students-title">
               <div className="sf-box-head">
                 <div>
@@ -732,7 +867,9 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                   <p className="sf-box-sub">
                     {mode === 'subject'
                       ? '학생마다 성취 수준을 고르고, 눈에 띈 점이 있으면 적어 주세요.'
-                      : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
+                      : mode === 'activity'
+                        ? '학생마다 맡은 역할이나 눈에 띈 점이 있으면 적어 주세요.'
+                        : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
                   </p>
                 </div>
                 <button type="button" className="sf-text-btn" onClick={clearStudents}>
@@ -962,11 +1099,13 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                         <span className="sr-result-label">
                           {resultName}
                           <em
-                            className={'sr-bytes' + (bytes > NEIS_BYTE_LIMIT ? ' is-over' : '')}
+                            className={
+                              'sr-bytes' + (limit !== null && bytes > limit ? ' is-over' : '')
+                            }
                             data-testid="record-bytes"
                           >
-                            {bytes.toLocaleString('ko-KR')} /{' '}
-                            {NEIS_BYTE_LIMIT.toLocaleString('ko-KR')} 바이트
+                            {bytes.toLocaleString('ko-KR')}
+                            {limit !== null ? ' / ' + limit.toLocaleString('ko-KR') : ''} 바이트
                           </em>
                         </span>
                         <textarea
@@ -1044,8 +1183,15 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                   , <b>성취 수준</b>(최상·상·보통·하·최하)
                 </>
               ) : null}
-              , <b>{mode === 'subject' ? '개별 관찰 및 특성 기록' : '학생 관찰 및 특성 기록'}</b>을
-              채운 뒤 CSV로 저장해 올려 주세요. 여기서 [CSV 저장]으로 받은 파일도 그대로 올릴 수
+              ,{' '}
+              <b>
+                {mode === 'subject'
+                  ? '개별 관찰 및 특성 기록'
+                  : mode === 'activity'
+                    ? '학생 역할 및 관찰 기록'
+                    : '학생 관찰 및 특성 기록'}
+              </b>
+              을 채운 뒤 CSV로 저장해 올려 주세요. 여기서 [CSV 저장]으로 받은 파일도 그대로 올릴 수
               있어요.
             </p>
             <p className="sr-modal-warn">올리면 지금 학생 목록이 파일 내용으로 바뀌어요.</p>
