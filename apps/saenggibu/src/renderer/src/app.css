@@ -16,6 +16,12 @@ body,
   height: 100%;
   margin: 0;
 }
+/* widths include padding and borders (100%-wide fields stay inside their cards) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 body {
   background: var(--sg-page);
 }

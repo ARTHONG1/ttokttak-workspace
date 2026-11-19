@@ -114,10 +114,18 @@
 .sr-grid .sr-span-2 {
   grid-column: span 2;
 }
-/* quiz-generator.css styles every .sf select; here it lines up with the inputs beside it */
+/* the page styles its own selects so they match the inputs beside them in both apps */
 .sf .sr-page select {
   width: 100%;
+  min-width: 0;
   height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--sf-line);
+  border-radius: 9px;
+  background-color: var(--sf-card);
+  color: var(--sf-ink);
+  font: inherit;
+  font-size: 14px;
 }
 .sf .sr-page select:focus {
   outline: none;
@@ -274,8 +282,10 @@
   font-size: 13px;
   font-weight: 650;
   color: var(--sf-ink-2);
+  white-space: nowrap;
 }
-.sr-count input {
+/* the page's own selector: special-features.css's ".sf input" (width: 100%) may load later */
+.sr-page .sr-count input {
   width: 52px;
   height: 32px;
   padding: 0 8px;
@@ -436,5 +446,100 @@
   .sr-toolbar-gap {
     flex-basis: 100%;
     height: 0;
+  }
+}
+
+/* phones (the web edition): one column of large, easy-to-tap controls */
+@media (max-width: 600px) {
+  .sr-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sr-tab {
+    padding: 10px 12px;
+  }
+  .sr-tab small {
+    display: none;
+  }
+  /* 16px stops phone browsers from zooming in when a field is tapped */
+  .sf .sr-page input,
+  .sf .sr-page textarea,
+  .sf .sr-page select {
+    font-size: 16px;
+  }
+  .sr-page .sf-save button,
+  .sr-page .sf-sm,
+  .sr-page .sf-text-btn,
+  .sr-page .sr-seg,
+  .sr-page .sr-segs.is-small .sr-seg {
+    height: 44px;
+  }
+  .sr-page .sf-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .sr-page .sf-ghost {
+    width: 100%;
+    height: 44px;
+  }
+  .sr-segs,
+  .sr-segs.is-small {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    width: 100%;
+  }
+  .sr-seg,
+  .sr-segs.is-small .sr-seg {
+    padding: 0 2px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .sr-grid {
+    grid-template-columns: 1fr;
+  }
+  .sr-grid .sr-span-2 {
+    grid-column: auto;
+  }
+  .sr-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .sr-toolbar > .sr-count,
+  .sr-toolbar > .sf-primary,
+  .sr-toolbar > .sf-danger {
+    grid-column: 1 / -1;
+  }
+  .sr-toolbar > .sf-primary {
+    height: 48px;
+    font-size: 15px;
+  }
+  .sr-page .sr-count input {
+    height: 44px;
+  }
+  .sr-toolbar-gap,
+  .sr-student-head > .sr-toolbar-gap {
+    display: none;
+  }
+  .sr-bulk .sr-segs {
+    flex-basis: 100%;
+  }
+  .sr-student {
+    padding: 12px;
+  }
+  /* rows: number, name and remove / the level / copy and write */
+  .sr-student-head .sr-name {
+    flex: 1 1 calc(100% - 26px - 44px - 16px);
+    width: auto;
+    min-width: 0;
+    height: 44px;
+  }
+  .sr-student-head > .sr-segs {
+    order: 3;
+  }
+  .sr-student-head > .sf-secondary,
+  .sr-student-head > .sf-primary {
+    flex: 1 1 calc(50% - 4px);
+    order: 4;
   }
 }
