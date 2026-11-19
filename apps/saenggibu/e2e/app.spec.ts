@@ -1,24 +1,35 @@
+import { createHash, randomBytes } from 'node:crypto'
 import { existsSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 
 /**
  * 똑딱생기부 itself, launched from its build (out/): the page, the built-in 똑딱AI writing one
- * 행발 entry, and a 교과 세특 entry. The AI part needs the staged model (scripts/prepare-ai.mjs
- * → build/local-ai) and is skipped without it.
+ * 행발, 세특 and 창체 entry, and the first-launch model download. The server comes from
+ * build/local-ai (scripts/prepare-ai.mjs); the writing test reads V7 B from the model project
+ * (SAENGGIBU_TEST_MODEL) and is skipped without it.
  */
 const APP = resolve(__dirname, '..')
 const AI_DIR = process.env.SAENGGIBU_AI_DIR || join(APP, 'build/local-ai')
+const MODEL =
+  process.env.SAENGGIBU_TEST_MODEL ||
+  join(
+    homedir(),
+    'Desktop/인공지능 모델/.local-ai/ddak/models/school_record/school-record-v7-b/model-Q8_0.gguf',
+  )
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
 
 test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', async () => {
-  test.skip(!existsSync(join(AI_DIR, 'model.gguf')), 'no staged model')
+  test.skip(!existsSync(MODEL) || !existsSync(join(AI_DIR, 'manifest.json')), 'no model or runtime')
   const app = await electron.launch({
     args: [APP],
     env: {
       ...process.env,
       SAENGGIBU_AI_DIR: AI_DIR,
+      SAENGGIBU_MODEL_FILE: MODEL,
       SAENGGIBU_USER_DATA: mkdtempSync(join(tmpdir(), 'saenggibu-e2e-')),
     } as Record<string, string>,
   })
@@ -88,5 +99,83 @@ test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', asyn
     })
   } finally {
     await app.close()
+  }
+})
+
+/**
+ * The first launch without a model: a slow local server stands in for the GitHub release (a
+ * few MB, in small steps), so the banner's progress and the writing request's answer show
+ * while it downloads. The file is no model, so the server then fails to start: that is the
+ * end of what this test checks.
+ */
+test('the first launch downloads the model and says so', async () => {
+  const data = randomBytes(4 * 1024 * 1024)
+  const sha256 = createHash('sha256').update(data).digest('hex')
+  const server = createServer((req, res) => {
+    if (req.url !== '/model') return void res.writeHead(404).end()
+    res.writeHead(200, { 'Content-Length': data.length })
+    let at = 0
+    const step = () => {
+      if (at >= data.length) return void res.end()
+      res.write(data.subarray(at, at + 256 * 1024))
+      at += 256 * 1024
+      setTimeout(step, 250)
+    }
+    step()
+  })
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
+  const base = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+  const launch = (url: string) =>
+    electron.launch({
+      args: [APP],
+      env: {
+        ...process.env,
+        SAENGGIBU_AI_DIR: AI_DIR,
+        SAENGGIBU_MODEL_URL: url,
+        SAENGGIBU_MODEL_BYTES: String(data.length),
+        SAENGGIBU_MODEL_SHA256: sha256,
+        SAENGGIBU_USER_DATA: mkdtempSync(join(tmpdir(), 'saenggibu-e2e-')),
+      } as Record<string, string>,
+    })
+  try {
+    const app = await launch(base + '/model')
+    try {
+      const page = await app.firstWindow()
+      const banner = page.getByTestId('sg-model')
+      await expect(banner).toContainText('처음 한 번 받고 있어요')
+      await expect(page.getByTestId('sg-model-progress')).toBeVisible()
+      await expect(page.getByTestId('sg-ai-state')).toContainText('똑딱AI 받는 중')
+      await page.screenshot({ path: join(APP, 'test-results/saenggibu-download-banner.png') })
+      // a writing request during the download is told how far it is
+      await page.getByRole('tab', { name: /행발/ }).click()
+      await page.getByTestId('record-name').first().fill('김하늘')
+      await page
+        .getByTestId('record-notes')
+        .first()
+        .fill('모둠 활동에서 친구의 의견을 정리해 발표함.')
+      await page.getByTestId('record-generate-one').first().click()
+      await expect(page.locator('.sf-toast')).toContainText('처음 한 번 받는 중이에요')
+      await page.screenshot({ path: join(APP, 'test-results/saenggibu-download.png') })
+      // downloaded and checked: the banner goes away
+      await expect(banner).toHaveCount(0, { timeout: 30_000 })
+    } finally {
+      await app.close()
+    }
+
+    // nothing at the address: the banner offers [다시 받기] and [파일로 넣기]
+    const missing = await launch(base + '/nothing')
+    try {
+      const page = await missing.firstWindow()
+      await expect(page.getByTestId('sg-model')).toContainText('다 받지 못했어요')
+      await expect(page.getByTestId('sg-model')).toContainText('404')
+      await expect(page.getByTestId('sg-model-retry')).toBeVisible()
+      await expect(page.getByTestId('sg-model-import')).toBeVisible()
+      await expect(page.getByTestId('sg-ai-state')).toHaveText('똑딱AI 받기 멈춤')
+      await page.screenshot({ path: join(APP, 'test-results/saenggibu-download-failed.png') })
+    } finally {
+      await missing.close()
+    }
+  } finally {
+    server.close()
   }
 })

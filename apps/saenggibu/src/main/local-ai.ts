@@ -2,7 +2,8 @@
  * The built-in 똑딱AI: llama.cpp's llama-server on 127.0.0.1 with a per-run key and the
  * 똑딱AI 생기부 V7 B model (school-record-v7-b), a whole Q8_0 model with no adapter: the file
  * the model project measured on its 80 생기부 dev prompts, and every request goes at
- * temperature 0 as there.
+ * temperature 0 as there. The server comes with the app (Resources/local-ai); the model is
+ * downloaded once into the user's folder (model-store.ts), since it does not fit an installer.
  * Nothing leaves this computer; the server's logs are off so no student text is written out.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -10,35 +11,38 @@ import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { availableParallelism } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import type { AiState } from '../shared/api'
 import { MAX_ANSWER_TOKENS, plainTurn } from './ai-turn'
+import { ModelError, type ModelStore, type Progress } from './model-store'
 
 export const AI_MODEL = 'ttokttak-saenggibu'
-/** inside the AI folder, as the server (started there) sees it */
-export const MODEL_FILE = 'model.gguf'
 
 export interface AiFiles {
   dir: string
   executable: string
 }
 
-/** the bundled AI folder (Resources/local-ai), or SAENGGIBU_AI_DIR for a development run */
+/** the bundled server folder (Resources/local-ai), or SAENGGIBU_AI_DIR for a development run */
 export function aiFiles(resourcesPath: string, platform = process.platform): AiFiles | null {
   const dir = process.env.SAENGGIBU_AI_DIR || join(resourcesPath, 'local-ai')
   const executable = join(dir, platform === 'win32' ? 'llama-server.exe' : 'llama-server')
-  const all = [executable, join(dir, MODEL_FILE)]
-  return all.every((p) => existsSync(p)) ? { dir, executable } : null
+  return existsSync(executable) ? { dir, executable } : null
 }
 
 /**
- * The server's arguments. The model goes by its path relative to the AI folder, where the
- * server runs: a Windows profile folder with Korean letters stays out of it.
+ * The server's arguments. The server runs in the model's folder and gets the model by its
+ * bare file name: a Windows profile or app folder with Korean letters stays out of argv.
  */
-export function serverArgs(port: number, apiKey: string, threads: number): string[] {
+export function serverArgs(
+  port: number,
+  apiKey: string,
+  threads: number,
+  modelFile = 'model.gguf',
+): string[] {
   return [
     '--model',
-    MODEL_FILE,
+    modelFile,
     '--alias',
     AI_MODEL,
     '--host',
@@ -77,6 +81,30 @@ export function requestBody(system: string, text: string): Record<string, unknow
   }
 }
 
+/** what a writing request is told while the model is not usable yet */
+export function notReadyMessage(state: AiState): string {
+  switch (state.state) {
+    case 'downloading':
+      return (
+        '똑딱AI를 처음 한 번 받는 중이에요 (' +
+        Math.floor((state.received / state.total) * 100) +
+        '%). 다 받으면 바로 쓸 수 있어요.'
+      )
+    case 'verifying':
+      return '받은 똑딱AI를 확인하는 중이에요. 잠시 뒤 다시 해 주세요.'
+    case 'download-failed':
+      return '똑딱AI를 아직 받지 못했어요. 위의 [다시 받기]나 [파일로 넣기]를 눌러 주세요.'
+    default:
+      return '똑딱AI가 아직 준비되지 않았어요. 잠시 뒤 다시 해 주세요.'
+  }
+}
+
+/** automatic retries of a dropped download before the page shows [다시 받기] */
+const RETRY_WAITS_MS = [3_000, 10_000, 30_000]
+/** a download that kept dropping, as the page shows it */
+const DROPPED =
+  '인터넷 연결이 끊겨 똑딱AI를 다 받지 못했어요. [다시 받기]를 누르면 받던 곳부터 이어서 받아요.'
+
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer()
@@ -90,17 +118,25 @@ function freePort(): Promise<number> {
 }
 
 type Endpoint = { url: string; key: string }
+/** where the model comes from: the download store, or a fixed file (SAENGGIBU_MODEL_FILE) */
+export type ModelSource = { store: ModelStore } | { file: string }
 
 export class LocalAi {
   private state: AiState = { state: 'off' }
   private child: ChildProcess | null = null
   private endpoint: Endpoint | null = null
   private starting: Promise<Endpoint> | null = null
+  private preparing: Promise<void> | null = null
+  private modelPath: string | null = null
   private stopping = false
   private readonly listeners = new Set<(state: AiState) => void>()
   private readonly running = new Map<string, AbortController>()
 
-  constructor(private readonly resourcesPath: string) {}
+  constructor(
+    private readonly resourcesPath: string,
+    private readonly source: ModelSource,
+    private readonly retryWaitsMs: readonly number[] = RETRY_WAITS_MS,
+  ) {}
 
   current(): AiState {
     return this.state
@@ -116,21 +152,86 @@ export class LocalAi {
     for (const l of this.listeners) l(state)
   }
 
-  /** start the server (once); the first answer waits for it */
+  /**
+   * At launch and on [다시 받기]: find the verified model, download it if it is not here
+   * (retrying a dropped connection a few times), then start the server.
+   */
+  prepare(): Promise<void> {
+    this.preparing ??= this.prepareOnce().finally(() => {
+      this.preparing = null
+    })
+    return this.preparing
+  }
+
+  private async prepareOnce(): Promise<void> {
+    if ('file' in this.source) {
+      this.modelPath = this.source.file
+    } else {
+      const store = this.source.store
+      this.set({ state: 'verifying' })
+      if (!(await store.ready())) {
+        const progress = (p: Progress) => this.set({ state: 'downloading', ...p })
+        for (let attempt = 0; ; attempt++) {
+          if (this.stopping) return
+          try {
+            this.set({ state: 'downloading', received: 0, total: store.spec.bytes, rate: 0 })
+            await store.download((p) => {
+              if (p.received >= p.total) this.set({ state: 'verifying' })
+              else progress(p)
+            })
+            break
+          } catch (err) {
+            if (this.stopping) return
+            // a full disk or a damaged file will not mend itself; a dropped connection may
+            if (err instanceof ModelError) {
+              this.set({ state: 'download-failed', message: err.message })
+              return
+            }
+            if (attempt >= this.retryWaitsMs.length) {
+              this.set({ state: 'download-failed', message: DROPPED })
+              return
+            }
+            await new Promise((r) => setTimeout(r, this.retryWaitsMs[attempt]))
+          }
+        }
+      }
+      this.modelPath = store.path
+    }
+    await this.ensure().catch(() => undefined)
+  }
+
+  /** [파일로 넣기]: a model file downloaded by hand */
+  async importModel(file: string): Promise<void> {
+    if (!('store' in this.source)) return
+    const store = this.source.store
+    if (this.preparing || this.state.state === 'downloading')
+      throw new Error('받는 중에는 파일로 넣을 수 없어요. 받기를 멈춘 뒤 다시 해 주세요.')
+    try {
+      await store.importFile(file, (p) => this.set({ state: 'downloading', ...p }))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      this.set({ state: 'download-failed', message })
+      throw err
+    }
+    await this.prepare()
+  }
+
+  /** start the server (once) on the verified model; the first answer waits for it */
   ensure(): Promise<Endpoint> {
     if (this.endpoint && this.child && this.child.exitCode === null) {
       return Promise.resolve(this.endpoint)
     }
-    this.starting ??= this.start().finally(() => {
+    if (!this.modelPath) return Promise.reject(new Error(notReadyMessage(this.state)))
+    this.starting ??= this.start(this.modelPath).finally(() => {
       this.starting = null
     })
     return this.starting
   }
 
-  private async start(): Promise<Endpoint> {
+  private async start(modelPath: string): Promise<Endpoint> {
     if (this.stopping) throw new Error('똑딱생기부를 닫는 중이에요.')
     const files = aiFiles(this.resourcesPath)
-    if (!files) {
+    if (!files || !existsSync(modelPath)) {
       this.set({ state: 'missing' })
       throw new Error('똑딱AI 파일을 찾지 못했어요. 똑딱생기부를 다시 설치해 주세요.')
     }
@@ -138,8 +239,8 @@ export class LocalAi {
     const port = await freePort()
     const key = randomBytes(32).toString('hex')
     const threads = Math.min(4, Math.max(1, availableParallelism() - 1))
-    const child = spawn(files.executable, serverArgs(port, key, threads), {
-      cwd: files.dir,
+    const child = spawn(files.executable, serverArgs(port, key, threads, basename(modelPath)), {
+      cwd: dirname(modelPath),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
     })
@@ -222,6 +323,7 @@ export class LocalAi {
 
   stop(): void {
     this.stopping = true
+    if ('store' in this.source) this.source.store.cancel()
     for (const c of this.running.values()) c.abort()
     this.child?.kill()
     this.child = null

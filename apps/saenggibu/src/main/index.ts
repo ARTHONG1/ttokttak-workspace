@@ -4,9 +4,11 @@
  * It shares no code or settings with 똑딱작업실: its own name, app id and user-data folder.
  */
 import { join } from 'node:path'
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, app, dialog, ipcMain, net, shell } from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
-import { LocalAi } from './local-ai'
+import { MODEL, type ModelSpec } from '../shared/model'
+import { LocalAi, type ModelSource } from './local-ai'
+import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
 import { TABLE_EXTENSIONS, readTableFile } from './table-file'
 
@@ -16,7 +18,30 @@ if (process.env.SAENGGIBU_USER_DATA) app.setPath('userData', process.env.SAENGGI
 
 let win: BrowserWindow | null = null
 let neis: PlaywrightNeisDriver | undefined
-const ai = new LocalAi(process.resourcesPath)
+
+/**
+ * The model: downloaded into userData/ai. A development run may point at a model file
+ * (SAENGGIBU_MODEL_FILE) or, for the download tests, at another file to download
+ * (SAENGGIBU_MODEL_URL, _BYTES, _SHA256); an installed app ignores both.
+ */
+function modelSource(): ModelSource {
+  const env = process.env
+  if (!app.isPackaged && env.SAENGGIBU_MODEL_FILE) return { file: env.SAENGGIBU_MODEL_FILE }
+  const spec: ModelSpec =
+    !app.isPackaged && env.SAENGGIBU_MODEL_URL
+      ? {
+          ...MODEL,
+          url: env.SAENGGIBU_MODEL_URL,
+          bytes: Number(env.SAENGGIBU_MODEL_BYTES),
+          sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
+        }
+      : MODEL
+  const store = new ModelStore(join(app.getPath('userData'), 'ai'), spec, (url, init) =>
+    net.fetch(url, init),
+  )
+  return { store }
+}
+const ai = new LocalAi(process.resourcesPath, modelSource())
 
 function createWindow(): void {
   win = new BrowserWindow({
@@ -51,6 +76,31 @@ function createWindow(): void {
 function registerIpc(): void {
   ai.onState((state) => win?.webContents.send(CHANNELS.aiStateChanged, state))
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
+  ipcMain.handle(CHANNELS.modelInfo, () => ({
+    name: MODEL.name,
+    bytes: MODEL.bytes,
+    page: MODEL.page,
+  }))
+  ipcMain.handle(CHANNELS.retryModel, () => {
+    void ai.prepare()
+  })
+  ipcMain.handle(CHANNELS.importModel, async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender) ?? win
+    if (!owner) return null
+    const picked = await dialog.showOpenDialog(owner, {
+      title: '받아 둔 똑딱AI 모델 파일 고르기',
+      filters: [{ name: '똑딱AI 모델', extensions: ['gguf'] }],
+      properties: ['openFile'],
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+    try {
+      await ai.importModel(picked.filePaths[0])
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+  ipcMain.handle(CHANNELS.openModelPage, () => shell.openExternal(MODEL.page))
   ipcMain.handle(CHANNELS.version, () => app.getVersion())
   ipcMain.handle(CHANNELS.ask, async (_event, raw: unknown) => {
     const r = (raw ?? {}) as Partial<AskRequest>
@@ -99,8 +149,9 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     registerIpc()
     createWindow()
-    // the AI loads while the teacher fills in the page: the first answer is then quick
-    void ai.ensure().catch(() => undefined)
+    // the model is checked (or downloaded once) and loaded while the teacher fills in the
+    // page: the first answer is then quick
+    void ai.prepare()
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })

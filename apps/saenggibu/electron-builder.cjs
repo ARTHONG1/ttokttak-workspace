@@ -1,8 +1,9 @@
 /**
  * 똑딱생기부's installers: its own app id, name and folders (nothing shared with 똑딱작업실),
- * the built-in 똑딱AI from build/local-ai (scripts/prepare-ai.mjs) beside the app, and the
- * NEIS browser driver (playwright-core) in the packaged node_modules. No update feed yet:
- * releases go to their own repository later.
+ * the built-in 똑딱AI's server from build/local-ai (scripts/prepare-ai.mjs) beside the app
+ * (the model is downloaded on first launch), and the NEIS browser driver (playwright-core) in
+ * the packaged node_modules. Released on github.com/ARTHONG1/ttokttak-saenggibu; no update
+ * feed yet: a new version is installed over the old one.
  */
 const { existsSync, readFileSync } = require('node:fs')
 const { join } = require('node:path')
@@ -21,6 +22,8 @@ module.exports = {
   extraResources: [
     { from: 'build/local-ai', to: 'local-ai' },
     { from: '../../LICENSE', to: 'LICENSE.txt' },
+    // the Apache-2.0 NOTICE of the code this app shares its 생기부 page with (똑딱작업실)
+    { from: '../../NOTICE', to: 'NOTICE.txt' },
   ],
   npmRebuild: false,
   publish: null,
@@ -55,11 +58,14 @@ module.exports = {
     const manifest = join(__dirname, 'build/local-ai/manifest.json')
     if (!existsSync(manifest)) throw new Error('Run scripts/prepare-ai.mjs before packaging')
     const m = JSON.parse(readFileSync(manifest, 'utf8'))
-    // 똑딱AI 생기부 V7 B, a whole model (scripts/prepare-ai.mjs pins it); an older bundle with a
-    // base and an adapter would package the previous model
-    if (m.source !== 'school-record-v7-b' || m.adapter)
-      throw new Error('build/local-ai holds another model: run scripts/prepare-ai.mjs again')
-    if (!existsSync(join(__dirname, 'build/local-ai/model.gguf')))
-      throw new Error('build/local-ai is missing model.gguf')
+    // the runtime only: the app downloads 똑딱AI 생기부 V7 B on first launch. A model left
+    // in build/local-ai (an older staging) would push the installer past 2 GB.
+    if (!m.model?.downloaded || m.model.source !== 'school-record-v7-b')
+      throw new Error('build/local-ai is an older staging: run scripts/prepare-ai.mjs again')
+    if (existsSync(join(__dirname, 'build/local-ai/model.gguf')))
+      throw new Error('build/local-ai holds a model: the installer must not include it')
+    const exe = process.platform === 'win32' ? 'llama-server.exe' : 'llama-server'
+    if (!existsSync(join(__dirname, 'build/local-ai', exe)))
+      throw new Error('build/local-ai is missing ' + exe)
   },
 }

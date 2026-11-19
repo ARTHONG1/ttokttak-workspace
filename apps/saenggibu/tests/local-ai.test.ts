@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, plainTurn } from '../src/main/ai-turn'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MODEL_FILE, aiFiles, requestBody, serverArgs } from '../src/main/local-ai'
+import { describe, expect, it } from 'vitest'
+import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, plainTurn } from '../src/main/ai-turn'
+import { LocalAi, aiFiles, notReadyMessage, requestBody, serverArgs } from '../src/main/local-ai'
+import { ModelStore } from '../src/main/model-store'
+import { MODEL } from '../src/shared/model'
 
 describe('the built-in 똑딱AI', () => {
-  it('runs the 생기부 V7 B model alone, by a path inside its own folder', () => {
+  it('runs the 생기부 V7 B model alone, by its bare file name', () => {
     const args = serverArgs(4321, 'k', 3)
     const at = (flag: string) => args[args.indexOf(flag) + 1]
-    expect(at('--model')).toBe(MODEL_FILE)
-    expect(MODEL_FILE).toBe('model.gguf')
+    expect(at('--model')).toBe('model.gguf')
+    expect(serverArgs(1, 'k', 1, 'v7b.gguf')[1]).toBe('v7b.gguf')
     expect(at('--host')).toBe('127.0.0.1')
     expect(at('--ctx-size')).toBe('4096')
     expect(at('--reasoning')).toBe('off')
@@ -20,15 +22,24 @@ describe('the built-in 똑딱AI', () => {
     expect(args).not.toContain('--lora-scaled')
   })
 
-  it('finds the AI folder from the executable and the model alone', () => {
+  it('finds the server in the app; the model is no longer part of it', () => {
     const dir = mkdtempSync(join(tmpdir(), 'saenggibu-ai-'))
     expect(aiFiles(dir, 'darwin')).toBeNull()
     const ai = join(dir, 'local-ai')
     mkdirSync(ai)
     writeFileSync(join(ai, 'llama-server'), '')
-    expect(aiFiles(dir, 'darwin')).toBeNull()
-    writeFileSync(join(ai, MODEL_FILE), '')
     expect(aiFiles(dir, 'darwin')).toEqual({ dir: ai, executable: join(ai, 'llama-server') })
+    expect(aiFiles(dir, 'win32')).toBeNull()
+  })
+
+  it('downloads V7 B at its measured size and SHA256 from the app repository', () => {
+    expect(MODEL).toMatchObject({
+      bytes: 2_076_675_040,
+      sha256: 'd31c913928eea57ca2d1bfb2a0a158dcb48ef2b4c6bae6dede91cdd7457d0fdf',
+    })
+    expect(MODEL.url).toMatch(
+      /^https:\/\/github\.com\/ARTHONG1\/ttokttak-saenggibu\/releases\/download\//,
+    )
   })
 
   it('asks at the settings the model was measured with', () => {
@@ -40,6 +51,51 @@ describe('the built-in 똑딱AI', () => {
         { role: 'system', content: '지시' },
         { role: 'user', content: '요청' },
       ],
+    })
+  })
+
+  it('tells a writing request how far the download is', () => {
+    expect(notReadyMessage({ state: 'downloading', received: 37, total: 100, rate: 0 })).toContain(
+      '37%',
+    )
+    expect(notReadyMessage({ state: 'download-failed', message: 'x' })).toContain('다시 받기')
+  })
+})
+
+describe('the first launch', () => {
+  const failing = (fetchImpl: () => Promise<Response>) =>
+    new ModelStore(
+      mkdtempSync(join(tmpdir(), 'saenggibu-model-')),
+      { ...MODEL, bytes: 10, url: 'http://127.0.0.1:9/model' },
+      fetchImpl,
+      async () => Number.MAX_SAFE_INTEGER,
+    )
+
+  it('tries a dropped connection again, then offers [다시 받기]', async () => {
+    let tries = 0
+    const store = failing(async () => {
+      tries++
+      throw new TypeError('fetch failed')
+    })
+    const ai = new LocalAi(tmpdir(), { store }, [0, 0])
+    await ai.prepare()
+    expect(tries).toBe(3)
+    expect(ai.current()).toMatchObject({ state: 'download-failed' })
+    await expect(ai.ensure()).rejects.toThrow(/다시 받기/)
+  })
+
+  it('does not retry a release file that is not there', async () => {
+    let tries = 0
+    const store = failing(async () => {
+      tries++
+      return new Response(null, { status: 404 })
+    })
+    const ai = new LocalAi(tmpdir(), { store }, [0, 0])
+    await ai.prepare()
+    expect(tries).toBe(1)
+    expect(ai.current()).toMatchObject({
+      state: 'download-failed',
+      message: expect.stringMatching(/404/),
     })
   })
 })

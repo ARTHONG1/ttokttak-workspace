@@ -65,9 +65,15 @@ body {
   color: var(--sf-ok);
 }
 .sg-ai.is-failed,
-.sg-ai.is-missing {
+.sg-ai.is-missing,
+.sg-ai.is-download-failed {
   background: var(--sf-warn-soft);
   color: var(--sf-danger);
+}
+.sg-ai.is-downloading,
+.sg-ai.is-verifying {
+  background: var(--sf-accent-soft);
+  color: var(--sf-accent);
 }
 .sg-main {
   flex: 1;
@@ -124,5 +130,78 @@ body {
   .sf-modal,
   .sf-modal-back {
     animation: none !important;
+  }
+}
+
+/* the first-launch model download (App.tsx ModelBanner) */
+.sg-model {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  margin: 12px 20px 0;
+  padding: 14px 18px;
+  border: 1px solid var(--sf-line);
+  border-radius: 14px;
+  background: var(--sf-card);
+}
+.sg-model.is-download-failed {
+  border-color: var(--sf-warn-soft);
+  background: var(--sf-warn-soft);
+}
+.sg-model-text {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--sf-ink-2);
+}
+.sg-model-text strong {
+  font-size: 14.5px;
+  color: var(--sf-ink);
+}
+.sg-model-note {
+  color: var(--sf-danger);
+}
+.sg-model-progress {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 6px;
+}
+.sg-model-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--sf-soft);
+}
+.sg-model-bar span {
+  display: block;
+  height: 100%;
+  background: var(--sf-accent);
+  transform-origin: left center;
+  transition: transform 0.25s linear;
+}
+.sg-model-count {
+  font-size: 12px;
+  color: var(--sf-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.sg-model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-model-bar span {
+    transition: none;
+  }
+}
+@media (max-width: 600px) {
+  .sg-model {
+    margin: 10px 12px 0;
   }
 }

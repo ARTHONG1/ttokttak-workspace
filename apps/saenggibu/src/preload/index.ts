@@ -10,6 +10,10 @@ const api: SaenggibuApi = {
     ipcRenderer.on(CHANNELS.aiStateChanged, listener)
     return () => ipcRenderer.removeListener(CHANNELS.aiStateChanged, listener)
   },
+  modelInfo: () => ipcRenderer.invoke(CHANNELS.modelInfo),
+  retryModel: () => ipcRenderer.invoke(CHANNELS.retryModel),
+  importModel: () => ipcRenderer.invoke(CHANNELS.importModel),
+  openModelPage: () => ipcRenderer.invoke(CHANNELS.openModelPage),
   readTableFile: () => ipcRenderer.invoke(CHANNELS.readTableFile),
   sendToNeis: (text) => ipcRenderer.invoke(CHANNELS.sendToNeis, text),
   version: () => ipcRenderer.invoke(CHANNELS.version),

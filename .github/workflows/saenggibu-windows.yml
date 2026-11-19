@@ -1,0 +1,106 @@
+name: 똑딱생기부 Windows build
+
+# Builds 똑딱생기부's Windows installer (x64 NSIS) on a Windows runner: the app, llama.cpp's
+# CPU server and no model (the app downloads 똑딱AI 생기부 V7 B from
+# github.com/ARTHONG1/ttokttak-saenggibu on first launch). The packaged app is then run on a
+# fresh user folder with Korean letters in its path: it downloads the released model, checks
+# its SHA256 and writes one 행발. The installer stays unsigned, as the Mac one is.
+# The files are left as an artifact; the maintainer attaches them to the app's release.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/saenggibu-windows.yml
+      - apps/saenggibu/electron-builder.cjs
+      - apps/saenggibu/scripts/prepare-ai.mjs
+
+concurrency:
+  group: saenggibu-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 75
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Stage llama.cpp (Windows x64, CPU)
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/llama"
+          mkdir -p "$work/runtime"
+          curl -sSfL --retry 5 -o "$work/llama-win.zip" \
+            https://github.com/ggml-org/llama.cpp/releases/download/b12167/llama-b12167-bin-win-cpu-x64.zip
+          7z x "$work/llama-win.zip" -o"$work/runtime" >/dev/null
+          curl -sSfL --retry 5 -o "$work/runtime/LICENSE" \
+            https://raw.githubusercontent.com/ggml-org/llama.cpp/b12167/LICENSE
+          node apps/saenggibu/scripts/prepare-ai.mjs "$work/runtime"
+
+      - name: Package
+        run: npm run dist:win -w @ttokttak/saenggibu -- --publish never -c.electronDist=../../node_modules/electron/dist
+
+      - name: Check the installer
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./apps/saenggibu/package.json').version")
+          installer="apps/saenggibu/release/TtokttakSaenggibu-Setup-$version.exe"
+          dir="apps/saenggibu/release/win-unpacked"
+          test -f "$installer" || { echo "missing: $installer"; exit 1; }
+          size=$(stat -c %s "$installer")
+          echo "installer: $size bytes"
+          [ "$size" -lt 2000000000 ] || { echo "the installer is over 2 GB"; exit 1; }
+          for f in TtokttakSaenggibu.exe resources/local-ai/llama-server.exe resources/local-ai/manifest.json; do
+            test -f "$dir/$f" || { echo "missing: $dir/$f"; exit 1; }
+          done
+          test ! -e "$dir/resources/local-ai/model.gguf" || { echo "the model must not be inside"; exit 1; }
+          status=$(powershell -NoProfile -Command "(Get-AuthenticodeSignature '$installer').Status")
+          [ "$(echo "$status" | tr -d '\r')" = "NotSigned" ] || { echo "the installer is signed ($status)"; exit 1; }
+
+      # the packaged app on a fresh user folder: the real download from the app's release,
+      # the SHA256 check, the server in a folder whose path has Korean letters, one 행발
+      - name: Smoke test the packaged app
+        env:
+          SAENGGIBU_PACKAGED_EXE: ${{ github.workspace }}\apps\saenggibu\release\win-unpacked\TtokttakSaenggibu.exe
+          E2E_NO_VIDEO: '1'
+        run: npx playwright test -c apps/saenggibu/e2e/playwright.config.ts installed.spec.ts
+
+      - name: Upload the installer
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ttokttak-saenggibu-windows-x64
+          path: |
+            apps/saenggibu/release/TtokttakSaenggibu-Setup-*.exe
+            apps/saenggibu/release/TtokttakSaenggibu-Setup-*.exe.blockmap
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Keep the test screenshots
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: saenggibu-windows-test-results
+          path: apps/saenggibu/test-results
+          retention-days: 7

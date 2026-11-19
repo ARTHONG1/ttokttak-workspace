@@ -8,13 +8,26 @@ export interface AskRequest {
 }
 export type AskResult = { ok: true; text: string } | { ok: false; error: string }
 
-/** the built-in 똑딱AI, as the page shows it */
+/**
+ * The built-in 똑딱AI, as the page shows it. The model is downloaded once (verifying →
+ * downloading → verifying), then the server starts (starting → ready).
+ */
 export type AiState =
   | { state: 'off' }
+  | { state: 'verifying' }
+  | { state: 'downloading'; received: number; total: number; rate: number }
+  | { state: 'download-failed'; message: string }
   | { state: 'starting' }
   | { state: 'ready' }
   | { state: 'missing' }
   | { state: 'failed'; message: string }
+
+/** the model's size and where a teacher can download it by hand */
+export interface ModelInfo {
+  name: string
+  bytes: number
+  page: string
+}
 
 /** a roster or a texts file (xlsx, csv, tsv) read as rows of text */
 export type TableFileResult =
@@ -32,6 +45,13 @@ export interface SaenggibuApi {
   cancel(requestId: string): Promise<void>
   aiState(): Promise<AiState>
   onAiState(handler: (state: AiState) => void): () => void
+  modelInfo(): Promise<ModelInfo>
+  /** [다시 받기]: resume the model download */
+  retryModel(): Promise<void>
+  /** [파일로 넣기]: pick a model file downloaded by hand; null = canceled */
+  importModel(): Promise<{ ok: true } | { ok: false; error: string } | null>
+  /** the release page with the model file, in the system browser */
+  openModelPage(): Promise<void>
   /** null = canceled */
   readTableFile(): Promise<TableFileResult | null>
   sendToNeis(text: string): Promise<NeisResult>
@@ -45,6 +65,10 @@ export const CHANNELS = {
   cancel: 'saenggibu:cancel',
   aiState: 'saenggibu:ai-state',
   aiStateChanged: 'saenggibu:ai-state-changed',
+  modelInfo: 'saenggibu:model-info',
+  retryModel: 'saenggibu:retry-model',
+  importModel: 'saenggibu:import-model',
+  openModelPage: 'saenggibu:open-model-page',
   readTableFile: 'saenggibu:read-table-file',
   sendToNeis: 'saenggibu:send-to-neis',
   version: 'saenggibu:version',
