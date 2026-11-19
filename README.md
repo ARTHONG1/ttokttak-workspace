@@ -56,7 +56,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.16.13](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.13) · 2026-11-18** — 똑딱작업실 0.16.13은 설치판(Mac·Windows)이 크롬 확장 프로그램 없이 K-에듀파인과 나이스에 직접 채우도록 바꾸고, 똑딱정리에 문서를 끌어다 놓으면 편집기로 열리던 문제를 고친 업데이트입니다.
+**[v0.16.14](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.16.14) · 2026-11-19** — 똑딱작업실 0.16.14는 설치판의 내장 똑딱AI가 쓰는 생기부 모델을 가장 최근에 학습한 똑딱AI 생기부 V7 B로 바꾸고, 생기부에 창체를 더한 업데이트입니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
