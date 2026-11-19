@@ -101,9 +101,11 @@ export function notReadyMessage(state: AiState): string {
 
 /** automatic retries of a dropped download before the page shows [다시 받기] */
 const RETRY_WAITS_MS = [3_000, 10_000, 30_000]
+/** after those, the download keeps trying this often by itself (Wi-Fi back, the lid opened) */
+const DROPPED_RETRY_MS = 60_000
 /** a download that kept dropping, as the page shows it */
 const DROPPED =
-  '인터넷 연결이 끊겨 똑딱AI를 다 받지 못했어요. [다시 받기]를 누르면 받던 곳부터 이어서 받아요.'
+  '인터넷 연결이 끊겨 잠시 멈췄어요. 연결되면 받던 곳부터 저절로 이어서 받아요. 바로 하려면 [다시 받기]를 눌러 주세요.'
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -129,6 +131,8 @@ export class LocalAi {
   private preparing: Promise<void> | null = null
   private modelPath: string | null = null
   private stopping = false
+  /** the next automatic try after a dropped download */
+  private later: ReturnType<typeof setTimeout> | null = null
   private readonly listeners = new Set<(state: AiState) => void>()
   private readonly running = new Map<string, AbortController>()
 
@@ -136,6 +140,7 @@ export class LocalAi {
     private readonly resourcesPath: string,
     private readonly source: ModelSource,
     private readonly retryWaitsMs: readonly number[] = RETRY_WAITS_MS,
+    private readonly droppedRetryMs: number = DROPPED_RETRY_MS,
   ) {}
 
   current(): AiState {
@@ -157,10 +162,17 @@ export class LocalAi {
    * (retrying a dropped connection a few times), then start the server.
    */
   prepare(): Promise<void> {
+    if (this.later) clearTimeout(this.later)
+    this.later = null
     this.preparing ??= this.prepareOnce().finally(() => {
       this.preparing = null
     })
     return this.preparing
+  }
+
+  /** the computer woke up or came back online: a dropped download goes on at once */
+  resumeDropped(): void {
+    if (this.later) void this.prepare()
   }
 
   private async prepareOnce(): Promise<void> {
@@ -170,11 +182,16 @@ export class LocalAi {
       const store = this.source.store
       this.set({ state: 'verifying' })
       if (!(await store.ready())) {
-        const progress = (p: Progress) => this.set({ state: 'downloading', ...p })
+        let received = 0
+        const progress = (p: Progress) => {
+          received = p.received
+          this.set({ state: 'downloading', ...p })
+        }
         for (let attempt = 0; ; attempt++) {
           if (this.stopping) return
+          const before = received
           try {
-            this.set({ state: 'downloading', received: 0, total: store.spec.bytes, rate: 0 })
+            this.set({ state: 'downloading', received, total: store.spec.bytes, rate: 0 })
             await store.download((p) => {
               if (p.received >= p.total) this.set({ state: 'verifying' })
               else progress(p)
@@ -182,16 +199,26 @@ export class LocalAi {
             break
           } catch (err) {
             if (this.stopping) return
+            console.warn(
+              '[model] download try failed at',
+              received,
+              'bytes:',
+              String(err),
+              err instanceof Error && err.cause ? String(err.cause) : '',
+            )
             // a full disk or a damaged file will not mend itself; a dropped connection may
             if (err instanceof ModelError) {
               this.set({ state: 'download-failed', message: err.message })
               return
             }
+            // a try that got further counts as a fresh start: only stalls in a row give up
+            if (received > before) attempt = -1
             if (attempt >= this.retryWaitsMs.length) {
               this.set({ state: 'download-failed', message: DROPPED })
+              this.later = setTimeout(() => void this.prepare(), this.droppedRetryMs)
               return
             }
-            await new Promise((r) => setTimeout(r, this.retryWaitsMs[attempt]))
+            await new Promise((r) => setTimeout(r, this.retryWaitsMs[Math.max(0, attempt)]))
           }
         }
       }
@@ -323,6 +350,8 @@ export class LocalAi {
 
   stop(): void {
     this.stopping = true
+    if (this.later) clearTimeout(this.later)
+    this.later = null
     if ('store' in this.source) this.source.store.cancel()
     for (const c of this.running.values()) c.abort()
     this.child?.kill()

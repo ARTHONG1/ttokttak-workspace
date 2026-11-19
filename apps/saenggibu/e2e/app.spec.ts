@@ -112,6 +112,22 @@ test('the first launch downloads the model and says so', async () => {
   const data = randomBytes(4 * 1024 * 1024)
   const sha256 = createHash('sha256').update(data).digest('hex')
   const server = createServer((req, res) => {
+    // as GitHub's file storage (Azure) does: a User-Agent with bytes outside ASCII, such
+    // as the app's Korean name, is refused with 400 "The request is badly formed"
+    if (/[^\x20-\x7e]/.test(req.headers['user-agent'] ?? '')) return void res.writeHead(400).end()
+    // /stall-once: a first request gets half the file and then nothing (a stuck connection)
+    if (req.url === '/stall-once' && !req.headers.range) {
+      res.writeHead(200, { 'Content-Length': data.length })
+      res.write(data.subarray(0, data.length / 2))
+      stalled.push(res)
+      return
+    }
+    const range = /^bytes=(\d+)-$/.exec(req.headers.range ?? '')
+    if (req.url === '/stall-once' && range) {
+      const from = Number(range[1])
+      res.writeHead(206, { 'Content-Length': data.length - from })
+      return void res.end(data.subarray(from))
+    }
     if (req.url !== '/model') return void res.writeHead(404).end()
     res.writeHead(200, { 'Content-Length': data.length })
     let at = 0
@@ -123,6 +139,7 @@ test('the first launch downloads the model and says so', async () => {
     }
     step()
   })
+  const stalled: import('node:http').ServerResponse[] = []
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   const base = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
   const launch = (url: string) =>
@@ -134,6 +151,7 @@ test('the first launch downloads the model and says so', async () => {
         SAENGGIBU_MODEL_URL: url,
         SAENGGIBU_MODEL_BYTES: String(data.length),
         SAENGGIBU_MODEL_SHA256: sha256,
+        SAENGGIBU_MODEL_IDLE_MS: '2000',
         SAENGGIBU_USER_DATA: mkdtempSync(join(tmpdir(), 'saenggibu-e2e-')),
       } as Record<string, string>,
     })
@@ -175,7 +193,19 @@ test('the first launch downloads the model and says so', async () => {
     } finally {
       await missing.close()
     }
+
+    // a connection that stops sending halfway: dropped after the stall limit and resumed
+    const stuck = await launch(base + '/stall-once')
+    try {
+      const page = await stuck.firstWindow()
+      await expect(page.getByTestId('sg-model')).toContainText('처음 한 번 받고 있어요')
+      await expect(page.getByTestId('sg-model')).toHaveCount(0, { timeout: 30_000 })
+      await expect(page.getByTestId('sg-ai-state')).not.toContainText('받')
+    } finally {
+      await stuck.close()
+    }
   } finally {
+    for (const res of stalled) res.destroy()
     server.close()
   }
 })

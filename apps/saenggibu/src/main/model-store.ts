@@ -15,8 +15,20 @@ const PARTIAL = MODEL_FILE + '.partial'
 const RECORD = MODEL_FILE + '.verified.json'
 /** room left beside the model, so a full disk does not stop the computer */
 const SPARE_BYTES = 300 * 1024 * 1024
-/** a connection that sends nothing for this long is dropped and tried again */
-const IDLE_MS = 60_000
+/**
+ * a connection that sends nothing for this long is dropped and resumed: a GitHub download of
+ * the 2 GB file can stop mid-way with the connection still open, and would otherwise wait forever
+ */
+const IDLE_MS = 30_000
+
+/** p, or a rejection once ms pass: a stalled fetch or read ends even if it ignores abort */
+function within<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('응답이 ' + ms / 1000 + '초 동안 없어요.')), ms)
+  })
+  return Promise.race([p, late]).finally(() => clearTimeout(timer))
+}
 
 export interface Progress {
   received: number
@@ -35,16 +47,31 @@ export class ModelError extends Error {}
 
 export class ModelStore {
   private controller: AbortController | null = null
+  private readonly freeBytes: (dir: string) => Promise<number>
+  private readonly idleMs: number
+  private readonly reconnect: () => Promise<void>
+  private tries = 0
 
   constructor(
     readonly dir: string,
     readonly spec: ModelSpec,
     private readonly fetchImpl: Fetch,
-    private readonly freeBytes: (dir: string) => Promise<number> = async (d) => {
-      const s = await statfs(d)
-      return Number(s.bavail) * Number(s.bsize)
-    },
-  ) {}
+    options: {
+      freeBytes?: (dir: string) => Promise<number>
+      idleMs?: number
+      /** drops the open connections, so a try after a failed one starts on a new one */
+      reconnect?: () => Promise<void>
+    } = {},
+  ) {
+    this.freeBytes =
+      options.freeBytes ??
+      (async (d) => {
+        const s = await statfs(d)
+        return Number(s.bavail) * Number(s.bsize)
+      })
+    this.idleMs = options.idleMs ?? IDLE_MS
+    this.reconnect = options.reconnect ?? (async () => undefined)
+  }
 
   get path(): string {
     return join(this.dir, MODEL_FILE)
@@ -71,6 +98,9 @@ export class ModelStore {
   /** download (or finish downloading) the model; resolves once it is verified in place */
   async download(onProgress: (p: Progress) => void): Promise<void> {
     await mkdir(this.dir, { recursive: true })
+    // after a GitHub connection broke mid-file (ERR_HTTP2_PROTOCOL_ERROR), every request
+    // sent on it again was answered with HTTP 400: each later try opens a new connection
+    if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
     const partial = join(this.dir, PARTIAL)
     let have = (await stat(partial).catch(() => null))?.size ?? 0
     if (have > this.spec.bytes) {
@@ -78,64 +108,96 @@ export class ModelStore {
       have = 0
     }
     await this.checkRoom(this.spec.bytes - have)
-    this.controller = new AbortController()
-    const signal = this.controller.signal
-    let idle: ReturnType<typeof setTimeout> | undefined
-    const awake = () => {
-      clearTimeout(idle)
-      idle = setTimeout(() => this.controller?.abort(new Error('응답 없음')), IDLE_MS)
-    }
+    const controller = new AbortController()
+    this.controller = controller
     try {
-      if (have < this.spec.bytes) {
-        awake()
-        const res = await this.fetchImpl(this.spec.url, {
-          headers: have > 0 ? { Range: 'bytes=' + have + '-' } : {},
-          signal,
-        })
-        // 206: the rest of the file; 200: the whole file (the server ignored Range)
-        if (res.status === 200) have = 0
-        else if (res.status === 429 || res.status >= 500)
-          throw new Error('모델 서버가 잠시 응답하지 않아요 (HTTP ' + res.status + ').')
-        else if (res.status !== 206 || have === 0)
-          throw new ModelError('모델 파일을 받지 못했어요 (HTTP ' + res.status + ').')
-        if (!res.body) throw new ModelError('모델 파일을 받지 못했어요 (빈 응답).')
-        const out = createWriteStream(partial, { flags: have > 0 ? 'a' : 'w' })
-        const done = new Promise<void>((resolve, reject) => {
-          out.once('error', reject)
-          out.once('finish', resolve)
-        })
-        let received = have
-        const window: { at: number; bytes: number }[] = [{ at: Date.now(), bytes: received }]
-        let lastReport = 0
-        try {
-          for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
-            awake()
-            received += chunk.byteLength
-            if (received > this.spec.bytes) throw new ModelError('모델 파일 크기가 맞지 않아요.')
-            if (!out.write(chunk)) await new Promise<void>((r) => out.once('drain', () => r()))
-            const now = Date.now()
-            if (now - lastReport >= 250) {
-              lastReport = now
-              window.push({ at: now, bytes: received })
-              while (window.length > 2 && now - window[0].at > 5000) window.shift()
-              const first = window[0]
-              const rate = now > first.at ? ((received - first.bytes) * 1000) / (now - first.at) : 0
-              onProgress({ received, total: this.spec.bytes, rate })
-            }
-          }
-        } finally {
-          out.end()
-          await done
-        }
-        // a connection that ended early: the next try resumes from here
-        if (received !== this.spec.bytes) throw new Error('연결이 중간에 끊겼어요.')
-      }
+      if (have < this.spec.bytes) await this.receive(partial, have, controller, onProgress)
       onProgress({ received: this.spec.bytes, total: this.spec.bytes, rate: 0 })
       await this.accept(partial)
     } finally {
-      clearTimeout(idle)
+      // whatever stopped this try (a stall, an error, cancel) also closes the connection
+      controller.abort()
       this.controller = null
     }
+  }
+
+  /** one request: append what the server sends to partial, which holds `have` bytes */
+  private async receive(
+    partial: string,
+    have: number,
+    controller: AbortController,
+    onProgress: (p: Progress) => void,
+  ): Promise<void> {
+    const res = await within(
+      this.fetchImpl(this.spec.url, {
+        headers: have > 0 ? { Range: 'bytes=' + have + '-' } : {},
+        signal: controller.signal,
+      }),
+      this.idleMs,
+    )
+    // 206: the rest of the file; 200: the whole file (the server ignored Range)
+    if (res.status === 200) have = 0
+    else if (res.status === 404 || res.status === 410)
+      throw new ModelError('모델 파일을 찾지 못했어요 (HTTP ' + res.status + ').', {
+        cause: await answerOf(res),
+      })
+    // anything else is tried again: GitHub's file servers now and then answer a resume
+    // with 400 or 5xx, and the same request goes through a few seconds later
+    else if (res.status !== 206 || have === 0)
+      throw new Error('모델 서버가 잠시 받아 주지 않아요 (HTTP ' + res.status + ').', {
+        cause: await answerOf(res),
+      })
+    else {
+      // the part must start where ours ends, or appending it would spoil the file
+      const start = /^bytes (\d+)-/.exec(res.headers.get('content-range') ?? '')
+      if (start && Number(start[1]) !== have)
+        throw new Error('모델 서버가 엉뚱한 위치부터 보냈어요.')
+    }
+    if (!res.body) throw new ModelError('모델 파일을 받지 못했어요 (빈 응답).')
+    const reader = (res.body as ReadableStream<Uint8Array>).getReader()
+    const out = createWriteStream(partial, { flags: have > 0 ? 'a' : 'w' })
+    const finished = new Promise<void>((resolve, reject) => {
+      out.once('error', reject)
+      out.once('finish', resolve)
+    })
+    // a write error is thrown where it is awaited, not reported as unhandled before that
+    finished.catch(() => undefined)
+    let received = have
+    const window: { at: number; bytes: number }[] = [{ at: Date.now(), bytes: received }]
+    let lastReport = 0
+    try {
+      for (;;) {
+        // each read has its own deadline: a connection that stops sending is given up
+        const { done, value: chunk } = await within(reader.read(), this.idleMs)
+        if (done) break
+        received += chunk.byteLength
+        if (received > this.spec.bytes) throw new ModelError('모델 파일 크기가 맞지 않아요.')
+        if (!out.write(chunk))
+          await within(
+            Promise.race([new Promise<void>((r) => out.once('drain', () => r())), finished]),
+            this.idleMs,
+          )
+        const now = Date.now()
+        if (now - lastReport >= 250) {
+          lastReport = now
+          window.push({ at: now, bytes: received })
+          while (window.length > 2 && now - window[0].at > 5000) window.shift()
+          const first = window[0]
+          const rate = now > first.at ? ((received - first.bytes) * 1000) / (now - first.at) : 0
+          onProgress({ received, total: this.spec.bytes, rate })
+        }
+      }
+    } catch (err) {
+      controller.abort()
+      void reader.cancel().catch(() => undefined)
+      throw err
+    } finally {
+      // what was written stays in partial for the next try
+      out.end()
+      await within(finished, this.idleMs)
+    }
+    // a connection that ended early: the next try resumes from here
+    if (received !== this.spec.bytes) throw new Error('연결이 중간에 끊겼어요.')
   }
 
   /** a model file the teacher downloaded by hand: copied in, then checked like a download */
@@ -211,4 +273,10 @@ export async function sha256Of(path: string): Promise<string> {
   const hash = createHash('sha256')
   for await (const block of createReadStream(path, { highWaterMark: 1 << 22 })) hash.update(block)
   return hash.digest('hex')
+}
+
+/** for the log: who answered a refused request, and how (the start of its body) */
+async function answerOf(res: Response): Promise<string> {
+  const text = await within(res.text(), 5000).catch(() => '')
+  return (res.headers.get('server') ?? '?') + ': ' + text.replace(/\s+/g, ' ').slice(0, 300)
 }

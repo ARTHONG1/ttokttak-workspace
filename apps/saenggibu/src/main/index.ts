@@ -4,7 +4,16 @@
  * It shares no code or settings with 똑딱작업실: its own name, app id and user-data folder.
  */
 import { join } from 'node:path'
-import { BrowserWindow, app, dialog, ipcMain, net, shell } from 'electron'
+import {
+  BrowserWindow,
+  app,
+  dialog,
+  ipcMain,
+  powerMonitor,
+  powerSaveBlocker,
+  session,
+  shell,
+} from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
 import { MODEL, type ModelSpec } from '../shared/model'
 import { LocalAi, type ModelSource } from './local-ai'
@@ -13,6 +22,13 @@ import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis
 import { TABLE_EXTENSIONS, readTableFile } from './table-file'
 
 app.setName('똑딱생기부')
+// HTTP headers carry ASCII only. Electron writes the app's name into its User-Agent, and
+// GitHub's file storage (Azure) refuses a request whose User-Agent has the Korean name with
+// HTTP 400 "The request is badly formed": every part of the model not already in GitHub's
+// cache failed to download (2026-11-20). The English name stands in for it.
+app.userAgentFallback = app.userAgentFallback
+  .replace(/[^\x20-\x7e]+\/(\S*)/g, 'TtokttakSaenggibu/$1')
+  .replace(/[^\x20-\x7e]/g, '')
 // a test run keeps its settings and saved work in a scratch folder
 if (process.env.SAENGGIBU_USER_DATA) app.setPath('userData', process.env.SAENGGIBU_USER_DATA)
 
@@ -22,7 +38,8 @@ let neis: PlaywrightNeisDriver | undefined
 /**
  * The model: downloaded into userData/ai. A development run may point at a model file
  * (SAENGGIBU_MODEL_FILE) or, for the download tests, at another file to download
- * (SAENGGIBU_MODEL_URL, _BYTES, _SHA256); an installed app ignores both.
+ * (SAENGGIBU_MODEL_URL, _BYTES, _SHA256, and _IDLE_MS for a short stall limit); an installed
+ * app ignores all of them.
  */
 function modelSource(): ModelSource {
   const env = process.env
@@ -36,8 +53,19 @@ function modelSource(): ModelSource {
           sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
         }
       : MODEL
-  const store = new ModelStore(join(app.getPath('userData'), 'ai'), spec, (url, init) =>
-    net.fetch(url, init),
+  const idleMs = !app.isPackaged ? Number(env.SAENGGIBU_MODEL_IDLE_MS) || undefined : undefined
+  // the download's own connections (with the system's proxy settings, as Chromium has them),
+  // kept apart from the page and without a disk cache: the 2 GB answer goes to the model only
+  const downloads = () => {
+    const ses = session.fromPartition('model-download', { cache: false })
+    ses.setUserAgent(app.userAgentFallback)
+    return ses
+  }
+  const store = new ModelStore(
+    join(app.getPath('userData'), 'ai'),
+    spec,
+    (url, init) => downloads().fetch(url, { ...init, cache: 'no-store' }),
+    { idleMs, reconnect: () => downloads().closeAllConnections() },
   )
   return { store }
 }
@@ -75,6 +103,19 @@ function createWindow(): void {
 
 function registerIpc(): void {
   ai.onState((state) => win?.webContents.send(CHANNELS.aiStateChanged, state))
+  // while the model downloads, the computer does not fall asleep by itself (as a browser
+  // download keeps it awake); a closed lid still sleeps, and the download goes on after
+  let awake: number | null = null
+  ai.onState((state) => {
+    const busy = state.state === 'downloading' || state.state === 'verifying'
+    if (busy && awake === null) awake = powerSaveBlocker.start('prevent-app-suspension')
+    if (!busy && awake !== null) {
+      powerSaveBlocker.stop(awake)
+      awake = null
+    }
+  })
+  powerMonitor.on('resume', () => ai.resumeDropped())
+  powerMonitor.on('unlock-screen', () => ai.resumeDropped())
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
   ipcMain.handle(CHANNELS.modelInfo, () => ({
     name: MODEL.name,

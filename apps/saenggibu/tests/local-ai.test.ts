@@ -68,20 +68,27 @@ describe('the first launch', () => {
       mkdtempSync(join(tmpdir(), 'saenggibu-model-')),
       { ...MODEL, bytes: 10, url: 'http://127.0.0.1:9/model' },
       fetchImpl,
-      async () => Number.MAX_SAFE_INTEGER,
+      { freeBytes: async () => Number.MAX_SAFE_INTEGER },
     )
 
-  it('tries a dropped connection again, then offers [다시 받기]', async () => {
+  it('tries a dropped connection again, offers [다시 받기], and keeps trying by itself', async () => {
     let tries = 0
     const store = failing(async () => {
       tries++
       throw new TypeError('fetch failed')
     })
-    const ai = new LocalAi(tmpdir(), { store }, [0, 0])
+    const ai = new LocalAi(tmpdir(), { store }, [0, 0], 30)
     await ai.prepare()
     expect(tries).toBe(3)
     expect(ai.current()).toMatchObject({ state: 'download-failed' })
     await expect(ai.ensure()).rejects.toThrow(/다시 받기/)
+    // the lid opened, the Wi-Fi came back: the next round starts without a click
+    await new Promise((r) => setTimeout(r, 200))
+    expect(tries).toBeGreaterThan(3)
+    ai.stop()
+    const stopped = tries
+    await new Promise((r) => setTimeout(r, 200))
+    expect(tries).toBe(stopped)
   })
 
   it('does not retry a release file that is not there', async () => {
