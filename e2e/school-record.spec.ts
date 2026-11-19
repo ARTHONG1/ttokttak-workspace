@@ -62,7 +62,7 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
     await expect(page.getByTestId('record-student')).toHaveCount(3)
     await expect(page.getByTestId('record-name').first()).toHaveValue('김하늘')
 
-    // 유사도 검사: two students with the same sentence show up as a pair, counted here
+    // similarity: two students with the same sentence are warned in their cards, counted here
     const same = '강낭콩을 기르며 한살이를 관찰하고 관찰 일지를 꼼꼼히 기록함.'
     await page.getByTestId('record-result').nth(0).fill(same)
     await page
@@ -72,7 +72,12 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
     // the students are warned beside their texts
     await expect(page.getByTestId('record-alike')).toHaveCount(2)
     await expect(page.getByTestId('record-alike').first()).toContainText('2번의 글과')
-    await page.getByTestId('record-tab-similarity').click()
+    await expect(page.getByTestId('record-alike-summary')).toContainText('2명')
+    await expect(page.getByTestId('record-reword-all')).toBeEnabled()
+    await page.getByTestId('record-alike-phrases-toggle').first().click()
+    await expect(page.getByTestId('record-alike-phrases')).toContainText('강낭콩을 기르며')
+    // the full check opens over the page, with the same counting
+    await page.getByTestId('record-similarity-open').click()
     await expect(page.getByTestId('similarity-summary')).toHaveText(
       '2명 가운데 2명의 글이 서로 비슷해요 (1쌍).',
     )

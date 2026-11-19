@@ -2,8 +2,8 @@
    --sf tokens, so the page follows the home's light and dark themes. */
 .sr-tabs {
   display: grid;
-  /* 교과 세특, 행발, 창체 and 유사도 검사 on one row */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 교과 세특, 행발 and 창체 on one row; the similarity check lives in each of them */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -155,6 +155,55 @@
   color: #b0480a;
 }
 .sr-alike span {
+  flex: 1;
+  min-width: 0;
+}
+.sr-page {
+  --sr-high-soft: rgb(217 45 58 / 13%);
+  --sr-mark: rgb(250 204 21 / 42%);
+}
+.sr-alike b {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.sr-alike.is-high {
+  background: var(--sr-high-soft);
+  color: var(--sf-danger);
+}
+.sr-alike .sf-text-btn {
+  color: inherit;
+}
+/* the wording a text shares with the texts it reads like */
+.sr-alike-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sr-alike-phrases li {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--sr-mark);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sf-ink);
+}
+.sr-reworded {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  padding: 6px 6px 6px 12px;
+  border-radius: 9px;
+  background: var(--sf-accent-soft);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-ink-2);
+}
+.sr-reworded span {
   flex: 1;
   min-width: 0;
 }
@@ -441,7 +490,7 @@
 /* phones (the web edition): one column of large, easy-to-tap controls */
 @media (max-width: 600px) {
   .sr-tabs {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .sr-tab {
     padding: 10px 12px;
@@ -530,5 +579,24 @@
   .sr-student-head > .sf-primary {
     flex: 1 1 calc(50% - 4px);
     order: 4;
+  }
+  .sr-alike span {
+    flex-basis: 100%;
+  }
+  .sr-alike > button,
+  .sr-sim-warn > button {
+    flex: 1;
+  }
+  /* the full check's choices have long labels: they wrap instead of squeezing */
+  .sf-modal .sr-segs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .sf-modal .sr-toolbar > .sr-segs {
+    grid-column: 1 / -1;
+  }
+  .sf-modal .sr-seg {
+    flex: 1 1 auto;
+    padding: 0 10px;
   }
 }

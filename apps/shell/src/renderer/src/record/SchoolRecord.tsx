@@ -60,7 +60,16 @@ import {
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
 import { SimilarityCheck } from './SimilarityCheck'
-import { WARN_FLOOR, warnings } from './record-similarity'
+import {
+  REWORD_SYSTEM,
+  WARN_FLOOR,
+  rewordRequest,
+  rewordTargets,
+  sharedPhrases,
+  similarity,
+  warnings,
+  type Entry,
+} from './record-similarity'
 import './school-record.css'
 
 /**
@@ -191,6 +200,21 @@ function Segs<T extends string>({
 
 const LEVEL_OPTIONS = LEVELS.map((level) => ({ id: level, label: level }))
 
+/** what a rewording compares against: from this much on another text counts as alike */
+const REWORD_FLOOR = 30
+
+/** the students' texts, as the similarity counting reads them */
+const textsOf = (work: Work): (Entry & { id: string })[] =>
+  work.students.map((s, i) => ({
+    id: s.id,
+    name: s.name.trim() || i + 1 + '번',
+    text: s.result.trim(),
+  }))
+
+/** the AI says the same text in other words, away from the wording it shares */
+const askRewording = (text: string, others: readonly string[]): Promise<string> =>
+  askAi(REWORD_SYSTEM, rewordRequest(text, others), [], 4000, { feature: 'school_record' })
+
 export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const [mode, setMode] = useState<RecordMode>('subject')
   const [works, setWorks] = useState<Works>(initialWorks)
@@ -222,8 +246,12 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const [countText, setCountText] = useState<string | null>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [toast, say] = useToast()
-  /** the 유사도 검사 tab is shown in place of the mode's page */
-  const [checking, setChecking] = useState(false)
+  /** 유사도 자세히 보기: the full check, with texts written elsewhere too */
+  const [simOpen, setSimOpen] = useState(false)
+  /** the student whose shared wording is shown, as mode + ':' + id */
+  const [phrasesOf, setPhrasesOf] = useState<string | null>(null)
+  /** a reworded text and what it was, by mode + ':' + id, to take the rewording back */
+  const [reworded, setReworded] = useState<Record<string, { old: string; now: string }>>({})
   const [sending, setSending] = useState(false)
   const [sendNote, setSendNote] = useState<{
     mode: RecordMode
@@ -278,11 +306,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   // a student whose text reads like another's is warned beside the text
   const resultsKey = work.students.map((s) => s.id + '\u0000' + s.result).join('\u0001')
   const alike = useMemo(() => {
-    const list = work.students.map((s, i) => ({
-      id: s.id,
-      name: s.name.trim() || i + 1 + '번',
-      text: s.result.trim(),
-    }))
+    const list = textsOf(work)
     const out = new Map<string, { name: string; percent: number; count: number }>()
     for (const [index, w] of warnings(list, WARN_FLOOR)) {
       out.set(list[index].id, { name: list[w.other].name, percent: w.percent, count: w.count })
@@ -408,6 +432,109 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       : unwritten.length < writable.length
         ? '남은 ' + unwritten.length + '명 생성'
         : '전체 ' + resultName + ' 생성'
+
+  /* ---------------------------------------------------------------- similarity */
+
+  /** the other students' texts a text reads like (what a rewording steers away from) */
+  const alikeTexts = (m: RecordMode, id: string, text: string): string[] =>
+    worksRef.current[m].students
+      .filter((s) => s.id !== id)
+      .map((s) => s.result.trim())
+      .filter((t) => t && similarity(text, t) >= REWORD_FLOOR)
+
+  /** reword one student's text away from the texts it reads like; resolves to what is left */
+  const rewordOne = async (m: RecordMode, id: string): Promise<number> => {
+    const text = worksRef.current[m].students.find((s) => s.id === id)?.result.trim() ?? ''
+    if (!text) return 0
+    const others = alikeTexts(m, id, text)
+    const reply = cleanReply(await askRewording(text, others))
+    if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
+    const key = m + ':' + id
+    // a second rewording still takes back to the text before the first one
+    setReworded((prev) => ({
+      ...prev,
+      [key]: { old: prev[key] && prev[key].now === text ? prev[key].old : text, now: reply },
+    }))
+    patchStudent(m, id, { result: reply })
+    // the next rewording in a run compares against this text
+    worksRef.current = {
+      ...worksRef.current,
+      [m]: {
+        ...worksRef.current[m],
+        students: worksRef.current[m].students.map((s) =>
+          s.id === id ? { ...s, result: reply } : s,
+        ),
+      },
+    }
+    return Math.max(0, ...others.map((t) => similarity(reply, t)))
+  }
+
+  const reword = async (m: RecordMode, id: string, name: string) => {
+    setBusy((prev) => ({ ...prev, [m]: [...prev[m], id] }))
+    try {
+      const left = await rewordOne(m, id)
+      say(
+        name +
+          '의 글 표현을 바꿨어요. ' +
+          (left >= WARN_FLOOR
+            ? '아직 ' + left + '% 겹쳐요. 한 번 더 바꿔 보세요.'
+            : '내용이 그대로인지 읽어 보세요.'),
+        left >= WARN_FLOOR,
+      )
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error), true)
+    } finally {
+      setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => x !== id) }))
+    }
+  }
+
+  /** reword the later text of every pair that reads alike, one after another */
+  const rewordAll = async (m: RecordMode) => {
+    const list = textsOf(worksRef.current[m])
+    const ids = rewordTargets(list, WARN_FLOOR).map((i) => list[i].id)
+    if (ids.length === 0) return
+    stop.current[m] = false
+    setBusy((prev) => ({ ...prev, [m]: [...prev[m], ...ids] }))
+    setRunning((prev) => ({ ...prev, [m]: true }))
+    let done = 0
+    let failed = ''
+    try {
+      for (const id of ids) {
+        if (stop.current[m]) break
+        try {
+          await rewordOne(m, id)
+          done += 1
+        } catch (error) {
+          failed = error instanceof Error ? error.message : String(error)
+          break
+        } finally {
+          setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => x !== id) }))
+        }
+      }
+    } finally {
+      setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => !ids.includes(x)) }))
+      setRunning((prev) => ({ ...prev, [m]: false }))
+    }
+    const left = warnings(textsOf(worksRef.current[m]), WARN_FLOOR).size
+    say(
+      done +
+        '명의 글 표현을 바꿨어요. ' +
+        (failed || (left > 0 ? '아직 ' + left + '명의 글이 겹쳐요.' : '이제 겹치는 글이 없어요.')),
+      Boolean(failed) || left > 0,
+    )
+  }
+
+  const takeBack = (m: RecordMode, id: string) => {
+    const key = m + ':' + id
+    const was = reworded[key]
+    if (!was) return
+    patchStudent(m, id, { result: was.old })
+    setReworded((prev) => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
 
   /* ---------------------------------------------------------------- students */
 
@@ -587,12 +714,11 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             key={m.id}
             type="button"
             role="tab"
-            aria-selected={!checking && mode === m.id}
-            className={'sr-tab' + (!checking && mode === m.id ? ' is-on' : '')}
+            aria-selected={mode === m.id}
+            className={'sr-tab' + (mode === m.id ? ' is-on' : '')}
             data-testid={'record-tab-' + m.id}
             onClick={() => {
               setMode(m.id)
-              setChecking(false)
               setCountText(null)
             }}
           >
@@ -600,565 +726,607 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             <small>{m.long}</small>
           </button>
         ))}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={checking}
-          className={'sr-tab' + (checking ? ' is-on' : '')}
-          data-testid="record-tab-similarity"
-          onClick={() => setChecking(true)}
-        >
-          <b>유사도 검사</b>
-          <small>비슷한 글 찾기</small>
-        </button>
       </div>
 
-      {checking ? (
-        <SimilarityCheck
-          works={works}
-          initialSource={mode}
-          say={say}
-          onReword={(m, id, result) => patchStudent(m, id, { result })}
-        />
-      ) : (
-        <>
-          <p className="sr-note">
-            AI가 쓴 글은 초안이에요. 나이스에 넣기 전에 꼭 읽고 고쳐 주세요. 학생 이름은 AI에 보내지
-            않고, 관찰 기록과 {mode === 'behavior' ? '지시사항' : '공통 정보'}만 보내요.
-          </p>
+      <>
+        <p className="sr-note">
+          AI가 쓴 글은 초안이에요. 나이스에 넣기 전에 꼭 읽고 고쳐 주세요. 학생 이름은 AI에 보내지
+          않고, 관찰 기록과 {mode === 'behavior' ? '지시사항' : '공통 정보'}만 보내요.
+        </p>
 
-          <div className="sf-stack">
-            <section className="sf-box" aria-labelledby="sr-setting-title">
+        <div className="sf-stack">
+          <section className="sf-box" aria-labelledby="sr-setting-title">
+            <div className="sf-box-head">
+              <div>
+                <h2 id="sr-setting-title">생성 설정</h2>
+                <p className="sf-box-sub">길이와 지시사항은 다음에 열 때도 그대로 있어요.</p>
+              </div>
+            </div>
+            <div className="sf-field">
+              <span>{resultName} 길이</span>
+              <Segs
+                label={resultName + ' 길이'}
+                options={LENGTHS}
+                value={work.length}
+                onPick={(length) => patch(mode, (w) => ({ ...w, length }))}
+                testId="record-length"
+              />
+            </div>
+            <label className="sf-field">
+              <span>AI에게 더 일러 둘 말 (선택)</span>
+              <textarea
+                rows={2}
+                data-testid="record-instructions"
+                value={work.instructions}
+                onChange={(e) => patch(mode, (w) => ({ ...w, instructions: e.target.value }))}
+                placeholder="예: 학생의 창의성이 드러나도록 써 줘. 협동심과 관련된 내용을 꼭 넣어 줘."
+              />
+            </label>
+          </section>
+
+          {mode === 'subject' && (
+            <section className="sf-box" aria-labelledby="sr-info-title">
               <div className="sf-box-head">
                 <div>
-                  <h2 id="sr-setting-title">생성 설정</h2>
-                  <p className="sf-box-sub">길이와 지시사항은 다음에 열 때도 그대로 있어요.</p>
+                  <h2 id="sr-info-title">공통 정보</h2>
+                  <p className="sf-box-sub">모든 학생의 세특에 함께 쓰는 수업 정보예요.</p>
                 </div>
               </div>
-              <div className="sf-field">
-                <span>{resultName} 길이</span>
-                <Segs
-                  label={resultName + ' 길이'}
-                  options={LENGTHS}
-                  value={work.length}
-                  onPick={(length) => patch(mode, (w) => ({ ...w, length }))}
-                  testId="record-length"
-                />
+              <div className="sr-grid">
+                <label className="sf-field">
+                  <span>학교급</span>
+                  <select
+                    data-testid="record-school"
+                    value={work.info.schoolLevel}
+                    aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
+                    onChange={(e) => patchInfo({ schoolLevel: e.target.value as SchoolLevel | '' })}
+                  >
+                    <option value="">학교급 선택</option>
+                    {SCHOOL_LEVELS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="sf-field">
+                  <span>학년 (선택)</span>
+                  <input
+                    value={work.info.grade}
+                    onChange={(e) => patchInfo({ grade: e.target.value })}
+                    placeholder="예: 3"
+                  />
+                </label>
+                <label className="sf-field">
+                  <span>과목</span>
+                  <select
+                    data-testid="record-subject"
+                    value={work.info.subject}
+                    aria-invalid={
+                      showProblem && !work.info.subject && !work.info.customSubject.trim()
+                        ? true
+                        : undefined
+                    }
+                    onChange={(e) => patchInfo({ subject: e.target.value })}
+                  >
+                    <option value="">과목 선택</option>
+                    {SUBJECTS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_SUBJECT}>직접 입력</option>
+                  </select>
+                </label>
+                {work.info.subject === CUSTOM_SUBJECT && (
+                  <label className="sf-field">
+                    <span>과목 이름</span>
+                    <input
+                      data-testid="record-subject-custom"
+                      value={work.info.customSubject}
+                      aria-invalid={
+                        showProblem && !work.info.customSubject.trim() ? true : undefined
+                      }
+                      onChange={(e) => patchInfo({ customSubject: e.target.value })}
+                      placeholder="과목 이름을 입력하세요"
+                    />
+                  </label>
+                )}
+                <label className="sf-field sr-span-2">
+                  <span>단원 (선택)</span>
+                  <input
+                    value={work.info.unitName}
+                    onChange={(e) => patchInfo({ unitName: e.target.value })}
+                    placeholder="예: 문학의 이해"
+                  />
+                </label>
               </div>
               <label className="sf-field">
-                <span>AI에게 더 일러 둘 말 (선택)</span>
+                <span>과제 설명</span>
                 <textarea
-                  rows={2}
-                  data-testid="record-instructions"
-                  value={work.instructions}
-                  onChange={(e) => patch(mode, (w) => ({ ...w, instructions: e.target.value }))}
-                  placeholder="예: 학생의 창의성이 드러나도록 써 줘. 협동심과 관련된 내용을 꼭 넣어 줘."
+                  rows={3}
+                  data-testid="record-assignment"
+                  value={work.info.assignmentDesc}
+                  aria-invalid={showProblem && !work.info.assignmentDesc.trim() ? true : undefined}
+                  onChange={(e) => patchInfo({ assignmentDesc: e.target.value })}
+                  placeholder="학생들이 한 과제나 활동을 설명해 주세요."
                 />
               </label>
+              <label className="sf-field">
+                <span>관련 성취기준</span>
+                <textarea
+                  rows={2}
+                  data-testid="record-standard"
+                  value={work.info.achievementStandard}
+                  aria-invalid={
+                    showProblem && !work.info.achievementStandard.trim() ? true : undefined
+                  }
+                  onChange={(e) => patchInfo({ achievementStandard: e.target.value })}
+                  placeholder="예: [10국01-01] 읽기의 즐거움과 중요성을 깨닫고 읽기를 생활화하는 태도를 지닌다."
+                />
+              </label>
+              {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
             </section>
+          )}
 
-            {mode === 'subject' && (
-              <section className="sf-box" aria-labelledby="sr-info-title">
-                <div className="sf-box-head">
-                  <div>
-                    <h2 id="sr-info-title">공통 정보</h2>
-                    <p className="sf-box-sub">모든 학생의 세특에 함께 쓰는 수업 정보예요.</p>
-                  </div>
-                </div>
-                <div className="sr-grid">
-                  <label className="sf-field">
-                    <span>학교급</span>
-                    <select
-                      data-testid="record-school"
-                      value={work.info.schoolLevel}
-                      aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
-                      onChange={(e) =>
-                        patchInfo({ schoolLevel: e.target.value as SchoolLevel | '' })
-                      }
-                    >
-                      <option value="">학교급 선택</option>
-                      {SCHOOL_LEVELS.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="sf-field">
-                    <span>학년 (선택)</span>
-                    <input
-                      value={work.info.grade}
-                      onChange={(e) => patchInfo({ grade: e.target.value })}
-                      placeholder="예: 3"
-                    />
-                  </label>
-                  <label className="sf-field">
-                    <span>과목</span>
-                    <select
-                      data-testid="record-subject"
-                      value={work.info.subject}
-                      aria-invalid={
-                        showProblem && !work.info.subject && !work.info.customSubject.trim()
-                          ? true
-                          : undefined
-                      }
-                      onChange={(e) => patchInfo({ subject: e.target.value })}
-                    >
-                      <option value="">과목 선택</option>
-                      {SUBJECTS.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                      <option value={CUSTOM_SUBJECT}>직접 입력</option>
-                    </select>
-                  </label>
-                  {work.info.subject === CUSTOM_SUBJECT && (
-                    <label className="sf-field">
-                      <span>과목 이름</span>
-                      <input
-                        data-testid="record-subject-custom"
-                        value={work.info.customSubject}
-                        aria-invalid={
-                          showProblem && !work.info.customSubject.trim() ? true : undefined
-                        }
-                        onChange={(e) => patchInfo({ customSubject: e.target.value })}
-                        placeholder="과목 이름을 입력하세요"
-                      />
-                    </label>
-                  )}
-                  <label className="sf-field sr-span-2">
-                    <span>단원 (선택)</span>
-                    <input
-                      value={work.info.unitName}
-                      onChange={(e) => patchInfo({ unitName: e.target.value })}
-                      placeholder="예: 문학의 이해"
-                    />
-                  </label>
-                </div>
-                <label className="sf-field">
-                  <span>과제 설명</span>
-                  <textarea
-                    rows={3}
-                    data-testid="record-assignment"
-                    value={work.info.assignmentDesc}
-                    aria-invalid={
-                      showProblem && !work.info.assignmentDesc.trim() ? true : undefined
-                    }
-                    onChange={(e) => patchInfo({ assignmentDesc: e.target.value })}
-                    placeholder="학생들이 한 과제나 활동을 설명해 주세요."
-                  />
-                </label>
-                <label className="sf-field">
-                  <span>관련 성취기준</span>
-                  <textarea
-                    rows={2}
-                    data-testid="record-standard"
-                    value={work.info.achievementStandard}
-                    aria-invalid={
-                      showProblem && !work.info.achievementStandard.trim() ? true : undefined
-                    }
-                    onChange={(e) => patchInfo({ achievementStandard: e.target.value })}
-                    placeholder="예: [10국01-01] 읽기의 즐거움과 중요성을 깨닫고 읽기를 생활화하는 태도를 지닌다."
-                  />
-                </label>
-                {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
-              </section>
-            )}
-
-            {mode === 'activity' && (
-              <section className="sf-box" aria-labelledby="sr-activity-title">
-                <div className="sf-box-head">
-                  <div>
-                    <h2 id="sr-activity-title">활동 정보</h2>
-                    <p className="sf-box-sub">
-                      학생들이 이 영역에서 함께 한 활동이에요. 영역마다 따로 써서 나이스의 그 영역
-                      칸에 넣어요.
-                    </p>
-                  </div>
-                </div>
-                <div className="sr-grid">
-                  <label className="sf-field">
-                    <span>학교급</span>
-                    <select
-                      data-testid="record-activity-school"
-                      value={work.info.schoolLevel}
-                      aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
-                      onChange={(e) => {
-                        const schoolLevel = e.target.value as SchoolLevel | ''
-                        // an area the new school level does not have is cleared
-                        const keep = activityAreas(schoolLevel).some((a) => a.id === work.info.area)
-                        patchInfo({ schoolLevel, area: keep ? work.info.area : '' })
-                      }}
-                    >
-                      <option value="">학교급 선택</option>
-                      {SCHOOL_LEVELS.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="sf-field">
-                    <span>학년 (선택)</span>
-                    <input
-                      data-testid="record-activity-grade"
-                      value={work.info.grade}
-                      onChange={(e) => patchInfo({ grade: e.target.value })}
-                      placeholder="예: 2"
-                    />
-                  </label>
-                  <label className="sf-field">
-                    <span>영역</span>
-                    <select
-                      data-testid="record-area"
-                      value={work.info.area}
-                      disabled={!work.info.schoolLevel}
-                      aria-invalid={showProblem && !work.info.area ? true : undefined}
-                      onChange={(e) => patchInfo({ area: e.target.value as ActivityArea | '' })}
-                    >
-                      <option value="">
-                        {work.info.schoolLevel ? '영역 선택' : '학교급을 먼저 골라 주세요'}
-                      </option>
-                      {activityAreas(work.info.schoolLevel).map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {areaLabel({ ...work.info, area: a.id })}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="sf-field">
-                    <span>활동명 (선택)</span>
-                    <input
-                      data-testid="record-activity-name"
-                      value={work.info.activityName}
-                      onChange={(e) => patchInfo({ activityName: e.target.value })}
-                      placeholder="예: 과학탐구반, 학급 자치회의"
-                    />
-                  </label>
-                </div>
-                <label className="sf-field">
-                  <span>활동 내용</span>
-                  <textarea
-                    rows={3}
-                    data-testid="record-activity-content"
-                    value={work.info.activityContent}
-                    aria-invalid={
-                      showProblem && !work.info.activityContent.trim() ? true : undefined
-                    }
-                    onChange={(e) => patchInfo({ activityContent: e.target.value })}
-                    placeholder="예: 학교 앞 하천의 수질을 4주 동안 측정하고 결과를 학급 게시판에 공유함."
-                  />
-                </label>
-                <p className="sf-box-sub" data-testid="record-activity-rule">
-                  {work.info.schoolLevel === 'elementary'
-                    ? '초등학교는 자율·자치활동과 동아리활동을 한 칸에 쓰고, 글자 수 제한이 없어요.'
-                    : '중·고등학교는 영역마다 500자(1,500바이트)까지 써요. 2026학년도 3학년은 자율·자치활동 대신 자율활동으로 적어요.'}{' '}
-                  창체는 내장 똑딱AI가 아직 따로 배우지 않은 항목이라, 초안을 꼭 읽고 고쳐 주세요.
-                </p>
-                {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
-              </section>
-            )}
-
-            <section className="sf-box" aria-labelledby="sr-students-title">
+          {mode === 'activity' && (
+            <section className="sf-box" aria-labelledby="sr-activity-title">
               <div className="sf-box-head">
                 <div>
-                  <h2 id="sr-students-title">학생</h2>
+                  <h2 id="sr-activity-title">활동 정보</h2>
                   <p className="sf-box-sub">
-                    {mode === 'subject'
-                      ? '학생마다 성취 수준을 고르고, 눈에 띈 점이 있으면 적어 주세요.'
-                      : mode === 'activity'
-                        ? '학생마다 맡은 역할이나 눈에 띈 점이 있으면 적어 주세요.'
-                        : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
+                    학생들이 이 영역에서 함께 한 활동이에요. 영역마다 따로 써서 나이스의 그 영역
+                    칸에 넣어요.
                   </p>
                 </div>
+              </div>
+              <div className="sr-grid">
+                <label className="sf-field">
+                  <span>학교급</span>
+                  <select
+                    data-testid="record-activity-school"
+                    value={work.info.schoolLevel}
+                    aria-invalid={showProblem && !work.info.schoolLevel ? true : undefined}
+                    onChange={(e) => {
+                      const schoolLevel = e.target.value as SchoolLevel | ''
+                      // an area the new school level does not have is cleared
+                      const keep = activityAreas(schoolLevel).some((a) => a.id === work.info.area)
+                      patchInfo({ schoolLevel, area: keep ? work.info.area : '' })
+                    }}
+                  >
+                    <option value="">학교급 선택</option>
+                    {SCHOOL_LEVELS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="sf-field">
+                  <span>학년 (선택)</span>
+                  <input
+                    data-testid="record-activity-grade"
+                    value={work.info.grade}
+                    onChange={(e) => patchInfo({ grade: e.target.value })}
+                    placeholder="예: 2"
+                  />
+                </label>
+                <label className="sf-field">
+                  <span>영역</span>
+                  <select
+                    data-testid="record-area"
+                    value={work.info.area}
+                    disabled={!work.info.schoolLevel}
+                    aria-invalid={showProblem && !work.info.area ? true : undefined}
+                    onChange={(e) => patchInfo({ area: e.target.value as ActivityArea | '' })}
+                  >
+                    <option value="">
+                      {work.info.schoolLevel ? '영역 선택' : '학교급을 먼저 골라 주세요'}
+                    </option>
+                    {activityAreas(work.info.schoolLevel).map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {areaLabel({ ...work.info, area: a.id })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="sf-field">
+                  <span>활동명 (선택)</span>
+                  <input
+                    data-testid="record-activity-name"
+                    value={work.info.activityName}
+                    onChange={(e) => patchInfo({ activityName: e.target.value })}
+                    placeholder="예: 과학탐구반, 학급 자치회의"
+                  />
+                </label>
+              </div>
+              <label className="sf-field">
+                <span>활동 내용</span>
+                <textarea
+                  rows={3}
+                  data-testid="record-activity-content"
+                  value={work.info.activityContent}
+                  aria-invalid={showProblem && !work.info.activityContent.trim() ? true : undefined}
+                  onChange={(e) => patchInfo({ activityContent: e.target.value })}
+                  placeholder="예: 학교 앞 하천의 수질을 4주 동안 측정하고 결과를 학급 게시판에 공유함."
+                />
+              </label>
+              <p className="sf-box-sub" data-testid="record-activity-rule">
+                {work.info.schoolLevel === 'elementary'
+                  ? '초등학교는 자율·자치활동과 동아리활동을 한 칸에 쓰고, 글자 수 제한이 없어요.'
+                  : '중·고등학교는 영역마다 500자(1,500바이트)까지 써요. 2026학년도 3학년은 자율·자치활동 대신 자율활동으로 적어요.'}{' '}
+                창체는 내장 똑딱AI가 아직 따로 배우지 않은 항목이라, 초안을 꼭 읽고 고쳐 주세요.
+              </p>
+              {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
+            </section>
+          )}
+
+          <section className="sf-box" aria-labelledby="sr-students-title">
+            <div className="sf-box-head">
+              <div>
+                <h2 id="sr-students-title">학생</h2>
+                <p className="sf-box-sub">
+                  {mode === 'subject'
+                    ? '학생마다 성취 수준을 고르고, 눈에 띈 점이 있으면 적어 주세요.'
+                    : mode === 'activity'
+                      ? '학생마다 맡은 역할이나 눈에 띈 점이 있으면 적어 주세요.'
+                      : '학생마다 평소 모습과 관찰한 내용을 적어 주세요.'}
+                </p>
+              </div>
+              <div className="sf-btn-row">
+                <button
+                  type="button"
+                  className="sf-text-btn"
+                  data-testid="record-similarity-open"
+                  onClick={() => setSimOpen(true)}
+                >
+                  유사도 자세히 보기
+                </button>
                 <button type="button" className="sf-text-btn" onClick={clearStudents}>
                   학생 목록 비우기
                 </button>
               </div>
+            </div>
 
-              <div className="sr-toolbar">
-                <label className="sr-count">
-                  <span>학생 수</span>
-                  <input
-                    inputMode="numeric"
-                    data-testid="record-count"
-                    aria-label="학생 수"
-                    value={countText ?? String(work.students.length)}
-                    onChange={(e) => setCountText(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                    onBlur={(e) => setCount(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') e.currentTarget.blur()
-                    }}
-                  />
-                  <span>명</span>
-                </label>
+            <div className="sr-toolbar">
+              <label className="sr-count">
+                <span>학생 수</span>
+                <input
+                  inputMode="numeric"
+                  data-testid="record-count"
+                  aria-label="학생 수"
+                  value={countText ?? String(work.students.length)}
+                  onChange={(e) => setCountText(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                  onBlur={(e) => setCount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                />
+                <span>명</span>
+              </label>
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                data-testid="record-roster"
+                disabled={readingRoster}
+                onClick={() => void loadRoster()}
+              >
+                {readingRoster && <span className="sf-spinner" aria-hidden="true" />}
+                명렬표 불러오기
+              </button>
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                data-testid="record-load"
+                onClick={() => setLoadOpen(true)}
+              >
+                내용 불러오기
+              </button>
+              <span className="sr-toolbar-gap" />
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                data-testid="record-download"
+                onClick={downloadCsv}
+              >
+                CSV 저장
+              </button>
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
+                data-testid="record-send"
+                disabled={sending || anyBusy}
+                onClick={() => void sendToNeis()}
+              >
+                {sending && <span className="sf-spinner" aria-hidden="true" />}
+                나이스로 보내기
+              </button>
+              {running[mode] ? (
                 <button
                   type="button"
-                  className="sf-secondary sf-sm"
-                  data-testid="record-roster"
-                  disabled={readingRoster}
-                  onClick={() => void loadRoster()}
+                  className="sf-secondary sf-sm sf-danger"
+                  data-testid="record-stop"
+                  onClick={() => {
+                    stop.current[mode] = true
+                  }}
                 >
-                  {readingRoster && <span className="sf-spinner" aria-hidden="true" />}
-                  명렬표 불러오기
+                  <span className="sf-spinner" aria-hidden="true" />
+                  멈추기 ({modeBusy.length}명 남음)
                 </button>
+              ) : (
                 <button
                   type="button"
-                  className="sf-secondary sf-sm"
-                  data-testid="record-load"
-                  onClick={() => setLoadOpen(true)}
+                  className="sf-primary sf-sm"
+                  data-testid="record-generate-all"
+                  disabled={anyBusy}
+                  onClick={() => void generate(mode, wholeTargets, true)}
                 >
-                  내용 불러오기
+                  {wholeLabel}
                 </button>
-                <span className="sr-toolbar-gap" />
-                <button
-                  type="button"
-                  className="sf-secondary sf-sm"
-                  data-testid="record-download"
-                  onClick={downloadCsv}
-                >
-                  CSV 저장
-                </button>
-                <button
-                  type="button"
-                  className="sf-secondary sf-sm"
-                  data-testid="record-send"
-                  disabled={sending || anyBusy}
-                  onClick={() => void sendToNeis()}
-                >
-                  {sending && <span className="sf-spinner" aria-hidden="true" />}
-                  나이스로 보내기
-                </button>
-                {running[mode] ? (
-                  <button
-                    type="button"
-                    className="sf-secondary sf-sm sf-danger"
-                    data-testid="record-stop"
-                    onClick={() => {
-                      stop.current[mode] = true
-                    }}
-                  >
-                    <span className="sf-spinner" aria-hidden="true" />
-                    멈추기 ({modeBusy.length}명 남음)
+              )}
+            </div>
+
+            {sendNote && sendNote.mode === mode && (
+              <div
+                className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
+                role="status"
+                data-testid="record-send-note"
+              >
+                <p>{sendNote.text}</p>
+                <p className="sr-send-sub">
+                  나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요.
+                  {!isWebEdition() &&
+                    ' 앱이 연 전용 브라우저를 사용해 주세요. 기존 칸에 다른 글이 있으면 덮어쓰지 않고 멈춰요.'}
+                </p>
+                <div className="sf-btn-row">
+                  {isWebEdition() && (
+                    <button
+                      type="button"
+                      className="sf-secondary sf-sm"
+                      onClick={() =>
+                        void copyText(sendNote.pkgText).then(() =>
+                          say(
+                            '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
+                          ),
+                        )
+                      }
+                    >
+                      클립보드로 복사
+                    </button>
+                  )}
+                  <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
+                    닫기
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="sf-primary sf-sm"
-                    data-testid="record-generate-all"
-                    disabled={anyBusy}
-                    onClick={() => void generate(mode, wholeTargets, true)}
-                  >
-                    {wholeLabel}
-                  </button>
-                )}
+                </div>
               </div>
+            )}
 
-              {sendNote && sendNote.mode === mode && (
+            {mode === 'subject' && (
+              <div className="sr-bulk">
+                <span>성취 수준 한꺼번에 맞추기</span>
                 <div
-                  className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
-                  role="status"
-                  data-testid="record-send-note"
+                  className="sr-segs is-small"
+                  role="group"
+                  aria-label="성취 수준 한꺼번에 맞추기"
                 >
-                  <p>{sendNote.text}</p>
-                  <p className="sr-send-sub">
-                    나이스 [저장]은 채운 내용을 확인한 뒤 선생님이 직접 눌러요.
-                    {!isWebEdition() &&
-                      ' 앱이 연 전용 브라우저를 사용해 주세요. 기존 칸에 다른 글이 있으면 덮어쓰지 않고 멈춰요.'}
-                  </p>
-                  <div className="sf-btn-row">
-                    {isWebEdition() && (
+                  {LEVELS.map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      className="sr-seg"
+                      onClick={() => setAllLevels(level)}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {alike.size > 0 && (
+              <div className="sr-sim-warn" role="status" data-testid="record-alike-summary">
+                <p>
+                  <b>{alike.size}명</b>의 글이 다른 학생의 글과 {WARN_FLOOR}% 이상 겹쳐요. 같은
+                  문장이 여러 학생에게 들어가지 않게 표현을 바꿔 주세요.
+                </p>
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  data-testid="record-reword-all"
+                  disabled={anyBusy}
+                  onClick={() => void rewordAll(mode)}
+                >
+                  겹치는 글 한꺼번에 바꾸기
+                </button>
+              </div>
+            )}
+
+            <ol className="sr-students">
+              {work.students.map((s, i) => {
+                const writing = modeBusy.includes(s.id)
+                const bytes = neisBytes(s.result)
+                const key = mode + ':' + s.id
+                const warn = alike.get(s.id)
+                // the rewording is undone only while the text is still what the AI gave
+                const undo = reworded[key] && reworded[key].now === s.result ? reworded[key] : null
+                return (
+                  <li key={s.id} className="sr-student" data-testid="record-student">
+                    <div className="sr-student-head">
+                      <span className="sr-no" aria-hidden="true">
+                        {i + 1}
+                      </span>
+                      <input
+                        className="sr-name"
+                        data-testid="record-name"
+                        aria-label={i + 1 + '번 학생 이름'}
+                        value={s.name}
+                        onChange={(e) => patchStudent(mode, s.id, { name: e.target.value })}
+                        placeholder="이름 (선택)"
+                      />
+                      {mode === 'subject' && (
+                        <Segs
+                          label={i + 1 + '번 학생 성취 수준'}
+                          options={LEVEL_OPTIONS}
+                          value={s.level}
+                          onPick={(level) => patchStudent(mode, s.id, { level })}
+                          small
+                        />
+                      )}
+                      <span className="sr-toolbar-gap" />
                       <button
                         type="button"
                         className="sf-secondary sf-sm"
+                        disabled={!s.result.trim()}
                         onClick={() =>
-                          void copyText(sendNote.pkgText).then(() =>
+                          void copyText(s.result.trim()).then(() =>
                             say(
-                              '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
+                              (s.name.trim() || i + 1 + '번 학생') +
+                                '의 ' +
+                                resultName +
+                                '을 복사했어요.',
                             ),
                           )
                         }
                       >
-                        클립보드로 복사
+                        복사
                       </button>
-                    )}
-                    <button type="button" className="sf-text-btn" onClick={() => setSendNote(null)}>
-                      닫기
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {mode === 'subject' && (
-                <div className="sr-bulk">
-                  <span>성취 수준 한꺼번에 맞추기</span>
-                  <div
-                    className="sr-segs is-small"
-                    role="group"
-                    aria-label="성취 수준 한꺼번에 맞추기"
-                  >
-                    {LEVELS.map((level) => (
                       <button
-                        key={level}
                         type="button"
-                        className="sr-seg"
-                        onClick={() => setAllLevels(level)}
+                        className="sf-primary sf-sm"
+                        data-testid="record-generate-one"
+                        disabled={writing}
+                        onClick={() => generateOne(s)}
                       >
-                        {level}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <ol className="sr-students">
-                {work.students.map((s, i) => {
-                  const writing = modeBusy.includes(s.id)
-                  const bytes = neisBytes(s.result)
-                  return (
-                    <li key={s.id} className="sr-student" data-testid="record-student">
-                      <div className="sr-student-head">
-                        <span className="sr-no" aria-hidden="true">
-                          {i + 1}
-                        </span>
-                        <input
-                          className="sr-name"
-                          data-testid="record-name"
-                          aria-label={i + 1 + '번 학생 이름'}
-                          value={s.name}
-                          onChange={(e) => patchStudent(mode, s.id, { name: e.target.value })}
-                          placeholder="이름 (선택)"
-                        />
-                        {mode === 'subject' && (
-                          <Segs
-                            label={i + 1 + '번 학생 성취 수준'}
-                            options={LEVEL_OPTIONS}
-                            value={s.level}
-                            onPick={(level) => patchStudent(mode, s.id, { level })}
-                            small
-                          />
+                        {writing ? (
+                          <>
+                            <span className="sf-spinner" aria-hidden="true" />
+                            쓰는 중…
+                          </>
+                        ) : s.result.trim() ? (
+                          '다시 생성'
+                        ) : (
+                          '생성'
                         )}
-                        <span className="sr-toolbar-gap" />
+                      </button>
+                      <button
+                        type="button"
+                        className="sf-icon-btn"
+                        aria-label={i + 1 + '번 학생 지우기'}
+                        disabled={writing}
+                        onClick={() => removeStudent(s.id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <label className="sf-field">
+                      <span>{NOTES_LABEL[mode]}</span>
+                      <textarea
+                        rows={2}
+                        data-testid="record-notes"
+                        value={s.notes}
+                        onChange={(e) => patchStudent(mode, s.id, { notes: e.target.value })}
+                        placeholder={NOTES_HINT[mode]}
+                      />
+                    </label>
+                    <label className="sf-field">
+                      <span className="sr-result-label">
+                        {resultName}
+                        <em
+                          className={
+                            'sr-bytes' + (limit !== null && bytes > limit ? ' is-over' : '')
+                          }
+                          data-testid="record-bytes"
+                        >
+                          {bytes.toLocaleString('ko-KR')}
+                          {limit !== null ? ' / ' + limit.toLocaleString('ko-KR') : ''} 바이트
+                        </em>
+                      </span>
+                      <textarea
+                        rows={4}
+                        className={'sr-result' + (writing ? ' is-writing' : '')}
+                        data-testid="record-result"
+                        value={s.result}
+                        readOnly={writing}
+                        onChange={(e) => patchStudent(mode, s.id, { result: e.target.value })}
+                        placeholder={
+                          writing
+                            ? 'AI가 ' + resultName + '을 쓰고 있어요…'
+                            : 'AI가 쓴 ' + resultName + '이 여기에 나와요. 직접 고칠 수 있어요.'
+                        }
+                      />
+                    </label>
+                    {warn && !writing && (
+                      <div
+                        className={'sr-alike' + (warn.percent >= 70 ? ' is-high' : '')}
+                        role="status"
+                        data-testid="record-alike"
+                      >
+                        <span>
+                          <b>{warn.percent}%</b> {warn.name}의 글과 겹쳐요
+                          {warn.count > 1 ? ' (모두 ' + warn.count + '명과 비슷)' : ''}
+                        </span>
+                        <button
+                          type="button"
+                          className="sf-text-btn"
+                          aria-expanded={phrasesOf === key}
+                          data-testid="record-alike-phrases-toggle"
+                          onClick={() => setPhrasesOf(phrasesOf === key ? null : key)}
+                        >
+                          {phrasesOf === key ? '접기' : '겹친 표현 보기'}
+                        </button>
                         <button
                           type="button"
                           className="sf-secondary sf-sm"
-                          disabled={!s.result.trim()}
+                          data-testid="record-reword"
+                          disabled={anyBusy}
                           onClick={() =>
-                            void copyText(s.result.trim()).then(() =>
-                              say(
-                                (s.name.trim() || i + 1 + '번 학생') +
-                                  '의 ' +
-                                  resultName +
-                                  '을 복사했어요.',
-                              ),
-                            )
+                            void reword(mode, s.id, s.name.trim() || i + 1 + '번 학생')
                           }
                         >
-                          복사
-                        </button>
-                        <button
-                          type="button"
-                          className="sf-primary sf-sm"
-                          data-testid="record-generate-one"
-                          disabled={writing}
-                          onClick={() => generateOne(s)}
-                        >
-                          {writing ? (
-                            <>
-                              <span className="sf-spinner" aria-hidden="true" />
-                              쓰는 중…
-                            </>
-                          ) : s.result.trim() ? (
-                            '다시 생성'
-                          ) : (
-                            '생성'
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          className="sf-icon-btn"
-                          aria-label={i + 1 + '번 학생 지우기'}
-                          disabled={writing}
-                          onClick={() => removeStudent(s.id)}
-                        >
-                          ×
+                          표현 바꾸기
                         </button>
                       </div>
-                      <label className="sf-field">
-                        <span>{NOTES_LABEL[mode]}</span>
-                        <textarea
-                          rows={2}
-                          data-testid="record-notes"
-                          value={s.notes}
-                          onChange={(e) => patchStudent(mode, s.id, { notes: e.target.value })}
-                          placeholder={NOTES_HINT[mode]}
-                        />
-                      </label>
-                      <label className="sf-field">
-                        <span className="sr-result-label">
-                          {resultName}
-                          <em
-                            className={
-                              'sr-bytes' + (limit !== null && bytes > limit ? ' is-over' : '')
-                            }
-                            data-testid="record-bytes"
-                          >
-                            {bytes.toLocaleString('ko-KR')}
-                            {limit !== null ? ' / ' + limit.toLocaleString('ko-KR') : ''} 바이트
-                          </em>
-                        </span>
-                        <textarea
-                          rows={4}
-                          className={'sr-result' + (writing ? ' is-writing' : '')}
-                          data-testid="record-result"
-                          value={s.result}
-                          readOnly={writing}
-                          onChange={(e) => patchStudent(mode, s.id, { result: e.target.value })}
-                          placeholder={
-                            writing
-                              ? 'AI가 ' + resultName + '을 쓰고 있어요…'
-                              : 'AI가 쓴 ' + resultName + '이 여기에 나와요. 직접 고칠 수 있어요.'
-                          }
-                        />
-                      </label>
-                      {alike.has(s.id) && !writing && (
-                        <p className="sr-alike" role="status" data-testid="record-alike">
-                          <span>
-                            {alike.get(s.id)!.name}의 글과 {alike.get(s.id)!.percent}% 겹쳐요
-                            {alike.get(s.id)!.count > 1
-                              ? ' (모두 ' + alike.get(s.id)!.count + '명과 비슷)'
-                              : ''}
-                            . 표현을 바꿔 주세요.
-                          </span>
-                          <button
-                            type="button"
-                            className="sf-text-btn"
-                            onClick={() => setChecking(true)}
-                          >
-                            유사도 검사에서 보기
-                          </button>
-                        </p>
-                      )}
-                    </li>
-                  )
-                })}
-              </ol>
-              <button
-                type="button"
-                className="sf-ghost"
-                data-testid="record-add"
-                disabled={work.students.length >= MAX_STUDENTS}
-                onClick={() =>
-                  patch(mode, (w) => ({ ...w, students: [...w.students, newStudent()] }))
-                }
-              >
-                + 학생 추가
-              </button>
-            </section>
-          </div>
-        </>
-      )}
+                    )}
+                    {warn && !writing && phrasesOf === key && (
+                      <ul className="sr-alike-phrases" data-testid="record-alike-phrases">
+                        {sharedPhrases(s.result, alikeTexts(mode, s.id, s.result.trim())).map(
+                          (phrase) => (
+                            <li key={phrase}>{phrase}</li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                    {undo && !writing && (
+                      <p className="sr-reworded" data-testid="record-reworded">
+                        <span>AI가 표현을 바꿨어요. 내용이 그대로인지 읽어 보세요.</span>
+                        <button
+                          type="button"
+                          className="sf-text-btn"
+                          data-testid="record-reword-undo"
+                          onClick={() => takeBack(mode, s.id)}
+                        >
+                          되돌리기
+                        </button>
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
+            </ol>
+            <button
+              type="button"
+              className="sf-ghost"
+              data-testid="record-add"
+              disabled={work.students.length >= MAX_STUDENTS}
+              onClick={() =>
+                patch(mode, (w) => ({ ...w, students: [...w.students, newStudent()] }))
+              }
+            >
+              + 학생 추가
+            </button>
+          </section>
+        </div>
+      </>
 
       <input
         ref={csvRef}
@@ -1251,6 +1419,17 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
               </ul>
             )}
           </div>
+        </Modal>
+      )}
+
+      {simOpen && (
+        <Modal title="유사도 자세히 보기" onClose={() => setSimOpen(false)} wide>
+          <SimilarityCheck
+            works={works}
+            initialSource={mode}
+            say={say}
+            onReword={(m, id, result) => patchStudent(m, id, { result })}
+          />
         </Modal>
       )}
 

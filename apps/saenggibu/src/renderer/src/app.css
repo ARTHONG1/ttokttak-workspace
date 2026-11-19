@@ -2,6 +2,7 @@
 :root {
   /* colours this app keeps from 똑딱작업실's 생기부 styles (one definition each) */
   --sg-page: #fafafa;
+  --sg-modal-shade: rgb(15 23 42 / 45%);
 }
 
 :root {
@@ -71,4 +72,57 @@ body {
 .sg-main {
   flex: 1;
   padding: 8px 0 32px;
+}
+/* dialogs (common.tsx's Modal: 내용 불러오기, 임시 저장한 작업, 유사도 자세히 보기) */
+.sf-modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--sg-modal-shade);
+  animation: sf-fade 0.15s ease;
+}
+.sf-modal {
+  width: min(420px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 18px 20px 20px;
+  border-radius: 16px;
+  background: var(--sf-card);
+  color: var(--sf-ink);
+  box-shadow: 0 24px 60px -20px var(--sg-modal-shade);
+  animation: sf-rise 0.18s ease;
+}
+.sf-modal.is-wide {
+  width: min(720px, 100%);
+}
+.sf-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sf-modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 750;
+}
+@keyframes sf-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sf-modal,
+  .sf-modal-back {
+    animation: none !important;
+  }
 }
