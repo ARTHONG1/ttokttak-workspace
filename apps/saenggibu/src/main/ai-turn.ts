@@ -1,6 +1,6 @@
 /**
  * One 생기부 writing turn for the built-in 2B model, the way 똑딱작업실 sends a plain writing
- * request: the page's own instructions as they are (they are what the 생기부 adapter was
+ * request: the page's own instructions as they are (they are what the 생기부 model was
  * trained on), and the request clipped so that both fit the 4,096-token context with room
  * for the answer.
  */

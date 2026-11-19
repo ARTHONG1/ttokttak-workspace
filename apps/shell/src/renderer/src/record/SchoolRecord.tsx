@@ -955,7 +955,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                 {work.info.schoolLevel === 'elementary'
                   ? '초등학교는 자율·자치활동과 동아리활동을 한 칸에 쓰고, 글자 수 제한이 없어요.'
                   : '중·고등학교는 영역마다 500자(1,500바이트)까지 써요. 2026학년도 3학년은 자율·자치활동 대신 자율활동으로 적어요.'}{' '}
-                창체는 내장 똑딱AI가 아직 따로 배우지 않은 항목이라, 초안을 꼭 읽고 고쳐 주세요.
+                창체는 내장 똑딱AI가 배운 예시가 아직 적은 항목이라, 초안을 꼭 읽고 고쳐 주세요.
               </p>
               {showProblem && problem && <em className="sf-error sr-problem">{problem}</em>}
             </section>

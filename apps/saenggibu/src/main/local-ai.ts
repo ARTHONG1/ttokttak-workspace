@@ -1,8 +1,8 @@
 /**
- * The built-in 똑딱AI: llama.cpp's llama-server on 127.0.0.1 with a per-run key, the unchanged
- * Qwen3.5-2B Q6_K base and the 생기부 adapter on top (llama.cpp --lora). This is the setup the
- * adapter was measured in (school-record-isolated-v3 step 111: 200/200 on the new 생기부 dev
- * set, 65/66 on the earlier one), and every request goes at temperature 0 as there.
+ * The built-in 똑딱AI: llama.cpp's llama-server on 127.0.0.1 with a per-run key and the
+ * 똑딱AI 생기부 V7 B model (school-record-v7-b), a whole Q8_0 model with no adapter: the file
+ * the model project measured on its 80 생기부 dev prompts, and every request goes at
+ * temperature 0 as there.
  * Nothing leaves this computer; the server's logs are off so no student text is written out.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -15,9 +15,8 @@ import type { AiState } from '../shared/api'
 import { MAX_ANSWER_TOKENS, plainTurn } from './ai-turn'
 
 export const AI_MODEL = 'ttokttak-saenggibu'
-/** inside the AI folder, as the server (started there) sees them */
+/** inside the AI folder, as the server (started there) sees it */
 export const MODEL_FILE = 'model.gguf'
-export const ADAPTER_FILE = 'adapters/school_record.gguf'
 
 export interface AiFiles {
   dir: string
@@ -28,20 +27,18 @@ export interface AiFiles {
 export function aiFiles(resourcesPath: string, platform = process.platform): AiFiles | null {
   const dir = process.env.SAENGGIBU_AI_DIR || join(resourcesPath, 'local-ai')
   const executable = join(dir, platform === 'win32' ? 'llama-server.exe' : 'llama-server')
-  const all = [executable, join(dir, MODEL_FILE), join(dir, ADAPTER_FILE)]
+  const all = [executable, join(dir, MODEL_FILE)]
   return all.every((p) => existsSync(p)) ? { dir, executable } : null
 }
 
 /**
- * The server's arguments. The model and the adapter go by paths relative to the AI folder,
- * where the server runs: a Windows profile folder with Korean letters stays out of them.
+ * The server's arguments. The model goes by its path relative to the AI folder, where the
+ * server runs: a Windows profile folder with Korean letters stays out of it.
  */
 export function serverArgs(port: number, apiKey: string, threads: number): string[] {
   return [
     '--model',
     MODEL_FILE,
-    '--lora',
-    ADAPTER_FILE,
     '--alias',
     AI_MODEL,
     '--host',
@@ -66,7 +63,7 @@ export function serverArgs(port: number, apiKey: string, threads: number): strin
   ]
 }
 
-/** the request body of one 생기부 turn: the adapter's measured settings */
+/** the request body of one 생기부 turn: the model's measured settings */
 export function requestBody(system: string, text: string): Record<string, unknown> {
   return {
     model: AI_MODEL,
@@ -194,7 +191,7 @@ export class LocalAi {
     }
   }
 
-  /** one answer: the page's instructions and request, at the adapter's measured settings */
+  /** one answer: the page's instructions and request, at the model's measured settings */
   async ask(requestId: string, system: string, text: string): Promise<string> {
     const turn = plainTurn(system, text)
     if (!turn.ok) throw new Error(turn.error)

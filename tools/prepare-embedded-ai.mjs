@@ -4,7 +4,7 @@
  * Usage: node tools/prepare-embedded-ai.mjs /path/base-Q6_K.gguf /path/to/llama/bin \
  *          /path/document-adapter.gguf /path/pumui-adapter.gguf /path/school-record-adapter.gguf
  * Then: GENOFFICE_EMBED_LOCAL_AI=1 npm run dist:mac (or dist:win).
- * The staged 1.57 GB model is deliberately excluded from Git.
+ * The staged 1.72 GB bundle is deliberately excluded from Git.
  */
 import {
   copyFileSync,
@@ -47,9 +47,13 @@ async function sha256Of(path) {
 // Q6_K GGUF; each feature's LoRA is a separate file the server loads beside it. The document
 // adapter is the fourth generation's (2,000 steps, the 0.16.10 model before fusing); the 품의
 // adapter is final200-v1 step 157, promoted by the user's direction on 2026-11-18 (registry
-// ddak_features.json in the model project). The 생기부 adapter is school-record-isolated-v3
-// step 111: a separate copy of the document adapter trained on 생기부 only, promoted by the
-// user's direction on 2026-11-18. A replacement needs a new provenance entry.
+// ddak_features.json in the model project). The 생기부 adapter carries 똑딱AI 생기부 V7 B
+// (school-record-v7-b, a standalone model promoted by the user's direction on 2026-11-19)
+// onto this base: V7 B changed only blocks 22 and 23, so the model project's
+// school_record_v7_app_lora.py writes that change as a LoRA (block 22 rank 8, block 23 exact
+// in F16 with its RMSNorm changes folded in; alpha 0, so each pair applies at scale 1).
+// On the 80 V7 dev prompts, this base + adapter in the app's settings was checked against
+// V7 B itself (docs/tracking/status.md). A replacement needs a new provenance entry.
 // Q6_K rather than the Q8_0 the adapters were measured on: a release file must stay under
 // GitHub's 2 GiB limit and the Q8 build (2.23 GB) does not. On the same frozen 200 품의 carts
 // Q6_K scored money 157 and rows 113 (Q8_0: 157 and 116), with no confirmed wrong amount.
@@ -57,7 +61,7 @@ const PINNED = {
   base: 'fc90339420b4298887aafb307a4291c55440b730133bbffe6ba9630503dcb548',
   document: '76fac99858b21d136835cc4bdda02edf8721adaf820280ef5aba31c8d506ace9',
   pumui: '7f4304879415d92d87b1c9401819135383a06c2e6e1e39c74e321c44cf7b99ac',
-  school_record: 'f2e4710be24c232cd60b8fe29e491e6f20d26959b8d8e7e1978a7d79d566b5bd',
+  school_record: 'c4b61189e93ca7ee6ed29a9eef43a00fdcda1f6226710d46b074c90d70e4f2e1',
 }
 const adapters = {
   document: resolve(documentArg),
@@ -110,10 +114,14 @@ writeFileSync(
     'pumui adapter (adapters/pumui.gguf): 품의 cart reading in the v3 copy-the-values format,',
     'eight layers, rank 16, continued from v3 step 400 on 667 checked answers from',
     'Gemini 3.5 Flash-Lite to fictional carts (157 updates). SHA256: ' + adapterHashes.pumui,
-    'school_record adapter (adapters/school_record.gguf): a separate copy of the document',
-    'adapter continued on 생기부 writing only (subject notes, behaviour notes, rewording),',
-    'last two layers, rank 8, 111 updates on checked answers from Gemini 3.5 Flash-Lite to',
-    'fictional students. SHA256: ' + adapterHashes.school_record,
+    'school_record adapter (adapters/school_record.gguf): 똑딱AI 생기부 V7 B written as a LoRA',
+    'on the unchanged base. V7 B fused the V6 생기부 LoRA (last two layers) into Qwen3.5-2B and',
+    'fine-tuned the final block (64 updates) on answers from Gemini to fictional students',
+    '(behaviour notes, elementary comments, subject notes, 창체). Block 22 as its rank-8 change,',
+    'block 23 as its exact change in F16 with the RMSNorm changes folded into the following',
+    'matrices; the small q/k norm changes stay at the base values. Source standalone GGUF',
+    'SHA256 d31c913928eea57ca2d1bfb2a0a158dcb48ef2b4c6bae6dede91cdd7457d0fdf.',
+    'Adapter SHA256: ' + adapterHashes.school_record,
     'llama.cpp runtime: https://github.com/ggml-org/llama.cpp (MIT license)',
     'Runtime revision: b12167',
     '',

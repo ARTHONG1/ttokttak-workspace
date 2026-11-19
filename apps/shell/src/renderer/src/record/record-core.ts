@@ -242,8 +242,9 @@ export const BEHAVIOR_SYSTEM = [
 ].join('\n')
 
 /**
- * 창체 특기사항. Not yet among the instructions the built-in 똑딱AI's 생기부 adapter was
- * trained on (tests/prompt-contract.test.ts pins those): its answers here are a draft to read.
+ * 창체 특기사항. The built-in 똑딱AI 생기부 V7 B saw these exact instructions in a few of its
+ * training rows and dev prompts (apps/saenggibu/tests/prompt-contract.test.ts pins them with the
+ * others), but on fewer cases than 세특 and 행발: its answers here are a draft to read.
  */
 export const ACTIVITY_SYSTEM = [
   '당신은 대한민국 학교생활기록부 기재요령을 잘 아는 교사입니다. 학생의 「창의적 체험활동 상황」 특기사항을 작성합니다.',

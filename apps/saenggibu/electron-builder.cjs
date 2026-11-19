@@ -55,9 +55,11 @@ module.exports = {
     const manifest = join(__dirname, 'build/local-ai/manifest.json')
     if (!existsSync(manifest)) throw new Error('Run scripts/prepare-ai.mjs before packaging')
     const m = JSON.parse(readFileSync(manifest, 'utf8'))
-    for (const file of ['model.gguf', m.adapter.file]) {
-      if (!existsSync(join(__dirname, 'build/local-ai', file)))
-        throw new Error('build/local-ai is missing ' + file)
-    }
+    // 똑딱AI 생기부 V7 B, a whole model (scripts/prepare-ai.mjs pins it); an older bundle with a
+    // base and an adapter would package the previous model
+    if (m.source !== 'school-record-v7-b' || m.adapter)
+      throw new Error('build/local-ai holds another model: run scripts/prepare-ai.mjs again')
+    if (!existsSync(join(__dirname, 'build/local-ai/model.gguf')))
+      throw new Error('build/local-ai is missing model.gguf')
   },
 }

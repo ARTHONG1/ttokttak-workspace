@@ -1,23 +1,37 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, plainTurn } from '../src/main/ai-turn'
-import { ADAPTER_FILE, MODEL_FILE, requestBody, serverArgs } from '../src/main/local-ai'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { MODEL_FILE, aiFiles, requestBody, serverArgs } from '../src/main/local-ai'
 
 describe('the built-in 똑딱AI', () => {
-  it('runs the base with the 생기부 adapter, by paths inside its own folder', () => {
+  it('runs the 생기부 V7 B model alone, by a path inside its own folder', () => {
     const args = serverArgs(4321, 'k', 3)
     const at = (flag: string) => args[args.indexOf(flag) + 1]
     expect(at('--model')).toBe(MODEL_FILE)
-    expect(at('--lora')).toBe(ADAPTER_FILE)
-    expect(ADAPTER_FILE).toBe('adapters/school_record.gguf')
+    expect(MODEL_FILE).toBe('model.gguf')
     expect(at('--host')).toBe('127.0.0.1')
     expect(at('--ctx-size')).toBe('4096')
     expect(at('--reasoning')).toBe('off')
     expect(args).toContain('--log-disable')
-    // one adapter, always on: no per-request switching
+    // a whole model: no adapter to load or switch
+    expect(args).not.toContain('--lora')
     expect(args).not.toContain('--lora-scaled')
   })
 
-  it('asks at the settings the adapter was measured with', () => {
+  it('finds the AI folder from the executable and the model alone', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'saenggibu-ai-'))
+    expect(aiFiles(dir, 'darwin')).toBeNull()
+    const ai = join(dir, 'local-ai')
+    mkdirSync(ai)
+    writeFileSync(join(ai, 'llama-server'), '')
+    expect(aiFiles(dir, 'darwin')).toBeNull()
+    writeFileSync(join(ai, MODEL_FILE), '')
+    expect(aiFiles(dir, 'darwin')).toEqual({ dir: ai, executable: join(ai, 'llama-server') })
+  })
+
+  it('asks at the settings the model was measured with', () => {
     expect(requestBody('지시', '요청')).toMatchObject({
       temperature: 0,
       max_tokens: 1024,
