@@ -56,7 +56,7 @@
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.17.0](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.17.0) · 2026-11-20** — 똑딱작업실 0.17.0은 프로그램과 내장 AI 모델을 나눈 업데이트입니다. 설치 파일에는 앱과 AI 실행기만 들어 있고, 똑딱AI 모델 파일은 처음 쓸 때 한 번 받아 이 컴퓨터에 둡니다. 그래서 앞으로 앱을 업데이트할 때 모델을 다시 받지 않고, 모델은 줄이거나 바꾸지 않은 원본 그대로 씁니다.
+**[v0.17.1](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.17.1) · 2026-11-20** — 똑딱작업실 0.17.1은 켜자마자 바로 시작 화면이 나오도록 바꾼 업데이트입니다.
 
 [모든 버전의 변경 내역 보기](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
