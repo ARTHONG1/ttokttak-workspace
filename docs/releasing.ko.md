@@ -80,7 +80,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
    설치본이 받아 둔 모델 파일을 시험용 폴더에 하드 링크로 넣어 쓰므로 2.2GB를 다시 받지 않습니다. **모델 목록을 바꾼 릴리스**는 실제 GitHub에서 받는 시험도 돌립니다: `GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1 npx playwright test e2e/local-ai-models.spec.ts`(약 9분).
 
 3. `bash tools/preview-ensure.sh`(작업공간 루트) 뒤 미리보기에서 한글 문서 AI 전송이나 생기부 행발 1명을 실제로 보내 답을 확인합니다.
-4. 릴리스 커밋의 CI가 초록인지 확인합니다.
+4. 릴리스 커밋의 CI가 초록인지, 마지막 밤 화면 검사(Actions → "E2E (Electron)")도 초록인지 확인합니다. `npm run status`의 "자동 검사" 줄에 둘 다 나옵니다. 밤 검사가 빨간 채로 내지 않습니다. 화면을 바꾼 릴리스는 릴리스 커밋으로 E2E를 한 번 돌립니다(약 45분, CI와 동시에).
 
 ### 4-4. 공개
 
