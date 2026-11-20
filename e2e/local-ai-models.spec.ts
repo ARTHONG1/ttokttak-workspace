@@ -2,7 +2,14 @@ import { expect, test } from '@playwright/test'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { closeAndSaveVideo, launchShell, screenshotPath } from './helpers'
+import {
+  closeAndSaveVideo,
+  installedLocalAiModelsReady,
+  INSTALLED_LOCAL_AI_MODELS,
+  launchShell,
+  screenshotPath,
+  type LaunchedApp,
+} from './helpers'
 
 /**
  * 똑딱AI's model files on a new installation (since 0.17.0 the installer has the server only):
@@ -17,6 +24,47 @@ const runtime =
   join(homedir(), 'Desktop/인공지능 모델/.local-ai/runtime/llama-b12167/llama-server')
 const packaged = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
+
+/** a 행발 on V7 B, then the settings' connection test on the base (the server switches back) */
+async function bothRunsAnswer(launched: LaunchedApp): Promise<void> {
+  const { page } = launched
+  // 생기부 on V7 B
+  await page.getByTestId('trial-features').click()
+  await page.getByTestId('special-feature-record').click()
+  await page.getByTestId('record-tab-behavior').click()
+  await page.getByTestId('record-name').first().fill('김하늘')
+  await page
+    .getByTestId('record-notes')
+    .first()
+    .fill('모둠 활동에서 친구의 의견을 끝까지 듣고 정리해 발표함. 교실 화분에 매일 물을 줌.')
+  await page.getByTestId('record-generate-one').first().click()
+  const result = page.getByTestId('record-result').first()
+  await expect(result).not.toHaveValue('', { timeout: 5 * 60_000 })
+  const said = await result.inputValue()
+  console.log('[local-ai-models] 행발', JSON.stringify(said))
+  expect(said).toMatch(NOMINAL)
+  await page.screenshot({ path: screenshotPath('local-ai-models-record') })
+
+  // the base again: the settings show the files in, and the connection test answers
+  const opened = await launched.app.evaluate(({ Menu, BrowserWindow }) => {
+    const item = Menu.getApplicationMenu()
+      ?.items.flatMap((entry) => entry.submenu?.items ?? [])
+      .find((entry) => entry.id === 'workspace-ai-settings')
+    if (!item) return false
+    item.click(undefined as never, BrowserWindow.getAllWindows()[0], undefined as never)
+    return true
+  })
+  expect(opened).toBe(true)
+  await page.locator('.set-nav-item').filter({ hasText: 'AI' }).first().click()
+  await expect(page.getByTestId('local-ai-model')).toHaveAttribute('data-state', 'ready')
+  await expect(page.getByTestId('local-ai-model')).toContainText('이 컴퓨터에 있어요')
+  await page.screenshot({ path: screenshotPath('local-ai-models-settings') })
+  await page.locator('.set-adv-toggle:not(.set-external-ai-toggle)').click()
+  await page.locator('.set-pane-head .set-btn').filter({ hasText: '연결 테스트' }).click()
+  await expect(page.locator('.set-pane-head [role="status"]')).toContainText(/연결 성공/, {
+    timeout: 3 * 60_000,
+  })
+}
 
 test('a new installation downloads the model files, then 생기부 and documents both answer', async () => {
   test.skip(
@@ -70,43 +118,41 @@ test('a new installation downloads the model files, then 생기부 and documents
     ])
       expect(existsSync(join(folder, file))).toBe(true)
 
-    // 생기부 on V7 B
-    await page.getByTestId('trial-features').click()
-    await page.getByTestId('special-feature-record').click()
-    await page.getByTestId('record-tab-behavior').click()
-    await page.getByTestId('record-name').first().fill('김하늘')
-    await page
-      .getByTestId('record-notes')
-      .first()
-      .fill('모둠 활동에서 친구의 의견을 끝까지 듣고 정리해 발표함. 교실 화분에 매일 물을 줌.')
-    await page.getByTestId('record-generate-one').first().click()
-    const result = page.getByTestId('record-result').first()
-    await expect(result).not.toHaveValue('', { timeout: 5 * 60_000 })
-    const said = await result.inputValue()
-    console.log('[local-ai-models] 행발', JSON.stringify(said))
-    expect(said).toMatch(NOMINAL)
-    await page.screenshot({ path: screenshotPath('local-ai-models-record') })
-
-    // the base again: the settings show the files in, and the connection test answers
-    const opened = await launched.app.evaluate(({ Menu, BrowserWindow }) => {
-      const item = Menu.getApplicationMenu()
-        ?.items.flatMap((entry) => entry.submenu?.items ?? [])
-        .find((entry) => entry.id === 'workspace-ai-settings')
-      if (!item) return false
-      item.click(undefined as never, BrowserWindow.getAllWindows()[0], undefined as never)
-      return true
-    })
-    expect(opened).toBe(true)
-    await page.locator('.set-nav-item').filter({ hasText: 'AI' }).first().click()
-    await expect(page.getByTestId('local-ai-model')).toHaveAttribute('data-state', 'ready')
-    await expect(page.getByTestId('local-ai-model')).toContainText('이 컴퓨터에 있어요')
-    await page.screenshot({ path: screenshotPath('local-ai-models-settings') })
-    await page.locator('.set-adv-toggle:not(.set-external-ai-toggle)').click()
-    await page.locator('.set-pane-head .set-btn').filter({ hasText: '연결 테스트' }).click()
-    await expect(page.locator('.set-pane-head [role="status"]')).toContainText(/연결 성공/, {
-      timeout: 3 * 60_000,
-    })
+    await bothRunsAnswer(launched)
   } finally {
     await closeAndSaveVideo(launched, 'local-ai-models')
+  }
+})
+
+test('the installed app runs 생기부 on V7 B and documents on the base, switching between them', async () => {
+  test.skip(
+    !packaged ||
+      !installedLocalAiModelsReady() ||
+      !existsSync(join(INSTALLED_LOCAL_AI_MODELS, 'school-record.gguf')),
+    'the installed app and its downloaded model files (GENOFFICE_E2E_PACKAGED_EXECUTABLE)',
+  )
+  test.setTimeout(10 * 60_000)
+  const launched = await launchShell({
+    seedLocalAiModels: true,
+    onboardingSeen: true,
+    subscriptionNoticeSeen: false,
+    lang: 'ko',
+    recordVideo: false,
+    videoDir: 'local-ai-models-installed',
+  })
+  try {
+    // the files are in: checked once, then both runs are ready without a download
+    await expect
+      .poll(
+        async () =>
+          (await launched.page.evaluate(() => window.aiOffice.getLocalAiModels?.()))?.state,
+        {
+          timeout: 3 * 60_000,
+        },
+      )
+      .toBe('ready')
+    await bothRunsAnswer(launched)
+  } finally {
+    await closeAndSaveVideo(launched, 'local-ai-models-installed')
   }
 })
