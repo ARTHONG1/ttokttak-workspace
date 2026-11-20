@@ -4,6 +4,10 @@
 
 <!-- GITHUB-RELEASES:START -->
 
+### [v0.18.0](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.18.0) · 2026-11-20
+
+똑딱작업실 0.18.0은 내장 똑딱AI를 하나로 합친 업데이트입니다. 한글 편집·문서 작업·품의서 생성·생기부가 모두 같은 똑딱AI 하나로 돕고, 똑딱생기부도 같은 모델을 씁니다. 0.17.x에서 올라오면 생기부 어댑터 약 149MB만 새로 받고, 이미 받아 둔 기본 모델과 문서·품의 어댑터는 그대로 씁니다.
+
 ### [v0.17.1](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.17.1) · 2026-11-20
 
 똑딱작업실 0.17.1은 켜자마자 바로 시작 화면이 나오도록 바꾼 업데이트입니다.

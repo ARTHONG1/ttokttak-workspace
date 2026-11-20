@@ -35,7 +35,7 @@ The built-in model ships in the **macOS arm64** and **Windows x64** installers; 
 
 <!-- GITHUB-RELEASES:START -->
 
-**[v0.17.1](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.17.1) · 2026-11-20** — Read the full release notes (in Korean).
+**[v0.18.0](https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/v0.18.0) · 2026-11-20** — Read the full release notes (in Korean).
 
 [All releases and changes](https://github.com/ARTHONG1/ttokttak-workspace/releases)
 <!-- GITHUB-RELEASES:END -->
