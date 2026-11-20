@@ -5,7 +5,7 @@
  * the packaged node_modules. Released on github.com/ARTHONG1/ttokttak-saenggibu; no update
  * feed yet: a new version is installed over the old one.
  */
-const { existsSync, readFileSync } = require('node:fs')
+const { existsSync, readFileSync, readdirSync } = require('node:fs')
 const { join } = require('node:path')
 
 /** ASCII: it names the installed app, its folders and the installer files */
@@ -58,11 +58,15 @@ module.exports = {
     const manifest = join(__dirname, 'build/local-ai/manifest.json')
     if (!existsSync(manifest)) throw new Error('Run scripts/prepare-ai.mjs before packaging')
     const m = JSON.parse(readFileSync(manifest, 'utf8'))
-    // the runtime only: the app downloads 똑딱AI 생기부 V7 B on first launch. A model left
-    // in build/local-ai (an older staging) would push the installer past 2 GB.
-    if (!m.model?.downloaded || m.model.source !== 'school-record-v7-b')
+    // the runtime only: the app downloads 똑딱AI's base and 생기부 adapter on first launch. A
+    // model left in build/local-ai (an older staging) would push the installer past 2 GB.
+    if (!m.downloaded || !Array.isArray(m.models) || m.models.length !== 2)
       throw new Error('build/local-ai is an older staging: run scripts/prepare-ai.mjs again')
-    if (existsSync(join(__dirname, 'build/local-ai/model.gguf')))
+    if (
+      readdirSync(join(__dirname, 'build/local-ai'), { recursive: true }).some((f) =>
+        /\.gguf$/.test(String(f)),
+      )
+    )
       throw new Error('build/local-ai holds a model: the installer must not include it')
     const exe = process.platform === 'win32' ? 'llama-server.exe' : 'llama-server'
     if (!existsSync(join(__dirname, 'build/local-ai', exe)))

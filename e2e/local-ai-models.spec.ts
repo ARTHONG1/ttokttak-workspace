@@ -13,9 +13,9 @@ import {
 
 /**
  * 똑딱AI's model files on a new installation (since 0.17.0 the installer has the server only):
- * the built-in AI is preselected, its four files download from the model release, and both
- * runs answer: a 행발 on 똑딱AI 생기부 V7 B, then the settings' connection test on the base,
- * which switches the server back. 4.1 GB from GitHub, so only with
+ * the built-in AI is preselected, its four files (the base and three adapters) download from
+ * the model release, and one server answers both: a 행발 with the 생기부 adapter on, then the
+ * settings' connection test with the document adapter. 2.2 GB from GitHub, so only with
  * GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1: a development run with llama.cpp from the model project,
  * or the packaged app (GENOFFICE_E2E_PACKAGED_EXECUTABLE).
  */
@@ -25,10 +25,10 @@ const runtime =
 const packaged = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
 
-/** a 행발 on V7 B, then the settings' connection test on the base (the server switches back) */
-async function bothRunsAnswer(launched: LaunchedApp): Promise<void> {
+/** a 행발 (생기부 adapter), then the settings' connection test (document adapter), one server */
+async function oneServerAnswers(launched: LaunchedApp): Promise<void> {
   const { page } = launched
-  // 생기부 on V7 B
+  // 생기부, with its adapter on
   await page.getByTestId('trial-features').click()
   await page.getByTestId('special-feature-record').click()
   await page.getByTestId('record-tab-behavior').click()
@@ -69,7 +69,7 @@ async function bothRunsAnswer(launched: LaunchedApp): Promise<void> {
 test('a new installation downloads the model files, then 생기부 and documents both answer', async () => {
   test.skip(
     process.env.GENOFFICE_E2E_LOCAL_AI_DOWNLOAD !== '1',
-    'downloads 4.1 GB: set GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1',
+    'downloads 2.2 GB: set GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1',
   )
   test.skip(!packaged && !existsSync(runtime), 'no llama.cpp runtime')
   test.setTimeout(45 * 60_000)
@@ -108,27 +108,27 @@ test('a new installation downloads the model files, then 생기부 and documents
       )
       .toBe('ready')
     const info = await page.evaluate(() => window.aiOffice.getLocalAiModels?.())
-    expect(info?.ready).toEqual(['main', 'school_record'])
+    expect(info?.ready).toEqual(['main'])
     const folder = join(launched.userDataDir, 'local-ai-models')
     for (const file of [
       'base.gguf',
       'adapters/document.gguf',
       'adapters/pumui.gguf',
-      'school-record.gguf',
+      'adapters/school_record.gguf',
     ])
       expect(existsSync(join(folder, file))).toBe(true)
 
-    await bothRunsAnswer(launched)
+    await oneServerAnswers(launched)
   } finally {
     await closeAndSaveVideo(launched, 'local-ai-models')
   }
 })
 
-test('the installed app runs 생기부 on V7 B and documents on the base, switching between them', async () => {
+test('the installed app answers 생기부 and documents from one server', async () => {
   test.skip(
     !packaged ||
       !installedLocalAiModelsReady() ||
-      !existsSync(join(INSTALLED_LOCAL_AI_MODELS, 'school-record.gguf')),
+      !existsSync(join(INSTALLED_LOCAL_AI_MODELS, 'adapters/school_record.gguf')),
     'the installed app and its downloaded model files (GENOFFICE_E2E_PACKAGED_EXECUTABLE)',
   )
   test.setTimeout(10 * 60_000)
@@ -141,7 +141,7 @@ test('the installed app runs 생기부 on V7 B and documents on the base, switch
     videoDir: 'local-ai-models-installed',
   })
   try {
-    // the files are in: checked once, then both runs are ready without a download
+    // the files are in: checked once, then ready without a download
     await expect
       .poll(
         async () =>
@@ -151,7 +151,7 @@ test('the installed app runs 생기부 on V7 B and documents on the base, switch
         },
       )
       .toBe('ready')
-    await bothRunsAnswer(launched)
+    await oneServerAnswers(launched)
   } finally {
     await closeAndSaveVideo(launched, 'local-ai-models-installed')
   }

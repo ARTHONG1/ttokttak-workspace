@@ -15,7 +15,7 @@ import {
   shell,
 } from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
-import { MODEL, type ModelSpec } from '../shared/model'
+import { MODEL_BYTES, MODEL_FILES, MODEL_NAME, MODEL_PAGE, type ModelSpec } from '../shared/model'
 import { LocalAi, type ModelSource } from './local-ai'
 import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
@@ -36,23 +36,26 @@ let win: BrowserWindow | null = null
 let neis: PlaywrightNeisDriver | undefined
 
 /**
- * The model: downloaded into userData/ai. A development run may point at a model file
- * (SAENGGIBU_MODEL_FILE) or, for the download tests, at another file to download
- * (SAENGGIBU_MODEL_URL, _BYTES, _SHA256, and _IDLE_MS for a short stall limit); an installed
- * app ignores all of them.
+ * The model: the base and the 생기부 adapter, downloaded into userData/ai. A development run
+ * may point at the files (SAENGGIBU_MODEL_FILE, with SAENGGIBU_ADAPTER_FILE) or, for the
+ * download tests, at one other file to download instead of both (SAENGGIBU_MODEL_URL, _BYTES,
+ * _SHA256, and _IDLE_MS for a short stall limit); an installed app ignores all of them.
  */
 function modelSource(): ModelSource {
   const env = process.env
-  if (!app.isPackaged && env.SAENGGIBU_MODEL_FILE) return { file: env.SAENGGIBU_MODEL_FILE }
-  const spec: ModelSpec =
+  if (!app.isPackaged && env.SAENGGIBU_MODEL_FILE)
+    return { file: env.SAENGGIBU_MODEL_FILE, adapter: env.SAENGGIBU_ADAPTER_FILE || undefined }
+  const specs: readonly ModelSpec[] =
     !app.isPackaged && env.SAENGGIBU_MODEL_URL
-      ? {
-          ...MODEL,
-          url: env.SAENGGIBU_MODEL_URL,
-          bytes: Number(env.SAENGGIBU_MODEL_BYTES),
-          sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
-        }
-      : MODEL
+      ? [
+          {
+            file: MODEL_FILES[0].file,
+            url: env.SAENGGIBU_MODEL_URL,
+            bytes: Number(env.SAENGGIBU_MODEL_BYTES),
+            sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
+          },
+        ]
+      : MODEL_FILES
   const idleMs = !app.isPackaged ? Number(env.SAENGGIBU_MODEL_IDLE_MS) || undefined : undefined
   // the download's own connections (with the system's proxy settings, as Chromium has them),
   // kept apart from the page and without a disk cache: the 2 GB answer goes to the model only
@@ -61,13 +64,16 @@ function modelSource(): ModelSource {
     ses.setUserAgent(app.userAgentFallback)
     return ses
   }
-  const store = new ModelStore(
-    join(app.getPath('userData'), 'ai'),
-    spec,
-    (url, init) => downloads().fetch(url, { ...init, cache: 'no-store' }),
-    { idleMs, reconnect: () => downloads().closeAllConnections() },
+  const stores = specs.map(
+    (spec) =>
+      new ModelStore(
+        join(app.getPath('userData'), 'ai'),
+        spec,
+        (url, init) => downloads().fetch(url, { ...init, cache: 'no-store' }),
+        { idleMs, reconnect: () => downloads().closeAllConnections() },
+      ),
   )
-  return { store }
+  return { stores }
 }
 const ai = new LocalAi(process.resourcesPath, modelSource())
 
@@ -118,9 +124,9 @@ function registerIpc(): void {
   powerMonitor.on('unlock-screen', () => ai.resumeDropped())
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
   ipcMain.handle(CHANNELS.modelInfo, () => ({
-    name: MODEL.name,
-    bytes: MODEL.bytes,
-    page: MODEL.page,
+    name: MODEL_NAME,
+    bytes: MODEL_BYTES,
+    page: MODEL_PAGE,
   }))
   ipcMain.handle(CHANNELS.retryModel, () => {
     void ai.prepare()
@@ -129,19 +135,19 @@ function registerIpc(): void {
     const owner = BrowserWindow.fromWebContents(event.sender) ?? win
     if (!owner) return null
     const picked = await dialog.showOpenDialog(owner, {
-      title: '받아 둔 똑딱AI 모델 파일 고르기',
+      title: '받아 둔 똑딱AI 파일 고르기 (기본 모델과 생기부 어댑터)',
       filters: [{ name: '똑딱AI 모델', extensions: ['gguf'] }],
-      properties: ['openFile'],
+      properties: ['openFile', 'multiSelections'],
     })
-    if (picked.canceled || !picked.filePaths[0]) return null
+    if (picked.canceled || picked.filePaths.length === 0) return null
     try {
-      await ai.importModel(picked.filePaths[0])
+      await ai.importModel(picked.filePaths)
       return { ok: true }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
     }
   })
-  ipcMain.handle(CHANNELS.openModelPage, () => shell.openExternal(MODEL.page))
+  ipcMain.handle(CHANNELS.openModelPage, () => shell.openExternal(MODEL_PAGE))
   ipcMain.handle(CHANNELS.version, () => app.getVersion())
   ipcMain.handle(CHANNELS.ask, async (_event, raw: unknown) => {
     const r = (raw ?? {}) as Partial<AskRequest>

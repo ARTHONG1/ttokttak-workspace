@@ -9,27 +9,31 @@ import { _electron as electron, expect, test } from '@playwright/test'
 /**
  * 똑딱생기부 itself, launched from its build (out/): the page, the built-in 똑딱AI writing one
  * 행발, 세특 and 창체 entry, and the first-launch model download. The server comes from
- * build/local-ai (scripts/prepare-ai.mjs); the writing test reads V7 B from the model project
- * (SAENGGIBU_TEST_MODEL) and is skipped without it.
+ * build/local-ai (scripts/prepare-ai.mjs); the writing test reads 똑딱AI's base and 생기부
+ * adapter from the model project (SAENGGIBU_TEST_MODEL, SAENGGIBU_TEST_ADAPTER) and is skipped
+ * without them.
  */
 const APP = resolve(__dirname, '..')
 const AI_DIR = process.env.SAENGGIBU_AI_DIR || join(APP, 'build/local-ai')
-const MODEL =
-  process.env.SAENGGIBU_TEST_MODEL ||
-  join(
-    homedir(),
-    'Desktop/인공지능 모델/.local-ai/ddak/models/school_record/school-record-v7-b/model-Q8_0.gguf',
-  )
+const MODELS = join(homedir(), 'Desktop/인공지능 모델/.local-ai')
+const MODEL = process.env.SAENGGIBU_TEST_MODEL || join(MODELS, 'models/Qwen3.5-2B-Q8_0.gguf')
+const ADAPTER =
+  process.env.SAENGGIBU_TEST_ADAPTER ||
+  join(MODELS, 'ddak/models/school_record/school-record-v7-b-app-lora/school_record.gguf')
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
 
 test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', async () => {
-  test.skip(!existsSync(MODEL) || !existsSync(join(AI_DIR, 'manifest.json')), 'no model or runtime')
+  test.skip(
+    !existsSync(MODEL) || !existsSync(ADAPTER) || !existsSync(join(AI_DIR, 'manifest.json')),
+    'no model or runtime',
+  )
   const app = await electron.launch({
     args: [APP],
     env: {
       ...process.env,
       SAENGGIBU_AI_DIR: AI_DIR,
       SAENGGIBU_MODEL_FILE: MODEL,
+      SAENGGIBU_ADAPTER_FILE: ADAPTER,
       SAENGGIBU_USER_DATA: mkdtempSync(join(tmpdir(), 'saenggibu-e2e-')),
     } as Record<string, string>,
   })

@@ -1,8 +1,8 @@
 /**
  * Stage 똑딱생기부's built-in 똑딱AI runtime for electron-builder: llama.cpp's llama-server and
- * its libraries for this platform, the licences, and a note on the model the app downloads
- * on first launch (똑딱AI 생기부 V7 B, pinned in src/shared/model.ts). The model itself is not
- * part of the installer: it does not fit GitHub's 2 GiB file limit or a Windows installer.
+ * its libraries for this platform, the licences, and a note on the model files the app
+ * downloads on first launch (똑딱AI's base and 생기부 adapter, pinned in src/shared/model.ts).
+ * The model is not part of the installer: it does not fit a Windows installer.
  * Usage: node scripts/prepare-ai.mjs /path/llama-runtime-dir
  */
 import {
@@ -26,19 +26,21 @@ for (const path of [join(runtime, exe), join(runtime, 'LICENSE')]) {
   if (!existsSync(path)) throw new Error('Missing: ' + path)
 }
 
-// the model the app downloads: one definition, in the app's source
+// the model files the app downloads: one definition, in the app's source
 const source = readFileSync(join(app, 'src/shared/model.ts'), 'utf8')
-const field = (name, pattern) => {
-  const m = new RegExp(name + ':\\s*' + pattern).exec(source)
-  if (!m) throw new Error('src/shared/model.ts has no ' + name)
-  return m[1]
-}
-const model = {
-  name: field('name', "'([^']+)'"),
-  bytes: Number(field('bytes', '([\\d_]+)').replaceAll('_', '')),
-  sha256: field('sha256', "'([0-9a-f]{64})'"),
-  url: field('url', "'(https://[^']+)'"),
-}
+const release = /MODEL_RELEASE = '([^']+)'/.exec(source)?.[1]
+const models = [
+  ...source.matchAll(
+    /file: '([^']+)',\s*bytes: ([\d_]+),\s*sha256: '([0-9a-f]{64})',\s*url: DOWNLOAD \+ '([^']+)'/g,
+  ),
+].map((m) => ({
+  file: m[1],
+  bytes: Number(m[2].replaceAll('_', '')),
+  sha256: m[3],
+  url: 'https://github.com/ARTHONG1/ttokttak-workspace/releases/download/' + release + '/' + m[4],
+}))
+if (!release || models.length !== 2)
+  throw new Error('src/shared/model.ts: expected two model files')
 
 const output = join(app, 'build/local-ai')
 rmSync(output, { force: true, recursive: true })
@@ -55,14 +57,17 @@ if (existsSync(join(runtime, 'LICENSE-LLVM-OpenMP')))
 writeFileSync(
   join(output, 'MODEL-ATTRIBUTION.txt'),
   [
-    'The model is downloaded on first launch (not part of this installer):',
-    model.name + ' (school-record-v7-b), ' + model.bytes + ' bytes, SHA256 ' + model.sha256,
-    'From: ' + model.url,
+    'The model files are downloaded on first launch (not part of this installer):',
+    ...models.map(
+      (m) => m.file + ': ' + m.bytes + ' bytes, SHA256 ' + m.sha256 + '\n  from ' + m.url,
+    ),
+    '',
     'Qwen3.5-2B model, Apache License 2.0',
     'Upstream: https://huggingface.co/Qwen/Qwen3.5-2B (revision 15852e8c16360a2fea060d615a32b45270f8a8fc)',
-    'Modified by 똑딱생기부: the V6 생기부 LoRA (last two layers) fused into the model, then the',
-    'final block fine-tuned for 64 updates on answers from Gemini to fictional students (행발,',
-    '초등 평어, 교과 세특, 창체); exported to Q8_0 GGUF. A whole model; no adapter at run time.',
+    'base.gguf: the unchanged Qwen3.5-2B, exported to Q8_0 GGUF.',
+    "adapters/school_record.gguf: 똑딱AI's 생기부 LoRA adapter (last two layers), trained on",
+    'answers from Gemini to fictional students (행발, 초등 평어, 교과 세특, 창체); applied on the base',
+    "at run time. The same files as 똑딱작업실's built-in 똑딱AI.",
     'llama.cpp runtime: https://github.com/ggml-org/llama.cpp (MIT license), revision b12167',
     '',
   ].join('\n'),
@@ -71,7 +76,9 @@ const manifest = {
   platform: process.platform,
   arch: process.arch,
   runtime: 'llama.cpp b12167',
-  model: { ...model, source: 'school-record-v7-b', downloaded: true },
+  release,
+  models,
+  downloaded: true,
 }
 writeFileSync(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
 console.log(JSON.stringify({ output, ...manifest }, null, 2))

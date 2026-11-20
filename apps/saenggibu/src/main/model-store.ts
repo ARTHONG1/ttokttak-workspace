@@ -1,18 +1,15 @@
 /**
- * The downloaded model on this computer (userData/ai/model.gguf): fetched once from the app's
- * GitHub release, resumed where a download stopped (HTTP Range on model.gguf.partial), and
+ * One downloaded model file on this computer (userData/ai/<spec.file>): fetched once from the
+ * model release, resumed where a download stopped (HTTP Range on <file>.partial), and
  * accepted only at the pinned size and SHA256. A verified file leaves a small record beside
  * it, so later launches check size and time instead of hashing 2 GB again.
  */
 import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdir, readFile, rename, rm, stat, statfs, truncate, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { ModelSpec } from '../shared/model'
 
-export const MODEL_FILE = 'model.gguf'
-const PARTIAL = MODEL_FILE + '.partial'
-const RECORD = MODEL_FILE + '.verified.json'
 /** room left beside the model, so a full disk does not stop the computer */
 const SPARE_BYTES = 300 * 1024 * 1024
 /**
@@ -74,14 +71,22 @@ export class ModelStore {
   }
 
   get path(): string {
-    return join(this.dir, MODEL_FILE)
+    return join(this.dir, this.spec.file)
+  }
+
+  private get partial(): string {
+    return this.path + '.partial'
+  }
+
+  private get record(): string {
+    return this.path + '.verified.json'
   }
 
   /** the model is here and verified (by its record, or by hashing it once) */
   async ready(): Promise<boolean> {
     const info = await stat(this.path).catch(() => null)
     if (!info || info.size !== this.spec.bytes) return false
-    const record = await readFile(join(this.dir, RECORD), 'utf8')
+    const record = await readFile(this.record, 'utf8')
       .then(JSON.parse)
       .catch(() => null)
     if (
@@ -97,11 +102,11 @@ export class ModelStore {
 
   /** download (or finish downloading) the model; resolves once it is verified in place */
   async download(onProgress: (p: Progress) => void): Promise<void> {
-    await mkdir(this.dir, { recursive: true })
+    await mkdir(dirname(this.path), { recursive: true })
     // after a GitHub connection broke mid-file (ERR_HTTP2_PROTOCOL_ERROR), every request
     // sent on it again was answered with HTTP 400: each later try opens a new connection
     if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
-    const partial = join(this.dir, PARTIAL)
+    const partial = this.partial
     let have = (await stat(partial).catch(() => null))?.size ?? 0
     if (have > this.spec.bytes) {
       await truncate(partial, 0)
@@ -206,9 +211,9 @@ export class ModelStore {
     if (!info?.isFile()) throw new ModelError('고른 파일을 읽지 못했어요.')
     if (info.size !== this.spec.bytes)
       throw new ModelError('똑딱생기부의 모델 파일이 아니에요 (크기가 달라요).')
-    await mkdir(this.dir, { recursive: true })
+    await mkdir(dirname(this.path), { recursive: true })
     await this.checkRoom(this.spec.bytes)
-    const partial = join(this.dir, PARTIAL)
+    const partial = this.partial
     const out = createWriteStream(partial, { flags: 'w' })
     let received = 0
     let last = 0
@@ -241,7 +246,7 @@ export class ModelStore {
       await rm(partial, { force: true })
       throw new ModelError('받은 모델 파일이 손상됐어요. 처음부터 다시 받아 주세요.')
     }
-    await rm(join(this.dir, RECORD), { force: true })
+    await rm(this.record, { force: true })
     await rename(partial, this.path)
     await this.writeRecord()
   }
@@ -249,7 +254,7 @@ export class ModelStore {
   private async writeRecord(): Promise<void> {
     const info = await stat(this.path)
     await writeFile(
-      join(this.dir, RECORD),
+      this.record,
       JSON.stringify({ sha256: this.spec.sha256, bytes: info.size, mtimeMs: info.mtimeMs }) + '\n',
     )
   }

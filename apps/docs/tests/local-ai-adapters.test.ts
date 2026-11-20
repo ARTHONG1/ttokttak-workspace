@@ -11,66 +11,78 @@ import {
 import { adapterArgs, adapterFiles, localAiLoraFor } from '../src/main/local-ai-runtime'
 
 /**
- * 똑딱AI: documents and 품의 run on the Qwen3.5-2B Q8_0 base with the document adapter on and
- * the 품의 adapter for 품의 requests; 생기부 runs on V7 B, a standalone model.
+ * 똑딱AI (sixth generation): one Q8_0 base and one adapter per feature in one server; a
+ * request turns on its feature's adapter only (documents by default, 품의, 생기부).
  */
-describe('똑딱AI runs and adapters', () => {
-  it('downloads the original files at their measured sizes and SHA256', () => {
+describe('똑딱AI: one base, an adapter per feature', () => {
+  it('downloads the registered files at their measured sizes and SHA256', () => {
     expect(LOCAL_AI_MODEL_FILES.map((f) => [f.id, f.bytes, f.sha256.slice(0, 8)])).toEqual([
       ['base', 2_012_012_800, '1b04acba'],
       ['document', 2_723_072, '76fac998'],
       ['pumui', 22_434_368, '7f430487'],
-      ['school_record', 2_076_675_040, 'd31c9139'],
+      ['school_record', 149_294_368, 'c4b61189'],
     ])
     for (const f of LOCAL_AI_MODEL_FILES) {
       expect(f.url).toMatch(
-        /^https:\/\/github\.com\/ARTHONG1\/ttokttak-workspace\/releases\/download\/model-\d{8}\/[\w.-]+\.gguf$/,
+        /^https:\/\/github\.com\/ARTHONG1\/ttokttak-workspace\/releases\/download\/model-\d{8}(-\d+)?\/[\w.-]+\.gguf$/,
       )
       // a release file must stay under GitHub's 2 GiB limit
       expect(f.bytes).toBeLessThan(2 ** 31)
     }
   })
 
-  it('sends 생기부 to V7 B and everything else to the base', () => {
-    expect(localAiRunFor('school_record')).toBe('school_record')
+  it('sends every feature to the one server with all three adapters', () => {
+    expect(localAiRunFor('school_record')).toBe('main')
     expect(localAiRunFor('pumui')).toBe('main')
     expect(localAiRunFor(undefined)).toBe('main')
-    expect(localAiRunFiles('main')).toEqual(['base', 'document', 'pumui'])
-    expect(localAiRunFiles('school_record')).toEqual(['school_record'])
-    expect(LOCAL_AI_RUNS.school_record.adapters).toEqual([])
+    expect(Object.keys(LOCAL_AI_RUNS)).toEqual(['main'])
+    expect(localAiRunFiles('main')).toEqual(['base', 'document', 'pumui', 'school_record'])
   })
 
-  it("finds a developer's adapters only when both are there", () => {
+  it("finds a developer's adapters only when all of them are there", () => {
     const dir = mkdtempSync(join(tmpdir(), 'ddak-adapters-'))
     expect(adapterFiles(dir)).toEqual([])
     writeFileSync(join(dir, 'document.gguf'), 'x')
-    expect(adapterFiles(dir)).toEqual([])
     writeFileSync(join(dir, 'pumui.gguf'), 'x')
-    expect(adapterFiles(dir).map((a) => a.name)).toEqual(['document', 'pumui'])
+    expect(adapterFiles(dir)).toEqual([])
+    writeFileSync(join(dir, 'school_record.gguf'), 'x')
+    expect(adapterFiles(dir).map((a) => a.name)).toEqual(['document', 'pumui', 'school_record'])
   })
 
-  it('loads them relative to the server folder, the document adapter on and the 품의 one off', () => {
+  it('loads them relative to the server folder, the document adapter on and the rest off', () => {
     const cwd = '/models'
-    const adapters = [
-      { name: 'document', path: cwd + '/adapters/document.gguf' },
-      { name: 'pumui', path: cwd + '/adapters/pumui.gguf' },
-    ]
+    const adapters = ['document', 'pumui', 'school_record'].map((name) => ({
+      name,
+      path: cwd + '/adapters/' + name + '.gguf',
+    }))
     expect(adapterArgs(adapters, cwd)).toEqual([
       '--lora-scaled',
-      'adapters/document.gguf:1,adapters/pumui.gguf:0',
+      'adapters/document.gguf:1,adapters/pumui.gguf:0,adapters/school_record.gguf:0',
     ])
     expect(adapterArgs([], cwd)).toEqual([])
   })
 
-  it("turns on only the asking feature's adapter, and leaves the rest to the default", () => {
-    const loaded = ['document', 'pumui']
+  it("turns on only the asking feature's adapter and names every adapter in each request", () => {
+    const loaded = ['document', 'pumui', 'school_record']
     expect(localAiLoraFor('pumui', loaded)).toEqual([
       { id: 0, scale: 0 },
       { id: 1, scale: 1 },
+      { id: 2, scale: 0 },
     ])
-    expect(localAiLoraFor('document', loaded)).toBeNull()
-    expect(localAiLoraFor(undefined, loaded)).toBeNull()
-    // V7 B is a standalone model: no adapters to choose
-    expect(localAiLoraFor('school_record', [])).toBeNull()
+    expect(localAiLoraFor('school_record', loaded)).toEqual([
+      { id: 0, scale: 0 },
+      { id: 1, scale: 0 },
+      { id: 2, scale: 1 },
+    ])
+    const document = [
+      { id: 0, scale: 1 },
+      { id: 1, scale: 0 },
+      { id: 2, scale: 0 },
+    ]
+    expect(localAiLoraFor('document', loaded)).toEqual(document)
+    expect(localAiLoraFor(undefined, loaded)).toEqual(document)
+    expect(localAiLoraFor('hwpx', loaded)).toEqual(document)
+    // a developer's single merged model has no adapters to name
+    expect(localAiLoraFor('pumui', [])).toBeNull()
   })
 })

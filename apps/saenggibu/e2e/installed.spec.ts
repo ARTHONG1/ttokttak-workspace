@@ -5,9 +5,10 @@ import { _electron as electron, expect, test } from '@playwright/test'
 
 /**
  * An installed 똑딱생기부 (SAENGGIBU_PACKAGED_EXE: the Mac app's binary or the Windows exe) on
- * a fresh user folder: it downloads 똑딱AI 생기부 V7 B from the app's GitHub release, checks
- * it, starts the server and writes one 행발. Run by hand after installing, and by the Windows
- * build on its runner. The user folder's name has Korean letters, as a teacher's may.
+ * a fresh user folder: it downloads 똑딱AI's base and 생기부 adapter from the shared model
+ * release, checks them, starts the server and writes one 행발. Run by hand after installing,
+ * and by the Windows build on its runner. The user folder's name has Korean letters, as a
+ * teacher's may.
  */
 const EXE = process.env.SAENGGIBU_PACKAGED_EXE ?? ''
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
@@ -20,6 +21,7 @@ test('the installed app downloads its model and writes a 행발', async () => {
     SAENGGIBU_AI_DIR: _a,
     SAENGGIBU_MODEL_FILE: _b,
     SAENGGIBU_MODEL_URL: _c,
+    SAENGGIBU_ADAPTER_FILE: _d,
     ...env
   } = process.env
   const app = await electron.launch({

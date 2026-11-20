@@ -5,21 +5,20 @@ import { describe, expect, it } from 'vitest'
 import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, plainTurn } from '../src/main/ai-turn'
 import { LocalAi, aiFiles, notReadyMessage, requestBody, serverArgs } from '../src/main/local-ai'
 import { ModelStore } from '../src/main/model-store'
-import { MODEL } from '../src/shared/model'
+import { MODEL_BYTES, MODEL_FILES } from '../src/shared/model'
 
 describe('the built-in 똑딱AI', () => {
-  it('runs the 생기부 V7 B model alone, by its bare file name', () => {
-    const args = serverArgs(4321, 'k', 3)
+  it('runs the base with the 생기부 adapter on, by paths inside the model folder', () => {
+    const args = serverArgs(4321, 'k', 3, 'base.gguf', 'adapters/school_record.gguf')
     const at = (flag: string) => args[args.indexOf(flag) + 1]
-    expect(at('--model')).toBe('model.gguf')
-    expect(serverArgs(1, 'k', 1, 'v7b.gguf')[1]).toBe('v7b.gguf')
+    expect(at('--model')).toBe('base.gguf')
+    expect(at('--lora')).toBe('adapters/school_record.gguf')
     expect(at('--host')).toBe('127.0.0.1')
     expect(at('--ctx-size')).toBe('4096')
     expect(at('--reasoning')).toBe('off')
     expect(args).toContain('--log-disable')
-    // a whole model: no adapter to load or switch
-    expect(args).not.toContain('--lora')
-    expect(args).not.toContain('--lora-scaled')
+    // a development run on a single whole model file loads no adapter
+    expect(serverArgs(1, 'k', 1, 'other.gguf')).not.toContain('--lora')
   })
 
   it('finds the server in the app; the model is no longer part of it', () => {
@@ -32,14 +31,16 @@ describe('the built-in 똑딱AI', () => {
     expect(aiFiles(dir, 'win32')).toBeNull()
   })
 
-  it('downloads V7 B at its measured size and SHA256 from the app repository', () => {
-    expect(MODEL).toMatchObject({
-      bytes: 2_076_675_040,
-      sha256: 'd31c913928eea57ca2d1bfb2a0a158dcb48ef2b4c6bae6dede91cdd7457d0fdf',
-    })
-    expect(MODEL.url).toMatch(
-      /^https:\/\/github\.com\/ARTHONG1\/ttokttak-saenggibu\/releases\/download\//,
-    )
+  it('downloads the same base and 생기부 adapter as 똑딱작업실, from the shared model release', () => {
+    expect(MODEL_FILES.map((f) => [f.file, f.bytes, f.sha256.slice(0, 16)])).toEqual([
+      ['base.gguf', 2_012_012_800, '1b04acba82481755'],
+      ['adapters/school_record.gguf', 149_294_368, 'c4b61189e93ca7ee'],
+    ])
+    expect(MODEL_BYTES).toBe(2_161_307_168)
+    for (const f of MODEL_FILES)
+      expect(f.url).toMatch(
+        /^https:\/\/github\.com\/ARTHONG1\/ttokttak-workspace\/releases\/download\/model-20261120-2\//,
+      )
   })
 
   it('asks at the settings the model was measured with', () => {
@@ -66,7 +67,7 @@ describe('the first launch', () => {
   const failing = (fetchImpl: () => Promise<Response>) =>
     new ModelStore(
       mkdtempSync(join(tmpdir(), 'saenggibu-model-')),
-      { ...MODEL, bytes: 10, url: 'http://127.0.0.1:9/model' },
+      { ...MODEL_FILES[0], bytes: 10, url: 'http://127.0.0.1:9/model' },
       fetchImpl,
       { freeBytes: async () => Number.MAX_SAFE_INTEGER },
     )
@@ -77,7 +78,7 @@ describe('the first launch', () => {
       tries++
       throw new TypeError('fetch failed')
     })
-    const ai = new LocalAi(tmpdir(), { store }, [0, 0], 30)
+    const ai = new LocalAi(tmpdir(), { stores: [store] }, [0, 0], 30)
     await ai.prepare()
     expect(tries).toBe(3)
     expect(ai.current()).toMatchObject({ state: 'download-failed' })
@@ -97,7 +98,7 @@ describe('the first launch', () => {
       tries++
       return new Response(null, { status: 404 })
     })
-    const ai = new LocalAi(tmpdir(), { store }, [0, 0])
+    const ai = new LocalAi(tmpdir(), { stores: [store] }, [0, 0])
     await ai.prepare()
     expect(tries).toBe(1)
     expect(ai.current()).toMatchObject({

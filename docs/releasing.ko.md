@@ -2,7 +2,7 @@
 
 똑딱작업실, 똑딱생기부, 똑딱AI 모델, 공개 웹을 새 버전으로 내는 규칙과 순서입니다. **배포에 관한 정본은 이 문서 하나입니다.** 다른 문서(작업공간 AGENTS.md, 릴리스 스킬, RELEASE_AUTOMATION.md)는 이 문서를 가리키기만 하고, 어긋나면 이 문서를 따릅니다. 문서와 실제 절차가 달라지면 그 자리에서 이 문서를 고칩니다.
 
-마지막 정리: 2026-11-20, 0.17.0 배포 뒤. 그 배포에서 생긴 문제(아래 8)를 다시 겪지 않도록 썼습니다.
+마지막 정리: 2026-11-20, 0.18.0(똑딱AI 하나로) 배포 때. 처음 쓴 것은 0.17.0 배포 뒤로, 그 배포에서 생긴 문제(아래 8)를 다시 겪지 않도록 썼습니다.
 
 ---
 
@@ -18,16 +18,15 @@
 
 ## 2. 무엇이 어디로 나가는가
 
-| 대상                | 나가는 곳                                                                              | 태그                                                  | 파일                                                                                                                                                 | 사용자 업데이트                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 똑딱작업실          | 공개 저장소 `ARTHONG1/ttokttak-workspace` 릴리스                                       | `v<버전>`                                             | Apple Silicon `-arm64.dmg`·`-arm64-mac.zip`, Intel `-x64.dmg`·`-mac.zip`, Windows `Setup-<버전>.exe`, `latest-mac.yml`, `latest.yml`, 각 `.blockmap` | 앱 안의 업데이트 확인(Windows는 electron-updater, Mac은 앱이 zip을 직접 받아 바꿈) |
-| 똑딱생기부          | `ARTHONG1/ttokttak-saenggibu` 릴리스(배포 전용, 소스는 작업실 저장소 `apps/saenggibu`) | 거기서 `v<버전>`, 작업실 저장소에 `saenggibu-v<버전>` | `-arm64.dmg`·`-arm64-mac.zip`, `Setup-<버전>.exe`, `SHA256SUMS.txt`                                                                                  | 아직 자동 업데이트 없음(다시 설치)                                                 |
-| 똑딱AI 모델(작업실) | `ttokttak-workspace`의 `model-<날짜>` 릴리스(최신으로 표시하지 않음)                   | `model-YYYYMMDD`                                      | `.gguf` 파일, `MODEL-NOTICE.txt`, `MODEL-LICENSE.txt`                                                                                                | 앱이 `apps/docs/src/main/local-ai-model-files.ts`에 고정한 파일을 처음 쓸 때 받음  |
-| 똑딱생기부 모델     | `ttokttak-saenggibu`의 `model-v7b`                                                     | `model-…`                                             | 위와 같음                                                                                                                                            | `apps/saenggibu/src/shared/model.ts`에 고정                                        |
-| 공개 웹             | Cloud Run `hangul-ai-workbench`                                                        | 이미지 `main-<커밋 8자리>`                            | 웹 묶음(모델 없음, AI는 Vertex Gemini)                                                                                                               | 배포 즉시                                                                          |
-| 이 Mac 설치본       | `~/Applications/HangulAIWorkbench.app`                                                 | —                                                     | —                                                                                                                                                    | `npm run install:app`으로만                                                        |
+| 대상                    | 나가는 곳                                                                              | 태그                                                  | 파일                                                                                                                                                 | 사용자 업데이트                                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 똑딱작업실              | 공개 저장소 `ARTHONG1/ttokttak-workspace` 릴리스                                       | `v<버전>`                                             | Apple Silicon `-arm64.dmg`·`-arm64-mac.zip`, Intel `-x64.dmg`·`-mac.zip`, Windows `Setup-<버전>.exe`, `latest-mac.yml`, `latest.yml`, 각 `.blockmap` | 앱 안의 업데이트 확인(Windows는 electron-updater, Mac은 앱이 zip을 직접 받아 바꿈)                                                                                        |
+| 똑딱생기부              | `ARTHONG1/ttokttak-saenggibu` 릴리스(배포 전용, 소스는 작업실 저장소 `apps/saenggibu`) | 거기서 `v<버전>`, 작업실 저장소에 `saenggibu-v<버전>` | `-arm64.dmg`·`-arm64-mac.zip`, `Setup-<버전>.exe`, `SHA256SUMS.txt`                                                                                  | 아직 자동 업데이트 없음(다시 설치)                                                                                                                                        |
+| 똑딱AI 모델(두 앱 공용) | `ttokttak-workspace`의 `model-<날짜>[-n]` 릴리스(최신으로 표시하지 않음)               | `model-YYYYMMDD`                                      | 기본 모델·어댑터 `.gguf`, `MODEL-NOTICE.txt`, `MODEL-LICENSE.txt`                                                                                    | 작업실은 `apps/docs/src/main/local-ai-model-files.ts`(파일 4개), 생기부는 `apps/saenggibu/src/shared/model.ts`(기본 모델과 생기부 어댑터)에 고정한 파일을 처음 쓸 때 받음 |
+| 공개 웹                 | Cloud Run `hangul-ai-workbench`                                                        | 이미지 `main-<커밋 8자리>`                            | 웹 묶음(모델 없음, AI는 Vertex Gemini)                                                                                                               | 배포 즉시                                                                                                                                                                 |
+| 이 Mac 설치본           | `~/Applications/HangulAIWorkbench.app`                                                 | —                                                     | —                                                                                                                                                    | `npm run install:app`으로만                                                                                                                                               |
 
-똑딱AI를 하나로 정리하면(두 앱이 같은 기본 모델과 기능별 어댑터를 씀) 모델 릴리스도 하나가 되고, 두 앱이 같은 파일 목록을 가리킵니다. 그 작업이 끝나면 위 표의 모델 두 줄을 한 줄로 고칩니다.
+똑딱AI는 하나입니다(0.18.0·생기부 0.3.0부터). 두 앱이 같은 모델 릴리스의 같은 기본 모델과 생기부 어댑터를 받고, 작업실은 문서·품의 어댑터를 더 받습니다. 모델을 바꾸면 두 앱의 고정 목록을 함께 바꾸고 두 앱을 함께 냅니다. 옛 `ttokttak-saenggibu`의 `model-v7b`는 0.2.x 생기부가 쓰므로 지우지 않습니다.
 
 Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 이 표에 더합니다.
 
@@ -78,7 +77,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
    GENOFFICE_E2E_PACKAGED_EXECUTABLE=$EXE E2E_NO_VIDEO=1 npx playwright test e2e/local-ai-models.spec.ts
    ```
 
-   설치본이 받아 둔 모델 파일을 시험용 폴더에 하드 링크로 넣어 쓰므로 4GB를 다시 받지 않습니다. **모델 목록을 바꾼 릴리스**는 실제 GitHub에서 받는 시험도 돌립니다: `GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1 npx playwright test e2e/local-ai-models.spec.ts`(약 9분).
+   설치본이 받아 둔 모델 파일을 시험용 폴더에 하드 링크로 넣어 쓰므로 2.2GB를 다시 받지 않습니다. **모델 목록을 바꾼 릴리스**는 실제 GitHub에서 받는 시험도 돌립니다: `GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1 npx playwright test e2e/local-ai-models.spec.ts`(약 9분).
 
 3. `bash tools/preview-ensure.sh`(작업공간 루트) 뒤 미리보기에서 한글 문서 AI 전송이나 생기부 행발 1명을 실제로 보내 답을 확인합니다.
 4. 릴리스 커밋의 CI가 초록인지 확인합니다.
@@ -108,7 +107,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
 4. 실제 받기 시험(4-3의 2)을 꼭 돌립니다.
 5. 업데이트하는 사용자가 다시 받을 양을 릴리스 본문 첫 문단에 적습니다. 인터넷이 막힌 곳에서는 업데이트 뒤 모델을 받을 때까지 내장 AI가 멈추기 때문입니다.
 6. 이미 올린 모델 릴리스는 지우거나 파일을 바꾸지 않습니다. 그 버전 앱을 쓰는 사람이 아직 그 주소에서 받습니다.
-7. 이 Mac 설치본에는 모델 프로젝트의 원본을 복제(`cp -c`, 공간을 더 쓰지 않음)로 `~/Library/Application Support/HangulAIWorkbench/local-ai-models/`에 넣어 4GB를 다시 받지 않게 할 수 있습니다. 앱이 처음 켤 때 해시를 한 번 확인합니다.
+7. 이 Mac 설치본에는 모델 프로젝트의 원본을 복제(`cp -c`, 공간을 더 쓰지 않음)로 `~/Library/Application Support/HangulAIWorkbench/local-ai-models/`에 넣어 2.2GB를 다시 받지 않게 할 수 있습니다. 앱이 처음 켤 때 해시를 한 번 확인합니다.
 
 ## 6. 릴리스 본문
 
@@ -135,7 +134,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
 | `--target`에 짧은 해시를 잘못 적음                                                                                               | 전체 해시를 복사해 씀                                                                                                 |
 | `latest-mac.yml`을 손으로 합침                                                                                                   | 해시·크기 대조를 반드시 함(4-4의 2), 10의 B로 자동화                                                                  |
 | 로컬 시험은 통과했는데 실제 GitHub에서 받기가 멈춤(한글 User-Agent를 400으로 거절)                                               | 실제 GitHub 받기 시험(4-3의 2), 시험 서버도 같은 거절을 흉내 냄                                                       |
-| 덮개를 닫아 4GB 받기가 끊김                                                                                                      | 긴 받기 시험은 전원 연결·덮개 열림 상태에서                                                                           |
+| 덮개를 닫아 2GB 받기가 끊김                                                                                                      | 긴 받기 시험은 전원 연결·덮개 열림 상태에서                                                                           |
 | Playwright가 앱을 닫지 못해 Electron이 남음                                                                                      | 시험 뒤 `pgrep -fl Electron`으로 확인하고 정리                                                                        |
 | 전체 테스트를 이 Mac에서 돌려 15분 소모                                                                                          | 바꾼 패키지만 이 Mac에서, 전체는 CI                                                                                   |
 | `gh`, `gcloud`가 기본 PATH에 없음                                                                                                | `gh`: `~/.agent-reach/tools/runtimes/gh_2.102.0_macOS_arm64/bin/gh`, `gcloud`: `~/.local/google-cloud-sdk/bin/gcloud` |

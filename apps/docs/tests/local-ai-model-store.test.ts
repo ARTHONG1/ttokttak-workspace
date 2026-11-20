@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -70,7 +70,7 @@ const FILE_NAMES: Record<LocalAiFileId, string> = {
   base: 'base.gguf',
   document: 'adapters/document.gguf',
   pumui: 'adapters/pumui.gguf',
-  school_record: 'school-record.gguf',
+  school_record: 'adapters/school_record.gguf',
 }
 /** the four files as the app lists them, from the test server (mode: a failure for all) */
 const files = (mode: Partial<Record<LocalAiFileId, string>> = {}): LocalAiModelFile[] =>
@@ -107,32 +107,27 @@ const fileStore = (dir: string, id: LocalAiFileId, mode?: string) =>
   )
 
 describe("똑딱AI's model files", () => {
-  it('downloads every file, the document run first, and remembers the check', async () => {
+  it('downloads every file in order, and remembers the check', async () => {
     const dir = scratch()
     const m = models(dir)
     const seen: LocalAiModelState[] = []
     m.onState((s) => seen.push(s))
     requests.length = 0
     await m.prepare()
-    expect(m.current()).toMatchObject({ state: 'ready', ready: ['main', 'school_record'] })
+    expect(m.current()).toMatchObject({ state: 'ready', ready: ['main'] })
     expect(requests.map((r) => r.path)).toEqual(['/base', '/document', '/pumui', '/school_record'])
     for (const id of Object.keys(DATA) as LocalAiFileId[])
       expect(readFileSync(join(dir, FILE_NAMES[id])).equals(DATA[id])).toBe(true)
-    // documents could use the AI before 생기부's model was in
+    // the one server needs all four files: it is usable once the last one is in
     const firstMain = seen.findIndex((s) => s.ready.includes('main'))
-    const firstSchool = seen.findIndex((s) => s.ready.includes('school_record'))
-    expect(firstMain).toBeGreaterThan(-1)
-    expect(firstMain).toBeLessThan(firstSchool)
+    expect(seen[firstMain - 1]?.state).not.toBe('ready')
     expect(m.pathsFor('main')).toEqual({
       model: join(dir, 'base.gguf'),
       adapters: [
         { name: 'document', path: join(dir, 'adapters/document.gguf') },
         { name: 'pumui', path: join(dir, 'adapters/pumui.gguf') },
+        { name: 'school_record', path: join(dir, 'adapters/school_record.gguf') },
       ],
-    })
-    expect(m.pathsFor('school_record')).toEqual({
-      model: join(dir, 'school-record.gguf'),
-      adapters: [],
     })
     // a later launch checks the records and downloads nothing
     requests.length = 0
@@ -234,9 +229,11 @@ describe("똑딱AI's model files", () => {
     await m.importFiles(
       (Object.keys(DATA) as LocalAiFileId[]).map((id) => join(hand, id + '.gguf')),
     )
-    expect(m.current()).toMatchObject({ state: 'ready', ready: ['main', 'school_record'] })
+    expect(m.current()).toMatchObject({ state: 'ready', ready: ['main'] })
     expect(requests).toEqual([])
-    expect(readFileSync(join(dir, 'school-record.gguf')).equals(DATA.school_record)).toBe(true)
+    expect(readFileSync(join(dir, 'adapters/school_record.gguf')).equals(DATA.school_record)).toBe(
+      true,
+    )
 
     writeFileSync(join(hand, 'other.gguf'), randomBytes(1234))
     const other = models(scratch())
@@ -252,19 +249,30 @@ describe("똑딱AI's model files", () => {
     writeFileSync(join(dir, 'adapters/pumui.gguf'), damaged)
     const m = models(dir)
     expect(await m.check()).toBe(false)
-    expect(m.current().ready).toEqual(['school_record'])
+    expect(m.current()).toMatchObject({ state: 'idle', ready: [] })
   })
 
-  it("drops an earlier model set's files once this one is in, and nothing else", async () => {
+  it('an update downloads only the new file, and drops the earlier set’s other files', async () => {
     const dir = scratch()
-    mkdirSync(join(dir, 'adapters'), { recursive: true })
+    // a 0.17 folder: the base and two adapters checked, 생기부 as a standalone model
+    const earlier = new LocalAiModels(dir, fetchImpl, {
+      files: files().filter((f) => f.id !== 'school_record'),
+      freeBytes: async () => Number.MAX_SAFE_INTEGER,
+      idleMs: 400,
+    })
+    await earlier.prepare()
+    writeFileSync(join(dir, 'school-record.gguf'), 'the standalone V7 B')
+    writeFileSync(join(dir, 'school-record.gguf.verified.json'), '{}')
     writeFileSync(join(dir, 'model.gguf'), 'old model')
-    writeFileSync(join(dir, 'adapters/school_record.gguf'), 'old adapter')
     writeFileSync(join(dir, 'notes.txt'), 'mine')
+    requests.length = 0
     await models(dir).prepare()
+    expect(requests.map((r) => r.path)).toEqual(['/school_record'])
     expect(existsSync(join(dir, 'model.gguf'))).toBe(false)
-    expect(existsSync(join(dir, 'adapters/school_record.gguf'))).toBe(false)
+    expect(existsSync(join(dir, 'school-record.gguf'))).toBe(false)
+    expect(existsSync(join(dir, 'school-record.gguf.verified.json'))).toBe(false)
     expect(existsSync(join(dir, 'notes.txt'))).toBe(true)
     expect(existsSync(join(dir, 'base.gguf'))).toBe(true)
+    expect(existsSync(join(dir, 'adapters/school_record.gguf'))).toBe(true)
   })
 })

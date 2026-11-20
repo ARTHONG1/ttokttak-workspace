@@ -89,9 +89,12 @@ export const INSTALLED_LOCAL_AI_MODELS = join(
 )
 
 export function installedLocalAiModelsReady(): boolean {
-  return ['base.gguf', 'adapters/document.gguf', 'adapters/pumui.gguf'].every((file) =>
-    existsSync(join(INSTALLED_LOCAL_AI_MODELS, file)),
-  )
+  return [
+    'base.gguf',
+    'adapters/document.gguf',
+    'adapters/pumui.gguf',
+    'adapters/school_record.gguf',
+  ].every((file) => existsSync(join(INSTALLED_LOCAL_AI_MODELS, file)))
 }
 
 /**
@@ -104,7 +107,7 @@ function seedLocalAiModels(userDataDir: string): void {
     'base.gguf',
     'adapters/document.gguf',
     'adapters/pumui.gguf',
-    'school-record.gguf',
+    'adapters/school_record.gguf',
   ]) {
     const from = join(INSTALLED_LOCAL_AI_MODELS, file)
     if (!existsSync(from)) continue

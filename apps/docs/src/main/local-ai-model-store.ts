@@ -352,9 +352,9 @@ export function notReadyMessage(state: LocalAiModelState): string {
 }
 
 /**
- * All of 똑딱AI's files: checked at launch, the missing ones downloaded in order (the
- * document run's files first, so editing can use the AI before 생기부's model is in), and
- * retried by themselves after a dropped connection.
+ * All of 똑딱AI's files: checked at launch, the missing ones downloaded in the list's order
+ * (a run is usable as soon as its own files are in), and retried by themselves after a
+ * dropped connection.
  */
 export class LocalAiModels {
   private state: LocalAiModelState = { state: 'checking', ready: [] }

@@ -1,10 +1,10 @@
 name: 똑딱생기부 Windows build
 
 # Builds 똑딱생기부's Windows installer (x64 NSIS) on a Windows runner: the app, llama.cpp's
-# CPU server and no model (the app downloads 똑딱AI 생기부 V7 B from
-# github.com/ARTHONG1/ttokttak-saenggibu on first launch). The packaged app is then run on a
-# fresh user folder with Korean letters in its path: it downloads the released model, checks
-# its SHA256 and writes one 행발. The installer stays unsigned, as the Mac one is.
+# CPU server and no model (the app downloads 똑딱AI's base and 생기부 adapter from the shared
+# model release on github.com/ARTHONG1/ttokttak-workspace on first launch). The packaged app is
+# then run on a fresh user folder with Korean letters in its path: it downloads both files,
+# checks their SHA256 and writes one 행발. The installer stays unsigned, as the Mac one is.
 # The files are left as an artifact; the maintainer attaches them to the app's release.
 
 on:
@@ -74,7 +74,7 @@ jobs:
           for f in TtokttakSaenggibu.exe resources/local-ai/llama-server.exe resources/local-ai/manifest.json; do
             test -f "$dir/$f" || { echo "missing: $dir/$f"; exit 1; }
           done
-          test ! -e "$dir/resources/local-ai/model.gguf" || { echo "the model must not be inside"; exit 1; }
+          ! find "$dir/resources" -name '*.gguf' | grep -q . || { echo "the model must not be inside"; exit 1; }
           status=$(powershell -NoProfile -Command "(Get-AuthenticodeSignature '$installer').Status")
           [ "$(echo "$status" | tr -d '\r')" = "NotSigned" ] || { echo "the installer is signed ($status)"; exit 1; }
 

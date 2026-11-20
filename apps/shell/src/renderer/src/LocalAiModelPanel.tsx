@@ -40,7 +40,6 @@ export function LocalAiModelPanel({ lang }: { lang: Lang }) {
   }
   const download = () => void window.aiOffice.downloadLocalAiModels?.()
   const page = () => void window.aiOffice.openLocalAiModelPage?.()
-  const docsReady = info.ready.includes('main')
   const percent =
     info.state === 'downloading' && info.total
       ? Math.floor(((info.received ?? 0) / info.total) * 100)
@@ -71,11 +70,7 @@ export function LocalAiModelPanel({ lang }: { lang: Lang }) {
         ' / ' +
         gb(info.total ?? 0) +
         remaining(info, ko) +
-        (docsReady
-          ? ko
-            ? '. 문서 작업과 품의서 생성은 지금 쓸 수 있고, 생기부는 다 받은 뒤 쓸 수 있어요.'
-            : '. Documents and 품의 work now; 생기부 once it is done.'
-          : '.')
+        (ko ? '. 받는 동안에도 앱은 그대로 쓸 수 있어요.' : '. The app works as usual meanwhile.')
       break
     case 'failed':
       text =

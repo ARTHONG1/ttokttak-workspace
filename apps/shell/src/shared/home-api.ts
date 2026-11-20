@@ -715,8 +715,8 @@ export const HOME_CHANNELS = {
 /** 똑딱AI's model files, as apps/docs/src/main/local-ai-models-ipc.ts reports them */
 export type LocalAiModelsInfo = {
   state: 'checking' | 'idle' | 'downloading' | 'verifying' | 'ready' | 'failed'
-  /** the runs whose files are all here: main (documents, 품의) and school_record (생기부) */
-  ready: ('main' | 'school_record')[]
+  /** the server runs whose files are all here ('main': the base and every feature adapter) */
+  ready: string[]
   received?: number
   total?: number
   /** bytes per second, 0 until known */

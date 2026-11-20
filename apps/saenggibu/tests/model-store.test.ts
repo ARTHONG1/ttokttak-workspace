@@ -66,12 +66,11 @@ afterAll(() => {
   return new Promise<void>((r) => server.close(() => r()))
 })
 
-const spec = (path: string, sha = SHA): ModelSpec => ({
-  name: 'test',
+const spec = (path: string, sha = SHA, file = 'model.gguf'): ModelSpec => ({
+  file,
   bytes: DATA.length,
   sha256: sha,
   url: base + path,
-  page: base,
 })
 const store = (path: string, opts: { sha?: string; free?: number } = {}) =>
   new ModelStore(
@@ -148,11 +147,42 @@ describe('the model download', () => {
 
   it('on a first launch, resumes by itself after a stalled connection', async () => {
     const s = store('/stall-once')
-    const ai = new LocalAi(tmpdir(), { store: s }, [0, 0])
+    const ai = new LocalAi(tmpdir(), { stores: [s] }, [0, 0])
     await ai.prepare()
     expect(readFileSync(s.path).equals(DATA)).toBe(true)
     // the model is in; only the (absent) server is missing in this test
     expect(ai.current()).toMatchObject({ state: 'missing' })
+  })
+
+  it("gets the base and the adapter, then lets 0.2's whole model go", async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sgb-two-'))
+    // 0.2's 똑딱AI 생기부 V7 B, verified, from before
+    writeFileSync(join(dir, 'model.gguf'), DATA)
+    writeFileSync(join(dir, 'model.gguf.verified.json'), '{}')
+    const files = ['base.gguf', 'adapters/school_record.gguf'].map(
+      (file) => new ModelStore(dir, spec('/model', SHA, file), (url, init) => fetch(url, init)),
+    )
+    const ai = new LocalAi(tmpdir(), { stores: files }, [0, 0])
+    await ai.prepare()
+    for (const s of files) expect(await s.ready()).toBe(true)
+    expect(existsSync(join(dir, 'adapters', 'school_record.gguf'))).toBe(true)
+    expect(existsSync(join(dir, 'model.gguf'))).toBe(false)
+    expect(existsSync(join(dir, 'model.gguf.verified.json'))).toBe(false)
+  })
+
+  it("keeps 0.2's whole model while a new file is still missing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sgb-two-'))
+    writeFileSync(join(dir, 'model.gguf'), DATA)
+    const files = [
+      new ModelStore(dir, spec('/model', SHA, 'base.gguf'), (url, init) => fetch(url, init)),
+      new ModelStore(dir, spec('/missing', SHA, 'adapters/school_record.gguf'), (url, init) =>
+        fetch(url, init),
+      ),
+    ]
+    const ai = new LocalAi(tmpdir(), { stores: files }, [0, 0])
+    await ai.prepare()
+    expect(ai.current()).toMatchObject({ state: 'download-failed' })
+    expect(existsSync(join(dir, 'model.gguf'))).toBe(true)
   })
 
   it('throws away a damaged file', async () => {

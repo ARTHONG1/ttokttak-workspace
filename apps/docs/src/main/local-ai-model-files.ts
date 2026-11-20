@@ -4,12 +4,14 @@
  * pinned size and SHA256. The app's version pins them: a new model set is a new release of
  * files and a new list here; the app downloads it on its first launch and drops the old one.
  *
- * Two server runs use them. Documents, HWPX editing and 품의서 생성 run on the unchanged
- * Qwen3.5-2B Q8_0 base with the document adapter on and the 품의 adapter for 품의 requests;
- * 생기부 runs on 똑딱AI 생기부 V7 B, a standalone model, as it was trained (the file
- * 똑딱생기부 uses). Both are the original files: nothing is quantized again or converted.
+ * 똑딱AI (sixth generation, the model project's ddak_features.json) is one model: the
+ * unchanged Qwen3.5-2B Q8_0 base and one adapter per feature, all loaded in one server. Each
+ * request turns on its feature's adapter only: the document adapter by default (한글 and the
+ * other documents), the 품의 adapter for 품의서 생성, the 생기부 adapter for 생기부. The 생기부
+ * adapter carries 똑딱AI 생기부 V7 B onto this base (close to V7 B, not identical: block 23's
+ * small q/k norm changes are not carried). 똑딱생기부 downloads the same base and 생기부 adapter.
  */
-export const LOCAL_AI_MODEL_RELEASE = 'model-20261120'
+export const LOCAL_AI_MODEL_RELEASE = 'model-20261120-2'
 export const LOCAL_AI_MODEL_PAGE =
   'https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/' + LOCAL_AI_MODEL_RELEASE
 const DOWNLOAD =
@@ -53,28 +55,28 @@ export const LOCAL_AI_MODEL_FILES: readonly LocalAiModelFile[] = [
   },
   {
     id: 'school_record',
-    file: 'school-record.gguf',
-    bytes: 2_076_675_040,
-    sha256: 'd31c913928eea57ca2d1bfb2a0a158dcb48ef2b4c6bae6dede91cdd7457d0fdf',
-    url: DOWNLOAD + 'ddak-school-record-v7b-Q8_0.gguf',
+    file: 'adapters/school_record.gguf',
+    bytes: 149_294_368,
+    sha256: 'c4b61189e93ca7ee6ed29a9eef43a00fdcda1f6226710d46b074c90d70e4f2e1',
+    url: DOWNLOAD + 'ddak-school-record-adapter.gguf',
   },
 ]
 
 /**
  * The server runs: the model each loads and its adapters, in the order llama-server numbers
  * them (the first on for every request; a feature with an adapter of its own turns that one
- * on instead, for its own requests only).
+ * on instead, for its own requests only). One run since the sixth generation; a later model
+ * set with a standalone model would add a run, and the runtime switches between runs.
  */
 export const LOCAL_AI_RUNS = {
-  main: { model: 'base', adapters: ['document', 'pumui'] },
-  school_record: { model: 'school_record', adapters: [] },
+  main: { model: 'base', adapters: ['document', 'pumui', 'school_record'] },
 } as const satisfies Record<string, { model: LocalAiFileId; adapters: readonly LocalAiFileId[] }>
 
 export type LocalAiRun = keyof typeof LOCAL_AI_RUNS
 
-/** the run a feature's requests go to: 생기부 on V7 B, everything else on the base */
-export function localAiRunFor(feature: string | undefined): LocalAiRun {
-  return feature === 'school_record' ? 'school_record' : 'main'
+/** the run a feature's requests go to: all of them to the one server since the sixth generation */
+export function localAiRunFor(_feature: string | undefined): LocalAiRun {
+  return 'main'
 }
 
 /** the files a run needs, in the download order */

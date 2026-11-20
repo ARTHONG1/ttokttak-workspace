@@ -1,17 +1,18 @@
 /**
- * The built-in 똑딱AI: llama.cpp's llama-server on 127.0.0.1 with a per-run key and the
- * 똑딱AI 생기부 V7 B model (school-record-v7-b), a whole Q8_0 model with no adapter: the file
- * the model project measured on its 80 생기부 dev prompts, and every request goes at
- * temperature 0 as there. The server comes with the app (Resources/local-ai); the model is
- * downloaded once into the user's folder (model-store.ts), since it does not fit an installer.
- * Nothing leaves this computer; the server's logs are off so no student text is written out.
+ * The built-in 똑딱AI: llama.cpp's llama-server on 127.0.0.1 with a per-run key, the Qwen3.5-2B
+ * Q8_0 base and 똑딱AI's 생기부 adapter on it (the same files as 똑딱작업실's, shared/model.ts),
+ * every request at temperature 0 as the model project measured it. The server comes with the
+ * app (Resources/local-ai); the model files are downloaded once into the user's folder
+ * (model-store.ts), since they do not fit an installer. Nothing leaves this computer; the
+ * server's logs are off so no student text is written out.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { availableParallelism } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, relative } from 'node:path'
+import { readdir, rm, stat } from 'node:fs/promises'
 import type { AiState } from '../shared/api'
 import { MAX_ANSWER_TOKENS, plainTurn } from './ai-turn'
 import { ModelError, type ModelStore, type Progress } from './model-store'
@@ -31,14 +32,16 @@ export function aiFiles(resourcesPath: string, platform = process.platform): AiF
 }
 
 /**
- * The server's arguments. The server runs in the model's folder and gets the model by its
- * bare file name: a Windows profile or app folder with Korean letters stays out of argv.
+ * The server's arguments. The server runs in the model's folder and gets the model and the
+ * adapter by paths inside it: a Windows profile or app folder with Korean letters stays out
+ * of argv. The adapter is on for every request (--lora applies it at scale 1).
  */
 export function serverArgs(
   port: number,
   apiKey: string,
   threads: number,
-  modelFile = 'model.gguf',
+  modelFile = 'base.gguf',
+  adapterFile?: string,
 ): string[] {
   return [
     '--model',
@@ -64,6 +67,7 @@ export function serverArgs(
     '--reasoning',
     'off',
     '--jinja',
+    ...(adapterFile ? ['--lora', adapterFile] : []),
   ]
 }
 
@@ -120,8 +124,11 @@ function freePort(): Promise<number> {
 }
 
 type Endpoint = { url: string; key: string }
-/** where the model comes from: the download store, or a fixed file (SAENGGIBU_MODEL_FILE) */
-export type ModelSource = { store: ModelStore } | { file: string }
+/**
+ * where the model comes from: the download stores (the base first, then the adapter), or fixed
+ * files for a development run (SAENGGIBU_MODEL_FILE and SAENGGIBU_ADAPTER_FILE)
+ */
+export type ModelSource = { stores: readonly ModelStore[] } | { file: string; adapter?: string }
 
 export class LocalAi {
   private state: AiState = { state: 'off' }
@@ -130,6 +137,7 @@ export class LocalAi {
   private starting: Promise<Endpoint> | null = null
   private preparing: Promise<void> | null = null
   private modelPath: string | null = null
+  private adapterPath: string | null = null
   private stopping = false
   /** the next automatic try after a dropped download */
   private later: ReturnType<typeof setTimeout> | null = null
@@ -164,9 +172,15 @@ export class LocalAi {
   prepare(): Promise<void> {
     if (this.later) clearTimeout(this.later)
     this.later = null
-    this.preparing ??= this.prepareOnce().finally(() => {
-      this.preparing = null
-    })
+    this.preparing ??= this.prepareOnce()
+      .catch((err: unknown) => {
+        // a folder that cannot be read or written: shown on the page, never an unhandled error
+        const message = err instanceof Error ? err.message : String(err)
+        this.set({ state: 'download-failed', message })
+      })
+      .finally(() => {
+        this.preparing = null
+      })
     return this.preparing
   }
 
@@ -178,20 +192,26 @@ export class LocalAi {
   private async prepareOnce(): Promise<void> {
     if ('file' in this.source) {
       this.modelPath = this.source.file
+      this.adapterPath = this.source.adapter ?? null
     } else {
-      const store = this.source.store
+      const stores = this.source.stores
       this.set({ state: 'verifying' })
-      if (!(await store.ready())) {
+      const missing: ModelStore[] = []
+      for (const store of stores) if (!(await store.ready())) missing.push(store)
+      // progress over all the missing files together
+      const total = missing.reduce((n, s) => n + s.spec.bytes, 0)
+      let done = 0
+      for (const store of missing) {
         let received = 0
         const progress = (p: Progress) => {
           received = p.received
-          this.set({ state: 'downloading', ...p })
+          this.set({ state: 'downloading', received: done + p.received, total, rate: p.rate })
         }
         for (let attempt = 0; ; attempt++) {
           if (this.stopping) return
           const before = received
           try {
-            this.set({ state: 'downloading', received, total: store.spec.bytes, rate: 0 })
+            this.set({ state: 'downloading', received: done + received, total, rate: 0 })
             await store.download((p) => {
               if (p.received >= p.total) this.set({ state: 'verifying' })
               else progress(p)
@@ -200,7 +220,8 @@ export class LocalAi {
           } catch (err) {
             if (this.stopping) return
             console.warn(
-              '[model] download try failed at',
+              '[model] download try failed:',
+              store.spec.file,
               received,
               'bytes:',
               String(err),
@@ -221,20 +242,28 @@ export class LocalAi {
             await new Promise((r) => setTimeout(r, this.retryWaitsMs[Math.max(0, attempt)]))
           }
         }
+        done += store.spec.bytes
       }
-      this.modelPath = store.path
+      this.modelPath = stores[0].path
+      this.adapterPath = stores[1]?.path ?? null
+      await dropEarlierFiles(stores)
     }
     await this.ensure().catch(() => undefined)
   }
 
-  /** [파일로 넣기]: a model file downloaded by hand */
-  async importModel(file: string): Promise<void> {
-    if (!('store' in this.source)) return
-    const store = this.source.store
+  /** [파일로 넣기]: model files downloaded by hand, each recognized by its size */
+  async importModel(files: readonly string[]): Promise<void> {
+    if (!('stores' in this.source)) return
+    const stores = this.source.stores
     if (this.preparing || this.state.state === 'downloading')
       throw new Error('받는 중에는 파일로 넣을 수 없어요. 받기를 멈춘 뒤 다시 해 주세요.')
     try {
-      await store.importFile(file, (p) => this.set({ state: 'downloading', ...p }))
+      for (const file of files) {
+        const size = (await stat(file).catch(() => null))?.size
+        const store = stores.find((s) => s.spec.bytes === size)
+        if (!store) throw new ModelError('똑딱AI 모델 파일이 아니에요 (크기가 달라요).')
+        await store.importFile(file, (p) => this.set({ state: 'downloading', ...p }))
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       this.set({ state: 'download-failed', message })
@@ -258,7 +287,8 @@ export class LocalAi {
   private async start(modelPath: string): Promise<Endpoint> {
     if (this.stopping) throw new Error('똑딱생기부를 닫는 중이에요.')
     const files = aiFiles(this.resourcesPath)
-    if (!files || !existsSync(modelPath)) {
+    const adapterPath = this.adapterPath
+    if (!files || !existsSync(modelPath) || (adapterPath && !existsSync(adapterPath))) {
       this.set({ state: 'missing' })
       throw new Error('똑딱AI 파일을 찾지 못했어요. 똑딱생기부를 다시 설치해 주세요.')
     }
@@ -266,8 +296,16 @@ export class LocalAi {
     const port = await freePort()
     const key = randomBytes(32).toString('hex')
     const threads = Math.min(4, Math.max(1, availableParallelism() - 1))
-    const child = spawn(files.executable, serverArgs(port, key, threads, basename(modelPath)), {
-      cwd: dirname(modelPath),
+    const cwd = dirname(modelPath)
+    const args = serverArgs(
+      port,
+      key,
+      threads,
+      basename(modelPath),
+      adapterPath ? relative(cwd, adapterPath) : undefined,
+    )
+    const child = spawn(files.executable, args, {
+      cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
     })
@@ -352,10 +390,26 @@ export class LocalAi {
     this.stopping = true
     if (this.later) clearTimeout(this.later)
     this.later = null
-    if ('store' in this.source) this.source.store.cancel()
+    if ('stores' in this.source) for (const store of this.source.stores) store.cancel()
     for (const c of this.running.values()) c.abort()
     this.child?.kill()
     this.child = null
     this.endpoint = null
+  }
+}
+
+/**
+ * The files of an earlier model in the model folder (0.2's 똑딱AI 생기부 V7 B as model.gguf)
+ * go once the current files are in; anything else stays.
+ */
+async function dropEarlierFiles(stores: readonly ModelStore[]): Promise<void> {
+  const dir = stores[0]?.dir
+  if (!dir) return
+  const keep = new Set(stores.flatMap((s) => [s.spec.file, s.spec.file + '.verified.json']))
+  const names = await readdir(dir, { recursive: true }).catch(() => [] as string[])
+  for (const name of names) {
+    const rel = String(name).split('\\').join('/')
+    if (keep.has(rel) || !/\.(gguf|partial|json)$/.test(rel)) continue
+    await rm(join(dir, rel), { force: true }).catch(() => undefined)
   }
 }

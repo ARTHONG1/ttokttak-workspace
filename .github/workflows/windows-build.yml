@@ -183,18 +183,15 @@ jobs:
             done
             curl -sf http://127.0.0.1:18899/health | grep -q '"ok"'
           }
-          # documents and 품의: the base with both adapters, the document one on
-          serve base.gguf --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0
+          # one server: the base with all three adapters, the document one on (by default)
+          serve base.gguf --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0,adapters/school_record.gguf:0
           trap 'kill $srv 2>/dev/null || true' EXIT
           ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"안녕"}],"max_tokens":16,"temperature":0}'
-          # the 품의 request turns on its own adapter for itself only
-          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1}]}'
+          # 품의 and 생기부 requests turn on their own adapter, for themselves only
+          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1},{"id":2,"scale":0}]}'
+          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"모둠 활동에서 친구의 의견을 정리해 발표함."}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":0},{"id":2,"scale":1}]}'
           curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'pumui.gguf'
-          kill $srv 2>/dev/null || true
-          wait $srv 2>/dev/null || true
-          # 생기부: V7 B, a standalone model
-          serve school-record.gguf
-          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"모둠 활동에서 친구의 의견을 정리해 발표함."}],"max_tokens":16,"temperature":0}'
+          curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'school_record.gguf'
           kill $srv 2>/dev/null || true
           trap - EXIT
 

@@ -4,10 +4,10 @@
  * user's folder (local-ai-model-store.ts). No account or user-supplied executable is involved.
  * The server listens only on 127.0.0.1, with a per-process bearer secret.
  *
- * One server runs at a time, for one run (local-ai-model-files.ts): documents and 품의 on the
- * base with its adapters, 생기부 on V7 B. A request holds its run until it ends
- * (acquireLocalAi); a request for the other run waits for those to end, then the server is
- * started again on the other model.
+ * One server runs (local-ai-model-files.ts): 똑딱AI's base with all three adapters loaded
+ * (documents, 품의, 생기부). Each request turns on only its feature's adapter (localAiLoraFor),
+ * so documents, 품의 and 생기부 share the server without a restart. A request holds the server
+ * until it ends (acquireLocalAi).
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
@@ -57,15 +57,12 @@ export function useLocalAiModels(next: LocalAiModels | null): void {
 }
 
 /**
- * A developer's fixed model for every run (GENOFFICE_LOCAL_AI_MODEL, with the base adapters
- * beside it in adapters/ or GENOFFICE_LOCAL_AI_ADAPTERS, and 생기부's model in
- * GENOFFICE_LOCAL_AI_SCHOOL_RECORD_MODEL), instead of the downloaded files.
+ * A developer's fixed model (GENOFFICE_LOCAL_AI_MODEL, with the adapters beside it in
+ * adapters/ or GENOFFICE_LOCAL_AI_ADAPTERS), instead of the downloaded files.
  */
-function developerFiles(run: LocalAiRun): { model: string; adapters: Adapter[] } | null {
+function developerFiles(): { model: string; adapters: Adapter[] } | null {
   const model = process.env.GENOFFICE_LOCAL_AI_MODEL
   if (!model) return null
-  const school = process.env.GENOFFICE_LOCAL_AI_SCHOOL_RECORD_MODEL
-  if (run === 'school_record' && school) return { model: school, adapters: [] }
   return {
     model,
     adapters: adapterFiles(
@@ -77,7 +74,7 @@ function developerFiles(run: LocalAiRun): { model: string; adapters: Adapter[] }
 export function localAiFiles(run: LocalAiRun = 'main'): LocalAiFiles | null {
   const executable = localAiExecutable()
   if (!executable) return null
-  const files = developerFiles(run) ?? models?.pathsFor(run) ?? null
+  const files = developerFiles() ?? models?.pathsFor(run) ?? null
   return files && existsSync(files.model) ? { executable, ...files } : null
 }
 
@@ -130,15 +127,16 @@ export function adapterArgs(adapters: Adapter[], cwd: string): string[] {
 
 /**
  * The per-request adapter choice for a feature, for the running server: only that feature's
- * adapter on. Null when the feature has none (the default, the document adapter, stays on)
- * or the model is a standalone one.
+ * adapter on, every loaded adapter named (the model project's rule: a request never relies on
+ * what an earlier one left on). A feature without its own adapter gets the document adapter.
+ * Null only when no adapters are loaded (a developer's single merged model).
  */
 export function localAiLoraFor(
   feature: string | undefined,
   loaded: readonly string[] = current?.adapters ?? [],
 ): { id: number; scale: number }[] | null {
-  const at = feature ? loaded.indexOf(feature) : -1
-  if (at <= 0) return null
+  if (loaded.length === 0) return null
+  const at = Math.max(0, feature ? loaded.indexOf(feature) : 0)
   return loaded.map((_, id) => ({ id, scale: id === at ? 1 : 0 }))
 }
 

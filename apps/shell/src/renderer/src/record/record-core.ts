@@ -242,7 +242,7 @@ export const BEHAVIOR_SYSTEM = [
 ].join('\n')
 
 /**
- * 창체 특기사항. The built-in 똑딱AI 생기부 V7 B saw these exact instructions in a few of its
+ * 창체 특기사항. 똑딱AI's 생기부 training (V7 B, now its 생기부 adapter) saw these exact instructions in a few of its
  * training rows and dev prompts (apps/saenggibu/tests/prompt-contract.test.ts pins them with the
  * others), but on fewer cases than 세특 and 행발: its answers here are a draft to read.
  */
