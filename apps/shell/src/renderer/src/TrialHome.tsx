@@ -13,6 +13,7 @@ import iconEpub from './assets/file-epub.svg'
 import { ClassTools } from './ClassTools'
 import { HubTiles, type HubPage } from './HubTiles'
 import { SpecialFeatures } from './SpecialFeatures'
+import { SHOW_INTRO_EVENT } from './desktop-start'
 import { isWebEdition } from './edition'
 import './trial-home.css'
 
@@ -179,6 +180,18 @@ export function TrialHome(): ReactElement {
   return (
     <div className={'trial' + (dragging ? ' is-dragging' : '')}>
       <div className="trial-glow" aria-hidden="true" />
+      {!isWebEdition() && (
+        // the desktop opens on this home; its intro (and the AI connection page) is here.
+        // The web edition has 소개 및 다운로드 in its tab bar instead.
+        <button
+          type="button"
+          className="trial-intro-btn"
+          data-testid="trial-intro"
+          onClick={() => window.dispatchEvent(new Event(SHOW_INTRO_EVENT))}
+        >
+          소개
+        </button>
+      )}
       <main className="trial-main">
         <header className="trial-hero">
           <span className="trial-eyebrow">

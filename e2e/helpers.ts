@@ -62,9 +62,8 @@ interface LaunchOptions {
    */
   recordVideo?: boolean
   /**
-   * keep the desktop welcome page (DesktopWelcome, shown over the home on every
-   * desktop launch) up. By default launchShell presses its 시작하기 so the test
-   * starts at the home screen, as a user does.
+   * open the desktop intro (DesktopWelcome) after launch, as the home's 소개 button
+   * does. The app itself opens on the home screen.
    */
   welcome?: boolean
   /** the installed app's 똑딱AI model files in this launch's profile (installedLocalAiModelsReady) */
@@ -193,23 +192,26 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   })
   const page = await app.firstWindow()
   await waitForDocumentReady(app, page)
-  if (!options.welcome) await enterWorkspace(page)
+  if (options.welcome) await openIntro(page)
   return { app, page, userDataDir }
 }
 
 /**
- * Presses 시작하기 on the desktop welcome page and waits for it to go. The
- * page is an iframe whose click handler is attached on load, so the click is
- * repeated until the page closes. It works while an editor tab hides the
- * home (a file opened at launch): the click goes to the button, not a point
- * on screen.
+ * The home's 소개 button: the desktop intro opens over the home.
+ */
+export async function openIntro(page: Page): Promise<void> {
+  await page.getByTestId('trial-intro').click()
+  await page.locator('iframe[title="똑딱작업실 소개"]').waitFor({ state: 'attached' })
+}
+
+/**
+ * Closes the desktop intro with its 시작하기 when it is open, and does nothing otherwise:
+ * the app opens on the home since 0.17.1. The intro is an iframe whose click handler is
+ * attached on load, so the click is repeated until it closes.
  */
 export async function enterWorkspace(page: Page, timeoutMs = 20_000): Promise<void> {
   const welcome = page.locator('iframe[title="똑딱작업실 소개"]')
   const deadline = Date.now() + timeoutMs
-  // the welcome page comes with the home's first paint, which a document opened at
-  // launch can hold back for seconds; the desktop always shows it
-  await welcome.waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {})
   while ((await welcome.count()) > 0) {
     if (Date.now() > deadline)
       throw new Error('The desktop welcome page did not close after 시작하기')

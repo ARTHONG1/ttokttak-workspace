@@ -50,6 +50,38 @@
     radial-gradient(480px 300px at 62% -4%, var(--t-glow-2), transparent 70%),
     radial-gradient(380px 260px at 92% 8%, var(--t-glow-3), transparent 70%);
 }
+/* desktop: the way to the intro, in the home's top right corner */
+.trial-intro-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 1;
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--t-line-2);
+  border-radius: 15px;
+  background: var(--t-card);
+  color: var(--t-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--t-shadow-sm);
+  transition: transform 0.15s var(--t-ease);
+}
+.trial-intro-btn:hover {
+  color: var(--t-ink);
+  transform: translateY(-1px);
+}
+.trial-intro-btn:focus-visible {
+  outline: 2px solid var(--t-blue);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trial-intro-btn {
+    transition: none;
+  }
+}
 .trial-main {
   position: relative;
   width: min(980px, calc(100% - 40px));

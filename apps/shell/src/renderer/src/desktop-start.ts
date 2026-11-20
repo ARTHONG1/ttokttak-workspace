@@ -1,6 +1,12 @@
 export type DesktopPage = 'welcome' | 'connection' | 'workspace'
 
 /**
+ * The home's 소개 button (desktop): the intro opens over the home on request. The app
+ * itself opens straight on the home; it used to show the intro at every launch.
+ */
+export const SHOW_INTRO_EVENT = 'ttokttak:show-intro'
+
+/**
  * Where "시작하기" on the welcome page goes: straight into the workspace,
  * whatever the AI connection is doing. Waiting for the connection check (it
  * takes seconds after launch) left the button doing nothing, and a missing

@@ -8,11 +8,17 @@ import { isWebEdition } from './edition'
 import { useSubscriptionConnection } from './subscription-client'
 import { DesktopWelcome } from './DesktopWelcome'
 import { DesktopConnectionPage } from './DesktopConnectionPage'
-import { desktopConnectionState, startDestination, type DesktopPage } from './desktop-start'
+import {
+  SHOW_INTRO_EVENT,
+  desktopConnectionState,
+  startDestination,
+  type DesktopPage,
+} from './desktop-start'
 import { OPEN_AI_SETTINGS_EVENT } from './special-common'
 
 export function WorkspaceHome() {
-  const [page, setPage] = useState<DesktopPage>(() => (isWebEdition() ? 'workspace' : 'welcome'))
+  // straight to the home: the intro is one click away (TrialHome's 소개 button)
+  const [page, setPage] = useState<DesktopPage>('workspace')
   const [target, setTarget] = useState<SettingsTarget | null>(null)
   const connection = useSubscriptionConnection()
   const notice = useFirstConnectionNotice(connection.statuses)
@@ -33,6 +39,11 @@ export function WorkspaceHome() {
     const open = () => setTarget({ section: 'aiModel' })
     window.addEventListener(OPEN_AI_SETTINGS_EVENT, open)
     return () => window.removeEventListener(OPEN_AI_SETTINGS_EVENT, open)
+  }, [])
+  useEffect(() => {
+    const show = () => setPage('welcome')
+    window.addEventListener(SHOW_INTRO_EVENT, show)
+    return () => window.removeEventListener(SHOW_INTRO_EVENT, show)
   }, [])
   return (
     <>
