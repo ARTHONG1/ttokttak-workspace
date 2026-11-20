@@ -95,10 +95,10 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
    ```
 
 4. **업데이트 경로를 건드린 릴리스는 베타 예행을 합니다.** 업데이트·패키징·모델 받기 코드를 바꿨거나 가운데 자리를 올린 릴리스가 해당됩니다. 초안을 "pre-release"로 공개하고, 옛 버전 설치본의 설정 → 정보 → 업데이트 채널을 "베타 버전"으로 바꿔 업데이트를 끝까지 받아 봅니다(7). 그 밖의 릴리스는 이 단계를 건너뜁니다.
-5. 정식으로 공개합니다: `gh release edit v<버전> --draft=false --latest`(베타였으면 `--prerelease=false`도). `releases/latest/download/latest-mac.yml`과 `latest.yml`이 새 버전인지 봅니다.
-6. 공개하면 Actions의 **Sync GitHub release notes to repository pages**가 README와 CHANGELOG를 고쳐 `main`에 커밋합니다. 끝나면 `git fetch workspace && git merge --ff-only workspace/main`으로 이 Mac의 `main`을 맞춥니다.
-7. 공개 웹을 배포합니다(`gcloud run deploy … --image …:main-<커밋>`). 공개 주소의 `/`·`/app`이 200인지, 실제 AI 답이 오는지 확인하고, 작업공간 `docs/WEB_CLOUD_RUN_DEPLOY.md` 맨 위에 한 줄을 기록합니다.
-8. 작업공간 루트에서 `npm run status`. "고칠 것 없음"이 나와야 끝입니다. 임시 폴더(`/private/tmp`의 작업 파일, 시험용 사용자 폴더)를 지웁니다.
+5. **공개 웹을 먼저 배포합니다**(`gcloud run deploy … --image …:main-<릴리스 커밋>`). 이때 이 Mac의 `main`은 릴리스 커밋 그대로여야 하고 커밋 안 된 변경도 없어야 합니다. 그렇지 않으면 Codex 훅이 배포를 막습니다. 확인 중에 고친 시험 같은 것은 따로 보관했다가 8에서 커밋합니다. 공개 주소의 `/`·`/intro`가 200인지, 실제 AI 답이 오는지 확인하고, 작업공간 `docs/WEB_CLOUD_RUN_DEPLOY.md` 맨 위에 한 줄을 기록합니다.
+6. 정식으로 공개합니다: `gh release edit v<버전> --draft=false --latest`(베타였으면 `--prerelease=false`도). `releases/latest/download/latest-mac.yml`과 `latest.yml`이 새 버전인지 봅니다.
+7. 공개하면 Actions의 **Sync GitHub release notes to repository pages**가 README와 CHANGELOG를 고쳐 `main`에 커밋합니다. 끝나면 `git fetch workspace && git merge --ff-only workspace/main`으로 이 Mac의 `main`을 맞춥니다. 웹을 공개보다 먼저 배포하는 이유가 이 커밋입니다(이것을 받은 뒤에는 이미지 이름이 현재 커밋과 달라짐).
+8. 보관해 둔 수정이 있으면 이제 커밋·push합니다. 작업공간 루트에서 `npm run status`. "고칠 것 없음"이 나와야 끝입니다. 임시 폴더(`/private/tmp`의 작업 파일, 시험용 사용자 폴더)를 지웁니다.
 
 ## 5. 똑딱AI 모델을 바꿀 때
 
@@ -139,6 +139,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
 | Playwright가 앱을 닫지 못해 Electron이 남음                                                                                      | 시험 뒤 `pgrep -fl Electron`으로 확인하고 정리                                                                        |
 | 전체 테스트를 이 Mac에서 돌려 15분 소모                                                                                          | 바꾼 패키지만 이 Mac에서, 전체는 CI                                                                                   |
 | `gh`, `gcloud`가 기본 PATH에 없음                                                                                                | `gh`: `~/.agent-reach/tools/runtimes/gh_2.102.0_macOS_arm64/bin/gh`, `gcloud`: `~/.local/google-cloud-sdk/bin/gcloud` |
+| 웹 이미지를 만든 뒤 커밋을 올리거나 커밋 안 된 변경을 남겨 Codex 훅이 웹 배포를 막음(2026-11-20 두 번)                           | 이미지를 만든 커밋 그대로, 변경 없이 배포(4-4의 5). 그 사이 고친 것은 따로 보관                                       |
 
 ## 9. 멈추고 사용자에게 묻는 경우
 

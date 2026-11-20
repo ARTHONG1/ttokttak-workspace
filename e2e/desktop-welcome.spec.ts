@@ -32,10 +32,10 @@ test('desktop welcome opens the AI connection page', async () => {
     if (await codex.isVisible()) {
       await codex.click()
       await expect(page.locator('p[role=status]')).toHaveText('Codex 연결됨')
-      await page.getByRole('button', { name: '시작하기' }).click()
+      await page.getByRole('button', { name: '시작하기', exact: true }).click()
       await expect(page.locator('.hub-title')).toHaveText(['문서 업로드', '똑딱업무', '똑딱수업'])
     } else {
-      await expect(page.getByRole('button', { name: '시작하기' })).toBeDisabled()
+      await expect(page.getByRole('button', { name: '시작하기', exact: true })).toBeDisabled()
       await page.getByRole('button', { name: '← 뒤로 가기' }).click()
       await expect(intro.locator('h1')).toBeVisible()
     }

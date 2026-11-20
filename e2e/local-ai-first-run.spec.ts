@@ -103,6 +103,17 @@ test('fresh installation selects the bundled local model and accepts a keyless c
     await expect(page.locator('#set-ai-cli-path')).toHaveCount(0)
     await expect(page.locator('.set-pane-head .set-dd')).toHaveCount(0)
 
+    // an installed app checks its model files once (a hash of 4 GB when they came without a
+    // check record, as the seeded ones do); a request before that is told to wait
+    if (packagedExecutable)
+      await expect
+        .poll(
+          async () => (await page.evaluate(() => window.aiOffice.getLocalAiModels?.()))?.state,
+          {
+            timeout: 3 * 60_000,
+          },
+        )
+        .toBe('ready')
     await page.locator('.set-pane-head .set-btn').filter({ hasText: /Test/i }).click()
     console.log('[local-ai-e2e] local connection ping submitted')
     await expect(page.locator('.set-pane-head [role="status"]')).toContainText(
