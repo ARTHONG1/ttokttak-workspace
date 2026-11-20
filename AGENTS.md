@@ -23,7 +23,7 @@ program/
 │   ├── engineering-notes.md       ← 모르면 걸리는 것(증상 → 원인 → 대응)
 │   ├── operations.md              ← 설치, 실행, 검사, 실제 구독 확인, 설치 파일, 원본 받아오기
 │   ├── contracts.md               ← 터미널 명령어·MCP·설정 파일·문서 호환의 약속
-│   ├── releasing.ko.md            ← 새 버전 내는 절차(저장소 주인용)
+│   ├── releasing.ko.md            ← 배포·업데이트 지침(유일한 정본)
 │   ├── headless-pdf-export.md     ← 창 없이 PDF로 내보내는 진입점
 │   ├── slides-op-journal.md       ← 슬라이드 편집 기록 형식
 │   ├── plans/
@@ -114,9 +114,9 @@ program/
 | 문서 엔진 패키지를 고쳐야 할 것 같다                   | 멈추고 사람에게 묻는다. 그 패키지의 `AGENTS.md`를 읽는다                                                 |
 | 에이전트 모드(도구를 켠 구독 프로그램)를 고친다        | `docs/tracking/decisions/0032-agent-mode-in-project-folder.md`, `docs/security.md`의 "에이전트 모드"     |
 | AI를 실제 구독으로 돌려 확인한다                       | `docs/operations.md`의 "실제 구독으로 확인하기". 사용자의 한도를 쓴다                                    |
-| 새 버전을 낸다                                         | `docs/releasing.ko.md`. 첫 항목은 저장소 주인의 약관 동의다                                              |
+| 새 버전을 낸다                                         | `docs/releasing.ko.md`(배포·업데이트의 유일한 정본)                                                      |
 
-- **릴리스 본문은 사용자가 앱 안에서 그대로 읽는다.** 첫 문단 요약 → 새로 들어간 것 → 고친 것 → 설치 안내(맨 아래) 순서와 humanize-korean 윤문은 `docs/releasing.ko.md` 6번이 정한다. 에이전트는 `.claude/skills/release-ttokttak/SKILL.md`도 함께 읽는다.
+- **릴리스 본문은 사용자가 앱 안에서 그대로 읽는다.** 첫 문단 요약 → 바뀐 것 → 알려진 한계 → 설치 안내(맨 아래) 순서와 윤문은 `docs/releasing.ko.md` 6이 정한다. 에이전트는 `.claude/skills/release-ttokttak/SKILL.md`도 함께 읽는다.
 
 ## 문제가 생기면
 

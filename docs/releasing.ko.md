@@ -1,297 +1,169 @@
-# 새 버전 내는 절차 (Windows, Mac 베타)
+# 배포·업데이트 지침
 
-똑딱작업실(똑딱작업실)의 새 버전을 만들어 GitHub에 올리는 순서입니다. 위에서부터 차례대로 하면 됩니다.
+똑딱작업실, 똑딱생기부, 똑딱AI 모델, 공개 웹을 새 버전으로 내는 규칙과 순서입니다. **배포에 관한 정본은 이 문서 하나입니다.** 다른 문서(작업공간 AGENTS.md, 릴리스 스킬, RELEASE_AUTOMATION.md)는 이 문서를 가리키기만 하고, 어긋나면 이 문서를 따릅니다. 문서와 실제 절차가 달라지면 그 자리에서 이 문서를 고칩니다.
 
-설치된 앱은 공개 저장소 `ARTHONG1/ttokttak-workspace`의 **릴리스(Releases)** 를 보고 스스로 업데이트합니다. 그래서 "새 버전을 낸다"는 것은 설치 파일을 만들어 그 저장소의 릴리스에 올리는 일입니다. 따로 운영하는 서버나 비밀 키는 없습니다.
-
-> **에이전트에게 맡길 때.** Claude Code 같은 에이전트로 릴리스를 맡기면 `.claude/skills/release-ttokttak/SKILL.md`를 함께 읽게 합니다. 승인 없이는 게시하지 않는 규칙, 릴리스 본문 윤문, 업데이트 창 확인 절차가 그 스킬에 있습니다.
-
-> **"확인 필요" 표시에 대하여.** 이 문서는 저장소의 설정과 스크립트, 업데이트 라이브러리(electron-updater 6.8.9, electron-builder 26.15.3)의 실제 코드를 읽고 일부는 직접 실행해 확인한 내용으로 썼습니다. 다만 문서를 쓰는 시점에는 릴리스가 하나도 없어서, 설치 파일을 끝까지 만들어 올리고 실제로 업데이트되는지까지는 해 보지 못했습니다. 그런 부분은 **확인 필요**라고 적어 두었습니다. 첫 릴리스 때 직접 확인하고, 확인한 뒤에는 표시를 지워 주세요.
+마지막 정리: 2026-11-20, 0.17.0 배포 뒤. 그 배포에서 생긴 문제(아래 8)를 다시 겪지 않도록 썼습니다.
 
 ---
 
-## 1. 공개 배포 전에 Anthropic 상업 약관(Commercial Terms)에 동의했는지 확인
+## 1. 원칙 다섯 가지
 
-- 약관: <https://www.anthropic.com/legal/commercial-terms>
-- 이 앱은 사용자 PC에 설치된 Claude Code를 실행해서 AI 기능을 제공합니다. 그런 제품을 다른 사람에게 배포하는 것에 대한 약관 동의는 **개발자 본인의 의무**이고, 코드로 대신할 수 없습니다. 그래서 매번 이 항목을 가장 먼저 확인합니다.
-- 동의하지 않았다면 여기서 멈춥니다. 아래 단계로 넘어가지 않습니다.
+1. **정해진 곳에서만 만든다.** 코드는 작업공간 `program/`의 커밋된 `main` 하나입니다. 릴리스 태그는 **그 커밋 그대로 CI가 통과한 커밋**에만 붙입니다.
+2. **기다리는 일은 동시에 한다.** CI, Windows·Mac 빌드(Actions), 웹 이미지 빌드(Cloud Build), 이 Mac의 패키징은 서로 기다릴 필요가 없습니다. 버전 커밋을 올린 직후 한꺼번에 시작합니다(4-2).
+3. **공개 전에 실제 경로로 확인한다.** 시험용 서버가 아니라 실제 GitHub에서 받아 보고, 빌드 폴더의 앱이 아니라 설치한 앱으로 확인합니다. 0.2.0의 모델 받기 문제는 로컬 시험이 모두 통과했는데도 실제 GitHub에서만 드러났습니다.
+4. **한 번 올린 것은 바꾸지 않는다.** 공개한 태그, 설치 파일, 모델 릴리스의 파일은 고치거나 지우지 않습니다. 문제가 있으면 번호를 올려 새로 냅니다. 설치된 앱은 더 큰 번호로만 업데이트하고, 옛 앱은 자기가 아는 모델 주소를 계속 씁니다.
+5. **"배포해"는 공개까지의 승인이다.** 사용자가 배포나 릴리스를 요청했으면 빌드, 확인, 릴리스 공개, 웹 배포, 이 Mac 설치까지가 승인 범위입니다. 중간에 다시 묻지 않습니다. 멈추고 묻는 것은 9에 적은 경우뿐입니다.
 
-## 2. 준비물 확인 (처음 한 번, 그리고 PC가 바뀌었을 때)
+공개 배포는 저장소 주인이 [Anthropic 상업 약관](https://www.anthropic.com/legal/commercial-terms)에 동의한 상태를 전제로 합니다. 이 앱은 사용자 PC의 Claude Code를 실행하므로, 배포에 대한 약관 동의는 코드로 대신할 수 없는 개발자 본인의 의무입니다. 동의가 확인되지 않았으면 배포하지 않습니다(9).
 
-| 필요한 것          | 확인 방법                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| Node.js와 npm      | 터미널에서 `node --version`, `npm --version` (이 문서는 Node 24, npm 11에서 확인했습니다) |
-| 저장소의 부품 설치 | 저장소 폴더에서 `npm ci` 를 한 번 실행해 둔 상태                                          |
-| Rust (`cargo`)     | 터미널에서 `cargo --version`                                                              |
-| Windows 10/11 SDK  | `C:\Program Files (x86)\Windows Kits\10\UnionMetadata` 폴더가 있는지                      |
+## 2. 무엇이 어디로 나가는가
 
-**Rust는 PATH에 있어야 합니다.** 엑셀 처리 프로그램을 Rust로 만들기 때문입니다. `cargo --version`이 "찾을 수 없다"고 나오면, 빌드할 터미널에서 먼저 아래를 실행합니다(이 PC에서는 Rust가 설치되어 있어도 PATH에는 없었습니다).
+| 대상                | 나가는 곳                                                                              | 태그                                                  | 파일                                                                                                                                                 | 사용자 업데이트                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 똑딱작업실          | 공개 저장소 `ARTHONG1/ttokttak-workspace` 릴리스                                       | `v<버전>`                                             | Apple Silicon `-arm64.dmg`·`-arm64-mac.zip`, Intel `-x64.dmg`·`-mac.zip`, Windows `Setup-<버전>.exe`, `latest-mac.yml`, `latest.yml`, 각 `.blockmap` | 앱 안의 업데이트 확인(Windows는 electron-updater, Mac은 앱이 zip을 직접 받아 바꿈) |
+| 똑딱생기부          | `ARTHONG1/ttokttak-saenggibu` 릴리스(배포 전용, 소스는 작업실 저장소 `apps/saenggibu`) | 거기서 `v<버전>`, 작업실 저장소에 `saenggibu-v<버전>` | `-arm64.dmg`·`-arm64-mac.zip`, `Setup-<버전>.exe`, `SHA256SUMS.txt`                                                                                  | 아직 자동 업데이트 없음(다시 설치)                                                 |
+| 똑딱AI 모델(작업실) | `ttokttak-workspace`의 `model-<날짜>` 릴리스(최신으로 표시하지 않음)                   | `model-YYYYMMDD`                                      | `.gguf` 파일, `MODEL-NOTICE.txt`, `MODEL-LICENSE.txt`                                                                                                | 앱이 `apps/docs/src/main/local-ai-model-files.ts`에 고정한 파일을 처음 쓸 때 받음  |
+| 똑딱생기부 모델     | `ttokttak-saenggibu`의 `model-v7b`                                                     | `model-…`                                             | 위와 같음                                                                                                                                            | `apps/saenggibu/src/shared/model.ts`에 고정                                        |
+| 공개 웹             | Cloud Run `hangul-ai-workbench`                                                        | 이미지 `main-<커밋 8자리>`                            | 웹 묶음(모델 없음, AI는 Vertex Gemini)                                                                                                               | 배포 즉시                                                                          |
+| 이 Mac 설치본       | `~/Applications/HangulAIWorkbench.app`                                                 | —                                                     | —                                                                                                                                                    | `npm run install:app`으로만                                                        |
 
-```powershell
-# PowerShell
-$env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-```
+똑딱AI를 하나로 정리하면(두 앱이 같은 기본 모델과 기능별 어댑터를 씀) 모델 릴리스도 하나가 되고, 두 앱이 같은 파일 목록을 가리킵니다. 그 작업이 끝나면 위 표의 모델 두 줄을 한 줄로 고칩니다.
 
-```bash
-# Git Bash
-export PATH="$HOME/.cargo/bin:$PATH"
-```
+Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 이 표에 더합니다.
 
-Windows SDK는 스캔 문서 글자 인식 도우미(`win-ocr.exe`)를 만들 때 쓰입니다. 없으면 설치 파일 만들기가 "install the Windows 10/11 SDK"라는 메시지와 함께 멈춥니다.
+## 3. 버전 규칙
 
-## 3. 버전 번호 올리기
+- 똑딱작업실 버전은 `apps/shell/package.json`의 `version`, 똑딱생기부는 `apps/saenggibu/package.json`입니다. `package-lock.json`의 같은 자리도 함께 바꿉니다. 저장소 맨 위 `package.json`의 버전은 앱과 관계없습니다.
+- `숫자.숫자.숫자`만 씁니다. 고친 것만 있으면 끝자리, 기능이 들어가거나 **모델이 바뀌면** 가운데 자리를 올립니다. 앱이 모델 목록을 고정하므로, 모델만 바뀌어도 앱 버전을 올립니다.
+- 한 번 쓴 번호는 다시 쓰지 않습니다. 실패한 릴리스의 번호도 건너뜁니다.
 
-버전 번호는 **`apps/shell/package.json`의 `"version"`** 한 곳에서 정해집니다. 앱의 "정보" 화면에 보이는 버전, 설치 파일 이름, 업데이트 판단이 모두 이 값을 씁니다.
+## 4. 똑딱작업실 릴리스 순서
 
-1. `apps/shell/package.json`을 열어 `"version"`을 새 번호로 바꿉니다. 예: `"0.11.0"` → `"0.11.1"`.
-2. `package-lock.json`에서 `"apps/shell": {` 바로 아래의 `"version"`도 같은 번호로 바꿉니다. (이 값은 앱 동작에는 쓰이지 않지만, 맞춰 두지 않으면 다음에 `npm install`을 할 때 파일이 저절로 바뀌어 헷갈립니다.)
-3. 바꾼 두 파일을 커밋하고 GitHub에 올립니다(push). 릴리스의 태그가 이 커밋을 가리키게 하기 위해서입니다.
+전체 소요는 동시에 진행하면 약 50분입니다. 대부분 기다리는 시간입니다(CI 약 33분, Windows 빌드 약 25분, Mac 빌드 약 25분, 이 Mac 전체 빌드와 패키징 약 15분, Cloud Build 약 11분). 순서대로 하나씩 기다리면 2시간이 넘습니다.
 
-지켜야 할 것:
+### 4-1. 준비 (이 Mac, 약 15분)
 
-- 번호는 `숫자.숫자.숫자` 모양이어야 합니다(예: `0.11.1`, `1.0.0`). 베타 버전만 뒤에 `-beta.1`처럼 붙일 수 있습니다(9번). 다른 모양이면 업데이트 확인이 실패합니다.
-- **반드시 이전 릴리스보다 큰 번호**여야 합니다. 같거나 작으면 설치된 앱이 "새 버전 없음"으로 봅니다. 한 번 올린 번호는 다시 쓰지 않습니다.
-- 저장소 맨 위 `package.json`의 `"version"`(`0.1.0`)은 앱 버전과 관계없습니다. 건드리지 않습니다.
-- 앱에 함께 들어가는 터미널 명령어가 알려 주는 버전은 설치 파일을 만들 때 앱 버전에 맞춰 자동으로 다시 만들어집니다. 따로 할 일이 없습니다.
+1. `git status`가 깨끗한 `main`에서 시작합니다.
+2. 바꾼 패키지만 확인합니다: 형 검사, 그 패키지의 테스트(패키지 폴더 안에서, `npm run test -w <패키지>`), `npm run format:check`, 바꾼 파일 `eslint`. **전체 테스트는 CI에 맡깁니다.** 이 Mac에서 전체를 낮은 우선순위로 돌리면 15분 넘게 걸리고, 저장소 맨 위에서 돌리면 폴더 기준으로 파일을 읽는 테스트 몇 개가 거짓으로 실패합니다.
+3. 릴리스 본문 `docs/releases/v<버전>.md`를 씁니다(형식은 6). `docs/tracking/status.md` 맨 위에 한 문단을 더합니다.
+4. 버전을 올립니다(3). 위 문서들과 함께 **커밋 하나**로 묶어 `release: <버전> — <한 줄>`로 커밋하고 push합니다.
+5. **이 커밋의 CI가 끝날 때까지 `main`에 다른 커밋을 올리지 않습니다.** CI는 새 커밋이 오면 앞의 실행을 취소하므로, 그러면 릴리스 커밋에 통과 기록이 남지 않습니다(0.17.0에서 실제로 그랬습니다). 시험 추가 같은 작은 커밋도 릴리스가 끝난 뒤에 올립니다.
 
-## 4. 설치 파일 만들기
+### 4-2. 동시에 시작 (push 직후)
 
-**GitHub Actions로 만들기 (권장, 결정 0056).** Mac·Linux처럼 GitHub의 Windows 빌드 기계가 만들고, 설치 파일과 `latest.yml`에 "이 저장소의 이 커밋에서 만들었다"는 출처 증명을 붙입니다. 사용자는 `gh attestation verify HangulAIWorkbench-Setup-<버전>.exe --repo ARTHONG1/ttokttak-workspace`으로 확인할 수 있습니다.
+- **Actions → Windows build**와 **Actions → macOS build**를 `main`에서 실행합니다. release_tag 칸은 비워 둡니다(결과물만 남김). Windows 빌드는 실행기만 넣은 설치 파일을 만들고, 모델 릴리스에서 파일을 받아 두 실행이 모두 답하는지까지 봅니다. macOS build의 Apple Silicon 결과물에는 내장 AI 실행기가 없으므로 **Intel 파일만** 씁니다.
+- **이 Mac에서 Apple Silicon판**을 만듭니다. 내장 AI 실행기를 넣는 Apple판은 아직 이 Mac에서만 만듭니다(10의 C에서 바꿀 예정).
 
-1. 6번대로 릴리스를 **본문만으로, "Set as a pre-release"를 체크해** 먼저 공개합니다. 파일은 아직 올리지 않습니다.
-2. **Actions** 탭 → **Windows build** → **Run workflow**에서 가지는 `main`, **release_tag** 칸에 그 태그(예: `v0.12.4`)를 적고 실행합니다.
-3. 빌드, 검사(묶인 프로그램, `latest.yml`의 버전과 파일 이름, **서명이 없는지**), 창 없는 내보내기 시험이 모두 통과하면 설치 파일, `.blockmap`, `latest.yml`이 그 릴리스에 저절로 붙습니다. 빌드한 버전과 태그가 다르면 붙이지 않고 멈춥니다.
-4. 릴리스 페이지에서 세 파일이 붙었는지 보고, 8번의 베타 예행으로 넘어갑니다.
+  ```bash
+  cd program
+  node tools/prepare-embedded-ai.mjs "$HOME/Desktop/인공지능 모델/.local-ai/runtime/llama-b12167"
+  PATH=$HOME/.cargo/bin:$PATH taskpolicy -b nice -n 19 npm run build:all
+  PATH=$HOME/.cargo/bin:$PATH GENOFFICE_EMBED_LOCAL_AI=1 taskpolicy -b nice -n 19 \
+    npm run dist:mac -w @genoffice/shell -- --publish never
+  ```
 
-release_tag를 비워 두면 결과물(`ttokttak-windows-x64`)만 남습니다. **처음 한 번은 이렇게 돌려** 내려받은 설치 파일이 손으로 만든 것과 똑같이 설치되고 동작하는지 확인합니다. _(확인 필요: 이 워크플로는 아직 Actions에서 돌려 보지 않았습니다. 첫 실행에서 확인한 뒤 이 표시를 지워 주세요.)_
+  버전을 올린 뒤에는 **반드시 `build:all`부터** 합니다. 앱 하나만 빌드하면 패키징 보호 장치가 "빌드가 소스보다 오래됨"(새 `package.json`)으로 멈춥니다.
 
-Actions를 쓸 수 없을 때는 아래처럼 이 PC에서 만듭니다. 이렇게 올린 파일에는 출처 증명이 없습니다.
+- **공개 웹 이미지**를 만듭니다. `node web/build.mjs` 다음 `docs/WEB_CLOUD_RUN_DEPLOY.md`(작업공간)의 `gcloud builds submit … --async`. 이미지 태그는 `main-<그 커밋 8자리>`입니다.
 
-저장소 맨 위 폴더에서, 2번의 Rust PATH 설정을 한 **같은 터미널**로 아래 세 가지를 순서대로 실행합니다.
+### 4-3. 확인 (이 Mac, 약 10분)
 
-**(1) 엑셀 처리 프로그램을 먼저 만듭니다.**
+1. `npm run install:app`으로 설치합니다. 실행 중이면 멈추니 앱을 닫고 다시 합니다.
+2. 설치본으로 화면 시험을 돌립니다.
 
-```powershell
-npm run native:build -w @genoffice/sheets
-```
+   ```bash
+   EXE=$HOME/Applications/HangulAIWorkbench.app/Contents/MacOS/HangulAIWorkbench
+   GENOFFICE_E2E_PACKAGED_EXECUTABLE=$EXE E2E_NO_VIDEO=1 npx playwright test \
+     e2e/local-ai-first-run.spec.ts -g "fresh installation|HWPX paragraph"
+   GENOFFICE_E2E_PACKAGED_EXECUTABLE=$EXE E2E_NO_VIDEO=1 npx playwright test e2e/local-ai-models.spec.ts
+   ```
 
-**(2) 만든 파일을 설치 파일 도구가 찾는 자리에 복사합니다.**
+   설치본이 받아 둔 모델 파일을 시험용 폴더에 하드 링크로 넣어 쓰므로 4GB를 다시 받지 않습니다. **모델 목록을 바꾼 릴리스**는 실제 GitHub에서 받는 시험도 돌립니다: `GENOFFICE_E2E_LOCAL_AI_DOWNLOAD=1 npx playwright test e2e/local-ai-models.spec.ts`(약 9분).
 
-Windows에서 만들면 결과가 `target\release`에 생기는데, 설치 파일 도구는 `target\x86_64-pc-windows-gnu\release`에서 찾습니다. 복사해 두지 않으면 (3)이 "win extraResources source missing"이라며 멈춥니다.
+3. `bash tools/preview-ensure.sh`(작업공간 루트) 뒤 미리보기에서 한글 문서 AI 전송이나 생기부 행발 1명을 실제로 보내 답을 확인합니다.
+4. 릴리스 커밋의 CI가 초록인지 확인합니다.
 
-```powershell
-# PowerShell
-New-Item -ItemType Directory -Force apps\sheets\native\xlsx-engine\target\x86_64-pc-windows-gnu\release
-Copy-Item apps\sheets\native\xlsx-engine\target\release\xlsx-sidecar.exe apps\sheets\native\xlsx-engine\target\x86_64-pc-windows-gnu\release\ -Force
-```
+### 4-4. 공개
 
-```bash
-# Git Bash
-mkdir -p apps/sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release
-cp apps/sheets/native/xlsx-engine/target/release/xlsx-sidecar.exe apps/sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release/
-```
+1. 파일을 한 폴더에 모읍니다. Apple판은 이 Mac의 `apps/shell/release/`, Intel판은 macOS build 결과물, Windows판은 Windows build 결과물에서 가져옵니다.
+2. `latest-mac.yml`을 합칩니다. `files`에 Apple 두 항목(이 Mac의 것)과 Intel 두 항목(Actions의 것)을 넣고, `path`와 `sha512`는 Apple zip을 가리킵니다. 각 파일의 `openssl dgst -sha512 -binary <파일> | base64`와 크기가 목록과 같은지 확인합니다. **설치 파일과 목록을 다른 빌드에서 섞지 않습니다.**
+3. 초안 릴리스를 만들어 올립니다. 대상은 **전체 커밋 해시**로 적습니다(짧은 해시는 오타가 나도 바로 알 수 없습니다).
 
-버전을 낼 때마다 (1)과 (2)를 다시 합니다. 예전에 복사해 둔 파일이 남아 있으면 옛 프로그램이 설치 파일에 들어갑니다.
+   ```bash
+   gh release create v<버전> -R ARTHONG1/ttokttak-workspace --draft --target <전체 해시> \
+     --title v<버전> --notes-file docs/releases/v<버전>.md <모은 파일 전부>
+   ```
 
-**(3) 설치 파일을 만듭니다.**
+4. **업데이트 경로를 건드린 릴리스는 베타 예행을 합니다.** 업데이트·패키징·모델 받기 코드를 바꿨거나 가운데 자리를 올린 릴리스가 해당됩니다. 초안을 "pre-release"로 공개하고, 옛 버전 설치본의 설정 → 정보 → 업데이트 채널을 "베타 버전"으로 바꿔 업데이트를 끝까지 받아 봅니다(7). 그 밖의 릴리스는 이 단계를 건너뜁니다.
+5. 정식으로 공개합니다: `gh release edit v<버전> --draft=false --latest`(베타였으면 `--prerelease=false`도). `releases/latest/download/latest-mac.yml`과 `latest.yml`이 새 버전인지 봅니다.
+6. 공개하면 Actions의 **Sync GitHub release notes to repository pages**가 README와 CHANGELOG를 고쳐 `main`에 커밋합니다. 끝나면 `git fetch workspace && git merge --ff-only workspace/main`으로 이 Mac의 `main`을 맞춥니다.
+7. 공개 웹을 배포합니다(`gcloud run deploy … --image …:main-<커밋>`). 공개 주소의 `/`·`/app`이 200인지, 실제 AI 답이 오는지 확인하고, 작업공간 `docs/WEB_CLOUD_RUN_DEPLOY.md` 맨 위에 한 줄을 기록합니다.
+8. 작업공간 루트에서 `npm run status`. "고칠 것 없음"이 나와야 끝입니다. 임시 폴더(`/private/tmp`의 작업 파일, 시험용 사용자 폴더)를 지웁니다.
 
-```powershell
-npm run dist:win -- -- --publish never
-```
+## 5. 똑딱AI 모델을 바꿀 때
 
-- `--` 를 **두 번** 씁니다. `npm run dist:win`이 안에서 명령을 한 번 더 부르기 때문에, 한 번만 쓰면 `--publish never`가 설치 파일 도구까지 전달되지 않습니다. (PowerShell, 명령 프롬프트, Git Bash 모두에서 두 번 써야 제대로 전달되는 것을 확인했습니다.)
-- `--publish never`는 **"만들기만 하고 GitHub에 올리지는 마라"** 는 뜻입니다. 설정에 업데이트 주소로 GitHub 저장소가 적혀 있어서, 이 옵션이 없으면 환경에 따라 도구가 스스로 올리려 할 수 있습니다(`CI` 같은 환경 변수가 켜져 있거나 태그 빌드로 인식될 때). 그때 `GH_TOKEN` 같은 토큰이 없으면 빌드 전체가 실패로 끝나고, 토큰이 있으면 확인도 하기 전에 릴리스가 만들어집니다. 그래서 항상 붙입니다. 올리는 일은 6번에서 손으로 합니다.
-- 시간이 꽤 걸립니다. 모든 앱을 다시 만들고 나서 설치 파일을 묶습니다.
-- 설치 파일에는 `LICENSE.txt`, `NOTICE.txt`, `THIRD-PARTY-NOTICES.txt`가 들어갑니다. 고지 파일에 Rust 부품 목록이 빠져 있으면 묶기 직전에 `TTOK_RELEASE=1`로 다시 만들고, 그래도 빠지면 빌드를 멈춥니다. 한글 엔진(rhwp) 부품 목록은 처음 한 번 rhwp 저장소에서 목록 파일만 내려받으므로 `cargo`, `git`, 인터넷이 필요합니다(결정 0052).
+1. 새 파일을 `ttokttak-workspace`의 새 모델 릴리스로 먼저 올립니다: `gh release create model-YYYYMMDD --latest=false`. 파일마다 2GiB(2,147,483,648바이트) 미만이어야 하고, `MODEL-NOTICE.txt`(각 파일의 크기·SHA256·출처)와 `MODEL-LICENSE.txt`를 함께 올립니다.
+2. 올린 뒤 로그인 없이 받아지는지(`curl -L -r <끝 근처>-`가 206), 받은 파일의 해시가 맞는지 확인합니다.
+3. `local-ai-model-files.ts`의 릴리스 이름, 크기, SHA256을 바꾸고 앱 버전을 올립니다(3). 새 앱은 새 파일을 받은 뒤 옛 파일을 지웁니다.
+4. 실제 받기 시험(4-3의 2)을 꼭 돌립니다.
+5. 업데이트하는 사용자가 다시 받을 양을 릴리스 본문 첫 문단에 적습니다. 인터넷이 막힌 곳에서는 업데이트 뒤 모델을 받을 때까지 내장 AI가 멈추기 때문입니다.
+6. 이미 올린 모델 릴리스는 지우거나 파일을 바꾸지 않습니다. 그 버전 앱을 쓰는 사람이 아직 그 주소에서 받습니다.
+7. 이 Mac 설치본에는 모델 프로젝트의 원본을 복제(`cp -c`, 공간을 더 쓰지 않음)로 `~/Library/Application Support/HangulAIWorkbench/local-ai-models/`에 넣어 4GB를 다시 받지 않게 할 수 있습니다. 앱이 처음 켤 때 해시를 한 번 확인합니다.
 
-**서명에 관한 주의.** `CSC_LINK`, `WIN_CSC_LINK`, `GENOFFICE_WIN_SIGN_MODE` 환경 변수가 **없는 상태로** 만듭니다(문서를 쓸 때 이 PC에는 없었습니다). `CSC_LINK`나 `WIN_CSC_LINK`에 인증서가 지정되어 있으면 도구가 설치 파일에 서명을 하고, "이 게시자가 서명한 업데이트만 받는다"는 조건을 앱에 넣습니다. 그런 버전이 한 번 배포되면 그 뒤에 서명 없이 만든 버전으로는 업데이트되지 않습니다. `GENOFFICE_WIN_SIGN_MODE`는 원본 프로젝트의 서명 절차를 켜는 값이라 이 저장소에서는 쓰지 않습니다.
+## 6. 릴리스 본문
 
-## 5. 만들어진 파일 확인
+사용자가 앱의 업데이트 창에서 그대로 읽습니다(앱은 번역하지 않음).
 
-결과는 **`apps/shell/release`** 폴더에 생깁니다. (`BUILD_DIR` 환경 변수를 정해 두었다면 그 폴더입니다.)
+- 첫 문단에 한두 줄 요약 → `## 바뀐 것`(새로 들어간 것·고친 것) → `## 알려진 한계` → 맨 아래 `## 설치`.
+- 사용자가 체감하는 변화만, 확인한 것만 씁니다. 자동 검사 숫자를 품질 보장처럼 쓰지 않습니다.
+- 다 쓴 뒤 번역투와 AI 투를 걷어내 사람 말로 다듬습니다.
+- `## 설치`에는 그 릴리스에 올린 플랫폼을 모두 적고, 서명이 없어 처음 열 때 뜨는 경고와 넘기는 방법을 안내 문서로 연결합니다.
 
-| 파일                                          | 설명                                                                                                    | 릴리스에 올리나                                                                |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `HangulAIWorkbench-Setup-<버전>.exe`          | 설치 파일                                                                                               | **올린다 (필수)**                                                              |
-| `latest.yml`                                  | 설치된 앱이 읽는 안내 파일. 버전 번호, 설치 파일 이름, 파일이 손상되지 않았는지 확인하는 값이 들어 있다 | **올린다 (필수)**                                                              |
-| `HangulAIWorkbench-Setup-<버전>.exe.blockmap` | 바뀐 부분만 받게 해 주는 보조 파일                                                                      | 올려도 되고 안 올려도 된다. 이 앱은 항상 설치 파일 전체를 받으므로 쓰지 않는다 |
-| `win-unpacked` 폴더, `builder-*.yml` 등       | 만드는 과정에서 생긴 것                                                                                 | 올리지 않는다                                                                  |
+## 7. 사용자 쪽 업데이트 동작 (알아 둘 것)
 
-올리기 전에 확인합니다.
+- 앱은 사용자가 "업데이트 확인"을 누를 때 확인합니다. 설정 → 정보의 "자동으로 업데이트 확인"을 켠 사람만 켠 뒤 15초, 그 뒤 4시간마다 확인합니다.
+- 안정 채널은 GitHub의 "최신 릴리스"만, 베타 채널은 pre-release까지 봅니다. 초안(draft)은 아무에게도 보이지 않습니다.
+- Mac 앱은 `latest-mac.yml`의 sha512로 zip을 확인한 뒤 스스로 바꿉니다. zip과 `latest-mac.yml`이 빠지면 Mac 사용자는 업데이트를 못 받습니다. Windows는 `latest.yml`과 설치 파일이 필요합니다.
+- 설치 파일에는 서명이 없습니다(결정 0031, 0056). 한 번 서명한 버전을 내면 그 뒤로 서명 없는 버전으로는 업데이트되지 않으므로, 서명은 9의 결정 사항입니다. `CSC_LINK`·`WIN_CSC_LINK`가 없는 상태로 빌드합니다.
 
-1. `latest.yml`을 메모장으로 열어 `version:` 이 3번에서 정한 번호인지 봅니다.
-2. 같은 파일의 `path:` 에 적힌 이름이 설치 파일 이름과 **글자 하나까지** 같은지 봅니다.
-3. 설치 파일을 실행해 설치하고, 앱이 뜨는지, 설정 → 정보의 버전이 새 번호인지 봅니다.
-4. 탐색기에서 `.odt` 파일을 오른쪽 단추로 눌러 "연결 프로그램"에 똑딱작업실이 있는지, 골랐을 때 워드 탭으로 열리는지 봅니다. `.odt`를 두 번 눌렀을 때 열리는 프로그램(한컴 등)은 설치 전과 같아야 합니다. _(확인 필요: ODT 등록을 더한 뒤 아직 설치본으로 확인하지 않았습니다. 확인한 뒤 이 표시를 지워 주세요.)_
+## 8. 시간을 잡아먹은 함정 (실제로 겪은 것)
 
-지켜야 할 것:
+| 함정                                                                               | 피하는 법                                                                                                             |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 버전을 올린 뒤 앱 하나만 빌드해 패키징이 멈춤                                      | 버전 커밋 뒤 `build:all`부터(4-2)                                                                                     |
+| 릴리스 중 다른 커밋을 올려 릴리스 커밋의 CI가 취소됨                               | 릴리스가 끝날 때까지 push 금지(4-1의 5)                                                                               |
+| `--target`에 짧은 해시를 잘못 적음                                                 | 전체 해시를 복사해 씀                                                                                                 |
+| `latest-mac.yml`을 손으로 합침                                                     | 해시·크기 대조를 반드시 함(4-4의 2), 10의 B로 자동화                                                                  |
+| 로컬 시험은 통과했는데 실제 GitHub에서 받기가 멈춤(한글 User-Agent를 400으로 거절) | 실제 GitHub 받기 시험(4-3의 2), 시험 서버도 같은 거절을 흉내 냄                                                       |
+| 덮개를 닫아 4GB 받기가 끊김                                                        | 긴 받기 시험은 전원 연결·덮개 열림 상태에서                                                                           |
+| Playwright가 앱을 닫지 못해 Electron이 남음                                        | 시험 뒤 `pgrep -fl Electron`으로 확인하고 정리                                                                        |
+| 전체 테스트를 이 Mac에서 돌려 15분 소모                                            | 바꾼 패키지만 이 Mac에서, 전체는 CI                                                                                   |
+| `gh`, `gcloud`가 기본 PATH에 없음                                                  | `gh`: `~/.agent-reach/tools/runtimes/gh_2.102.0_macOS_arm64/bin/gh`, `gcloud`: `~/.local/google-cloud-sdk/bin/gcloud` |
 
-- **설치 파일과 `latest.yml`은 반드시 같은 빌드에서 나온 한 쌍**이어야 합니다. 설치 파일만 다시 만들고 `latest.yml`은 예전 것을 올리면, 설치된 앱이 "파일이 손상되었다"고 판단해 업데이트에 실패합니다.
-- 파일 이름을 바꾸지 않습니다.
+## 9. 멈추고 사용자에게 묻는 경우
 
-> **확인함(0.12.2, 2026-10-20):** `apps/shell/release`에 `HangulAIWorkbench-Setup-<버전>.exe`, `HangulAIWorkbench-Setup-<버전>.exe.blockmap`, `latest.yml`, `builder-debug.yml`, `win-unpacked`가 생깁니다. 위 표의 이름과 같습니다.
+- 서명 인증서 도입(되돌릴 수 없음), 배포 저장소나 공개 범위 변경
+- 이미 공개한 릴리스·태그·모델 릴리스를 지우거나 바꾸는 일(문제 있는 릴리스를 pre-release로 내려 퍼지지 않게 하는 것은 묻지 않고 해도 됩니다. 그 뒤 바로 알림)
+- 확인 단계(4-3)가 실패했는데 원인을 고치지 못한 채 공개해야 하는 상황
+- 보호 장치(release-guard, Codex 훅)가 막았는데 원인을 고칠 수 없는 경우. 우회하지 않습니다.
 
-## 6. GitHub 릴리스 만들기
+## 10. 이 절차를 더 짧게 만들 작업 (순서대로)
 
-1. <https://github.com/ARTHONG1/ttokttak-workspace/releases/new> 를 엽니다.
-2. **태그**: `v` + 버전 번호. 예: 버전이 `0.11.1`이면 `v0.11.1`. "Choose a tag"에 직접 적고 "Create new tag on publish"를 고릅니다. 대상(Target)은 3번에서 올린 커밋이 있는 브랜치입니다.
-3. **제목**: 알아보기 쉬운 이름(예: `v0.11.1`). **설명**: 바뀐 점.
-   - 설명은 웹 페이지와 **앱의 업데이트 창** 모두에 그대로 나옵니다(앱은 본문을 번역하지 않습니다).
-   - 첫 문단은 한두 줄 요약을 적습니다. 창에서 가장 먼저 보입니다.
-   - `## 새로 들어간 것`, `## 고친 것` 같은 절을 목록으로 적습니다. `## 설치` 같은 수동 설치 안내는 본문 맨 아래에 둡니다. 앱에서는 스크롤을 내려야 보입니다. `## 설치`에는 그 릴리스에 올리는 Windows, Mac(베타), Linux(베타) 설치 파일을 모두 적습니다.
-   - 본문 초안을 다 쓴 뒤 **humanize-korean 스킬로 윤문**합니다. 이 글은 사용자가 앱에서 그대로 읽는 글이므로, AI 티와 번역투를 걷어내고 사람이 쓴 문장으로 다듬습니다.
-   - 이번 버전에 직접 기여한 분이 있으면 `## 도움 주신 분` 절을 `## 설치` 앞에 두고 GitHub 핸들을 링크합니다. 실명·이메일은 본인 동의 없이 적지 않습니다.
-4. 파일을 끌어다 놓습니다: **설치 파일**과 **`latest.yml`** (원하면 `.blockmap`도). 두 파일이 다 올라갈 때까지 기다립니다.
-5. 아래 두 가지를 확인합니다.
-   - "Set as a pre-release"는 **체크하지 않습니다.**
-   - "Set as the latest release"는 **체크합니다.**
-6. **"Publish release"** 를 누릅니다. "Save draft"가 아닙니다.
+이 지침의 손 작업은 아래가 끝나는 대로 지우고 고칩니다.
 
-(GitHub 화면의 영어 문구는 바뀔 수 있습니다. 뜻이 같은 항목을 찾으면 됩니다.)
+- **A. 배포 전 점검 명령** `npm run release:check`: 버전이 `package.json`·잠금 파일·릴리스 본문에서 맞는지, 작업 트리가 깨끗한지, 그 커밋 CI가 초록인지, 앱에 고정한 모델 파일이 실제로 그 크기로 받아지는지 한 번에 확인
+- **B. 릴리스 조립 스크립트**: Actions 결과물 내려받기, `latest-mac.yml` 자동 합치기, 해시 대조, 전체 해시로 초안 생성
+- **C. 세 플랫폼을 Actions에서**: 버전 태그를 push하면 Apple판(내장 AI 실행기 포함)·Intel판·Windows판을 함께 만들고 각 설치판이 실제 GitHub에서 모델을 받아 답하는지 시험한 뒤 초안을 만듦. 이 Mac의 패키징(4-2)이 없어짐
+- **D. 똑딱생기부**: 설치 명령(`npm run install:saenggibu`), 자동 업데이트, 같은 릴리스 흐름
+- **E. 주간 실제 받기 시험**: 공개된 모델 릴리스에서 매주 한 번 받아 보아, GitHub 쪽 변화를 사용자보다 먼저 발견
 
-왜 이렇게 하나:
+## 부록: 똑딱생기부 릴리스 (D가 끝나기 전)
 
-- **태그 이름.** 앱은 GitHub가 "최신 릴리스"라고 알려 주는 태그에서 `latest.yml`을 받습니다. 태그를 `v0.11.1` 모양으로 맞춰 두면 앱의 "다운로드 페이지 열기" 링크와 베타 채널(아래 8번)이 올바르게 동작합니다.
-- **초안(draft)은 보이지 않습니다.** 초안은 저장소 주인에게만 보이는 상태라, 설치된 앱은 그 릴리스가 있는지 알 수 없습니다.
-- **프리릴리스(pre-release)는 일반 사용자에게 가지 않습니다.** GitHub는 프리릴리스를 "최신 릴리스"로 치지 않고, 앱의 기본 채널(안정 버전)은 "최신 릴리스"만 봅니다.
-- **`latest.yml`이 빠지면** 앱은 그 릴리스에서 받을 것이 없다고 보고 조용히 넘어갑니다. 오류 창은 뜨지 않지만 업데이트도 되지 않습니다.
+1. `apps/saenggibu/package.json`과 잠금 파일의 버전을 올려 커밋·push하고, 같은 커밋에 `saenggibu-v<버전>` 태그를 붙여 push합니다.
+2. Actions → **똑딱생기부 Windows build** 실행(설치판이 실제 GitHub에서 모델을 받아 행발을 쓰는 시험 포함). 동시에 이 Mac에서 `taskpolicy -b nice -n 19 npm run dist:mac -w @ttokttak/saenggibu`.
+3. 이 Mac 설치본 교체: 실행 중이 아닌지 확인 → 옛 앱을 `~/Documents/똑딱작업실-이전-앱.noindex/`로 옮기고 등록 해제 → `release/mac-arm64/TtokttakSaenggibu.app`을 `~/Applications`에 `ditto` → 등록. 그 뒤 `SAENGGIBU_PACKAGED_EXECUTABLE=… npx playwright test -c apps/saenggibu/e2e/playwright.config.ts installed.spec.ts`.
+4. 파일을 모아 `SHA256SUMS.txt`를 만들고 `ttokttak-saenggibu`에 `gh release create v<버전> --latest`. 배포 저장소 안내(`~/Documents/똑딱-배포/ttokttak-saenggibu/README.md`)가 바뀌었으면 커밋·push.
 
-올린 뒤 바로 확인합니다. 브라우저에서 아래 주소를 열었을 때 `latest.yml`이 내려받아지면 됩니다.
+## 부록: Windows 손 빌드 (Actions를 쓸 수 없을 때만, 결정 0056)
 
-```
-https://github.com/ARTHONG1/ttokttak-workspace/releases/latest/download/latest.yml
-```
-
-(릴리스가 하나도 없던 2026-10-13에는 이 주소가 "404 찾을 수 없음"이었습니다.)
-
-## 7. 사용자에게는 어떻게 보이나
-
-- **처음 설치할 때 "알 수 없는 게시자" 경고가 뜹니다.** 설치 파일에 서명이 없기 때문입니다. Windows가 파란 "Windows의 PC 보호" 창을 띄우면 "추가 정보" → "실행"을 눌러야 설치가 시작됩니다. 내려받는 곳에 이 안내를 적어 두세요. _(확인 필요: 창의 정확한 문구는 Windows 버전에 따라 다를 수 있습니다. 첫 릴리스 때 직접 보고 안내문을 맞추세요.)_
-- **서명이 없어도 자동 업데이트는 됩니다.** 앱에는 "특정 게시자가 서명한 파일만 받는다"는 조건이 들어 있지 않습니다. 대신 `latest.yml`에 적힌 확인 값과 내려받은 파일이 일치하는지를 검사합니다.
-- 설치된 앱은 **사용자가 "업데이트 확인"을 누를 때만** 새 버전을 확인합니다(0.15.2부터 기본값). 새 버전이 있으면 업데이트 창이 뜨고, "지금 업데이트" → 다 받으면 "다시 시작 및 설치" 순서로 진행됩니다. 설정 → 정보의 **자동으로 업데이트 확인**을 켠 사용자만 켜고 15초 뒤에 한 번, 그 뒤로는 4시간마다 저절로 확인합니다. 업데이트 채널을 바꾸면 그때 한 번 확인합니다.
-- 사용자가 직접 확인하려면 탭 줄의 메뉴 버튼(☰) → **업데이트 확인…** 을 누릅니다. Mac은 메뉴 막대의 **도움말 → 업데이트 확인…** 입니다. 두 운영체제 모두 **설정 → 정보**의 버전 줄 옆 **업데이트 확인** 버튼도 같은 일을 합니다.
-- 릴리스가 하나도 없거나, 인터넷이 안 되거나, 확인이 실패해도 **오류 창은 뜨지 않고 앱은 그대로 쓸 수 있습니다.** 사용자가 직접 "업데이트 확인…"을 눌렀을 때만 "최신 버전입니다" 또는 "업데이트를 확인할 수 없습니다"라고 알려 줍니다.
-- 자동 업데이트가 두 번 연속 실패하면 업데이트 창이 "다운로드 페이지 열기" 버튼으로 바뀌고, 누르면 저장소의 릴리스 페이지가 열립니다. 거기서 설치 파일을 받아 직접 설치하면 됩니다.
-- 새 버전이 있으면 업데이트 창에 바뀐 점이 나옵니다. 길면 스크롤하고, "GitHub에서 전체 보기"로 릴리스 페이지를 열 수 있습니다. 여러 버전을 건너뛴 사용자는 그 사이 릴리스의 본문도 함께 봅니다.
-
-## 8. 업데이트가 실제로 되는지 처음부터 끝까지 확인하기 (버전 두 개로)
-
-모든 사용자에게 내보내기 전에, **베타 채널**로 먼저 혼자 받아 볼 수 있습니다. 프리릴리스로 올린 버전은 "베타 버전" 채널을 고른 앱에만 보이기 때문입니다.
-
-준비: 옛 버전 A가 설치된 PC. (예: 지금 쓰고 있는 `0.11.0`. 3~5번으로 만든 설치 파일로 설치한 것이어야 합니다. 개발용으로 띄운 앱은 업데이트를 하지 않습니다.)
-
-1. 3~5번대로 새 버전 B(예: `0.11.1`)의 설치 파일을 만듭니다. **B를 이 PC에 설치하지는 않습니다.**
-2. 6번대로 릴리스를 만들되, 이번에는 **"Set as a pre-release"를 체크**하고 Publish 합니다.
-3. A가 설치된 앱을 켭니다. 15초쯤 기다려도 **아무 창도 뜨지 않아야** 합니다(안정 버전 채널에는 프리릴리스가 보이지 않습니다).
-4. 설정 → 정보 → **업데이트 채널**을 **"베타 버전"** 으로 바꿉니다. 바꾸는 즉시 앱이 다시 확인합니다.
-5. 업데이트 창이 뜨고 현재 버전 A와 새 버전 B가 보이는지 확인합니다.
-6. **"지금 업데이트"** 를 누릅니다. 진행률이 올라가고, 끝나면 버튼이 **"다시 시작 및 설치"** 로 바뀝니다.
-7. **"다시 시작 및 설치"** 를 누릅니다. 앱이 닫히고 설치가 진행된 뒤 다시 켜집니다.
-8. 설정 → 정보에서 버전이 B인지 확인합니다. 열어 두었던 문서와 설정이 그대로인지도 봅니다.
-9. 문제가 없으면 GitHub에서 그 릴리스를 "Edit" 하여 **"Set as a pre-release" 체크를 풀고 "Set as the latest release"를 체크**한 뒤 저장합니다. 이제 모든 사용자에게 나갑니다.
-10. 확인용으로 바꿨던 업데이트 채널을 **"안정 버전"** 으로 되돌립니다.
-
-> **확인함(0.12.2, 2026-10-20):** 공식 0.12.1 설치본(채널 "베타 버전")이 프리릴리스 `v0.12.2`를 찾아 내려받고, "다시 시작 및 설치"로 0.12.2가 되었습니다. 현재 사용자용 설치라 "이 앱이 디바이스를 변경하도록 허용하시겠어요?"는 묻지 않았고, 앱이 스스로 다시 켜졌으며 최근 문서와 설정이 남았습니다. 3단계(안정 채널에서 아무 창도 뜨지 않음)는 그 PC의 채널이 이미 베타여서 앱으로는 보지 못했고, `releases/latest`가 0.12.1을 가리키는 것으로 대신 확인했습니다. "모든 사용자용"으로 설치한 PC에서는 권한 확인 창이 뜰 수 있습니다.
-
-**가장 첫 릴리스 때.** 저장소에 릴리스가 하나도 없어도 같은 방법을 씁니다. 버전 A로 설치 파일을 만들어 이 PC에 설치만 해 두고(GitHub에는 올리지 않습니다), 번호를 올린 버전 B를 프리릴리스로 올려 위 순서대로 확인합니다. 그러면 처음으로 공개되는 버전은 B가 됩니다.
-
-잘 안 될 때 볼 곳:
-
-- 내려받다 만 업데이트 파일은 `%LOCALAPPDATA%\ttokttak-updater` 폴더에 있습니다. 이 폴더를 지우고 다시 시도해도 됩니다.
-- 업데이트 창이 아예 안 뜨면: 릴리스가 초안이 아닌지, `latest.yml`이 올라가 있는지, `latest.yml`의 `version`이 설치된 버전보다 큰지 순서대로 확인합니다.
-- "업데이트 다운로드에 실패했습니다"가 나오면: 릴리스에 올린 설치 파일 이름이 `latest.yml`의 `path`와 같은지, 두 파일이 같은 빌드에서 나온 것인지 확인합니다.
-
-## 9. 베타 버전을 따로 내고 싶을 때 (선택)
-
-일부 사용자에게만 먼저 내보내려면:
-
-1. 6번에서 **"Set as a pre-release"를 체크**해서 올립니다. 올리는 파일은 똑같이 설치 파일과 `latest.yml`입니다.
-2. 버전 번호는 평소처럼 `0.12.0`으로 해도 되고, `0.12.0-beta.1`처럼 해도 됩니다. 뒤의 것으로 하면 태그도 `v0.12.0-beta.1`로 맞춥니다.
-3. 받는 사람은 설정 → 정보 → 업데이트 채널을 "베타 버전"으로 바꿔야 합니다.
-
-주의: `0.12.0-beta.1` 같은 버전을 "Set as a pre-release" 체크 없이 올리면 **모든 사용자에게** 나갑니다. 베타는 반드시 체크하세요.
-
-## 10. 문제가 있는 버전을 내보냈을 때
-
-- 설치된 앱은 **더 큰 번호로만** 업데이트합니다. 낮은 번호로 되돌려 주는 방법은 없습니다.
-- 그러니 고친 뒤 **번호를 하나 더 올려** 새 릴리스를 냅니다(예: `0.11.1`에 문제가 있으면 `0.11.2`).
-- 그동안 더 퍼지지 않게 하려면 문제 있는 릴리스를 GitHub에서 "Edit" → "Set as a pre-release"로 바꾸거나 삭제합니다. 그러면 직전 릴리스가 다시 "최신"이 되고, 아직 업데이트하지 않은 사용자에게는 더 나가지 않습니다. 이미 업데이트한 사용자는 `0.11.2`가 나올 때까지 그대로입니다. _(확인 필요: 프리릴리스로 바꾼 뒤 6번 끝의 `latest.yml` 주소가 직전 버전의 것을 내려 주는지 직접 열어 확인하세요.)_
-
-## 11. Mac 설치 파일 (베타)
-
-Mac판은 Apple 개발자 서명 없는 베타로, Apple Silicon용과 Intel용을 함께 냅니다(결정 0031, 0065). 한 번의 빌드에서 둘이 같이 나옵니다. Windows 설치 파일과 **같은 릴리스**에 함께 올립니다. Mac이 없어도 됩니다. GitHub의 Mac 빌드 기계가 만듭니다.
-
-**자동으로 올리기 (권장).** 6번까지 끝내 Windows 파일로 릴리스를 먼저 공개한 뒤, **Actions** 탭 → **macOS build** → **Run workflow**에서 가지는 `main`, **release_tag** 칸에 그 릴리스의 태그(예: `v0.12.1`)를 적고 실행합니다. 빌드와 검사가 모두 통과하면 dmg, zip, `latest-mac.yml`이 그 릴리스에 저절로 붙습니다. 다음 경우에는 아무것도 올리지 않고 멈춥니다.
-
-- 가지가 `main`이 아닐 때
-- 그런 태그의 릴리스가 없을 때(초안도 아니고 공개된 릴리스여야 합니다)
-- 빌드한 버전과 태그가 다를 때(예: 앱은 `0.12.0`인데 태그는 `v0.12.1`)
-
-끝나면 릴리스 페이지에서 Mac 파일 다섯 개(dmg 둘, zip 둘, `latest-mac.yml`)가 붙었는지 확인합니다.
-
-**손으로 올리기.** release_tag를 비워 두면 결과를 내려받아 직접 올립니다.
-
-1. 3번에서 버전을 올린 커밋을 push한 뒤, GitHub 저장소의 **Actions** 탭 → 왼쪽의 **macOS build** → **Run workflow**를 누릅니다. 가지는 그 커밋이 있는 가지를 고릅니다.
-2. 40~70분쯤 뒤 초록색 체크가 뜨면 그 실행을 열고, 아래 **Artifacts**의 `ttokttak-mac`을 내려받아 압축을 풉니다. 빨간색이면 올리지 않습니다. 빌드가 두 앱을 실제로 띄워 보는 검사까지 하기 때문에(Intel판은 Rosetta로), 실패했다면 그 버전의 Mac판에 문제가 있는 것입니다.
-3. 안에 든 파일을 확인합니다.
-
-| 파일                                          | 설명                                                                   | 릴리스에 올리나                |
-| --------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------ |
-| `HangulAIWorkbench-<버전>-arm64.dmg`          | Apple Silicon Mac 사용자가 받는 설치 파일                              | **올린다 (필수)**              |
-| `HangulAIWorkbench-<버전>-x64.dmg`            | Intel Mac 사용자가 받는 설치 파일                                      | **올린다 (필수)**              |
-| `latest-mac.yml` (베타 번호면 `beta-mac.yml`) | Mac 앱이 새 버전을 알아보는 안내 파일. Windows의 `latest.yml`과 다르다 | **올린다 (필수)**              |
-| `HangulAIWorkbench-<버전>-arm64-mac.zip`      | Apple Silicon 앱을 zip으로 묶은 것. `latest-mac.yml`이 가리킨다        | **올린다** (안내 파일과 한 쌍) |
-| `HangulAIWorkbench-<버전>-mac.zip`            | Intel 앱을 zip으로 묶은 것. `latest-mac.yml`이 가리킨다                | **올린다** (안내 파일과 한 쌍) |
-| `*.blockmap`                                  | 보조 파일                                                              | 올리지 않아도 된다             |
-
-4. 6번에서 만든(또는 만들) 릴리스를 "Edit"하여 위 파일을 끌어다 놓고 저장합니다. Windows 파일과 이름이 겹치지 않으므로 함께 둡니다.
-5. `latest-mac.yml`을 메모장으로 열어 `version:`이 이번 번호인지 봅니다.
-
-알아 둘 것:
-
-- **Mac 앱도 스스로 업데이트합니다.** Mac의 기본 업데이트 장치(Squirrel)는 Apple 서명이 없는 앱에 설치를 거부하므로, 앱이 직접 합니다(`apps/shell/src/main/mac-self-update.ts`). `latest-mac.yml`로 새 버전을 알아보고, "지금 업데이트"를 누르면 그 CPU용 zip(`-arm64-mac.zip` 또는 `-mac.zip`)을 받아 `latest-mac.yml`의 sha512와 맞춰 본 뒤 풀어 둡니다. "다시 시작 및 설치"(또는 그냥 종료)하면 앱이 꺼진 뒤 설치된 `.app`을 새 것으로 바꾸고, 바꾸지 못하면 원래 앱을 되돌려 놓습니다. 그래서 **zip 둘과 `latest-mac.yml`을 빠뜨리면 Mac 사용자는 업데이트를 받지 못합니다.**
-- dmg에서 바로 연 앱, 쓰기 권한이 없는 폴더에 설치된 앱은 스스로 바꿀 수 없어 예전처럼 "다운로드 페이지 열기"로 안내합니다. 교체가 두 번 연속 적용되지 않아도 같은 안내로 물러납니다. 진행 기록은 데이터 폴더의 `update-log.txt`에 남습니다.
-- Mac 사용자는 처음 열 때 "확인할 수 없는 개발자" 경고를 봅니다. README의 "Mac (베타)"에 대처 순서가 있습니다. 내려받기 안내에 그 순서나 링크를 함께 적어 두세요.
-- 사이트의 Mac 내려받기 단추는 `-arm64.dmg`를 고릅니다. Intel용 링크는 13번에서 사이트에 함께 둡니다.
-- Mac판의 동작은 저장소 주인이 직접 확인할 수 없습니다. Mac 사용자에게서 들어온 보고를 `docs/tracking/status.md`에 적습니다.
-
-> **확인 필요:** 이 절차는 빌드 설정과 업데이트 라이브러리의 코드를 읽고 쓴 것입니다. 첫 Mac 빌드 때 3번의 파일 이름이 실제와 같은지 확인하세요.
-
-## 12. Linux 설치 파일 (베타)
-
-Linux판(64비트 x64)도 베타로 냅니다. Windows·Mac 설치 파일과 **같은 릴리스**에 함께 올립니다. GitHub의 Ubuntu 빌드 기계가 만듭니다.
-
-**자동으로 올리기 (권장).** 6번까지 끝내 릴리스를 먼저 공개한 뒤, **Actions** 탭 → **Linux build** → **Run workflow**에서 가지는 `main`, **release_tag** 칸에 그 릴리스의 태그(예: `v0.12.1`)를 적고 실행합니다. 빌드와 검사가 모두 통과하면 `AppImage`, `deb`, `rpm`, `latest-linux.yml`이 그 릴리스에 저절로 붙습니다.
-
-**손으로 올리기.** release_tag를 비워 두면 실행 결과의 **Artifacts**에서 `ttokttak-linux-x64`를 내려받아 직접 올립니다.
-
-| 파일                                              | 설명                                                                         | 릴리스에 올리나   |
-| ------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------- |
-| `HangulAIWorkbench-<버전>.AppImage`               | 설치 없이 실행하는 단일 파일. 스스로 업데이트한다                            | **올린다 (필수)** |
-| `ttokttak_<버전>_amd64.deb`                       | Ubuntu·Debian용 패키지(`/opt/HangulAIWorkbench`에 설치, `/usr/bin/ttokttak`) | **올린다 (필수)** |
-| `ttokttak-<버전>.x86_64.rpm`                      | Fedora·RHEL·openSUSE용 패키지                                                | **올린다**        |
-| `latest-linux.yml` (베타 번호면 `beta-linux.yml`) | Linux 앱이 새 버전을 알아보는 안내 파일. `AppImage` 자동 업데이트에 쓴다     | **올린다 (필수)** |
-
-알아 둘 것:
-
-- **`AppImage`는 스스로 업데이트하고, `deb`·`rpm`은 새 버전을 알려 주기만 합니다.** `deb`·`rpm`으로 설치한 앱은 `/opt/HangulAIWorkbench`가 관리자 권한 폴더여서 스스로 덮어쓰지 않고, 업데이트 창에서 "다운로드 페이지 열기"로 안내합니다. `latest-linux.yml`을 올려 두어야 새 버전을 알아봅니다.
-- Linux판의 동작은 저장소 주인이 직접 확인할 수 없습니다. Linux 사용자에게서 들어온 보고를 `docs/tracking/status.md`에 적습니다.
-
----
-
-## 한눈에 보기
-
-```text
-0. Anthropic 상업 약관 동의 확인
-1. apps/shell/package.json 과 package-lock.json 의 버전 올리기 → 커밋, push
-2. (손 빌드일 때만) Rust PATH 설정
-3. GitHub 릴리스: 태그 v<버전>, 본문만, pre-release 체크 → Publish
-4. Actions → Windows build → Run workflow(main, release_tag) → 설치 파일·latest.yml 이 그 릴리스에 붙었는지 확인
-   (Actions 를 못 쓰면: native:build → xlsx-sidecar.exe 복사 → npm run dist:win -- -- --publish never → 두 파일 손으로 올리기)
-5. 설치해서 버전과 .odt "연결 프로그램" 확인
-6. 옛 버전 앱에서 채널을 "베타 버전"으로 바꿔 업데이트 확인
-7. (Mac) Actions → macOS build → Run workflow → 결과의 dmg, zip, latest-mac.yml 을 같은 릴리스에 올리기
-8. (Linux) Actions → Linux build → Run workflow → 결과의 AppImage, deb, rpm, latest-linux.yml 을 같은 릴리스에 올리기
-9. 릴리스를 pre-release 해제 + latest 로 바꾸기
-10. docs/tracking/status.md 에 기준 버전과 확인한 내용 기록
-```
+Windows PC에서 `npm run native:build -w @genoffice/sheets` → `xlsx-sidecar.exe`를 `target/x86_64-pc-windows-gnu/release/`로 복사 → `npm run dist:win -- -- --publish never`(`--` 두 번). 서명 환경 변수가 없는 상태에서 만듭니다. 손 빌드 파일에는 출처 증명이 없습니다.
