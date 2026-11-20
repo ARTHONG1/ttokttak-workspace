@@ -355,11 +355,40 @@ function seedSettings(dir) {
   seedAiSettings(dir)
   seedAppSettings(dir)
 }
+// Every page load starts the desktop app afresh in the same work space. The app would read
+// that as a crash and bring back the last visit's tabs with a "되살리기/버리기" list; a web
+// visit starts clean on the home screen instead (the files a visit saved stay in the work
+// space, and the page asks before a tab with open documents is closed).
+function startFresh(dir) {
+  let names
+  try {
+    names = fs.readdirSync(dir)
+  } catch {
+    return
+  }
+  for (const name of names) {
+    if (name === 'session-record.json' || name === 'recent.json' || /-autosave$/.test(name))
+      fs.rmSync(path.join(dir, name), { recursive: true, force: true })
+  }
+  // a remembered split would reopen the last visit's documents too
+  const file = path.join(dir, 'app-settings.json')
+  try {
+    const settings = JSON.parse(fs.readFileSync(file, 'utf8'))
+    if (settings && settings.splitView !== undefined) {
+      delete settings.splitView
+      fs.writeFileSync(file, JSON.stringify(settings))
+    }
+  } catch {}
+}
+startFresh(web.paths.userData)
 seedSettings(web.paths.userData)
 const setPath = web.app.setPath.bind(web.app)
 web.app.setPath = (name, value) => {
   setPath(name, value)
-  if (name === 'userData') seedSettings(value)
+  if (name === 'userData') {
+    startFresh(value)
+    seedSettings(value)
+  }
 }
 require(path.join(SHELL_DIR, 'out', 'main', 'index.js'))
 setImmediate(() => {

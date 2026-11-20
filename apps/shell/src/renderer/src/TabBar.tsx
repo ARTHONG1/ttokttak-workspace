@@ -5,6 +5,7 @@ import type { TabsApi, TabSummary } from '../../shared/tabs-api'
 import { TEAR_OFF_SLACK, insertionIndexForX, isBeyondBand } from '../../shared/tab-drag-geometry'
 import { notifyFilesChanged } from './file-events'
 import { productName } from '@genoffice/i18n'
+import { isWebEdition } from './edition'
 import { useI18n } from './locale'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
@@ -626,6 +627,19 @@ export function TabBar({ split }: TabBarProps) {
         >
           {t(splitHint.orientation === 'side' ? 'splitHintRight' : 'splitHintBottom')}
         </div>
+      )}
+      {isWebEdition() && (
+        // the web edition opens straight on the app; the intro and the desktop downloads
+        // are one click away (web/runtime/client/intro.html at /intro)
+        <button
+          className="tab-intro-btn"
+          data-testid="tab-intro"
+          onClick={() => {
+            window.top?.location.assign('/intro')
+          }}
+        >
+          소개 및 다운로드
+        </button>
       )}
       <button
         className="tab-overflow-btn"

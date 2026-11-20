@@ -59,7 +59,7 @@
   var portal = document.getElementById('portal')
   var leaving = false
   function enter(e) {
-    var href = e.currentTarget.getAttribute('href') || '/app'
+    var href = e.currentTarget.getAttribute('href') || '/'
     if (reduce || e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
     e.preventDefault()
     if (leaving) return

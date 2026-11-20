@@ -289,6 +289,15 @@ iframe.wc.own {
 #status[hidden] {
   display: none;
 }
+/* a quick start shows no loading card at all: it fades in only after 0.7 s */
+#status > * {
+  animation: boot-in 0.25s ease-out 0.7s both;
+}
+@keyframes boot-in {
+  from {
+    opacity: 0;
+  }
+}
 .boot-logo {
   width: 56px;
   height: 56px;
@@ -327,6 +336,9 @@ iframe.wc.own {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  #status > * {
+    animation-duration: 1ms;
+  }
   .boot-bar span {
     animation: none;
     left: 0;

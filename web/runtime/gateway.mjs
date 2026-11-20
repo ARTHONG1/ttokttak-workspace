@@ -577,14 +577,15 @@ async function handleHttp(req, res) {
         })
       : send(res, 404, 'not found')
   }
-  // the intro page; the trial app itself lives at /app
-  if (p === '/' || p === '/index.html') {
+  // the intro and download page, behind the app's 소개 및 다운로드 button; the address opens
+  // straight on the app (/ and the earlier /app)
+  if (p === '/intro' || p === '/intro/') {
     const body = await fsp.readFile(path.join(CLIENT, 'intro.html'))
     return send(res, 200, withPopupEditor(body, req), {
       'Content-Type': 'text/html; charset=utf-8',
     })
   }
-  if (p === '/app' || p === '/app/') {
+  if (p === '/' || p === '/index.html' || p === '/app' || p === '/app/') {
     // an address blocked for opening too many work spaces is told so at the door
     if (guard.bannedUntil(clientIp(req))) {
       const r = REFUSALS.banned
