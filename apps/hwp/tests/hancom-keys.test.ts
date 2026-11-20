@@ -20,6 +20,7 @@ import {
   hancomTableObjectKey,
   letterOf,
   MAIN_PROCESS_KEYS,
+  resizeCellBlock,
   resizeRowColumnBlock,
   resizeSelectedCell,
   studioCommandIds,
@@ -926,7 +927,13 @@ describe('equal cell sizes (H/W)', () => {
   function table(
     widths: number[][],
     heights: number[][],
-    options: { spans?: boolean; nested?: boolean; range?: Record<string, number> } = {},
+    options: {
+      spans?: boolean
+      nested?: boolean
+      range?: Record<string, number>
+      /** how tall each cell draws, when its text makes it taller than its stored height */
+      drawn?: number[][]
+    } = {},
   ) {
     const rows = widths.length
     const cols = widths[0].length
@@ -954,7 +961,7 @@ describe('equal cell sizes (H/W)', () => {
           row: cell.row,
           col: cell.col,
           w: cell.width / 75,
-          h: cell.height / 75,
+          h: (options.drawn?.[cell.row][cell.col] ?? cell.height) / 75,
         })),
       resizeTableCells: vi.fn(() => ({ ok: true })),
       resizeTableCell: vi.fn(() => ({ ok: true, moved: true })),
@@ -1149,6 +1156,71 @@ describe('equal cell sizes (H/W)', () => {
     expect(wasm.resizeTableCells.mock.calls[0][3]).toEqual([
       { cellIdx: 2, heightDelta: 300 },
       { cellIdx: 3, heightDelta: 300 },
+    ])
+  })
+
+  // a new table's rows store a small minimum (282) and draw taller for their line of text
+  // (1283): a step on the stored value alone changed nothing on the page (nightly e2e, 11-14)
+  const NEW_TABLE = {
+    widths: [
+      [1500, 1500],
+      [1500, 1500],
+    ],
+    heights: [
+      [282, 282],
+      [282, 282],
+    ],
+    drawn: [
+      [1283, 1283],
+      [1283, 1283],
+    ],
+  }
+
+  it('Ctrl+Down grows a row from the height it draws at, not its stored minimum', () => {
+    const { services, wasm } = table(NEW_TABLE.widths, NEW_TABLE.heights, {
+      drawn: NEW_TABLE.drawn,
+      range: { startRow: 0, startCol: 0, endRow: 0, endCol: 1 },
+    })
+    expect(resizeRowColumnBlock(services, 'down')).toBe(true)
+    expect(wasm.resizeTableCells.mock.calls[0][3]).toEqual([
+      { cellIdx: 0, heightDelta: 1283 + 300 - 282 },
+      { cellIdx: 1, heightDelta: 1283 + 300 - 282 },
+    ])
+  })
+
+  it('Ctrl+Up does not grow a row its text already holds open', () => {
+    const { services, wasm } = table(NEW_TABLE.widths, NEW_TABLE.heights, {
+      drawn: NEW_TABLE.drawn,
+      range: { startRow: 0, startCol: 0, endRow: 0, endCol: 1 },
+    })
+    expect(resizeRowColumnBlock(services, 'up')).toBe(false)
+    expect(wasm.resizeTableCells).not.toHaveBeenCalled()
+  })
+
+  it('Alt+Down grows the row from its drawn height and the next row gives back what it can', () => {
+    const { services, wasm } = table(
+      [
+        [1500, 1500],
+        [1500, 1500],
+      ],
+      [
+        [282, 282],
+        [2000, 2000],
+      ],
+      {
+        drawn: [
+          [1283, 1283],
+          [2000, 2000],
+        ],
+        range: { startRow: 0, startCol: 0, endRow: 0, endCol: 1 },
+      },
+    )
+    expect(resizeCellBlock(services, 'down')).toBe(true)
+    expect(wasm.resizeTableCells.mock.calls[0][3]).toEqual([
+      { cellIdx: 0, heightDelta: 1283 + 300 - 282 },
+      { cellIdx: 1, heightDelta: 1283 + 300 - 282 },
+      { cellIdx: 2, heightDelta: -300 },
+      { cellIdx: 3, heightDelta: -300 },
     ])
   })
 

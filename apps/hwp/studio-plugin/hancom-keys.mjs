@@ -1199,11 +1199,54 @@ export function equalizeTableCells(services, axis, ko) {
   return true
 }
 
+const HWPUNIT_PER_PX_ROW = 7200 / 96
+
+/**
+ * The heightDelta updates that move rows by a step from where they draw now. A row's stored
+ * height is only its minimum: a new table stores 282 (about 1 mm) and draws each row taller
+ * for its line of text, so a step on the stored value alone left the page unchanged (Ctrl+Down
+ * on a new table did nothing). A growing row starts from its drawn height; a shrinking row
+ * never ends above its stored height, so a row its text holds open is left alone, as in Hangul.
+ * `stepOf(row)` gives each row's step (0 for rows that stay).
+ */
+function rowHeightUpdates(wasm, ref, cells, stepOf) {
+  const stored = new Map()
+  for (const cell of cells) {
+    let height = cell.height
+    try {
+      height = wasm.getCellProperties?.(ref.sec, ref.ppi, ref.ci, cell.cellIdx)?.height ?? height
+    } catch {
+      // the cell info's own height, if it has one
+    }
+    stored.set(cell.cellIdx, height ?? 0)
+  }
+  const drawn = new Map()
+  try {
+    for (const box of wasm.getTableCellBboxes?.(ref.sec, ref.ppi, ref.ci) ?? []) {
+      if ((box.rowSpan ?? 1) !== 1) continue
+      const height = Math.round(box.h * HWPUNIT_PER_PX_ROW)
+      drawn.set(box.row, Math.max(drawn.get(box.row) ?? 0, height))
+    }
+  } catch {
+    // an engine without the query: the stored heights still answer
+  }
+  const updates = []
+  for (const cell of cells) {
+    const step = stepOf(cell.row)
+    if (!step) continue
+    const own = stored.get(cell.cellIdx) ?? 0
+    const base = Math.max(own, drawn.get(cell.row) ?? 0)
+    const target = step > 0 ? base + step : Math.max(1, Math.min(own, base + step))
+    if (target !== own) updates.push({ cellIdx: cell.cellIdx, heightDelta: target - own })
+  }
+  return updates
+}
+
 /**
  * Alt+arrow in a cell block: the selected rows/columns change size by one step and the
  * row/column just outside them takes the opposite change, so the table keeps its size.
  */
-function resizeCellBlock(services, direction) {
+export function resizeCellBlock(services, direction) {
   const ih = services?.getInputHandler?.()
   const cursor = ih?.cursor
   const context = cursor?.getCellTableContext?.()
@@ -1243,17 +1286,17 @@ function resizeCellBlock(services, direction) {
   if (edge >= count) return false
   const delta = direction === 'right' || direction === 'down' ? 300 : -300
   const updates = []
-  for (const cell of cells) {
-    const selected = horizontal
-      ? cell.col >= range.startCol && cell.col <= range.endCol
-      : cell.row >= range.startRow && cell.row <= range.endRow
-    const neighbor = horizontal ? cell.col === edge : cell.row === edge
-    if (!selected && !neighbor) continue
-    const change = selected ? delta : -delta
+  if (horizontal) {
+    for (const cell of cells) {
+      const selected = cell.col >= range.startCol && cell.col <= range.endCol
+      if (!selected && cell.col !== edge) continue
+      updates.push({ cellIdx: cell.cellIdx, widthDelta: selected ? delta : -delta })
+    }
+  } else {
     updates.push(
-      horizontal
-        ? { cellIdx: cell.cellIdx, widthDelta: change }
-        : { cellIdx: cell.cellIdx, heightDelta: change },
+      ...rowHeightUpdates(wasm, context, cells, (row) =>
+        row >= range.startRow && row <= range.endRow ? delta : row === edge ? -delta : 0,
+      ),
     )
   }
   if (updates.length === 0) return false
@@ -1327,15 +1370,14 @@ export function resizeRowColumnBlock(services, direction) {
   const last = horizontal ? range.endCol : range.endRow
   const delta = direction === 'right' || direction === 'down' ? 300 : -300
   const updates = []
-  for (const cell of cells) {
-    const inside = horizontal
-      ? cell.col >= first && cell.col <= last
-      : cell.row >= first && cell.row <= last
-    if (!inside) continue
+  if (horizontal) {
+    for (const cell of cells) {
+      if (cell.col >= first && cell.col <= last)
+        updates.push({ cellIdx: cell.cellIdx, widthDelta: delta })
+    }
+  } else {
     updates.push(
-      horizontal
-        ? { cellIdx: cell.cellIdx, widthDelta: delta }
-        : { cellIdx: cell.cellIdx, heightDelta: delta },
+      ...rowHeightUpdates(wasm, context, cells, (row) => (row >= first && row <= last ? delta : 0)),
     )
   }
   if (updates.length === 0) return false
@@ -1777,11 +1819,22 @@ function resizeSelectedTable(services, direction) {
   const horizontal = direction === 'left' || direction === 'right'
   const delta = direction === 'right' || direction === 'down' ? 300 : -300
   const updates = []
-  for (let i = 0; i < table.dims.cellCount; i += 1) {
-    updates.push(
-      horizontal ? { cellIdx: i, widthDelta: delta } : { cellIdx: i, heightDelta: delta },
-    )
+  if (horizontal) {
+    for (let i = 0; i < table.dims.cellCount; i += 1)
+      updates.push({ cellIdx: i, widthDelta: delta })
+  } else {
+    const cells = []
+    try {
+      for (let i = 0; i < table.dims.cellCount; i += 1) {
+        const info = services.wasm.getCellInfo(table.ref.sec, table.ref.ppi, table.ref.ci, i)
+        cells.push({ ...info, cellIdx: i })
+      }
+    } catch {
+      return false
+    }
+    updates.push(...rowHeightUpdates(services.wasm, table.ref, cells, () => delta))
   }
+  if (updates.length === 0) return false
   let failed = false
   try {
     ih.executeOperation({

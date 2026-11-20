@@ -3421,7 +3421,9 @@ async function loadRange(
         }, 250)
         state.retryTimers.set(sheetId, timer)
       }
-    } else if (isActiveSheet(runtime, sheetId)) {
+    } else if (isActiveSheet(runtime, sheetId) && !state.flags.preloadComplete) {
+      // a workbook already fully loaded keeps saying so: a viewport load that finishes after
+      // the preload used to put "Loading the sheet" back for good (6-row files included)
       setMessage(
         t('appStreamingRows', {
           name: state.file.name,

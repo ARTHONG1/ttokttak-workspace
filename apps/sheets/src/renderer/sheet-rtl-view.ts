@@ -73,11 +73,16 @@ export function applyRightToLeftView(runtime: UniverRuntime, rtl: boolean): void
   const workbook = runtime.univerAPI.getActiveWorkbook()
   const worksheet = workbook?.getActiveSheet()
   if (!workbook || !worksheet) return
-  runtime.univerAPI.syncExecuteCommand('sheet.command.set-worksheet-right-to-left', {
-    unitId: workbook.getId(),
-    subUnitId: worksheet.getSheetId(),
-    rightToLeft: rtl ? BooleanNumber.TRUE : BooleanNumber.FALSE,
-  })
+  // the command's handler is async: syncExecuteCommand applied the flip, then threw
+  // "Command handler should not return a promise" on every toggle (nightly e2e logs).
+  // executeCommand runs the handler at once all the same; its promise only reports.
+  void runtime.univerAPI
+    .executeCommand('sheet.command.set-worksheet-right-to-left', {
+      unitId: workbook.getId(),
+      subUnitId: worksheet.getSheetId(),
+      rightToLeft: rtl ? BooleanNumber.TRUE : BooleanNumber.FALSE,
+    })
+    .catch(() => undefined)
 }
 
 /// Rebuild the sheet skeleton so the mirrored viewport anchors re-run after

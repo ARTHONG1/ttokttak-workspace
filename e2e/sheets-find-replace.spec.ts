@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import JSZip from 'jszip'
 import type { Page } from '@playwright/test'
-import { launchShell, waitForPageWithUrl } from './helpers'
+import { closeAndSaveVideo, launchShell, waitForPageWithUrl } from './helpers'
 
 /** Minimal single-sheet workbook with three "apple" hits in column A. */
 async function buildWorkbook(): Promise<Buffer> {
@@ -123,6 +123,8 @@ test('sheets: Excel-style Find & Replace panel', async () => {
     await sheets.keyboard.press('Escape')
     await expect(panel).toHaveCount(0, { timeout: 5_000 })
   } finally {
-    await launched.app.close().catch(() => {})
+    // the replaced workbook is unsaved: the helper answers the save prompt (a plain
+    // app.close() waited on it until the worker timed out)
+    await closeAndSaveVideo(launched, 'sheets-find-replace').catch(() => {})
   }
 })
