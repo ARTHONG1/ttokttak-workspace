@@ -18,6 +18,7 @@ import type { Lang } from '@genoffice/i18n'
 import { AI_SUBSCRIPTION_PROVIDERS, selectAiProvider } from '@genoffice/ai-provider/browser'
 import type { AiSettings, AiSubscriptionProviderId } from '@genoffice/ai-provider/browser'
 import { FreeAiCards } from './FreeAiCards'
+import { LocalAiModelPanel } from './LocalAiModelPanel'
 import type { TFunc } from './locale'
 import type { SubscriptionConnection } from './subscription-client'
 import {
@@ -336,6 +337,7 @@ export function AiSection({
                 : 'TtokTtak AI is the built-in AI that runs on this computer. Use it for documents and 똑딱업무 without an account, API key, or internet connection.'}
             </div>
           )}
+          {localSelected && !web && <LocalAiModelPanel lang={lang} />}
           {blocked && (
             <div
               className="set-field-desc set-ai-note"

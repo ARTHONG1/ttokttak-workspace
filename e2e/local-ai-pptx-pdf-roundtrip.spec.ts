@@ -5,13 +5,19 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import JSZip from 'jszip'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  installedLocalAiModelsReady,
+  waitForPageWithUrl,
+} from './helpers'
 
 const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
 const bundled = packagedExecutable
   ? resolve(dirname(packagedExecutable), '../Resources/local-ai')
   : null
-const modelReady = !!bundled && existsSync(join(bundled, 'model.gguf'))
+const modelReady =
+  !!bundled && existsSync(join(bundled, 'llama-server')) && installedLocalAiModelsReady()
 
 async function createPptx(path: string): Promise<void> {
   const p = 'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"'
@@ -86,6 +92,7 @@ test('bundled offline AI changes slide text and keeps adjacent text through PPTX
   const file = join(dir, 'edit.pptx')
   await createPptx(file)
   const launched = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     openFile: file,
@@ -115,6 +122,7 @@ test('bundled offline AI changes slide text and keeps adjacent text through PPTX
     await closeAndSaveVideo(launched, 'local-ai-pptx')
   }
   const reopened = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     openFile: file,
     recordVideo: false,
@@ -141,6 +149,7 @@ test('bundled offline AI changes PDF text and keeps adjacent text through save a
   original.addPage([595, 842]).drawText('Old Keep', { x: 60, y: 730, size: 20, font })
   await writeFile(file, await original.save({ useObjectStreams: false }))
   const launched = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     openFile: file,
@@ -169,6 +178,7 @@ test('bundled offline AI changes PDF text and keeps adjacent text through save a
     await closeAndSaveVideo(launched, 'local-ai-pdf')
   }
   const reopened = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     openFile: file,
     recordVideo: false,

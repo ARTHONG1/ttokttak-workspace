@@ -14,9 +14,9 @@ import {
   type Page,
 } from '@playwright/test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { copyFileSync, existsSync, linkSync, mkdirSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 
 export const SHELL_DIR = resolve(__dirname, '../apps/shell')
@@ -67,6 +67,8 @@ interface LaunchOptions {
    * starts at the home screen, as a user does.
    */
   welcome?: boolean
+  /** the installed app's 똑딱AI model files in this launch's profile (installedLocalAiModelsReady) */
+  seedLocalAiModels?: boolean
 }
 
 export interface LaunchedApp {
@@ -75,12 +77,53 @@ export interface LaunchedApp {
   userDataDir: string
 }
 
+/**
+ * The installed app's downloaded 똑딱AI model files (userData/local-ai-models, since 0.17.0 the
+ * installer carries the server only). A packaged-app test with seedLocalAiModels gets them in
+ * its scratch profile, so a test never downloads 4 GB.
+ */
+export const INSTALLED_LOCAL_AI_MODELS = join(
+  homedir(),
+  process.platform === 'win32' ? 'AppData/Roaming' : 'Library/Application Support',
+  'HangulAIWorkbench',
+  'local-ai-models',
+)
+
+export function installedLocalAiModelsReady(): boolean {
+  return ['base.gguf', 'adapters/document.gguf', 'adapters/pumui.gguf'].every((file) =>
+    existsSync(join(INSTALLED_LOCAL_AI_MODELS, file)),
+  )
+}
+
+/**
+ * The installed model files in a scratch profile: hard links (no copy of 4 GB, the same
+ * volume), and a copy of each check record (it names the same file, so no hashing again;
+ * a copy, so the app writing one never touches the installed app's).
+ */
+function seedLocalAiModels(userDataDir: string): void {
+  for (const file of [
+    'base.gguf',
+    'adapters/document.gguf',
+    'adapters/pumui.gguf',
+    'school-record.gguf',
+  ]) {
+    const from = join(INSTALLED_LOCAL_AI_MODELS, file)
+    if (!existsSync(from)) continue
+    const to = join(userDataDir, 'local-ai-models', file)
+    mkdirSync(dirname(to), { recursive: true })
+    if (!existsSync(to)) linkSync(from, to)
+    if (existsSync(from + '.verified.json'))
+      copyFileSync(from + '.verified.json', to + '.verified.json')
+  }
+}
+
 export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> {
   const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
   if (!packagedExecutable && !existsSync(SHELL_MAIN)) {
     throw new Error(`Missing build output at ${SHELL_MAIN} — run \`npm run build:all\` first`)
   }
   const userDataDir = options.userDataDir ?? (await mkdtemp(join(tmpdir(), 'genoffice-e2e-')))
+  if (options.seedLocalAiModels) seedLocalAiModels(userDataDir)
   if (options.onboardingSeen || options.settings) {
     await writeFile(
       join(userDataDir, 'app-settings.json'),

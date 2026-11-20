@@ -492,6 +492,15 @@ export interface HomeApi {
   setAiSettings(settings: AiSettings): Promise<void>
   /** ai-settings.json was rewritten by any renderer (composer model chip, another window) */
   onAiSettingsChanged(handler: () => void): () => void
+  /** 똑딱AI's model files (downloaded once): null where the built-in AI cannot run */
+  getLocalAiModels?(): Promise<LocalAiModelsInfo | null>
+  onLocalAiModelsChanged?(handler: (info: LocalAiModelsInfo | null) => void): () => void
+  /** start (or go on with) downloading them */
+  downloadLocalAiModels?(): Promise<void>
+  /** [파일로 넣기]: pick the model release's .gguf files downloaded by hand */
+  importLocalAiModels?(): Promise<{ ok: boolean; canceled?: boolean; error?: string }>
+  /** the model release page, for downloading the files by hand */
+  openLocalAiModelPage?(): Promise<void>
   /** provider catalog with each fixed endpoint's default base URL (empty for custom) */
   getAiProviders(): AiCatalogEntry[]
   /** live Codex model catalog discovered through the current or overridden app-server */
@@ -702,3 +711,19 @@ export const HOME_CHANNELS = {
   openLicenseNotices: 'home:open-license-notices',
   openRightsContact: 'home:open-rights-contact',
 } as const
+
+/** 똑딱AI's model files, as apps/docs/src/main/local-ai-models-ipc.ts reports them */
+export type LocalAiModelsInfo = {
+  state: 'checking' | 'idle' | 'downloading' | 'verifying' | 'ready' | 'failed'
+  /** the runs whose files are all here: main (documents, 품의) and school_record (생기부) */
+  ready: ('main' | 'school_record')[]
+  received?: number
+  total?: number
+  /** bytes per second, 0 until known */
+  rate?: number
+  message?: string
+  /** a dropped connection: the download goes on by itself */
+  retrying?: boolean
+  /** all the files together */
+  totalBytes: number
+}

@@ -1,67 +1,107 @@
 /**
- * Bundled, offline llama.cpp backend for all editor AI streams.
- * No account, network download or user-supplied executable path is involved.
+ * The built-in, offline llama.cpp backend for all editor AI streams. The server program ships
+ * in the installer (resources/local-ai); 똑딱AI's model files are downloaded once into the
+ * user's folder (local-ai-model-store.ts). No account or user-supplied executable is involved.
  * The server listens only on 127.0.0.1, with a per-process bearer secret.
+ *
+ * One server runs at a time, for one run (local-ai-model-files.ts): documents and 품의 on the
+ * base with its adapters, 생기부 on V7 B. A request holds its run until it ends
+ * (acquireLocalAi); a request for the other run waits for those to end, then the server is
+ * started again on the other model.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { availableParallelism } from 'node:os'
-import { dirname, join, relative } from 'node:path'
+import { basename, dirname, join, relative } from 'node:path'
+import { LOCAL_AI_RUNS, localAiRunFor, type LocalAiRun } from './local-ai-model-files'
+import { notReadyMessage, type LocalAiModels } from './local-ai-model-store'
 
 export const LOCAL_AI_MODEL = 'qwen3.5-2b-local'
 export type LocalAiEndpoint = { baseUrl: string; apiKey: string; model: string }
 
-/**
- * 똑딱AI's per-feature adapters (LoRA), in the order llama-server numbers them. The first is
- * on for every request (the document adapter: 한글 editing and the rest); a feature with an
- * adapter of its own (품의서 생성, 생기부) turns that one on instead, for its own requests only.
- */
-export const LOCAL_AI_ADAPTERS = ['document', 'pumui', 'school_record'] as const
-export type LocalAiAdapter = (typeof LOCAL_AI_ADAPTERS)[number]
+/** the base run's adapters (LoRA), in the order llama-server numbers them */
+export const LOCAL_AI_ADAPTERS = LOCAL_AI_RUNS.main.adapters
+type Adapter = { name: string; path: string }
 type LocalAiFiles = {
   executable: string
   model: string
-  /** the adapters found next to the model, in LOCAL_AI_ADAPTERS order; empty for a merged model */
-  adapters: { name: LocalAiAdapter; path: string }[]
+  /** the run's adapters, in LOCAL_AI_RUNS order; empty for a standalone model */
+  adapters: Adapter[]
 }
 
-/** the adapters of a bundle: all of them, or none (a single merged model, as before 5세대) */
-export function adapterFiles(dir: string): LocalAiFiles['adapters'] {
+/** the base run's adapters in a folder: all of them, or none (a single merged model) */
+export function adapterFiles(dir: string): Adapter[] {
   const found = LOCAL_AI_ADAPTERS.map((name) => ({ name, path: join(dir, name + '.gguf') }))
   return found.every((a) => existsSync(a.path)) ? found : []
 }
 
-// Environment paths are developer-only overrides. Installer resources sit outside ASAR.
-export function localAiFiles(): LocalAiFiles | null {
+/** llama-server: in the installer outside ASAR, or a developer's (GENOFFICE_LOCAL_AI_RUNTIME) */
+export function localAiExecutable(): string | null {
   const runtime =
     process.env.GENOFFICE_LOCAL_AI_RUNTIME ||
     join(
-      process.resourcesPath,
+      process.resourcesPath ?? '',
       'local-ai',
       process.platform === 'win32' ? 'llama-server.exe' : 'llama-server',
     )
-  const model =
-    process.env.GENOFFICE_LOCAL_AI_MODEL || join(process.resourcesPath, 'local-ai', 'model.gguf')
-  const adapters = adapterFiles(
-    process.env.GENOFFICE_LOCAL_AI_ADAPTERS || join(dirname(model), 'adapters'),
-  )
-  return existsSync(runtime) && existsSync(model) ? { executable: runtime, model, adapters } : null
+  return existsSync(runtime) ? runtime : null
 }
 
+let models: LocalAiModels | null = null
+
+/** the downloaded model files this process uses (set once at launch on an installed app) */
+export function useLocalAiModels(next: LocalAiModels | null): void {
+  models = next
+}
+
+/**
+ * A developer's fixed model for every run (GENOFFICE_LOCAL_AI_MODEL, with the base adapters
+ * beside it in adapters/ or GENOFFICE_LOCAL_AI_ADAPTERS, and 생기부's model in
+ * GENOFFICE_LOCAL_AI_SCHOOL_RECORD_MODEL), instead of the downloaded files.
+ */
+function developerFiles(run: LocalAiRun): { model: string; adapters: Adapter[] } | null {
+  const model = process.env.GENOFFICE_LOCAL_AI_MODEL
+  if (!model) return null
+  const school = process.env.GENOFFICE_LOCAL_AI_SCHOOL_RECORD_MODEL
+  if (run === 'school_record' && school) return { model: school, adapters: [] }
+  return {
+    model,
+    adapters: adapterFiles(
+      process.env.GENOFFICE_LOCAL_AI_ADAPTERS || join(dirname(model), 'adapters'),
+    ),
+  }
+}
+
+export function localAiFiles(run: LocalAiRun = 'main'): LocalAiFiles | null {
+  const executable = localAiExecutable()
+  if (!executable) return null
+  const files = developerFiles(run) ?? models?.pathsFor(run) ?? null
+  return files && existsSync(files.model) ? { executable, ...files } : null
+}
+
+/**
+ * This installation runs the built-in AI: its server is in the app, and the model files are
+ * here or being downloaded. Requests made before the download ends are told how far it is.
+ */
 export function localAiAvailable(): boolean {
-  return localAiFiles() !== null
+  return localAiExecutable() !== null && (models !== null || !!process.env.GENOFFICE_LOCAL_AI_MODEL)
 }
 
 let current: {
   process: ChildProcess
   endpoint: LocalAiEndpoint
-  adapters: LocalAiAdapter[]
+  run: LocalAiRun
+  adapters: string[]
 } | null = null
-let starting: Promise<LocalAiEndpoint> | null = null
+let starting: { run: LocalAiRun; promise: Promise<LocalAiEndpoint> } | null = null
 let startingChild: ChildProcess | null = null
 let shuttingDown = false
+/** requests holding the server's run, and that run */
+let holders = 0
+let heldRun: LocalAiRun | null = null
+const waiting: (() => void)[] = []
 
 function availablePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -80,7 +120,7 @@ function availablePort(): Promise<number> {
  * the rest off. Paths are given relative to the folder the server runs in, because the
  * FNAME:SCALE form cannot carry a Windows drive letter or a comma.
  */
-export function adapterArgs(adapters: LocalAiFiles['adapters'], cwd: string): string[] {
+export function adapterArgs(adapters: Adapter[], cwd: string): string[] {
   if (adapters.length === 0) return []
   return [
     '--lora-scaled',
@@ -91,7 +131,7 @@ export function adapterArgs(adapters: LocalAiFiles['adapters'], cwd: string): st
 /**
  * The per-request adapter choice for a feature, for the running server: only that feature's
  * adapter on. Null when the feature has none (the default, the document adapter, stays on)
- * or the model is a single merged file.
+ * or the model is a standalone one.
  */
 export function localAiLoraFor(
   feature: string | undefined,
@@ -102,13 +142,16 @@ export function localAiLoraFor(
   return loaded.map((_, id) => ({ id, scale: id === at ? 1 : 0 }))
 }
 
-async function start(): Promise<LocalAiEndpoint> {
+function missingMessage(): string {
+  return models
+    ? notReadyMessage(models.current())
+    : '똑딱AI(내장 AI) 파일을 찾지 못했습니다. 앱을 다시 설치해 주세요.'
+}
+
+async function start(run: LocalAiRun): Promise<LocalAiEndpoint> {
   if (shuttingDown) throw new Error('The local AI runtime is shutting down')
-  const files = localAiFiles()
-  if (!files)
-    throw new Error(
-      '똑딱AI(내장 AI) 파일을 찾지 못했습니다. 앱에 로컬 모델과 실행 파일을 포함해야 합니다.',
-    )
+  const files = localAiFiles(run)
+  if (!files) throw new Error(missingMessage())
   const port = await availablePort()
   const apiKey = randomBytes(32).toString('hex')
   const endpoint = { baseUrl: `http://127.0.0.1:${port}/v1`, apiKey, model: LOCAL_AI_MODEL }
@@ -120,10 +163,12 @@ async function start(): Promise<LocalAiEndpoint> {
       : Math.min(4, Math.max(1, availableParallelism() - 1))
   const gpu = Number(process.env.GENOFFICE_LOCAL_AI_GPU_LAYERS ?? 0)
   const layers = Number.isInteger(gpu) && gpu >= 0 && gpu <= 99 ? gpu : 0
+  // the server runs in the model's folder and is given the file by its name: the folder is
+  // in the user's profile, whose name may have Korean letters the server could not open
   const cwd = dirname(files.model)
   const args = [
     '--model',
-    files.model,
+    basename(files.model),
     '--alias',
     LOCAL_AI_MODEL,
     '--host',
@@ -178,7 +223,7 @@ async function start(): Promise<LocalAiEndpoint> {
         })
         if (response.ok) {
           if (shuttingDown) throw new Error('The local AI runtime is shutting down')
-          current = { process: child, endpoint, adapters: files.adapters.map((a) => a.name) }
+          current = { process: child, endpoint, run, adapters: files.adapters.map((a) => a.name) }
           child.once('exit', () => {
             if (current?.process === child) current = null
           })
@@ -196,20 +241,65 @@ async function start(): Promise<LocalAiEndpoint> {
   }
 }
 
-export function ensureLocalAiRuntime(): Promise<LocalAiEndpoint> {
+function alive(child: ChildProcess): boolean {
+  return child.exitCode === null && child.signalCode === null
+}
+
+/** the server for a run: running, being started, or started now (the other run's stops) */
+function ensureRun(run: LocalAiRun): Promise<LocalAiEndpoint> {
   if (shuttingDown) return Promise.reject(new Error('The local AI runtime is shutting down'))
-  if (current && current.process.exitCode === null && current.process.signalCode === null) {
+  if (current && current.run === run && alive(current.process))
     return Promise.resolve(current.endpoint)
+  if (starting?.run === run) return starting.promise
+  if (starting) return starting.promise.catch(() => undefined).then(() => ensureRun(run))
+  // a run whose files are not in yet stops nothing: the other run's server stays up
+  if (!localAiFiles(run)) return Promise.reject(new Error(missingMessage()))
+  // no request holds the other run here (acquireLocalAi waits for them), so it can go
+  if (current) {
+    current.process.kill()
+    current = null
   }
-  if (!starting)
-    starting = start().finally(() => {
-      starting = null
-    })
-  return starting
+  const promise = start(run).finally(() => {
+    if (starting?.promise === promise) starting = null
+  })
+  starting = { run, promise }
+  return promise
+}
+
+/**
+ * A request's hold on the server for its feature's run, with the adapters to turn on for it.
+ * release() when the request ends: a request for the other run waits until then.
+ */
+export async function acquireLocalAi(feature?: string): Promise<{
+  endpoint: LocalAiEndpoint
+  lora: { id: number; scale: number }[] | null
+  release: () => void
+}> {
+  const run = localAiRunFor(feature)
+  while (holders > 0 && heldRun !== run) await new Promise<void>((r) => waiting.push(r))
+  heldRun = run
+  holders++
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    holders--
+    if (holders > 0) return
+    heldRun = null
+    for (const wake of waiting.splice(0)) wake()
+  }
+  try {
+    const endpoint = await ensureRun(run)
+    return { endpoint, lora: localAiLoraFor(feature, current?.adapters ?? []), release }
+  } catch (err) {
+    release()
+    throw err
+  }
 }
 
 export function stopLocalAiRuntime(): void {
   shuttingDown = true
+  models?.stop()
   startingChild?.kill()
   current?.process.kill()
   current = null

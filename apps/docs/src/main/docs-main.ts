@@ -126,12 +126,8 @@ import {
 } from '@genoffice/ai-provider'
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
-import {
-  ensureLocalAiRuntime,
-  localAiAvailable,
-  localAiLoraFor,
-  stopLocalAiRuntime,
-} from './local-ai-runtime'
+import { acquireLocalAi, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
+import { localAiSelectionChanged, registerLocalAiModels } from './local-ai-models-ipc'
 import {
   localExactEditFollowup,
   localExactSlideStep,
@@ -3961,6 +3957,8 @@ export function activeAiStreamCount(): number {
 function broadcastAiSettingsChanged(): void {
   for (const wc of webContents.getAllWebContents())
     if (!wc.isDestroyed()) wc.send('ai:settings-changed')
+  // picking the built-in AI starts the download of its model files
+  localAiSelectionChanged(storedAiSettings().provider === 'local')
 }
 
 /**
@@ -3999,6 +3997,8 @@ export function registerAiIpc(): void {
   // app.exit()/process.exit() skip will-quit but still need to stop child processes.
   process.once('exit', shutdownCodexAppServers)
   process.once('exit', stopLocalAiRuntime)
+  // 똑딱AI's model files (downloaded once): set up before the settings are first read
+  registerLocalAiModels(() => storedAiSettings().provider === 'local')
   // the subscription channels (statuses, recheck, login, install, metered) exist once per
   // process: whichever editor main asks first registers them and starts the first check
   ensureSubscriptionIpc(ipcMain, {
@@ -4140,8 +4140,11 @@ export function registerAiIpc(): void {
       activeAiStreams.set(requestId, controller)
       const unwatchSender = abortOnDestroyed(event.sender, controller)
       const out = createChunkCoalescer<AiStreamChunk>(send)
+      let releaseLocal = () => {}
       try {
-        const config = await ensureLocalAiRuntime()
+        const held = await acquireLocalAi(request.feature)
+        releaseLocal = held.release
+        const config = held.endpoint
         let lastPing = 0
         const generateDraft = async (systemPrompt: string, maxTokens: number) => {
           let generated = ''
@@ -4194,6 +4197,7 @@ export function registerAiIpc(): void {
         if (controller.signal.aborted) out.push({ requestId, type: 'done' })
         else out.push(aiStreamErrorChunk(requestId, err))
       } finally {
+        releaseLocal()
         out.flush()
         unwatchSender()
         activeAiStreams.delete(requestId)
@@ -4241,8 +4245,12 @@ export function registerAiIpc(): void {
       lastPing = now
       out.push({ requestId, type: 'ping' })
     }
+    let releaseLocal = () => {}
     try {
-      const config = provider === 'local' ? await ensureLocalAiRuntime() : target.config
+      // the built-in AI: this feature's model run, held until the request ends
+      const held = provider === 'local' ? await acquireLocalAi(request.feature) : null
+      if (held) releaseLocal = held.release
+      const config = held ? held.endpoint : target.config
       let stopReason: string | undefined
       // a grammar only means something to the built-in llama-server; capped so a renderer cannot
       // hand it an unbounded string
@@ -4252,8 +4260,8 @@ export function registerAiIpc(): void {
         request.grammar.length <= 200_000
           ? request.grammar
           : ''
-      // the feature's own adapter (똑딱AI 5세대: 품의), for this request only
-      const lora = provider === 'local' ? localAiLoraFor(request.feature) : null
+      // the feature's own adapter (품의), for this request only
+      const lora = held?.lora ?? null
       const bodyExtras = {
         ...(grammar ? { grammar } : {}),
         ...(lora ? { lora } : {}),
@@ -4289,6 +4297,7 @@ export function registerAiIpc(): void {
         out.push(aiStreamErrorChunk(requestId, err))
       }
     } finally {
+      releaseLocal()
       out.flush()
       unwatchSender()
       activeAiStreams.delete(requestId)
@@ -4437,8 +4446,11 @@ export function registerAiIpc(): void {
     const target = resolveAiRun(request.settings, sharedSubscriptionStatuses(), AI_RUN_TEXTS)
     if (!target.ok) return { ok: false, ...target.refusal }
     const { system, user } = request
+    let releaseLocal = () => {}
     try {
-      const config = target.provider === 'local' ? await ensureLocalAiRuntime() : target.config
+      const held = target.provider === 'local' ? await acquireLocalAi() : null
+      if (held) releaseLocal = held.release
+      const config = held ? held.endpoint : target.config
       const result = await chatForProvider(target.provider, config, system, user)
       // the one-shot path reports HTTP failures as ok:false with the raw body —
       // replace capacity/rate-limit dumps with the localized "busy" message
@@ -4448,6 +4460,8 @@ export function registerAiIpc(): void {
       return result
     } catch (err) {
       return aiChatFailure(err, () => tm('errAiBusy'))
+    } finally {
+      releaseLocal()
     }
   })
 }

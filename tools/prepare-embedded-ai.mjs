@@ -1,129 +1,91 @@
 /**
- * Stage one platform's verified 똑딱AI and llama.cpp runtime for electron-builder.
- * 5세대: one fixed Q6_K base and per-feature LoRA adapters (document, pumui, school_record).
- * Usage: node tools/prepare-embedded-ai.mjs /path/base-Q6_K.gguf /path/to/llama/bin \
- *          /path/document-adapter.gguf /path/pumui-adapter.gguf /path/school-record-adapter.gguf
+ * Stage one platform's built-in 똑딱AI runtime for electron-builder: llama.cpp's llama-server
+ * and its libraries, the licences, and a note on the model files the app downloads once on
+ * the built-in AI's first use (pinned in apps/docs/src/main/local-ai-model-files.ts). Since
+ * 0.17.0 the model files are not part of the installer: the app and the model are released
+ * apart (the model release on GitHub), so an app update does not carry 4 GB again and the
+ * models stay the original files (each under GitHub's 2 GiB limit, nothing re-quantized).
+ * Usage: node tools/prepare-embedded-ai.mjs /path/to/llama/bin
  * Then: GENOFFICE_EMBED_LOCAL_AI=1 npm run dist:mac (or dist:win).
- * The staged 1.72 GB bundle is deliberately excluded from Git.
  */
 import {
   copyFileSync,
-  createReadStream,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const [modelArg, runtimeArg, documentArg, pumuiArg, schoolRecordArg] = process.argv.slice(2)
-if (!modelArg || !runtimeArg || !documentArg || !pumuiArg || !schoolRecordArg) {
+const [runtimeArg, ...rest] = process.argv.slice(2)
+if (!runtimeArg || rest.length > 0) {
   throw new Error(
-    'Usage: node tools/prepare-embedded-ai.mjs /absolute/base.gguf /absolute/llama-runtime-dir /absolute/document.gguf /absolute/pumui.gguf /absolute/school_record.gguf',
+    'Usage: node tools/prepare-embedded-ai.mjs /absolute/llama-runtime-dir (the model files are downloaded by the app since 0.17.0)',
   )
 }
-const model = resolve(modelArg)
 const runtime = resolve(runtimeArg)
 const exe = process.platform === 'win32' ? 'llama-server.exe' : 'llama-server'
-const binary = join(runtime, exe)
-const runtimeLicense = join(runtime, 'LICENSE')
-if (!existsSync(model) || !existsSync(binary) || !existsSync(runtimeLicense)) {
-  throw new Error('Model, llama-server or llama.cpp LICENSE missing')
+for (const path of [join(runtime, exe), join(runtime, 'LICENSE')]) {
+  if (!existsSync(path)) throw new Error('Missing: ' + path)
 }
-if (!model.endsWith('.gguf') || statSync(model).size > 5_000_000_000) {
-  throw new Error('Expected a GGUF model smaller than 5 GB')
-}
-async function sha256Of(path) {
-  const hash = createHash('sha256')
-  for await (const block of createReadStream(path)) hash.update(block)
-  return hash.digest('hex')
-}
-// The pinned built-in model: 똑딱AI fifth generation. The base is the unchanged Qwen3.5-2B
-// Q6_K GGUF; each feature's LoRA is a separate file the server loads beside it. The document
-// adapter is the fourth generation's (2,000 steps, the 0.16.10 model before fusing); the 품의
-// adapter is final200-v1 step 157, promoted by the user's direction on 2026-11-18 (registry
-// ddak_features.json in the model project). The 생기부 adapter carries 똑딱AI 생기부 V7 B
-// (school-record-v7-b, a standalone model promoted by the user's direction on 2026-11-19)
-// onto this base: V7 B changed only blocks 22 and 23, so the model project's
-// school_record_v7_app_lora.py writes that change as a LoRA (block 22 rank 8, block 23 exact
-// in F16 with its RMSNorm changes folded in; alpha 0, so each pair applies at scale 1).
-// On the 80 V7 dev prompts, this base + adapter in the app's settings was checked against
-// V7 B itself (docs/tracking/status.md). A replacement needs a new provenance entry.
-// Q6_K rather than the Q8_0 the adapters were measured on: a release file must stay under
-// GitHub's 2 GiB limit and the Q8 build (2.23 GB) does not. On the same frozen 200 품의 carts
-// Q6_K scored money 157 and rows 113 (Q8_0: 157 and 116), with no confirmed wrong amount.
-const PINNED = {
-  base: 'fc90339420b4298887aafb307a4291c55440b730133bbffe6ba9630503dcb548',
-  document: '76fac99858b21d136835cc4bdda02edf8721adaf820280ef5aba31c8d506ace9',
-  pumui: '7f4304879415d92d87b1c9401819135383a06c2e6e1e39c74e321c44cf7b99ac',
-  school_record: 'c4b61189e93ca7ee6ed29a9eef43a00fdcda1f6226710d46b074c90d70e4f2e1',
-}
-const adapters = {
-  document: resolve(documentArg),
-  pumui: resolve(pumuiArg),
-  school_record: resolve(schoolRecordArg),
-}
-const hash = await sha256Of(model)
-if (hash !== PINNED.base) throw new Error('Unverified base checksum: ' + hash)
-const adapterHashes = {}
-for (const [name, path] of Object.entries(adapters)) {
-  if (!existsSync(path)) throw new Error('Adapter missing: ' + name)
-  adapterHashes[name] = await sha256Of(path)
-  if (adapterHashes[name] !== PINNED[name]) {
-    throw new Error('Unverified ' + name + ' adapter checksum: ' + adapterHashes[name])
-  }
+
+// the files the app downloads: one definition, in the app's source
+const source = readFileSync(join(root, 'apps/docs/src/main/local-ai-model-files.ts'), 'utf8')
+const release = /LOCAL_AI_MODEL_RELEASE = '([^']+)'/.exec(source)?.[1]
+const files = [
+  ...source.matchAll(
+    /id: '([a-z_]+)',\s*file: '([^']+)',\s*bytes: ([\d_]+),\s*sha256: '([0-9a-f]{64})',\s*url: DOWNLOAD \+ '([^']+)'/g,
+  ),
+].map(([, id, file, bytes, sha256, asset]) => ({
+  id,
+  file,
+  bytes: Number(bytes.replaceAll('_', '')),
+  sha256,
+  asset,
+}))
+if (!release || files.length !== 4) {
+  throw new Error('apps/docs/src/main/local-ai-model-files.ts: expected a release and 4 files')
 }
 
 const output = join(root, 'apps/shell/build/local-ai')
 rmSync(output, { force: true, recursive: true })
-mkdirSync(join(output, 'adapters'), { recursive: true })
-copyFileSync(model, join(output, 'model.gguf'))
-for (const [name, path] of Object.entries(adapters)) {
-  copyFileSync(path, join(output, 'adapters', name + '.gguf'))
-}
-copyFileSync(binary, join(output, exe))
+mkdirSync(output, { recursive: true })
+copyFileSync(join(runtime, exe), join(output, exe))
 // llama.cpp dynamic builds load adjacent shared libraries through @loader_path
 // (macOS), $ORIGIN (Linux), or DLL lookup (Windows). Resolve symlinks to files.
 for (const file of readdirSync(runtime)) {
-  if (!(/\.dylib$/.test(file) || /\.so(?:\.|$)/.test(file) || /\.dll$/i.test(file))) continue
-  copyFileSync(join(runtime, file), join(output, basename(file)))
+  if (/\.dylib$/.test(file) || /\.so(?:\.|$)/.test(file) || /\.dll$/i.test(file))
+    copyFileSync(join(runtime, file), join(output, basename(file)))
 }
-copyFileSync(runtimeLicense, join(output, 'LLAMA-LICENSE.txt'))
-if (existsSync(join(runtime, 'LICENSE-LLVM-OpenMP'))) {
+copyFileSync(join(runtime, 'LICENSE'), join(output, 'LLAMA-LICENSE.txt'))
+if (existsSync(join(runtime, 'LICENSE-LLVM-OpenMP')))
   copyFileSync(join(runtime, 'LICENSE-LLVM-OpenMP'), join(output, 'LICENSE-LLVM-OpenMP.txt'))
-}
 copyFileSync(join(root, 'LICENSE'), join(output, 'MODEL-LICENSE.txt'))
+const page = 'https://github.com/ARTHONG1/ttokttak-workspace/releases/tag/' + release
 writeFileSync(
   join(output, 'MODEL-ATTRIBUTION.txt'),
   [
+    '똑딱AI model files: downloaded on first use of the built-in AI (not part of this installer)',
+    'From: ' + page,
+    ...files.map((f) => f.asset + ' (' + f.bytes + ' bytes), SHA256 ' + f.sha256),
+    '',
     'Qwen3.5-2B model, Apache License 2.0',
     'Upstream: https://huggingface.co/Qwen/Qwen3.5-2B',
     'GGUF conversion: https://huggingface.co/unsloth/Qwen3.5-2B-GGUF',
-    'GGUF revision: f6d5376be1edb4d416d56da11e5397a961aca8ae',
-    'Base Q6_K, unchanged, SHA256: ' + hash,
-    'Modified by 똑딱작업실 (똑딱AI, fifth generation): per-feature LoRA adapters the',
-    'server loads beside the unchanged base (llama.cpp --lora-scaled), one on per request.',
-    'document adapter (adapters/document.gguf): the fourth generation 2,000-step LoRA on the',
-    'last two layers (rank 8, scale 20, MLX-LM): document editing, HWPX editing and',
-    'school-record writing on fictional cases. SHA256: ' + adapterHashes.document,
-    'pumui adapter (adapters/pumui.gguf): 품의 cart reading in the v3 copy-the-values format,',
-    'eight layers, rank 16, continued from v3 step 400 on 667 checked answers from',
-    'Gemini 3.5 Flash-Lite to fictional carts (157 updates). SHA256: ' + adapterHashes.pumui,
-    'school_record adapter (adapters/school_record.gguf): 똑딱AI 생기부 V7 B written as a LoRA',
-    'on the unchanged base. V7 B fused the V6 생기부 LoRA (last two layers) into Qwen3.5-2B and',
-    'fine-tuned the final block (64 updates) on answers from Gemini to fictional students',
-    '(behaviour notes, elementary comments, subject notes, 창체). Block 22 as its rank-8 change,',
-    'block 23 as its exact change in F16 with the RMSNorm changes folded into the following',
-    'matrices; the small q/k norm changes stay at the base values. Source standalone GGUF',
-    'SHA256 d31c913928eea57ca2d1bfb2a0a158dcb48ef2b4c6bae6dede91cdd7457d0fdf.',
-    'Adapter SHA256: ' + adapterHashes.school_record,
-    'llama.cpp runtime: https://github.com/ggml-org/llama.cpp (MIT license)',
-    'Runtime revision: b12167',
+    'Base: the unchanged Qwen3.5-2B Q8_0 GGUF, for documents, HWPX editing and 품의서 생성.',
+    'Modified by 똑딱작업실 (똑딱AI):',
+    'document adapter: the fourth generation 2,000-step LoRA on the last two layers (rank 8,',
+    'scale 20, MLX-LM): document editing and HWPX editing on fictional cases. On by default.',
+    'pumui adapter: 품의 cart reading in the copy-the-values format, eight layers, rank 16,',
+    'continued from v3 step 400 on 667 checked answers to fictional carts (157 updates).',
+    'school record model: 똑딱AI 생기부 V7 B, a standalone model. The V6 생기부 LoRA (last two',
+    'layers) fused into Qwen3.5-2B, then the final block fine-tuned for 64 updates on answers',
+    'from Gemini to fictional students (행발, 초등 평어, 교과 세특, 창체); Q8_0 GGUF.',
+    'llama.cpp runtime: https://github.com/ggml-org/llama.cpp (MIT license), revision b12167',
     '',
   ].join('\n'),
 )
@@ -131,29 +93,20 @@ const manifest = {
   platform: process.platform,
   arch: process.arch,
   model: 'qwen3.5-2b-local',
-  generation: 5,
-  modelBytes: statSync(model).size,
-  modelSha256: hash,
-  adapters: Object.fromEntries(
-    Object.keys(adapters).map((name) => [
-      name,
-      { file: 'adapters/' + name + '.gguf', sha256: adapterHashes[name] },
-    ]),
-  ),
   runtime: 'llama.cpp b12167',
+  // the model files are downloaded, not bundled
+  models: {
+    release,
+    page,
+    files: files.map(({ id, file, bytes, sha256, asset }) => ({
+      id,
+      file,
+      bytes,
+      sha256,
+      url:
+        'https://github.com/ARTHONG1/ttokttak-workspace/releases/download/' + release + '/' + asset,
+    })),
+  },
 }
 writeFileSync(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
-console.log(
-  JSON.stringify(
-    {
-      output,
-      ...manifest,
-      bundleBytes: readdirSync(output, { recursive: true }).reduce((n, f) => {
-        const s = statSync(join(output, String(f)))
-        return s.isFile() ? n + s.size : n
-      }, 0),
-    },
-    null,
-    2,
-  ),
-)
+console.log(JSON.stringify({ output, ...manifest }, null, 2))

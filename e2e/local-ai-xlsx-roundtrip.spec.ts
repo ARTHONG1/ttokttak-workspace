@@ -4,7 +4,12 @@ import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
+import {
+  launchShell,
+  closeAndSaveVideo,
+  installedLocalAiModelsReady,
+  waitForPageWithUrl,
+} from './helpers'
 
 const source = resolve(__dirname, '../apps/sheets/fixtures/generated/compatibility-basic.xlsx')
 const packagedExecutable = process.env.GENOFFICE_E2E_PACKAGED_EXECUTABLE
@@ -21,7 +26,10 @@ function sheetXml(path: string): string {
 test('packaged offline AI changes XLSX A1 and preserves B1 after saving and reopening', async () => {
   test.setTimeout(240_000)
   test.skip(
-    !packagedExecutable || !bundled || !existsSync(join(bundled, 'model.gguf')),
+    !packagedExecutable ||
+      !bundled ||
+      !existsSync(join(bundled, 'llama-server')) ||
+      !installedLocalAiModelsReady(),
     'This is an isolated packaged/offline app verification',
   )
   const dir = await mkdtemp(join(tmpdir(), 'genoffice-offline-xlsx-'))
@@ -29,6 +37,7 @@ test('packaged offline AI changes XLSX A1 and preserves B1 after saving and reop
   await copyFile(source, workbook)
 
   const launched = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     openFile: workbook,
@@ -67,6 +76,7 @@ test('packaged offline AI changes XLSX A1 and preserves B1 after saving and reop
   }
 
   const reopened = await launchShell({
+    seedLocalAiModels: true,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     openFile: workbook,

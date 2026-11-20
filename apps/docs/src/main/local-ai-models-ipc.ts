@@ -1,0 +1,116 @@
+/**
+ * 똑딱AI's model files on an installed app: the download (local-ai-model-store.ts) wired to
+ * Electron and to the settings page. Only a desktop install with the server in it takes part
+ * (not the web version, not an Intel Mac build without the server, not a developer run with
+ * GENOFFICE_LOCAL_AI_MODEL). The files are downloaded when the built-in AI is the selected one:
+ * on a new installation (it is preselected) or once someone picks it.
+ */
+import { join } from 'node:path'
+import {
+  app,
+  dialog,
+  ipcMain,
+  powerMonitor,
+  powerSaveBlocker,
+  session,
+  shell,
+  webContents,
+  type Session,
+} from 'electron'
+import {
+  LOCAL_AI_MODEL_FILES,
+  LOCAL_AI_MODEL_PAGE,
+  LOCAL_AI_MODELS_DIR,
+} from './local-ai-model-files'
+import { LocalAiModels, type LocalAiModelState } from './local-ai-model-store'
+import { localAiExecutable, useLocalAiModels } from './local-ai-runtime'
+
+export const LOCAL_AI_MODEL_CHANNELS = {
+  state: 'ai:local-models',
+  changed: 'ai:local-models-changed',
+  download: 'ai:local-models-download',
+  importFiles: 'ai:local-models-import',
+  openPage: 'ai:local-models-open-page',
+} as const
+
+/** what the settings page shows: the state, and how much there is to download in all */
+export type LocalAiModelsInfo = LocalAiModelState & { totalBytes: number }
+
+let models: LocalAiModels | null = null
+
+function info(): LocalAiModelsInfo | null {
+  if (!models) return null
+  return { ...models.current(), totalBytes: LOCAL_AI_MODEL_FILES.reduce((n, f) => n + f.bytes, 0) }
+}
+
+/** the download's own connections: no disk cache, and an ASCII User-Agent */
+function downloadSession(): Session {
+  const ses = session.fromPartition('local-ai-models', { cache: false })
+  // HTTP headers carry ASCII only: GitHub's file storage refuses a User-Agent with other
+  // bytes (HTTP 400), as 똑딱생기부 found with its Korean name
+  ses.setUserAgent(app.userAgentFallback.replace(/[^\x20-\x7e]/g, ''))
+  return ses
+}
+
+/**
+ * Set up the model files at launch (before the AI settings are first read: a new installation
+ * preselects the built-in AI only where it can run). wantsLocal: the built-in AI is selected.
+ */
+export function registerLocalAiModels(wantsLocal: () => boolean): void {
+  ipcMain.handle(LOCAL_AI_MODEL_CHANNELS.state, () => info())
+  ipcMain.handle(LOCAL_AI_MODEL_CHANNELS.download, () => {
+    void models?.prepare()
+  })
+  ipcMain.handle(LOCAL_AI_MODEL_CHANNELS.openPage, () => shell.openExternal(LOCAL_AI_MODEL_PAGE))
+  ipcMain.handle(LOCAL_AI_MODEL_CHANNELS.importFiles, async () => {
+    if (!models) return { ok: false, error: '이 설치판에는 똑딱AI가 없어요.' }
+    const picked = await dialog.showOpenDialog({
+      title: '똑딱AI 모델 파일 넣기',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: '똑딱AI 모델 (.gguf)', extensions: ['gguf'] }],
+    })
+    if (picked.canceled || picked.filePaths.length === 0) return { ok: false, canceled: true }
+    try {
+      await models.importFiles(picked.filePaths)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  if (!localAiExecutable() || process.env.GENOFFICE_LOCAL_AI_MODEL) return
+  models = new LocalAiModels(
+    join(app.getPath('userData'), LOCAL_AI_MODELS_DIR),
+    (url, init) => downloadSession().fetch(url, { ...init, cache: 'no-store' }),
+    { reconnect: () => downloadSession().closeAllConnections() },
+  )
+  useLocalAiModels(models)
+  // while the files download, the computer does not fall asleep by itself (as a browser
+  // download keeps it awake); a closed lid still sleeps, and the download goes on after
+  let awake: number | null = null
+  models.onState((state) => {
+    const busy = state.state === 'downloading' || state.state === 'verifying'
+    if (busy && awake === null) awake = powerSaveBlocker.start('prevent-app-suspension')
+    if (!busy && awake !== null) {
+      powerSaveBlocker.stop(awake)
+      awake = null
+    }
+    const sent = info()
+    for (const wc of webContents.getAllWebContents())
+      if (!wc.isDestroyed()) wc.send(LOCAL_AI_MODEL_CHANNELS.changed, sent)
+  })
+  powerMonitor.on('resume', () => models?.resumeDropped())
+  powerMonitor.on('unlock-screen', () => models?.resumeDropped())
+  // the files already here are checked at once (the server finds them); the missing ones
+  // are downloaded only for someone who uses the built-in AI
+  void models.check().then((ready) => {
+    if (!ready && wantsLocal()) void models?.prepare()
+  })
+}
+
+/** the AI settings changed: picking the built-in AI starts its download */
+export function localAiSelectionChanged(selected: boolean): void {
+  if (!selected || !models) return
+  const { state } = models.current()
+  if (state === 'idle' || (state === 'failed' && !models.busy())) void models.prepare()
+}

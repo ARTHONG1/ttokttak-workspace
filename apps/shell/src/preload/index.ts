@@ -30,6 +30,7 @@ import type {
   FileSearchPage,
   FileSearchRerank,
   FileSearchSettings,
+  LocalAiModelsInfo,
 } from '../shared/home-api'
 import { HOME_CHANNELS } from '../shared/home-api'
 import { RECOVERY_LIST_CHANNELS } from '../shared/recovery-list-api'
@@ -663,6 +664,24 @@ const homeApi: HomeApi = {
   },
   async setAiSettings(settings) {
     await ipcRenderer.invoke('ai:set-settings', settings)
+  },
+  // 똑딱AI's model files: apps/docs/src/main/local-ai-models-ipc.ts
+  async getLocalAiModels() {
+    return ipcRenderer.invoke('ai:local-models')
+  },
+  onLocalAiModelsChanged(handler) {
+    const listener = (_event: unknown, info: unknown) => handler(info as LocalAiModelsInfo | null)
+    ipcRenderer.on('ai:local-models-changed', listener)
+    return () => ipcRenderer.removeListener('ai:local-models-changed', listener)
+  },
+  async downloadLocalAiModels() {
+    await ipcRenderer.invoke('ai:local-models-download')
+  },
+  async importLocalAiModels() {
+    return ipcRenderer.invoke('ai:local-models-import')
+  },
+  async openLocalAiModelPage() {
+    await ipcRenderer.invoke('ai:local-models-open-page')
   },
   getAiProviders() {
     return AI_PROVIDERS.map((meta) => {

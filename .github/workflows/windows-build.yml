@@ -96,32 +96,19 @@ jobs:
           mkdir -p "$engine/x86_64-pc-windows-gnu/release"
           cp "$engine/release/xlsx-sidecar.exe" "$engine/x86_64-pc-windows-gnu/release/"
 
-      - name: Prepare the built-in AI (model + llama.cpp Windows x64)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+      # the server only: since 0.17.0 the app downloads 똑딱AI's model files once
+      # (apps/docs/src/main/local-ai-model-files.ts), so the installer carries no model
+      - name: Prepare the built-in AI (llama.cpp Windows x64)
         run: |
           set -euo pipefail
           work="$RUNNER_TEMP/local-ai"
-          mkdir -p "$work/runtime" "$work/model"
+          mkdir -p "$work/runtime"
           curl -sSfL --retry 5 -o "$work/llama-win.zip" \
             https://github.com/ggml-org/llama.cpp/releases/download/b12167/llama-b12167-bin-win-cpu-x64.zip
           7z x "$work/llama-win.zip" -o"$work/runtime" >/dev/null
           curl -sSfL --retry 5 -o "$work/runtime/LICENSE" \
             https://raw.githubusercontent.com/ggml-org/llama.cpp/b12167/LICENSE
-          # 똑딱AI 5세대: the Q6_K base and the per-feature adapters come from this version's
-          # Apple Silicon build on the same release (verified and uploaded first);
-          # prepare-embedded-ai.mjs refuses any file whose SHA256 is not the pinned one
-          version=$(node -p "require('./apps/shell/package.json').version")
-          gh release download "v$version" --pattern "HangulAIWorkbench-$version-arm64-mac.zip" --dir "$work" \
-            || { echo "upload the Apple Silicon build of v$version to its release first"; exit 1; }
-          zip="$work/HangulAIWorkbench-$version-arm64-mac.zip"
-          res="HangulAIWorkbench.app/Contents/Resources/local-ai"
-          7z e "$zip" "$res/model.gguf" "$res/adapters/document.gguf" "$res/adapters/pumui.gguf" \
-            "$res/adapters/school_record.gguf" -o"$work/model" >/dev/null
-          rm -f "$zip" "$work/llama-win.zip"
-          node tools/prepare-embedded-ai.mjs "$work/model/model.gguf" "$work/runtime" \
-            "$work/model/document.gguf" "$work/model/pumui.gguf" "$work/model/school_record.gguf"
+          node tools/prepare-embedded-ai.mjs "$work/runtime"
           rm -rf "$work"
 
       - name: Package
@@ -140,13 +127,13 @@ jobs:
             "$dir/resources/cli/genoffice.cjs" \
             "$dir/resources/cli/ttokttak.cmd" \
             "$dir/resources/local-ai/llama-server.exe" \
-            "$dir/resources/local-ai/model.gguf" \
-            "$dir/resources/local-ai/adapters/document.gguf" \
-            "$dir/resources/local-ai/adapters/pumui.gguf" \
-            "$dir/resources/local-ai/adapters/school_record.gguf" \
             "$dir/resources/local-ai/manifest.json"; do
             test -f "$bin" || { echo "missing: $bin"; exit 1; }
           done
+          # the model files are downloaded by the app, never shipped
+          if find "$dir/resources/local-ai" -name '*.gguf' | grep -q .; then
+            echo "the installer must not carry a model file"; exit 1
+          fi
           version=$(node -p "require('./apps/shell/package.json').version")
           installer="apps/shell/release/HangulAIWorkbench-Setup-$version.exe"
           feed="apps/shell/release/latest.yml"
@@ -174,34 +161,40 @@ jobs:
             "$exe" --headless-export "$work/$input" --to pdf --out "$work/$input.pdf" --json
             test -s "$work/$input.pdf"
           done
-          # the way the app starts it: from its own folder, all adapters loaded
-          pushd "$dir/resources/local-ai" >/dev/null
-          ./llama-server.exe \
-            --model model.gguf \
-            --alias qwen3.5-2b-local \
-            --host 127.0.0.1 --port 18899 \
-            --ctx-size 2048 --threads 4 --parallel 1 --n-gpu-layers 0 \
-            --reasoning off --jinja --no-webui --log-disable \
-            --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0,adapters/school_record.gguf:0 &
-          srv=$!
-          popd >/dev/null
-          trap "kill $srv 2>/dev/null || true" EXIT
-          for _ in $(seq 1 180); do
-            curl -sf http://127.0.0.1:18899/health >/dev/null && break
-            sleep 1
-          done
-          curl -sf http://127.0.0.1:18899/health | grep -q '"ok"'
-          reply=$(curl -sf http://127.0.0.1:18899/v1/chat/completions \
-            -H 'Content-Type: application/json' \
-            -d '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"안녕"}],"max_tokens":16,"temperature":0}')
-          echo "$reply" | grep -q '"choices"'
+          # 똑딱AI's model files as the app downloads them (the release in manifest.json),
+          # each checked against its pinned SHA256, in a folder laid out as the app lays it out
+          models="$RUNNER_TEMP/local-ai-models"
+          node tools/fetch-local-ai-models.mjs "$PWD/$dir/resources/local-ai/manifest.json" "$models"
+          # the way the app starts each run: from the models folder, files by name
+          exe_abs="$PWD/$dir/resources/local-ai/llama-server.exe"
+          ask() {
+            curl -sf http://127.0.0.1:18899/v1/chat/completions -H 'Content-Type: application/json' -d "$1" | grep -q '"choices"'
+          }
+          serve() {
+            pushd "$models" >/dev/null
+            "$exe_abs" --model "$1" --alias qwen3.5-2b-local --host 127.0.0.1 --port 18899 \
+              --ctx-size 2048 --threads 4 --parallel 1 --n-gpu-layers 0 \
+              --reasoning off --jinja --no-webui --log-disable "${@:2}" &
+            srv=$!
+            popd >/dev/null
+            for _ in $(seq 1 180); do
+              curl -sf http://127.0.0.1:18899/health >/dev/null && break
+              sleep 1
+            done
+            curl -sf http://127.0.0.1:18899/health | grep -q '"ok"'
+          }
+          # documents and 품의: the base with both adapters, the document one on
+          serve base.gguf --lora-scaled adapters/document.gguf:1,adapters/pumui.gguf:0
+          trap 'kill $srv 2>/dev/null || true' EXIT
+          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"안녕"}],"max_tokens":16,"temperature":0}'
           # the 품의 request turns on its own adapter for itself only
-          reply=$(curl -sf http://127.0.0.1:18899/v1/chat/completions \
-            -H 'Content-Type: application/json' \
-            -d '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1},{"id":2,"scale":0}]}')
-          echo "$reply" | grep -q '"choices"'
+          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"연필 2자루 1,000원"}],"max_tokens":16,"temperature":0,"lora":[{"id":0,"scale":0},{"id":1,"scale":1}]}'
           curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'pumui.gguf'
-          curl -sf http://127.0.0.1:18899/lora-adapters | grep -q 'school_record.gguf'
+          kill $srv 2>/dev/null || true
+          wait $srv 2>/dev/null || true
+          # 생기부: V7 B, a standalone model
+          serve school-record.gguf
+          ask '{"model":"qwen3.5-2b-local","messages":[{"role":"user","content":"모둠 활동에서 친구의 의견을 정리해 발표함."}],"max_tokens":16,"temperature":0}'
           kill $srv 2>/dev/null || true
           trap - EXIT
 

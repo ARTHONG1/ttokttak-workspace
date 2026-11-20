@@ -10,6 +10,7 @@ import {
   screenshotPath,
   waitForPageWithUrl,
   enterWorkspace,
+  installedLocalAiModelsReady,
 } from './helpers'
 
 const fixtureRoot =
@@ -24,17 +25,17 @@ const testEnv = packagedExecutable
   ? {}
   : { GENOFFICE_LOCAL_AI_MODEL: model, GENOFFICE_LOCAL_AI_RUNTIME: executable }
 const modelReady = bundledDir
-  ? existsSync(join(bundledDir, 'model.gguf')) && existsSync(join(bundledDir, 'llama-server'))
+  ? installedLocalAiModelsReady() && existsSync(join(bundledDir, 'llama-server'))
   : existsSync(model) && existsSync(executable)
 
 function bundledServerPids(): number[] {
   if (!bundledDir) return []
   const runtime = join(bundledDir, 'llama-server')
-  const modelFile = join(bundledDir, 'model.gguf')
   // Return PIDs only; the actual command line contains the ephemeral API key.
+  // The server is given the downloaded base model by its name, from the models folder.
   return execFileSync('ps', ['-axww', '-o', 'pid=,command='], { encoding: 'utf8' })
     .split('\n')
-    .filter((line) => line.includes(`${runtime} --model ${modelFile}`))
+    .filter((line) => line.includes(`${runtime} --model base.gguf`))
     .map((line) => Number.parseInt(line.trim(), 10))
     .filter(Number.isInteger)
 }
@@ -43,6 +44,7 @@ test('fresh installation selects the bundled local model and accepts a keyless c
   test.setTimeout(150_000)
   test.skip(!modelReady, 'Local model/runtime are not staged')
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     recordVideo: false,
@@ -129,6 +131,7 @@ test('offline AI edits one quoted phrase in DOCX and preserves other content aft
   test.skip(!modelReady, 'Local model/runtime are not staged')
   const outputDir = await mkdtemp(join(tmpdir(), 'genoffice-local-edit-'))
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     recordVideo: false,
@@ -249,6 +252,7 @@ test('offline AI answers a document question without exceeding the model context
   test.setTimeout(180_000)
   test.skip(!modelReady, 'Local model/runtime are not staged')
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     recordVideo: false,
@@ -303,6 +307,7 @@ test('offline AI changes the color of named text while leaving adjacent text unt
   test.setTimeout(180_000)
   test.skip(!modelReady, 'Local model/runtime are not staged')
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     recordVideo: false,
@@ -384,6 +389,7 @@ test('offline AI edits a HWPX paragraph and preserves the rest after save and re
   execFileSync(process.execPath, [join(__dirname, 'assets', 'make-local-ai-hwpx.mjs'), file])
 
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     lang: 'ko',
@@ -551,6 +557,7 @@ test('offline AI writes into a blank HWPX and the actual document persists on di
     '--blank',
   ])
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     subscriptionNoticeSeen: false,
     lang: 'ko',
@@ -672,6 +679,7 @@ test('offline AI carries a field-trip topic into "네가 알아서 넣어" and s
     '--blank',
   ])
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     lang: 'ko',
     openFile: file,
@@ -807,6 +815,7 @@ test('cancelled quit keeps local AI usable in the open editor', async () => {
     '--blank',
   ])
   const launched = await launchShell({
+    seedLocalAiModels: !!packagedExecutable,
     onboardingSeen: true,
     lang: 'ko',
     openFile: file,

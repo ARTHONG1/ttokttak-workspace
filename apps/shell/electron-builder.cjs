@@ -36,8 +36,8 @@ const MAINTAINER = 'ARTHONG1 <198707852+ARTHONG1@users.noreply.github.com>'
 // hoc. Off by default, so a local `dist:mac` stays one arm64 package that
 // needs no universal sidecar.
 const includeMacX64 = process.env.GENOFFICE_MAC_X64 === '1'
-// Opt-in offline bundle: built by tools/prepare-embedded-ai.mjs for the target
-// platform. Ordinary releases retain their existing size and resource set.
+// Opt-in built-in AI: the llama.cpp server staged by tools/prepare-embedded-ai.mjs for the
+// target platform. The model files are not in it (since 0.17.0 the app downloads them once).
 const includeEmbeddedLocalAi = process.env.GENOFFICE_EMBED_LOCAL_AI === '1'
 
 // GENOFFICE_WIN_ARM64=1 — package the Windows ARM64 installer instead of x64.
@@ -887,18 +887,22 @@ const config = {
         )
       }
       for (const name of [
-        'model.gguf',
         actualPlatform === 'win32' ? 'llama-server.exe' : 'llama-server',
         'MODEL-LICENSE.txt',
         'LLAMA-LICENSE.txt',
       ]) {
-        if (!existsSync(join(bundled, name))) throw new Error(`Offline AI bundle missing ${name}`)
+        if (!existsSync(join(bundled, name))) throw new Error(`Built-in AI bundle missing ${name}`)
       }
-      // 똑딱AI 5세대: the per-feature adapters the runtime loads beside the base
-      for (const adapter of Object.values(manifest.adapters ?? {})) {
-        if (!existsSync(join(bundled, adapter.file))) {
-          throw new Error(`Offline AI bundle missing ${adapter.file}`)
-        }
+      // the model files are downloaded by the app: an installer carrying one is an old staging
+      const models = readdirSync(bundled, { recursive: true }).filter((f) =>
+        /\.gguf$/i.test(String(f)),
+      )
+      if (models.length > 0 || !manifest.models?.files?.length) {
+        throw new Error(
+          'Built-in AI bundle must hold the server only (the app downloads the model files): ' +
+            (models.join(', ') || 'no models list in manifest.json') +
+            '. Run tools/prepare-embedded-ai.mjs again.',
+        )
       }
     }
     ensureThirdPartyNotices()
