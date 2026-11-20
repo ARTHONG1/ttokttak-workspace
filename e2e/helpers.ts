@@ -195,6 +195,14 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
   })
   const page = await app.firstWindow()
   await waitForDocumentReady(app, page)
+  // since 0.17.1 the app opens straight on the home: wait until it is drawn, as a person
+  // does before using the menu. File → AI sends its open-settings message to the home at
+  // once, and a message sent before the home listens is lost (6 settings tests failed so,
+  // 2026-11-20). A launch that opens a file may show no home; that is not an error here.
+  await page
+    .getByTestId('trial-intro')
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .catch(() => {})
   if (options.welcome) await openIntro(page)
   return { app, page, userDataDir }
 }
