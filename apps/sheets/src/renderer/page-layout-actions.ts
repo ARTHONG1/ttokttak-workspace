@@ -31,6 +31,7 @@ import {
   layoutSheetPrint,
   PrintError,
   printRequest,
+  splitPrintParts,
   type HeaderFooterPictureImage,
   type PrintWorksheet,
   type SheetPrintDocument,
@@ -419,6 +420,8 @@ export interface PrintJob {
   readonly documents: readonly SheetPrintDocument[]
   readonly fileName: string
   readonly pageCount: number
+  /// sheets left out by `skipUnprintable` because they pass the print size limit
+  readonly skipped?: readonly string[]
 }
 
 export interface PrintOutputSettings {
@@ -435,7 +438,13 @@ export interface PrintPreviewHost {
   readonly marginsPreset: 'normal' | 'wide' | 'narrow' | 'custom'
   readonly hasSelection: boolean
   readonly sheetCount: number
-  buildJob(range: PrintRange, overrides: PageSetupJournalState): Promise<PrintJob>
+  /// `skipUnprintable` (the whole-workbook export): a sheet past the size limit is left
+  /// out and named in `skipped`, an empty one passed over, instead of failing the job
+  buildJob(
+    range: PrintRange,
+    overrides: PageSetupJournalState,
+    options?: { skipUnprintable?: boolean },
+  ): Promise<PrintJob>
   listPrinters(): Promise<PrinterInfo[]>
   /// Resolve with the status message to show.
   print(job: PrintJob, output: PrintOutputSettings): Promise<string>
@@ -501,27 +510,33 @@ export function createPrintPreviewHost(ctx: PageLayoutContext): PrintPreviewHost
     marginsPreset: journal.margins ?? (fileSetup?.margins === undefined ? 'normal' : 'custom'),
     hasSelection,
     sheetCount: printableSheets().length,
-    async buildJob(range, overrides) {
+    async buildJob(range, overrides, options = {}) {
       const now = new Date()
       const sheets = range === 'workbook' ? printableSheets() : [worksheet]
       const documents: SheetPrintDocument[] = []
+      const skipped: string[] = []
       for (const sheet of sheets) {
         const isActive = sheet.getSheetId() === sheetId
-        documents.push(
-          await sheetPrintDocument(
-            ctx,
-            state,
-            sheet,
-            isActive ? overrides : {},
-            range === 'selection' ? selectionA1() : null,
-            now,
-            isActive,
-          ),
-        )
+        try {
+          documents.push(
+            await sheetPrintDocument(
+              ctx,
+              state,
+              sheet,
+              isActive ? overrides : {},
+              range === 'selection' ? selectionA1() : null,
+              now,
+              isActive,
+            ),
+          )
+        } catch (error: unknown) {
+          if (!options.skipUnprintable || !(error instanceof PrintError)) throw error
+          if (error.message === t('appPrintTooLarge')) skipped.push(sheet.getSheetName())
+        }
       }
       const pageCount = documents.reduce((sum, document) => sum + document.pages.length, 0)
       if (pageCount === 0) throw new PrintError(t('appPrintNothing'))
-      return { documents, fileName: `${baseName}.pdf`, pageCount }
+      return { documents, fileName: `${baseName}.pdf`, pageCount, skipped }
     },
     listPrinters: () => window.desktopApi.listPrinters(),
     async print(job, output) {
@@ -660,6 +675,65 @@ export async function handleExportPdf(ctx: PageLayoutContext, outPath?: string):
   } catch (error: unknown) {
     ctx.setMessage(error instanceof Error ? error.message : t('appPdfExportFailed'))
     return false
+  }
+}
+
+/// The most print HTML one PDF request may carry: the preload and shared/desktop-api.ts
+/// refuse a longer one ('Invalid PDF export request.').
+const MAX_PDF_HTML = 20_000_000
+
+/// The dialog-free export (문서 변환, 똑딱서명, the command line): the whole file as one PDF
+/// at `outPath`, every visible sheet as the Print dialog's "Entire workbook" lays it out. It
+/// used to print the active sheet only, so a 96-sheet workbook became 3 pages without a word.
+/// A sheet past the print size limit is left out and named in the warnings; an empty sheet
+/// has nothing to print and is passed over.
+export async function exportWorkbookPdf(
+  ctx: PageLayoutContext,
+  outPath: string,
+): Promise<{ ok: boolean; error?: string; warnings?: string[] }> {
+  try {
+    const state = ctx.lazyWorkbookRef.current
+    if (
+      state &&
+      !(await loadWorkbookForPrint(ctx, state, {
+        notLoaded: t('appPdfNeedsFullLoad'),
+        failed: t('appPdfExportFailed'),
+      }))
+    )
+      return { ok: false, error: t('appPrintWorkbookTooLarge') }
+    const host = createPrintPreviewHost(ctx)
+    if (!host) return { ok: false, error: t('appActiveSheetUnavailable') }
+    ctx.setMessage(t('appPdfRendering'))
+    const job = await host.buildJob('workbook', {}, { skipUnprintable: true })
+    // one PDF request carries at most MAX_PDF_HTML characters of print HTML (the preload's
+    // check): a long workbook goes in parts, each the longest run of sheets that fits, and
+    // the main process adds each part's pages after the last (append)
+    const parts = splitPrintParts(
+      job.documents,
+      (documents) => printRequest(documents, job.fileName).html.length <= MAX_PDF_HTML,
+    )
+    const tooLong = parts.alone
+    if (parts.runs.length === 0) return { ok: false, error: t('appPrintTooLarge') }
+    let path = ''
+    for (const [index, documents] of parts.runs.entries()) {
+      const result = await window.desktopApi.exportPdf({
+        ...printRequest(documents, job.fileName),
+        outPath,
+        ...(index > 0 ? { append: true } : {}),
+      })
+      if (result.canceled) return { ok: false, error: t('appPdfExportFailed') }
+      path = result.path
+    }
+    ctx.setMessage(t('appPdfExported', { path }))
+    const names = (sheets: readonly string[]) =>
+      sheets.slice(0, 3).join(', ') + (sheets.length > 3 ? ' 외 ' + (sheets.length - 3) + '개' : '')
+    const skipped = [...(job.skipped ?? []), ...tooLong]
+    const warnings = skipped.length
+      ? ['시트 ' + skipped.length + '개는 너무 커서 넣지 못했어요: ' + names(skipped)]
+      : []
+    return warnings.length ? { ok: true, warnings } : { ok: true }
+  } catch (error: unknown) {
+    return { ok: false, error: error instanceof Error ? error.message : t('appPdfExportFailed') }
   }
 }
 

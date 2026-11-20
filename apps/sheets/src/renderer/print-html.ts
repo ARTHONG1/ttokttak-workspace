@@ -1015,3 +1015,26 @@ function round(value: number): number {
 function round4(value: number): number {
   return Math.round(value * 10000) / 10000
 }
+
+/// The documents in order, cut into runs that each `fits` (greedy: each run as long as it
+/// can be); a document that does not fit even alone is left out and named in `alone`.
+export function splitPrintParts<T extends { readonly sheetName: string }>(
+  documents: readonly T[],
+  fits: (run: readonly T[]) => boolean,
+): { runs: T[][]; alone: string[] } {
+  const runs: T[][] = []
+  const alone: string[] = []
+  let run: T[] = []
+  for (const document of documents) {
+    if (fits([...run, document])) {
+      run.push(document)
+      continue
+    }
+    if (run.length) runs.push(run)
+    run = []
+    if (fits([document])) run = [document]
+    else alone.push(document.sheetName)
+  }
+  if (run.length) runs.push(run)
+  return { runs, alone }
+}

@@ -19,33 +19,78 @@ import { ConvertStepError, type ConvertDeps, type StepJob, type StepOutcome } fr
  */
 
 export interface NodeConvertHost {
-  /** a document as a PDF: 똑딱서명's path (headless export, or LibreOffice on the web) */
-  toPdf(input: string, output: string): Promise<void>
+  /**
+   * a document as a PDF: 똑딱서명's path (headless export, or LibreOffice on the web);
+   * resolves with what the PDF leaves out (a workbook's too-large sheets)
+   */
+  toPdf(input: string, output: string): Promise<string[] | void>
   /** the editors' dialog-free exports for the other formats */
-  headless(input: string, output: string, format: 'html' | 'md' | 'docx'): Promise<void>
+  headless(input: string, output: string, format: 'html' | 'md' | 'docx'): Promise<unknown>
 }
 
 const SCANNED = '스캔한 문서라 글자를 고칠 수 없을 수 있어요.'
 
-/** the PDF converters' notes ("page 3: ..."), said once in the user's words */
+/** a page list as the user reads it: at most five, then how many more */
+function pageList(pages: number[]): string {
+  const sorted = [...pages].sort((a, b) => a - b)
+  return sorted.length > 5
+    ? sorted.slice(0, 5).join(', ') + '쪽 외 ' + (sorted.length - 5) + '쪽'
+    : sorted.join(', ') + '쪽'
+}
+
+/**
+ * What happened to a page, worst first: its content was lost, the whole page became a
+ * picture (its text cannot be edited), slanted characters were lost, scanned text was read
+ * in (it may be wrong), or a part became a picture. Lines and paths the converter only
+ * skipped are not worth a note.
+ */
+const PAGE_NOTES: { match: RegExp; note: (pages: string) => string }[] = [
+  {
+    match: /page content dropped/,
+    note: (p) => p + '은 내용을 옮기지 못했어요. 원본과 비교해 주세요.',
+  },
+  {
+    match: /exported as full-page image/,
+    note: (p) => p + '은 쪽 전체를 그림으로 넣었어요. 이 쪽의 글자는 고칠 수 없어요.',
+  },
+  {
+    match: /rotated char\(s\) dropped/,
+    note: (p) => p + '은 기울어진 글자 일부를 옮기지 못했어요.',
+  },
+  {
+    match: /OCR/,
+    note: (p) => p + '은 스캔한 글자를 읽어 넣었어요. 틀린 글자가 있을 수 있어요.',
+  },
+]
+const PARTLY_PICTURE = (p: string) =>
+  p + '은 모양을 그대로 옮기지 못해 그림으로 넣은 부분이 있어요.'
+const SKIPPED_ONLY = /\bignored\b|clamped/
+
+/** the PDF converters' notes ("page 3: ..."), said once per kind in the user's words */
 export function pdfConversionNotes(result: {
   warnings: string[]
   scannedDocument: boolean
 }): string[] {
   if (result.scannedDocument) return [SCANNED]
-  const pages = [
-    ...new Set(
-      result.warnings
-        .map((w) => /^page (\d+)/.exec(w)?.[1])
-        .filter((p): p is string => p !== undefined),
-    ),
-  ]
-  if (pages.length === 0) return []
-  const listed =
-    pages.length > 5
-      ? pages.slice(0, 5).join(', ') + '쪽 외 ' + (pages.length - 5) + '쪽'
-      : pages.join(', ') + '쪽'
-  return [listed + '은 모양을 그대로 옮기지 못해 그림으로 넣은 부분이 있어요.']
+  // each page's worst note: PAGE_NOTES' index, or PAGE_NOTES.length for "a part as a picture"
+  const worst = new Map<number, number>()
+  for (const warning of result.warnings) {
+    const m = /^page (\d+): (.*)$/.exec(warning)
+    if (!m) continue
+    const page = Number(m[1])
+    const found = PAGE_NOTES.findIndex((kind) => kind.match.test(m[2]))
+    if (found < 0 && SKIPPED_ONLY.test(m[2])) continue
+    const rank = found < 0 ? PAGE_NOTES.length : found
+    worst.set(page, Math.min(worst.get(page) ?? rank, rank))
+  }
+  const notes: string[] = []
+  for (let rank = 0; rank <= PAGE_NOTES.length; rank += 1) {
+    const pages = [...worst].filter(([, r]) => r === rank).map(([page]) => page)
+    if (pages.length === 0) continue
+    const listed = pageList(pages)
+    notes.push(rank < PAGE_NOTES.length ? PAGE_NOTES[rank]!.note(listed) : PARTLY_PICTURE(listed))
+  }
+  return notes
 }
 
 /** the ODT engine's report (what does not carry over), as one note */
@@ -85,10 +130,14 @@ async function runStep(host: NodeConvertHost, step: RouteStep, job: StepJob): Pr
   // the format this stage writes: the route names it, also when it is a stage on the way
   const writes = extname(job.output).slice(1).toLowerCase()
   switch (step) {
-    case 'to-pdf':
-      await host.toPdf(job.input, job.output)
+    case 'to-pdf': {
+      // what the PDF leaves out stays with every format made from it
+      const left = (await host.toPdf(job.input, job.output)) ?? []
       // the page count only when the PDF is the result (a later stage reports its own)
-      return job.format === 'pdf' ? { facts: await pdfPageFacts(job.output) } : {}
+      return job.format === 'pdf'
+        ? { facts: await pdfPageFacts(job.output), warnings: left }
+        : { warnings: left }
+    }
     case 'hwp-container': {
       const out = await convertHwpContainer(await read(), writes === 'hwp' ? 'hwp' : 'hwpx')
       await write(out)

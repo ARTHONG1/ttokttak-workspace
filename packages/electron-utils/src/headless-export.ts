@@ -69,7 +69,7 @@ export type HeadlessArgvParse =
 
 /** Result of an export attempt, rendered by `formatHeadlessEnvelope`. */
 export type HeadlessExportOutcome =
-  | { ok: true; input: string; outPath: string }
+  | { ok: true; input: string; outPath: string; warnings?: string[] }
   | { ok: false; code: Exclude<HeadlessExitCode, 0>; message: string }
 
 const MODULE_BY_EXTENSION: ReadonlyArray<readonly [RegExp, HeadlessExportModule]> = [
@@ -171,7 +171,13 @@ export function formatHeadlessEnvelope(outcome: HeadlessExportOutcome, json: boo
   if (!json) return summary
   return JSON.stringify(
     outcome.ok
-      ? { status: 'ok', summary, output_path: outcome.outPath }
+      ? {
+          status: 'ok',
+          summary,
+          output_path: outcome.outPath,
+          // what the file leaves out, in the user's words (a workbook's too-large sheets)
+          ...(outcome.warnings?.length ? { warnings: outcome.warnings } : {}),
+        }
       : { status: 'error', summary, error: outcome.message.replace(/\s*[\r\n]+\s*/g, ' ') },
   )
 }
@@ -187,7 +193,12 @@ export function headlessExitCode(outcome: HeadlessExportOutcome): HeadlessExitCo
 export interface HeadlessExportReport {
   ok: boolean
   error?: string
+  /** what the written file leaves out, in the user's words */
+  warnings?: string[]
 }
+
+/** an export's answer: written or not, or with the reason and what it left out */
+export type HeadlessExportResult = boolean | { ok: boolean; error?: string; warnings?: string[] }
 
 export interface HeadlessWaitOptions {
   /** overall budget before the wait gives up */
@@ -237,12 +248,14 @@ export function documentFontsSettled(timeoutMs = 30_000): Promise<unknown> {
 export async function runHeadlessRendererExport(
   outPath: string,
   waitUntilReady: () => Promise<void>,
-  exportFile: (outPath: string) => Promise<boolean>,
+  exportFile: (outPath: string) => Promise<HeadlessExportResult>,
 ): Promise<HeadlessExportReport> {
   try {
     await waitUntilReady()
-    const ok = await exportFile(outPath)
-    return ok ? { ok: true } : { ok: false, error: 'export did not produce a file' }
+    const result = await exportFile(outPath)
+    const { ok, error, warnings } = typeof result === 'boolean' ? { ok: result } : result
+    if (!ok) return { ok: false, error: error ?? 'export did not produce a file' }
+    return warnings?.length ? { ok: true, warnings } : { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }

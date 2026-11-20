@@ -2707,6 +2707,9 @@ export const workbookExportPdfRequestSchema = z
     /// Headless export mode only (--headless-export): write here instead of
     /// opening the save dialog. Ignored by a normal GUI session.
     outPath: z.string().min(1).max(4096).optional(),
+    /// Headless export mode only: add these pages after those of the PDF already at
+    /// `outPath` (a workbook too long for one request goes in several).
+    append: z.boolean().optional(),
     /// Print only: silent print on this printer ('' = the system default);
     /// absent opens the system print dialog.
     deviceName: z.string().max(255).optional(),
@@ -3011,7 +3014,7 @@ export interface DesktopApi {
   /// renderer must export to; null in a normal session.
   consumeHeadlessExport(): Promise<string | null>
   /// Headless export mode: report the export outcome so the main process can quit.
-  headlessExportDone(result: { ok: boolean; error?: string }): void
+  headlessExportDone(result: { ok: boolean; error?: string; warnings?: string[] }): void
   /// Author name for threaded comments (Settings → General, falling back to the OS account).
   getUserDisplayName(): Promise<string>
   onUserDisplayNameChanged(handler: (name: string) => void): () => void

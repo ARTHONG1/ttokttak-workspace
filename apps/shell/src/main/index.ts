@@ -8848,7 +8848,7 @@ async function headlessTo(
   input: string,
   outPath: string,
   targetFormat: 'pdf' | 'docx' | 'html' | 'md',
-): Promise<void> {
+): Promise<string[]> {
   silentExportPaths.add(outPath)
   try {
     const outcome = await runHeadlessExport(
@@ -8856,6 +8856,7 @@ async function headlessTo(
       headlessExporters,
     )
     if (!outcome.ok) throw new Error(outcome.message)
+    return outcome.warnings ?? []
   } finally {
     silentExportPaths.delete(outPath)
   }
@@ -8871,7 +8872,7 @@ function exportDocument(
   input: string,
   outPath: string,
   format: 'pdf' | 'docx' | 'html' | 'md',
-): Promise<void> {
+): Promise<string[]> {
   if (process.env.WEB_SESSION_DIR || exportsInPlace(input)) {
     return headlessTo(input, outPath, format)
   }
@@ -8883,7 +8884,8 @@ function exportDocument(
   )
 }
 
-function documentPdf(input: string, outPath: string): Promise<void> {
+/** resolves with what the PDF leaves out, in the user's words */
+function documentPdf(input: string, outPath: string): Promise<string[]> {
   return exportDocument(input, outPath, 'pdf')
 }
 

@@ -193,6 +193,31 @@ describe('runHeadlessRendererExport', () => {
     expect(exportPdf).toHaveBeenCalledWith('/out.pdf')
   })
 
+  it('passes on what the file leaves out and the reason it was not written', async () => {
+    await expect(
+      runHeadlessRendererExport(
+        '/out.pdf',
+        () => Promise.resolve(),
+        () => Promise.resolve({ ok: true, warnings: ['two sheets left out'] }),
+      ),
+    ).resolves.toEqual({ ok: true, warnings: ['two sheets left out'] })
+    await expect(
+      runHeadlessRendererExport(
+        '/out.pdf',
+        () => Promise.resolve(),
+        () => Promise.resolve({ ok: false, error: 'the workbook is too large to load' }),
+      ),
+    ).resolves.toEqual({ ok: false, error: 'the workbook is too large to load' })
+    const line = formatHeadlessEnvelope(
+      { ok: true, input: '/a.xlsx', outPath: '/a.pdf', warnings: ['two sheets left out'] },
+      true,
+    )
+    expect(JSON.parse(line)).toMatchObject({ status: 'ok', warnings: ['two sheets left out'] })
+    expect(
+      JSON.parse(formatHeadlessEnvelope({ ok: true, input: '/a', outPath: '/b' }, true)),
+    ).not.toHaveProperty('warnings')
+  })
+
   it('reports an error when the export produced nothing', async () => {
     await expect(
       runHeadlessRendererExport(

@@ -454,6 +454,7 @@ import {
 import {
   handleApplyHeaderFooter as handleApplyHeaderFooterImpl,
   handleExportPdf as handleExportPdfImpl,
+  exportWorkbookPdf,
   handlePageLayoutCommand as handlePageLayoutCommandImpl,
   openPrintPreviewHost,
   type PrintPreviewHost,
@@ -1077,7 +1078,8 @@ export function App({
             { timeoutMs: 540_000, pollMs: 500 },
           )
         },
-        (target) => handleExportPdfImpl(pageLayoutContext(), target),
+        // the whole workbook, with the sheets it had to leave out
+        (target) => exportWorkbookPdf(pageLayoutContext(), target),
       )
       window.desktopApi?.headlessExportDone?.(report)
     })()

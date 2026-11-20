@@ -712,6 +712,9 @@ const desktopApi: DesktopApi = {
     ipcRenderer.send('sheets:headless-export-done', {
       ok: result.ok === true,
       ...(typeof result.error === 'string' ? { error: result.error } : {}),
+      ...(Array.isArray(result.warnings)
+        ? { warnings: result.warnings.filter((w) => typeof w === 'string') }
+        : {}),
     })
   },
   async pickAttachments() {
@@ -2713,6 +2716,7 @@ function isPdfExportRequest(request: unknown): boolean {
     (request.firstPage !== undefined && !isPdfPageVariant(request.firstPage)) ||
     (request.evenPages !== undefined && !isPdfPageVariant(request.evenPages)) ||
     (request.outPath !== undefined && !isBoundedString(request.outPath, 4096)) ||
+    (request.append !== undefined && typeof request.append !== 'boolean') ||
     // '' = the system default printer
     (request.deviceName !== undefined &&
       (typeof request.deviceName !== 'string' || request.deviceName.length > 255)) ||

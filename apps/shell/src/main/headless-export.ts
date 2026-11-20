@@ -27,7 +27,12 @@ type HeadlessFailure = Extract<HeadlessExportOutcome, { ok: false }>
 /** Per-module hidden-window exporters, injected so this file stays testable. */
 export type HeadlessExporters = Record<
   HeadlessExportModule,
-  (input: string, outPath: string, format: HeadlessExportFormat) => Promise<void>
+  /** resolves with what the file leaves out, when an exporter says so */
+  (
+    input: string,
+    outPath: string,
+    format: HeadlessExportFormat,
+  ) => Promise<void | { warnings?: string[] }>
 >
 
 /** Disk probes, injected so the host is testable without touching the filesystem. */
@@ -126,8 +131,14 @@ export async function runHeadlessExport(
   const checked = validateHeadlessPaths(request, fs)
   if (!checked.ok) return checked
   const startedAt = Date.now()
+  let warnings: string[]
   try {
-    await exporters[checked.module](checked.input, checked.outPath, request.targetFormat)
+    const done = await exporters[checked.module](
+      checked.input,
+      checked.outPath,
+      request.targetFormat,
+    )
+    warnings = done?.warnings ?? []
   } catch (err) {
     return {
       ok: false,
@@ -149,5 +160,10 @@ export async function runHeadlessExport(
       message: `export reported success but left a stale file at ${checked.outPath}`,
     }
   }
-  return { ok: true, input: checked.input, outPath: checked.outPath }
+  return {
+    ok: true,
+    input: checked.input,
+    outPath: checked.outPath,
+    ...(warnings.length ? { warnings } : {}),
+  }
 }

@@ -46,8 +46,8 @@ export function signSourceOf(path: string): SignSource | null {
 export interface SignDocumentDeps {
   fileSize(path: string): Promise<number>
   readFile(path: string): Promise<Uint8Array>
-  /** the app's headless PDF export; throws when no PDF was written */
-  convertToPdf(input: string, outPath: string): Promise<void>
+  /** the app's headless PDF export; throws when no PDF was written (its notes are not used here) */
+  convertToPdf(input: string, outPath: string): Promise<unknown>
   imagesToPdf(images: Uint8Array[]): Promise<Uint8Array>
   makeTempDir(): Promise<string>
   removeDir(dir: string): Promise<void>
@@ -142,16 +142,16 @@ export function webCanConvert(path: string, env: NodeJS.ProcessEnv = process.env
  */
 export function pdfConverterFor(
   env: NodeJS.ProcessEnv,
-  headless: (input: string, outPath: string) => Promise<void>,
-): (input: string, outPath: string) => Promise<void> {
+  headless: (input: string, outPath: string) => Promise<string[] | void>,
+): (input: string, outPath: string) => Promise<string[]> {
   const web = Boolean(env.WEB_SESSION_DIR)
   const soffice = env.WEB_SOFFICE
   return async (input, outPath) => {
     if (web && soffice && !/\.hwpx?$/i.test(input)) {
       await officeToPdf(input, outPath, soffice)
-      return
+      return []
     }
-    await headless(input, outPath)
+    return (await headless(input, outPath)) ?? []
   }
 }
 

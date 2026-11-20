@@ -2714,6 +2714,8 @@ const headlessExportWaiters = new Map<number, (result: HeadlessSheetsReport) => 
 interface HeadlessSheetsReport {
   ok: boolean
   error?: string
+  /** what the PDF leaves out (sheets too large to lay out), in the user's words */
+  warnings?: string[]
 }
 
 /** End a headless run early (a failure the renderer can never observe). */
@@ -2726,15 +2728,15 @@ function failHeadlessExport(wcId: number, message: string): void {
 
 /**
  * Render `input` to `outPath` with no visible window: a hidden sheets
- * renderer opens the workbook through the normal queued-open path, lays the
- * active sheet out with its Page Layout settings and prints via the existing
- * hidden print window (main/pdf-export.ts).
+ * renderer opens the workbook through the normal queued-open path, lays every
+ * visible sheet out with its Page Layout settings and prints via the existing
+ * hidden print window (main/pdf-export.ts). Resolves with what the PDF leaves out.
  */
 export async function exportSheetsPdfHeadless(
   input: string,
   outPath: string,
   timeoutMs = 600_000,
-): Promise<void> {
+): Promise<{ warnings: string[] }> {
   const client = sidecar ?? new XlsxSidecarClient(resolveSidecarPath())
   sidecar = client
   client.start()
@@ -2771,6 +2773,7 @@ export async function exportSheetsPdfHeadless(
       void win.webContents.loadURL(rendererUrl(runtime.rendererUrl, 'sheets'))
     })
     if (!report.ok) throw new Error(report.error ?? 'sheets export failed')
+    return { warnings: report.warnings ?? [] }
   } finally {
     if (timer) clearTimeout(timer)
     headlessExportWaiters.delete(wcId)
@@ -3127,6 +3130,13 @@ export function registerSheetsIpc(): void {
     settle({
       ok: state?.ok === true,
       ...(typeof state?.error === 'string' ? { error: state.error } : {}),
+      ...(Array.isArray((state as { warnings?: unknown } | null)?.warnings)
+        ? {
+            warnings: ((state as { warnings: unknown[] }).warnings ?? []).filter(
+              (w): w is string => typeof w === 'string',
+            ),
+          }
+        : {}),
     })
   })
 

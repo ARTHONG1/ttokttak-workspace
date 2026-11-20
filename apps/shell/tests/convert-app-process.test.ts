@@ -86,6 +86,26 @@ describe('exportInAppProcess', () => {
     expect(calls[0].env.LANG).toBe('ko_KR')
   })
 
+  it('hands back what the file leaves out, as the app said it', async () => {
+    const { spawn } = fakeSpawn(
+      '{"status":"ok","summary":"done","warnings":["시트 4개는 너무 커서 넣지 못했어요: A, B, C 외 1개",3]}\n',
+      0,
+    )
+    await expect(
+      exportInAppProcess(LAUNCH, '/t/book.xlsx', '/t/book.pdf', 'pdf', {
+        spawn: spawn as never,
+        exists: () => true,
+      }),
+    ).resolves.toEqual(['시트 4개는 너무 커서 넣지 못했어요: A, B, C 외 1개'])
+    const quiet = fakeSpawn('{"status":"ok","summary":"done"}\n', 0)
+    await expect(
+      exportInAppProcess(LAUNCH, '/t/a.xlsx', '/t/a.pdf', 'pdf', {
+        spawn: quiet.spawn as never,
+        exists: () => true,
+      }),
+    ).resolves.toEqual([])
+  })
+
   it("fails with the app's reason when the export did not work", async () => {
     const { spawn } = fakeSpawn('{"status":"error","error":"input file not found"}\n', 2)
     await expect(

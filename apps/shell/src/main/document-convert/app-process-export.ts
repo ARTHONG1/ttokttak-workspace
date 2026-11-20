@@ -42,6 +42,7 @@ interface Envelope {
   status?: string
   summary?: string
   error?: string
+  warnings?: unknown
 }
 
 /** the app prints one JSON line last; anything before it is log noise */
@@ -59,7 +60,9 @@ function lastEnvelope(stdout: string): Envelope | null {
   return null
 }
 
-const DEFAULT_TIMEOUT_MS = 180_000
+// the editors' own limit (a hidden sheets export gives up after 10 minutes): a 96-sheet
+// statistics workbook takes about 4.5 minutes as a whole-file PDF and was cut off at 3
+const DEFAULT_TIMEOUT_MS = 600_000
 
 export async function exportInAppProcess(
   launch: AppLaunch,
@@ -67,7 +70,7 @@ export async function exportInAppProcess(
   outPath: string,
   format: AppExportFormat,
   opts: AppProcessOptions = {},
-): Promise<void> {
+): Promise<string[]> {
   const env = { ...(opts.env ?? process.env) }
   // the child has to start as the app, not as plain Node
   delete env.ELECTRON_RUN_AS_NODE
@@ -101,7 +104,12 @@ export async function exportInAppProcess(
   })
   const envelope = lastEnvelope(stdout)
   // the envelope comes after the file is written: a stumble while quitting does not count
-  if (envelope?.status === 'ok' && exists(outPath)) return
+  if (envelope?.status === 'ok' && exists(outPath)) {
+    // what the file leaves out, in the user's words
+    return Array.isArray(envelope.warnings)
+      ? envelope.warnings.filter((w): w is string => typeof w === 'string')
+      : []
+  }
   if (timedOut) throw new Error('the export timed out')
   const tail = stderr.trim().split('\n').filter(Boolean).slice(-2).join(' ')
   throw new Error(envelope?.error ?? envelope?.summary ?? (tail || 'the export wrote no file'))

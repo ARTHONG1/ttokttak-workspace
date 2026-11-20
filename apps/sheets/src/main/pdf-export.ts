@@ -3,7 +3,7 @@
 /// the save dialog points. That window sees only the fonts its page declares, so
 /// export and print add the bundled template faces (template-fonts.ts).
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -50,12 +50,27 @@ export async function exportPdf(
     await writeFile(htmlPath, withTemplateFontFaces(request.html, sheetsTemplateFontsDir()), 'utf8')
     await window.loadFile(htmlPath)
     const pdf = await renderPdf(window.webContents, request)
-    await atomicWriteFile(selection.filePath, pdf)
+    // a headless export of a long workbook comes in parts: each after the last
+    const appendTo = isHeadlessMode() && request.outPath && request.append ? request.outPath : null
+    await atomicWriteFile(
+      selection.filePath,
+      appendTo ? Buffer.from(await appendPdf(await readFile(appendTo), pdf)) : pdf,
+    )
     return { canceled: false, path: selection.filePath }
   } finally {
     window.destroy()
     await rm(workDir, { recursive: true, force: true })
   }
+}
+
+/// `more`'s pages after `first`'s, as one PDF
+async function appendPdf(first: Uint8Array, more: Uint8Array): Promise<Uint8Array> {
+  const { PDFDocument: PdfDocument } = await import('pdf-lib')
+  const target = await PdfDocument.load(first)
+  const source = await PdfDocument.load(more)
+  const pages = await target.copyPages(source, source.getPageIndices())
+  for (const page of pages) target.addPage(page)
+  return target.save()
 }
 
 /// Print: the same laid-out HTML in a hidden window, handed to the system
