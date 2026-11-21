@@ -177,6 +177,18 @@ describe("똑딱AI's model files", () => {
     )
   })
 
+  // stopping the app while a try is still getting ready (the folder, the free room) once let
+  // that try go on and send its request anyway (seen as one request too many after stop())
+  it('sends nothing once canceled while a try is still getting ready', async () => {
+    const store = fileStore(scratch(), 'base')
+    requests.length = 0
+    const running = store.download(() => undefined).catch((e: unknown) => e)
+    store.cancel()
+    expect(await running).toBeInstanceOf(Error)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(requests).toEqual([])
+  })
+
   it('gives up on a connection that stops sending, keeping what came', async () => {
     const dir = scratch()
     const started = Date.now()
@@ -203,6 +215,9 @@ describe("똑딱AI's model files", () => {
       await new Promise((r) => setTimeout(r, 200))
       expect(requests.length).toBeGreaterThan(3)
       m.stop()
+      // a request already on its way when stop() came may still reach this (same-process)
+      // server; none may start after it
+      await new Promise((r) => setTimeout(r, 50))
       const stopped = requests.length
       await new Promise((r) => setTimeout(r, 200))
       expect(requests.length).toBe(stopped)

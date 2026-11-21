@@ -102,27 +102,30 @@ export class ModelStore {
 
   /** download (or finish downloading) the model; resolves once it is verified in place */
   async download(onProgress: (p: Progress) => void): Promise<void> {
-    await mkdir(dirname(this.path), { recursive: true })
-    // after a GitHub connection broke mid-file (ERR_HTTP2_PROTOCOL_ERROR), every request
-    // sent on it again was answered with HTTP 400: each later try opens a new connection
-    if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
-    const partial = this.partial
-    let have = (await stat(partial).catch(() => null))?.size ?? 0
-    if (have > this.spec.bytes) {
-      await truncate(partial, 0)
-      have = 0
-    }
-    await this.checkRoom(this.spec.bytes - have)
+    // cancel() reaches this try from its start: one canceled while it gets ready (the folder,
+    // the free room) sends nothing
     const controller = new AbortController()
     this.controller = controller
     try {
+      await mkdir(dirname(this.path), { recursive: true })
+      // after a GitHub connection broke mid-file (ERR_HTTP2_PROTOCOL_ERROR), every request
+      // sent on it again was answered with HTTP 400: each later try opens a new connection
+      if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
+      const partial = this.partial
+      let have = (await stat(partial).catch(() => null))?.size ?? 0
+      if (have > this.spec.bytes) {
+        await truncate(partial, 0)
+        have = 0
+      }
+      await this.checkRoom(this.spec.bytes - have)
+      controller.signal.throwIfAborted()
       if (have < this.spec.bytes) await this.receive(partial, have, controller, onProgress)
       onProgress({ received: this.spec.bytes, total: this.spec.bytes, rate: 0 })
       await this.accept(partial)
     } finally {
       // whatever stopped this try (a stall, an error, cancel) also closes the connection
       controller.abort()
-      this.controller = null
+      if (this.controller === controller) this.controller = null
     }
   }
 

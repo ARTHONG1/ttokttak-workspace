@@ -135,6 +135,25 @@ describe('the model download', () => {
     expect(readFileSync(again.path).equals(DATA)).toBe(true)
   })
 
+  // [멈추기] or closing the app while a try is still getting ready (the folder, the free
+  // room) once let that try go on and send its request anyway
+  it('sends nothing once canceled while a try is still getting ready', async () => {
+    let asked = 0
+    const s = new ModelStore(
+      mkdtempSync(join(tmpdir(), 'sgb-model-')),
+      spec('/model'),
+      (url, init) => {
+        asked++
+        return fetch(url, init)
+      },
+      { freeBytes: async () => Number.MAX_SAFE_INTEGER, idleMs: 400 },
+    )
+    const running = s.download(() => undefined).catch((e: unknown) => e)
+    s.cancel()
+    expect(await running).toBeInstanceOf(Error)
+    expect(asked).toBe(0)
+  })
+
   it('gives up on a connection that stops sending, keeping what came', async () => {
     const s = store('/stall')
     const started = Date.now()

@@ -134,26 +134,29 @@ export class ModelFileStore {
 
   /** download (or finish downloading) the file; resolves once it is verified in place */
   async download(onProgress: (p: Progress) => void): Promise<void> {
-    await mkdir(dirname(this.path), { recursive: true })
-    // after a connection broke mid-file, requests sent on it again can keep failing:
-    // each later try opens a new connection
-    if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
-    let have = (await stat(this.partial).catch(() => null))?.size ?? 0
-    if (have > this.spec.bytes) {
-      await truncate(this.partial, 0)
-      have = 0
-    }
-    await checkRoom(this.freeBytes, this.dir, this.spec.bytes - have)
+    // cancel() reaches this try from its start: one canceled while it gets ready (the folder,
+    // the free room) sends nothing (it once sent one request after stop())
     const controller = new AbortController()
     this.controller = controller
     try {
+      await mkdir(dirname(this.path), { recursive: true })
+      // after a connection broke mid-file, requests sent on it again can keep failing:
+      // each later try opens a new connection
+      if (this.tries++ > 0) await this.reconnect().catch(() => undefined)
+      let have = (await stat(this.partial).catch(() => null))?.size ?? 0
+      if (have > this.spec.bytes) {
+        await truncate(this.partial, 0)
+        have = 0
+      }
+      await checkRoom(this.freeBytes, this.dir, this.spec.bytes - have)
+      controller.signal.throwIfAborted()
       if (have < this.spec.bytes) await this.receive(have, controller, onProgress)
       onProgress({ received: this.spec.bytes, total: this.spec.bytes, rate: 0 })
       await this.accept()
     } finally {
       // whatever stopped this try (a stall, an error, cancel) also closes the connection
       controller.abort()
-      this.controller = null
+      if (this.controller === controller) this.controller = null
     }
   }
 
