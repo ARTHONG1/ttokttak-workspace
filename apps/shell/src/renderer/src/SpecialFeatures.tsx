@@ -10,6 +10,7 @@ import { extractGrammar } from './pumui/grammar'
 import { flagText, flagTexts, STATUS_TEXT } from './pumui/messages'
 import { prepareCart } from './pumui/normalize'
 import type { EstimateRow, PumuiFlag, PumuiStatus } from './pumui/types'
+import { SHIPPING } from './pumui/policy'
 import { check } from './pumui/verifier'
 import {
   Back,
@@ -178,10 +179,13 @@ const toNumber = (v: unknown): number => {
 
 const totalOf = (rows: EstimateRow[]): number => rows.reduce((sum, r) => sum + r.amount, 0)
 
-const itemLine = (rows: EstimateRow[]): string =>
-  rows.length === 0
+/** the goods: the 배송비 row (made by computeRows) is a cost of the order, not one of its items */
+const itemLine = (rows: EstimateRow[]): string => {
+  const goods = rows.filter((r) => r.description !== SHIPPING)
+  return goods.length === 0
     ? ''
-    : rows[0].description + (rows.length > 1 ? ' 외 ' + (rows.length - 1) + '종' : '')
+    : goods[0].description + (goods.length > 1 ? ' 외 ' + (goods.length - 1) + '종' : '')
+}
 
 /** the original's 기안문, line for line */
 export function proposalArticle(title: string, rows: EstimateRow[]): string {

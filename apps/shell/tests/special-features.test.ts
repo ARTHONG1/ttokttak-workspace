@@ -54,4 +54,24 @@ describe('proposal article', () => {
       '가. 품목: 벽시계\n',
     )
   })
+
+  // the 배송비 row is a cost, not an item: three goods and their shipping are "외 2종"
+  // (a real cart read "외 3종", 2026-11-21)
+  it('does not count the 배송비 row as an item', () => {
+    const article = proposalArticle('학급 사무용품 구입', [
+      row('모나미 153 볼펜', 5, 3600),
+      row('3M 포스트잇 플래그', 10, 4200),
+      row('복사용지', 2, 24900),
+      row('배송비', 1, 3000),
+    ])
+    expect(article).toContain('가. 품목: 모나미 153 볼펜 외 2종\n')
+    expect(article).toContain('나. 금액: 금112,800원')
+    expect(
+      proposalArticle('교실 시계 구입', [row('벽시계', 1, 15000), row('배송비', 1, 3000)]),
+    ).toContain('가. 품목: 벽시계\n')
+    // a product whose name mentions 배송비 is still one of the goods
+    expect(
+      proposalArticle('간식 구입', [row('과자 세트(배송비 포함)', 1, 20000), row('음료', 2, 5000)]),
+    ).toContain('가. 품목: 과자 세트(배송비 포함) 외 1종\n')
+  })
 })
