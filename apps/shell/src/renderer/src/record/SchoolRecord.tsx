@@ -13,6 +13,7 @@ import {
 import {
   ACTIVITY_SYSTEM,
   BEHAVIOR_SYSTEM,
+  COMPACT_SYSTEM,
   CUSTOM_SUBJECT,
   LENGTHS,
   LEVELS,
@@ -31,6 +32,7 @@ import {
   behaviorRequest,
   byteLimit,
   cleanReply,
+  compactRequest,
   commonProblem,
   decodeCsvBytes,
   emptyInfo,
@@ -44,6 +46,7 @@ import {
   studentsFromCsv,
   studentsToCsv,
   subjectRequest,
+  variantOf,
   templateCsv,
   workFrom,
   type ActivityArea,
@@ -243,6 +246,8 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     behavior: new Set(),
     activity: new Set(),
   })
+  /** [다시 생성]s per student (mode:id): 똑딱AI's short format asks each for the next variant */
+  const rewrites = useRef<Record<string, number>>({})
   const calledOff = useRef(new Set<string>())
   const [sessions, setSessions] = useState<SavedSession[]>(() =>
     sessionsFrom(localStorage.getItem(SESSIONS_KEY), newId),
@@ -360,23 +365,40 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const writeOne = async (m: RecordMode, student: Student, id: string): Promise<string> => {
     const w = worksRef.current[m]
     const order = w.students.findIndex((s) => s.id === student.id) + 1 || undefined
+    // 똑딱AI's short format: the student's variant, the next one on a [다시 생성]
+    const key = m + ':' + student.id
+    if (student.result.trim()) rewrites.current[key] = (rewrites.current[key] ?? 0) + 1
+    const compact = {
+      system: COMPACT_SYSTEM,
+      text: compactRequest(
+        m,
+        w.info,
+        w.length,
+        w.instructions,
+        student,
+        variantOf(order, rewrites.current[key] ?? 0),
+      ),
+    }
     const reply =
       m === 'subject'
         ? await askRecordAi(
             SUBJECT_SYSTEM,
             subjectRequest(w.info, w.length, w.instructions, student, order),
             id,
+            compact,
           )
         : m === 'activity'
           ? await askRecordAi(
               ACTIVITY_SYSTEM,
               activityRequest(w.info, w.length, w.instructions, student, order),
               id,
+              compact,
             )
           : await askRecordAi(
               BEHAVIOR_SYSTEM,
               behaviorRequest(w.length, w.instructions, student, order),
               id,
+              compact,
             )
     const out = cleanReply(reply)
     if (!out) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')

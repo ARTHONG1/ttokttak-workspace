@@ -42,3 +42,24 @@ export function askFailure(err: unknown): Extract<AskResult, { ok: false }> {
   const error = err instanceof Error ? err.message : String(err)
   return err instanceof RequestProblem ? { ok: false, error, student: true } : { ok: false, error }
 }
+
+export type RecordFormat = 'instructions' | 'compact'
+
+/**
+ * The form a request goes to 똑딱AI in: its short format when the 생기부 adapter learned it,
+ * asked at temperature 0 always (its variety is the 변형 line), else the instructions and the
+ * request as the page wrote them.
+ */
+export function pickTurn(
+  request: {
+    system: string
+    text: string
+    temperature: number
+    compact?: { system: string; text: string }
+  },
+  format: RecordFormat,
+): { system: string; text: string; temperature: number } {
+  if (format === 'compact' && request.compact)
+    return { system: request.compact.system, text: request.compact.text, temperature: 0 }
+  return { system: request.system, text: request.text, temperature: request.temperature }
+}

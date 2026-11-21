@@ -331,6 +331,12 @@ export interface AiStreamRequest {
    * of the built-in model later; today it does not change the request.
    */
   feature?: string
+  /**
+   * 생기부 (feature 'school_record'): the same request in the built-in 똑딱AI's short format, no
+   * instructions (apps/docs/src/main/school-record-turn.ts). Only the built-in model receives
+   * it, and only once its 생기부 adapter learned that format; every other provider ignores it.
+   */
+  compact?: { system: string; text: string }
 }
 
 /** Token usage a provider reported for one model turn. Both fields are best-effort:

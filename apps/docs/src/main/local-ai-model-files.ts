@@ -62,6 +62,17 @@ export const LOCAL_AI_MODEL_FILES: readonly LocalAiModelFile[] = [
   },
 ]
 
+export type SchoolRecordFormat = 'instructions' | 'compact'
+
+/**
+ * How the 생기부 adapter pinned above learned to be asked: 'instructions' (the long instructions
+ * of the 생기부 page, as V7 B was trained) or 'compact' (똑딱AI's short format, the workspace's
+ * docs/똑딱AI-생기부-짧은-입력-규칙.md; school-record-turn.ts). Change it with the adapter, in
+ * the same commit: the other form makes that adapter write worse. 똑딱생기부 keeps the same mark
+ * (apps/saenggibu/src/shared/model.ts RECORD_FORMAT).
+ */
+export const SCHOOL_RECORD_FORMAT: SchoolRecordFormat = 'instructions'
+
 /**
  * The server runs: the model each loads and its adapters, in the order llama-server numbers
  * them (the first on for every request; a feature with an adapter of its own turns that one

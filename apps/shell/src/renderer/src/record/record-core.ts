@@ -377,6 +377,97 @@ export function activityRequest(
   return lines.join('\n')
 }
 
+/* ------------------------------------------------------------------ 똑딱AI's short format */
+
+/**
+ * 똑딱AI's own 생기부 format (the workspace's docs/똑딱AI-생기부-짧은-입력-규칙.md): an adapter
+ * trained on it is given no instructions, only a line naming the task and that task's fields,
+ * and writes the entry. Connected AIs (Codex, Claude, the web's Gemini) and an adapter trained
+ * on the long instructions above get those instead. A page builds both forms of a request; the
+ * main process sends the short one only to 똑딱AI, and only once its pinned 생기부 adapter
+ * learned it.
+ */
+export const COMPACT_SYSTEM = '학교생활기록부 문장 작성'
+
+/** a request in both forms: the instructions and the request, and the short format */
+export interface RecordTurn {
+  system: string
+  text: string
+}
+
+/** variants of a short-format request: a class's students take them in turn */
+export const VARIANTS = 4
+
+/** the variant for the student at this place in the list (1-based), moved on once per [다시 생성] */
+export function variantOf(order: number | undefined, again = 0): number {
+  const at = Math.max(0, (order ?? 1) - 1) + Math.max(0, Math.floor(again))
+  return (at % VARIANTS) + 1
+}
+
+/** a one-line field: its line breaks become spaces */
+const oneLine = (value: string): string => value.trim().replace(/\s*\n\s*/g, ' ')
+
+/** a list field: one item a line, without a bullet of its own */
+const listItems = (value: string): string[] =>
+  value
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^[-•·*]\s*/, '')
+        .trim(),
+    )
+    .filter(Boolean)
+    .map((line) => '- ' + line)
+
+/** one student's 세특, 행발 or 창체 in 똑딱AI's short format */
+export function compactRequest(
+  mode: RecordMode,
+  info: CommonInfo,
+  length: LengthId,
+  instructions: string,
+  student: Student,
+  variant: number,
+): string {
+  const lines: string[] = []
+  const field = (name: string, value: string): void => {
+    const v = oneLine(value)
+    if (v) lines.push(name + ': ' + v)
+  }
+  const list = (name: string, value: string): void => {
+    const items = listItems(value)
+    if (items.length) lines.push(name + ':', ...items)
+  }
+  const school = SCHOOL_LEVELS.find((s) => s.id === info.schoolLevel)?.label ?? ''
+  const grade = info.grade.trim() ? gradeText(info.grade) : ''
+  if (mode === 'subject') {
+    lines.push('[세특]')
+    field('학교급', school)
+    field('학년', grade)
+    field('과목', subjectOf(info))
+    field('단원', info.unitName)
+    field('과제', info.assignmentDesc)
+    field('성취기준', info.achievementStandard)
+    field('성취도', student.level)
+    list('관찰', student.notes)
+  } else if (mode === 'behavior') {
+    lines.push('[행발]')
+    list('관찰', student.notes)
+  } else {
+    lines.push('[창체]')
+    field('학교급', school)
+    field('학년', grade)
+    field('영역', areaLabel(info))
+    field('활동명', info.activityName)
+    field('활동 내용', info.activityContent)
+    list('학생 역할·관찰', student.notes)
+  }
+  field('분량', lengthLabel(length))
+  field('변형', String(variant))
+  field('교사 요청', instructions)
+  return lines.join('\n')
+}
+
 /** the AI's answer as NEIS takes it: no markdown, no heading, one paragraph */
 export function cleanReply(reply: string): string {
   const lines = reply

@@ -252,6 +252,22 @@ export function rewordRequest(text: string, others: readonly string[]): string {
   ].join('\n')
 }
 
+/** the same rewording in 똑딱AI's short format (record-core.ts COMPACT_SYSTEM) */
+export function compactRewordRequest(
+  text: string,
+  others: readonly string[],
+  variant: number,
+): string {
+  const phrases = sharedPhrases(text, others)
+  return [
+    '[표현 바꾸기]',
+    '글: ' + text.trim().replace(/\s*\n\s*/g, ' '),
+    '겹치는 표현:',
+    ...(phrases.length ? phrases.map((p) => '- ' + p) : ['- 글 전체의 문장 구성']),
+    '변형: ' + variant,
+  ].join('\n')
+}
+
 /** the entries to reword so that no pair stays over the floor: the later one of each pair */
 export function rewordTargets(entries: readonly Entry[], floor: number): number[] {
   const targets = new Set<number>()

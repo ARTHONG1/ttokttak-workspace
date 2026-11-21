@@ -40,3 +40,12 @@ export const MODEL_FILES: readonly ModelSpec[] = [
 
 /** all the files together */
 export const MODEL_BYTES = MODEL_FILES.reduce((n, f) => n + f.bytes, 0)
+
+/**
+ * How the 생기부 adapter pinned above learned to be asked: 'instructions' (the long instructions
+ * of record-core.ts, as V7 B was trained) or 'compact' (똑딱AI's short format, the workspace's
+ * docs/똑딱AI-생기부-짧은-입력-규칙.md). Change it with the adapter, in the same commit: the
+ * other form makes that adapter write worse. 똑딱작업실 keeps the same mark beside its files
+ * (apps/docs/src/main/local-ai-model-files.ts SCHOOL_RECORD_FORMAT).
+ */
+export const RECORD_FORMAT: 'instructions' | 'compact' = 'instructions'

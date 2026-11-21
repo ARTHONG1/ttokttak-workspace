@@ -75,7 +75,13 @@ export async function askAi(
   text: string,
   images: { base64: string; mime: string }[] = [],
   maxTokens = 4000,
-  extra: { grammar?: string; feature?: string; requestId?: string } = {},
+  extra: {
+    grammar?: string
+    feature?: string
+    requestId?: string
+    /** 생기부: the same request in 똑딱AI's short format (only the built-in model gets it) */
+    compact?: { system: string; text: string }
+  } = {},
 ): Promise<string> {
   const api = window.aiOffice
   if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
@@ -105,6 +111,7 @@ export async function askAi(
         maxTokens,
         ...(extra.grammar ? { grammar: extra.grammar } : {}),
         ...(extra.feature ? { feature: extra.feature } : {}),
+        ...(extra.compact ? { compact: extra.compact } : {}),
       })
       .catch((error: unknown) => {
         off()

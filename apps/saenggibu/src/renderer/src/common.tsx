@@ -6,20 +6,24 @@ import type { ReactElement, ReactNode } from 'react'
  * clipboard, a download, a toast and a dialog.
  */
 
-/** one answer of the built-in 똑딱AI; id lets the page call it off, temperature is 0 unless given */
 /** a request that failed for its own student (notes too long, an answer that ran on) */
 export class StudentProblem extends Error {}
 
+/**
+ * one answer of the built-in 똑딱AI; id lets the page call it off, temperature is 0 unless
+ * given, and compact is the same request in 똑딱AI's short format (the main process picks)
+ */
 export async function askAi(
   system: string,
   text: string,
-  options: { id?: string; temperature?: number } = {},
+  options: { id?: string; temperature?: number; compact?: { system: string; text: string } } = {},
 ): Promise<string> {
   const out = await window.saenggibu.ask({
     requestId: options.id ?? crypto.randomUUID(),
     system,
     text,
     ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+    ...(options.compact ? { compact: options.compact } : {}),
   })
   if (!out.ok) throw out.student ? new StudentProblem(out.error) : new Error(out.error)
   return out.text

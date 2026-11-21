@@ -11,6 +11,12 @@ export interface AskRequest {
    * is asked once more with some variety
    */
   temperature?: number
+  /**
+   * the same request in 똑딱AI's short format (record-core.ts COMPACT_SYSTEM and
+   * compactRequest): sent instead, at temperature 0, once the pinned 생기부 adapter learned it
+   * (shared/model.ts RECORD_FORMAT)
+   */
+  compact?: { system: string; text: string }
 }
 export type AskResult =
   | { ok: true; text: string }

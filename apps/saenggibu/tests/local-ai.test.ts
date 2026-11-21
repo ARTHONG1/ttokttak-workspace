@@ -7,11 +7,13 @@ import {
   MAX_TURN_BYTES,
   TOO_LONG,
   askFailure,
+  pickTurn,
   plainTurn,
 } from '../src/main/ai-turn'
 import { LocalAi, aiFiles, notReadyMessage, requestBody, serverArgs } from '../src/main/local-ai'
 import { ModelStore } from '../src/main/model-store'
-import { MODEL_BYTES, MODEL_FILES } from '../src/shared/model'
+import { MODEL_BYTES, MODEL_FILES, RECORD_FORMAT } from '../src/shared/model'
+import { COMPACT_SYSTEM } from '../src/renderer/src/record/record-core'
 
 describe('the built-in 똑딱AI', () => {
   it('runs the base with the 생기부 adapter on, by paths inside the model folder', () => {
@@ -143,5 +145,40 @@ describe('one writing turn', () => {
     const notReady = await ai.ask('b', '지시', '관찰 기록').catch(askFailure)
     expect(notReady).toMatchObject({ ok: false })
     expect(notReady).not.toHaveProperty('student')
+  })
+})
+/**
+ * 똑딱AI's short 생기부 format: the page sends a request in both forms and the main process picks
+ * by what the pinned 생기부 adapter learned (shared/model.ts RECORD_FORMAT).
+ */
+describe('the form a 생기부 request goes in', () => {
+  const request = {
+    system: '긴 지시문',
+    text: '요청',
+    temperature: 0.7,
+    compact: { system: COMPACT_SYSTEM, text: '[행발]\n관찰:\n- 성실함.\n분량: 보통\n변형: 2' },
+  }
+  it('is the instructions and the request while the adapter learned those', () => {
+    expect(pickTurn(request, 'instructions')).toEqual({
+      system: '긴 지시문',
+      text: '요청',
+      temperature: 0.7,
+    })
+  })
+  it('is the short format, at temperature 0, once the adapter learned it', () => {
+    expect(pickTurn(request, 'compact')).toEqual({
+      system: COMPACT_SYSTEM,
+      text: request.compact.text,
+      temperature: 0,
+    })
+    const { compact: _compact, ...withoutShort } = request
+    expect(pickTurn(withoutShort, 'compact')).toMatchObject({ system: '긴 지시문' })
+  })
+  // the mark goes with the adapter: a new adapter pinned without a thought for it fails here
+  it('is the instructions for the adapter pinned today, trained on them', () => {
+    expect({ adapter: MODEL_FILES[1].sha256.slice(0, 16), format: RECORD_FORMAT }).toEqual({
+      adapter: 'c4b61189e93ca7ee',
+      format: 'instructions',
+    })
   })
 })

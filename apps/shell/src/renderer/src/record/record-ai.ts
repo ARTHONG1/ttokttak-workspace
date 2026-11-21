@@ -5,12 +5,31 @@
  * (apps/saenggibu/src/renderer/src/record/record-ai.ts); the pages use only these three.
  */
 import { askAi } from '../special-common'
-import { GENERATE_AT_ONCE, cleanReply } from './record-core'
-import { NOT_REWORDED, REWORD_SYSTEM, rewordRequest, sameWording } from './record-similarity'
+import { COMPACT_SYSTEM, GENERATE_AT_ONCE, cleanReply, type RecordTurn } from './record-core'
+import {
+  NOT_REWORDED,
+  REWORD_SYSTEM,
+  compactRewordRequest,
+  rewordRequest,
+  sameWording,
+} from './record-similarity'
 
-/** one answer, under an id that [멈추기] can call off */
-export const askRecordAi = (system: string, text: string, id: string): Promise<string> =>
-  askAi(system, text, [], 4000, { feature: 'school_record', requestId: id })
+/**
+ * one answer, under an id that [멈추기] can call off; compact is the same request in 똑딱AI's
+ * short format, which the main process sends instead only to the built-in model, once its
+ * 생기부 adapter learned it (apps/docs/src/main/school-record-turn.ts)
+ */
+export const askRecordAi = (
+  system: string,
+  text: string,
+  id: string,
+  compact?: RecordTurn,
+): Promise<string> =>
+  askAi(system, text, [], 4000, {
+    feature: 'school_record',
+    requestId: id,
+    ...(compact ? { compact } : {}),
+  })
 
 /** students written at once on a connected AI (Codex, Claude, the web's Gemini) */
 const CONNECTED_AT_ONCE = 3
@@ -44,7 +63,10 @@ export async function rewordWithAi(
   others: readonly string[],
   id: string,
 ): Promise<string> {
-  const reply = cleanReply(await askRecordAi(REWORD_SYSTEM, rewordRequest(text, others), id))
+  const compact = { system: COMPACT_SYSTEM, text: compactRewordRequest(text, others, 1) }
+  const reply = cleanReply(
+    await askRecordAi(REWORD_SYSTEM, rewordRequest(text, others), id, compact),
+  )
   if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
   if (sameWording(text, reply)) throw new Error(NOT_REWORDED)
   return reply

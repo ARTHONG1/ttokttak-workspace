@@ -127,6 +127,8 @@ import {
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
 import { acquireLocalAi, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
+import { SCHOOL_RECORD_FORMAT } from './local-ai-model-files'
+import { schoolRecordTurn } from './school-record-turn'
 import { localAiSelectionChanged, registerLocalAiModels } from './local-ai-models-ipc'
 import {
   localExactEditFollowup,
@@ -4204,9 +4206,13 @@ export function registerAiIpc(): void {
       }
       return
     }
+    // 생기부 on the built-in model: its short format once its adapter learned it
+    // (school-record-turn.ts); connected AIs keep the instructions
+    const asked =
+      provider === 'local' ? schoolRecordTurn(request, SCHOOL_RECORD_FORMAT) : { system, messages }
     const modelTurn =
       provider === 'local'
-        ? prepareLocalAiTurn(system, messages, tools)
+        ? prepareLocalAiTurn(asked.system, asked.messages, tools)
         : { system, messages, tools }
     if ('error' in modelTurn && modelTurn.error) {
       send(aiStreamErrorChunk(requestId, new Error(modelTurn.error)))

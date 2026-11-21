@@ -15,8 +15,15 @@ import {
   shell,
 } from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
-import { MODEL_BYTES, MODEL_FILES, MODEL_NAME, MODEL_PAGE, type ModelSpec } from '../shared/model'
-import { askFailure } from './ai-turn'
+import {
+  MODEL_BYTES,
+  MODEL_FILES,
+  MODEL_NAME,
+  MODEL_PAGE,
+  RECORD_FORMAT,
+  type ModelSpec,
+} from '../shared/model'
+import { askFailure, pickTurn, type RecordFormat } from './ai-turn'
 import { LocalAi, type ModelSource } from './local-ai'
 import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
@@ -81,6 +88,18 @@ function modelSource(): ModelSource {
       ),
   )
   return { stores }
+}
+
+/**
+ * The form the 생기부 adapter is asked in (shared/model.ts RECORD_FORMAT). A development run may
+ * try the other with SAENGGIBU_RECORD_FORMAT (instructions or compact), e.g. a new adapter given
+ * by SAENGGIBU_ADAPTER_FILE before it is pinned; an installed app ignores it.
+ */
+function recordFormat(): RecordFormat {
+  const asked = process.env.SAENGGIBU_RECORD_FORMAT
+  return !app.isPackaged && (asked === 'instructions' || asked === 'compact')
+    ? asked
+    : RECORD_FORMAT
 }
 const ai = new LocalAi(process.resourcesPath, modelSource())
 
@@ -199,8 +218,16 @@ function registerIpc(): void {
       typeof r.temperature === 'number' && r.temperature >= 0 && r.temperature <= 1.5
         ? r.temperature
         : 0
+    const compact =
+      r.compact && typeof r.compact.system === 'string' && typeof r.compact.text === 'string'
+        ? { system: r.compact.system, text: r.compact.text }
+        : undefined
+    const turn = pickTurn(
+      { system: r.system, text: r.text, temperature, ...(compact ? { compact } : {}) },
+      recordFormat(),
+    )
     try {
-      return { ok: true, text: await ai.ask(r.requestId, r.system, r.text, temperature) }
+      return { ok: true, text: await ai.ask(r.requestId, turn.system, turn.text, turn.temperature) }
     } catch (err) {
       return askFailure(err)
     }

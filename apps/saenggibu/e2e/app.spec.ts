@@ -586,3 +586,70 @@ test('a class of 40 is taken, written, sent and kept whole', async () => {
     await closeApp(again)
   }
 })
+
+/**
+ * 똑딱AI's short 생기부 format, prepared for an adapter that learns it: every request goes out in
+ * both forms (the main process picks by shared/model.ts RECORD_FORMAT), a class's students take
+ * the variants in turn, and [다시 생성] asks for the next one. The AI answers from this test.
+ */
+test("asks in both forms, and [다시 생성] asks the short format's next variant", async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'saenggibu-e2e-'))
+  const app = await electron.launch({
+    args: [APP],
+    env: {
+      ...process.env,
+      SAENGGIBU_AI_DIR: AI_DIR,
+      SAENGGIBU_MODEL_FILE: join(userData, 'no-model.gguf'),
+      SAENGGIBU_USER_DATA: userData,
+    } as Record<string, string>,
+  })
+  try {
+    const page = await app.firstWindow()
+    await app.evaluate(({ ipcMain }) => {
+      const g = globalThis as unknown as {
+        asked: { system: string; compact?: { system: string; text: string } }[]
+      }
+      g.asked = []
+      ipcMain.removeHandler('saenggibu:ask')
+      ipcMain.handle(
+        'saenggibu:ask',
+        (_event, r: { system: string; compact?: { system: string; text: string } }) => {
+          g.asked.push(r)
+          return { ok: true, text: g.asked.length + '번째 글로 성실함.' }
+        },
+      )
+    })
+    const asked = () =>
+      app.evaluate(
+        () =>
+          (
+            globalThis as unknown as {
+              asked: { system: string; compact?: { system: string; text: string } }[]
+            }
+          ).asked,
+      )
+    await page.getByRole('tab', { name: /행발/ }).click()
+    await page.getByTestId('record-count').fill('2')
+    await page.getByTestId('record-count').press('Enter')
+    await page.getByTestId('record-notes').nth(0).fill('성실함.')
+    await page.getByTestId('record-notes').nth(1).fill('친구를 잘 도와줌.')
+    await page.getByTestId('record-generate-all').click()
+    await expect.poll(async () => (await asked()).length).toBe(2)
+    const first = await asked()
+    expect(
+      first.every(
+        (r) => r.system.includes('행동특성') && r.compact?.system === '학교생활기록부 문장 작성',
+      ),
+    ).toBe(true)
+    expect(first.map((r) => r.compact?.text)).toEqual([
+      '[행발]\n관찰:\n- 성실함.\n분량: 보통\n변형: 1',
+      '[행발]\n관찰:\n- 친구를 잘 도와줌.\n분량: 보통\n변형: 2',
+    ])
+    for (const variant of ['변형: 2', '변형: 3']) {
+      await page.getByTestId('record-generate-one').first().click()
+      await expect.poll(async () => (await asked()).at(-1)?.compact?.text ?? '').toContain(variant)
+    }
+  } finally {
+    await closeApp(app)
+  }
+})
