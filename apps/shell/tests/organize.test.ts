@@ -7,7 +7,8 @@ import JSZip from 'jszip'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { openPptx } from '@genoffice/pptx-engine'
-import { hwpToText } from '@genoffice/file-parse'
+import { hwpToText, loadRhwpEngine } from '@genoffice/file-parse'
+import { hangulPages, keepHangulPages } from '../src/main/organize/hangul'
 import { OrganizeService, cardsFor, piecesOf, rangeLabel } from '../src/main/organize/service'
 import { droppedPaths } from '../src/main/dropped-paths'
 import { recodePdfImageInJs, recodePictureInJs } from '../src/main/organize/pictures'
@@ -410,6 +411,26 @@ describe('똑딱정리 Hangul', () => {
     )
     expect(picked.fileName).toBe('memo-source-3-4쪽.hwp')
     expect(picked.facts[0]).toBe('2쪽')
+  }, 60_000)
+
+  // a page that starts partway through a paragraph (its first line the rest of one begun on
+  // the page before): the engine's page position names only the paragraph, so the page was
+  // taken for a clean one, cut, and refused at the text check with a vague "differs" (a real
+  // 공문, 2026-11-21); the caret start shows where the page really begins
+  it('knows a page that starts inside a paragraph, and says so before cutting', async () => {
+    const { HwpDocument } = await loadRhwpEngine()
+    const doc = HwpDocument.createEmpty()
+    doc.createBlankDocument()
+    doc.insertText(0, 0, 0, '앞 문단')
+    doc.splitParagraph(0, 0, 4)
+    doc.insertText(0, 1, 0, '긴 문단 '.repeat(3000))
+    const bytes = doc.exportHwp()
+    doc.free()
+    const pages = await hangulPages(bytes)
+    expect(pages.length).toBeGreaterThan(2)
+    // the long paragraph begins on the first page: every page after it starts inside it
+    expect(pages.map((p) => p.joined)).toEqual([false, ...pages.slice(1).map(() => true)])
+    await expect(keepHangulPages(bytes, 'hwp', [1])).rejects.toMatchObject({ reason: 'joined' })
   }, 60_000)
 
   it('refuses a page it cannot take out cleanly, and says which', async () => {

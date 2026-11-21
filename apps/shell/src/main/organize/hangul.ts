@@ -57,9 +57,32 @@ const squeeze = (text: string): string => text.replace(/\s+/g, '')
 function positions(doc: Doc): PagePos[] {
   const n = doc.pageCount()
   const out: PagePos[] = []
+  // getPositionOfPage names the paragraph a page starts in, never how far into it: a page
+  // whose first line is the rest of a paragraph begun on the page before read as a clean
+  // one, was cut, and only the text check refused it, with a vague "differs". The caret
+  // starts (the editor's MovePage) say where the page really begins.
+  let carets: { para?: number; pos?: number }[]
+  try {
+    carets = JSON.parse(doc.getPageCaretStarts()) as { para?: number; pos?: number }[]
+  } catch {
+    carets = []
+  }
   for (let p = 0; p < n; p++) {
     const pos = JSON.parse(doc.getPositionOfPage(p)) as Partial<PagePos> & { ok?: boolean }
-    out.push({ sec: pos.sec ?? 0, para: pos.para ?? 0, charOffset: pos.charOffset ?? 0 })
+    const sec = pos.sec ?? 0
+    const para = pos.para ?? 0
+    let charOffset = pos.charOffset ?? 0
+    const caret = carets[p]
+    if (p > 0 && charOffset === 0 && caret?.para === para && (caret.pos ?? 0) > 0) {
+      try {
+        // the caret counts inline controls too: only text before it on the page before counts
+        const before = doc.logicalToTextOffset(sec, para, caret.pos!)
+        if (before > 0 && before < doc.getParagraphLength(sec, para)) charOffset = before
+      } catch {
+        // an engine without the conversion: the paragraph start stands
+      }
+    }
+    out.push({ sec, para, charOffset })
   }
   return out
 }
