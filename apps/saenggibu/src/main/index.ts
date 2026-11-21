@@ -233,6 +233,11 @@ function registerIpc(): void {
     neis ??= createNeisDriver(app.getPath('userData'))
     return neisRequest(text, neis)
   })
+  // 나이스에서 가져오기: read only; the same window and profile as 나이스로 보내기
+  ipcMain.handle(CHANNELS.readNeisClass, async () => {
+    neis ??= createNeisDriver(app.getPath('userData'))
+    return neis.readClass()
+  })
 }
 
 if (!app.requestSingleInstanceLock()) {

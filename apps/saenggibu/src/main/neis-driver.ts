@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { BrowserContext, Frame } from 'playwright-core'
 import type { NeisResult } from '../shared/api'
+import { classResult, readClassInPage, type NeisClassResult } from '../shared/neis-class'
 import {
   NEIS_BYTE_LIMIT,
   neisBytes,
@@ -157,30 +158,9 @@ export class PlaywrightNeisDriver implements NeisDriver {
       return { ok: false, reason: '다른 입력이 진행 중이에요. 끝난 뒤 다시 보내 주세요.' }
     this.busy = true
     try {
-      if (!this.context) {
-        try {
-          this.context = await this.launch(this.options)
-        } catch (err) {
-          const msg = String((err as Error)?.message ?? err)
-          if (/SingletonLock|ProcessSingleton|profile.*in use|already in use/i.test(msg)) {
-            return {
-              ok: false,
-              reason:
-                '이미 열려 있는 전송용 브라우저 창이 프로필을 사용 중이에요. 열려 있는 전송용 Chrome 또는 Edge 창을 닫은 뒤 다시 보내 주세요.',
-            }
-          }
-          return {
-            ok: false,
-            reason:
-              '전용 브라우저를 열지 못했어요. Chrome 또는 Edge 설치와 열려 있는 전송용 창을 확인해 주세요.',
-          }
-        }
-        const context = this.context
-        context.on('close', () => {
-          if (this.context === context) this.context = null
-        })
-        context.setDefaultTimeout(3_000)
-      }
+      const opened = await this.open()
+      if (!opened.ok) return opened
+      if (!this.context) return { ok: false, reason: '전용 브라우저를 열지 못했어요.' }
 
       const candidates: Frame[] = []
       for (const page of this.context.pages()) {
@@ -199,14 +179,7 @@ export class PlaywrightNeisDriver implements NeisDriver {
             '입력 가능한 나이스 화면이 여러 개예요. 보낼 화면 하나만 남긴 뒤 다시 보내 주세요.',
         }
       if (!candidates.length) {
-        const url = this.options.neisUrl || this.readSavedOrigin() || 'https://www.neis.go.kr'
-        let page = this.context.pages().find((p) => isNeisTarget(p.url()))
-        if (!page) {
-          page = this.context.pages()[0] ?? (await this.context.newPage())
-          if (page.url() === 'about:blank')
-            await page.goto(url, { timeout: 20_000, waitUntil: 'domcontentloaded' })
-        }
-        await page.bringToFront()
+        await this.showNeis()
         return {
           ok: false,
           reason:
@@ -219,6 +192,103 @@ export class PlaywrightNeisDriver implements NeisDriver {
     } finally {
       this.busy = false
     }
+  }
+
+  /**
+   * 나이스에서 가져오기: the class list (and its 누가기록) of the NEIS screen open in the app's
+   * window, read from the screen's data. Nothing in NEIS is changed. Without an open NEIS the
+   * window shows it and the teacher is told to sign in and open the 누가기록 screen.
+   */
+  async readClass(): Promise<NeisClassResult> {
+    if (this.busy)
+      return { ok: false, message: '다른 나이스 작업이 진행 중이에요. 끝난 뒤 다시 해 주세요.' }
+    this.busy = true
+    try {
+      const opened = await this.open()
+      if (!opened.ok) return { ok: false, message: opened.reason }
+      if (!this.context) return { ok: false, message: '전용 브라우저를 열지 못했어요.' }
+      let onNeis = false
+      let unclear: 'many-lists' | 'many-classes' | null = null
+      const read = new Map<string, ReturnType<typeof classResult>>()
+      for (const page of this.context.pages()) {
+        for (const frame of page.frames()) {
+          const url = effectiveFrameUrl(frame)
+          if (!isNeisTarget(url)) continue
+          onNeis = true
+          this.rememberOrigin(url)
+          const got = await frame.evaluate(readClassInPage).catch(() => null)
+          if (!got) continue
+          if (got.ok) {
+            const result = classResult(got)
+            read.set(JSON.stringify(result), result)
+          } else if (got.kind === 'many-lists' || got.kind === 'many-classes') {
+            unclear = unclear === 'many-lists' ? unclear : got.kind
+          }
+        }
+      }
+      // a screen of another class anywhere: which to read is the teacher's to say
+      if (unclear) return classResult({ ok: false, kind: unclear })
+      if (read.size > 1) return classResult({ ok: false, kind: 'many-lists' })
+      const [result] = read.values()
+      if (result) return result
+      if (!onNeis) {
+        await this.showNeis()
+        return {
+          ok: false,
+          message:
+            '전용 브라우저에서 업무포털에 로그인하고 나이스의 [학급담임 → 행동특성및종합의견 → 누가기록] 화면을 연 뒤, 앱에서 다시 눌러 주세요.',
+        }
+      }
+      return classResult({ ok: false, kind: 'no-class' })
+    } catch {
+      return {
+        ok: false,
+        message: '브라우저 연결이 끊겼거나 나이스 화면을 읽지 못했어요. 다시 해 주세요.',
+      }
+    } finally {
+      this.busy = false
+    }
+  }
+
+  /** the app's own browser window, opened once (and again after the teacher closed it) */
+  private async open(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    if (this.context) return { ok: true }
+    try {
+      this.context = await this.launch(this.options)
+    } catch (err) {
+      const msg = String((err as Error)?.message ?? err)
+      if (/SingletonLock|ProcessSingleton|profile.*in use|already in use/i.test(msg)) {
+        return {
+          ok: false,
+          reason:
+            '이미 열려 있는 전송용 브라우저 창이 프로필을 사용 중이에요. 열려 있는 전송용 Chrome 또는 Edge 창을 닫은 뒤 다시 보내 주세요.',
+        }
+      }
+      return {
+        ok: false,
+        reason:
+          '전용 브라우저를 열지 못했어요. Chrome 또는 Edge 설치와 열려 있는 전송용 창을 확인해 주세요.',
+      }
+    }
+    const context = this.context
+    context.on('close', () => {
+      if (this.context === context) this.context = null
+    })
+    context.setDefaultTimeout(3_000)
+    return { ok: true }
+  }
+
+  /** NEIS in the window, in front (the place used last time, or the national portal) */
+  private async showNeis(): Promise<void> {
+    if (!this.context) return
+    const url = this.options.neisUrl || this.readSavedOrigin() || 'https://www.neis.go.kr'
+    let page = this.context.pages().find((p) => isNeisTarget(p.url()))
+    if (!page) {
+      page = this.context.pages()[0] ?? (await this.context.newPage())
+      if (page.url() === 'about:blank')
+        await page.goto(url, { timeout: 20_000, waitUntil: 'domcontentloaded' })
+    }
+    await page.bringToFront()
   }
 
   async close(): Promise<void> {

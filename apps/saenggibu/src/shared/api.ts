@@ -1,4 +1,5 @@
 import type { RecordPackage } from './record-package'
+import type { NeisClassResult } from './neis-class'
 
 /** what the page asks the built-in 똑딱AI: one 생기부 writing turn (instructions + request) */
 export interface AskRequest {
@@ -60,6 +61,8 @@ export interface SaenggibuApi {
   /** null = canceled */
   readTableFile(): Promise<TableFileResult | null>
   sendToNeis(text: string): Promise<NeisResult>
+  /** 나이스에서 가져오기: the class list and 누가기록 of the NEIS screen in the app's browser */
+  readNeisClass(): Promise<NeisClassResult>
   version(): Promise<string>
   /** whether the page holds students' work not yet kept with [임시 저장] (asked about on close) */
   setUnsaved(unsaved: boolean): void
@@ -69,7 +72,7 @@ export interface SaenggibuApi {
   closeNow(): Promise<void>
 }
 
-export type { RecordPackage }
+export type { NeisClassResult, RecordPackage }
 
 export const CHANNELS = {
   ask: 'saenggibu:ask',
@@ -82,6 +85,7 @@ export const CHANNELS = {
   openModelPage: 'saenggibu:open-model-page',
   readTableFile: 'saenggibu:read-table-file',
   sendToNeis: 'saenggibu:send-to-neis',
+  readNeisClass: 'saenggibu:read-neis-class',
   version: 'saenggibu:version',
   unsaved: 'saenggibu:unsaved',
   saveBeforeClose: 'saenggibu:save-before-close',

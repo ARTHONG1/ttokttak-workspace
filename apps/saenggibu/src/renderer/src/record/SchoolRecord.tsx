@@ -50,6 +50,9 @@ import {
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
 import { askRecordAi, cancelRecordAi, rewordWithAi } from './record-ai'
+import { NeisImport } from './NeisImport'
+import { applyNeisClass } from './record-neis'
+import type { NeisClassResult } from '../../../shared/neis-class'
 import { SimilarityCheck } from './SimilarityCheck'
 import {
   NOT_REWORDED,
@@ -256,6 +259,7 @@ export function SchoolRecord(): ReactElement {
   const [listOpen, setListOpen] = useState(false)
   const [loadOpen, setLoadOpen] = useState(false)
   const [clearOpen, setClearOpen] = useState(false)
+  const [neisOpen, setNeisOpen] = useState(false)
   const [readingRoster, setReadingRoster] = useState(false)
   const [showProblem, setShowProblem] = useState(false)
   const [countText, setCountText] = useState<string | null>(null)
@@ -613,6 +617,32 @@ export function SchoolRecord(): ReactElement {
   const setAllLevels = (level: Level) => {
     patch('subject', (w) => ({ ...w, students: w.students.map((s) => ({ ...s, level })) }))
     say("모든 학생의 성취 수준을 '" + level + "'(으)로 맞췄어요.")
+  }
+
+  // 나이스에서 가져오기: the class in the NEIS order; 행발 can take each student's 누가기록.
+  // The dialog has shown the outcome; a list over MAX_STUDENTS is not put in (saving drops the
+  // rest), which the dialog already refuses
+  const applyNeis = (read: Extract<NeisClassResult, { ok: true }>, withRecords: boolean) => {
+    const out = applyNeisClass(
+      worksRef.current[mode].students,
+      read.students,
+      { withRecords },
+      newStudent,
+    )
+    if (out.tooMany) {
+      say('학생이 ' + MAX_STUDENTS + '명을 넘어 넣지 않았어요.', true)
+      return
+    }
+    patch(mode, (w) => ({ ...w, students: out.students.length ? out.students : [newStudent()] }))
+    setNeisOpen(false)
+    say(
+      '나이스 순서대로 학생 ' +
+        read.students.length +
+        '명을 넣었어요.' +
+        (withRecords && out.notesFilled > 0
+          ? ' ' + out.notesFilled + '명의 관찰 기록에 누가기록을 넣었어요.'
+          : ''),
+    )
   }
 
   const loadRoster = async () => {
@@ -1102,6 +1132,15 @@ export function SchoolRecord(): ReactElement {
               <button
                 type="button"
                 className="sf-secondary sf-sm"
+                data-testid="record-neis"
+                disabled={anyBusy}
+                onClick={() => setNeisOpen(true)}
+              >
+                나이스에서 가져오기
+              </button>
+              <button
+                type="button"
+                className="sf-secondary sf-sm"
                 data-testid="record-load"
                 onClick={() => setLoadOpen(true)}
               >
@@ -1407,6 +1446,16 @@ export function SchoolRecord(): ReactElement {
           if (file) void loadCsv(file)
         }}
       />
+
+      {neisOpen && (
+        <NeisImport
+          mode={mode}
+          current={works[mode].students}
+          make={newStudent}
+          onApply={applyNeis}
+          onClose={() => setNeisOpen(false)}
+        />
+      )}
 
       {clearOpen && (
         <Modal title="학생 목록 비우기" onClose={() => setClearOpen(false)}>

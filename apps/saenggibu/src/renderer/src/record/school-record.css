@@ -611,3 +611,71 @@
     padding: 0 10px;
   }
 }
+
+/* 나이스에서 가져오기 */
+.sr-neis-steps {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--sf-ink-2);
+}
+.sr-neis-steps li + li {
+  margin-top: 4px;
+}
+.sr-neis-error {
+  display: block;
+  margin-top: 10px;
+}
+.sr-neis-summary {
+  margin: 14px 0 8px;
+  font-weight: 600;
+}
+.sr-neis-list {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--sf-line);
+  border-radius: 10px;
+}
+.sr-neis-list table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sr-neis-list th,
+.sr-neis-list td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--sf-line);
+  text-align: left;
+}
+.sr-neis-list th {
+  position: sticky;
+  top: 0;
+  background: var(--sf-soft);
+  font-weight: 600;
+}
+.sr-neis-check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* the app's fields are full width; this box is a box */
+.sf .sr-neis-check input {
+  flex: none;
+  width: auto;
+  margin: 3px 0 0;
+  padding: 0;
+}
+.sr-neis-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--sf-ink-3);
+}
+.sr-neis-warn {
+  color: var(--sf-ink-2);
+  font-weight: 600;
+}

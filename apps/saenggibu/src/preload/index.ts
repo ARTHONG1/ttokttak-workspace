@@ -16,6 +16,7 @@ const api: SaenggibuApi = {
   openModelPage: () => ipcRenderer.invoke(CHANNELS.openModelPage),
   readTableFile: () => ipcRenderer.invoke(CHANNELS.readTableFile),
   sendToNeis: (text) => ipcRenderer.invoke(CHANNELS.sendToNeis, text),
+  readNeisClass: () => ipcRenderer.invoke(CHANNELS.readNeisClass),
   version: () => ipcRenderer.invoke(CHANNELS.version),
   setUnsaved: (unsaved) => ipcRenderer.send(CHANNELS.unsaved, unsaved === true),
   onSaveBeforeClose(handler) {

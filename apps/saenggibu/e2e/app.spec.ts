@@ -351,3 +351,101 @@ test('the first launch downloads the model and says so', async () => {
     server.close()
   }
 })
+
+/**
+ * 나이스에서 가져오기 without a school's NEIS: the main process's reading is answered here
+ * (the reading itself is tested against a fake NEIS screen in tests/neis-browser.test.ts).
+ */
+test('takes the class and its 누가기록 from NEIS into 행발', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'saenggibu-e2e-'))
+  const app = await electron.launch({
+    args: [APP],
+    env: {
+      ...process.env,
+      SAENGGIBU_AI_DIR: AI_DIR,
+      SAENGGIBU_MODEL_FILE: join(userData, 'no-model.gguf'),
+      SAENGGIBU_USER_DATA: userData,
+    } as Record<string, string>,
+  })
+  try {
+    const page = await app.firstWindow()
+    const answer = (result: unknown) =>
+      app.evaluate(({ ipcMain }, r) => {
+        ipcMain.removeHandler('saenggibu:read-neis-class')
+        ipcMain.handle('saenggibu:read-neis-class', () => r)
+      }, result)
+    await page.getByRole('tab', { name: /행발/ }).click()
+    await page.getByTestId('record-name').first().fill('이바다')
+    await page.getByTestId('record-notes').first().fill('청소 당번을 성실히 함.')
+
+    // NEIS not on the 누가기록 screen yet: what to do is said in the dialog
+    await answer({ ok: false, message: '누가기록 화면을 연 뒤 다시 눌러 주세요.' })
+    await page.getByTestId('record-neis').click()
+    await page.getByTestId('record-neis-read').click()
+    await expect(page.getByTestId('record-neis-error')).toContainText('누가기록 화면')
+
+    // the class with its 누가기록: previewed, then put in the NEIS order
+    await answer({
+      ok: true,
+      recordsFor: 'all',
+      recordsRead: 2,
+      unplaced: 0,
+      students: [
+        {
+          cls: '3',
+          no: '1',
+          name: '김하늘',
+          records: [{ date: '20260315', text: '질문을 자주 함.' }],
+        },
+        {
+          cls: '3',
+          no: '2',
+          name: '이바다',
+          records: [{ date: '20260310', text: '화분을 돌봄.' }],
+        },
+        { cls: '3', no: '3', name: '박구름', records: [] },
+      ],
+    })
+    await page.getByTestId('record-neis-read').click()
+    await expect(page.getByTestId('record-neis-summary')).toContainText('3명')
+    await expect(page.getByTestId('record-neis-summary')).toContainText('누가기록 2건')
+    await expect(page.getByTestId('record-neis-outcome')).toContainText('이미 목록에 있는 학생 1명')
+    await expect(page.getByTestId('record-neis-outcome')).toContainText('새 학생 2명')
+    await page.screenshot({ path: join(APP, 'test-results/saenggibu-neis-preview.png') })
+    await page.getByTestId('record-neis-apply').click()
+    await expect(page.getByTestId('record-name')).toHaveCount(3)
+    expect(
+      await page
+        .getByTestId('record-name')
+        .evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value)),
+    ).toEqual(['김하늘', '이바다', '박구름'])
+    expect(
+      await page
+        .getByTestId('record-notes')
+        .evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value)),
+    ).toEqual(['질문을 자주 함.', '청소 당번을 성실히 함.\n화분을 돌봄.', ''])
+    await page.screenshot({ path: join(APP, 'test-results/saenggibu-neis-import.png') })
+
+    // a list longer than one list holds is shown, never put in (saving would drop the rest)
+    await answer({
+      ok: true,
+      recordsFor: 'none',
+      recordsRead: 0,
+      unplaced: 0,
+      students: Array.from({ length: 51 }, (_, i) => ({
+        cls: '3',
+        no: String(i + 1),
+        name: '학생' + (i + 1),
+        records: [],
+      })),
+    })
+    await page.getByTestId('record-neis').click()
+    await page.getByTestId('record-neis-read').click()
+    await expect(page.getByTestId('record-neis-too-many')).toContainText('50명')
+    await expect(page.getByTestId('record-neis-apply')).toBeDisabled()
+    await page.getByRole('button', { name: '취소' }).click()
+    await expect(page.getByTestId('record-name')).toHaveCount(3)
+  } finally {
+    await closeApp(app)
+  }
+})

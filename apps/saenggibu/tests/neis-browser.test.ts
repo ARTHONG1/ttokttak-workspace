@@ -19,7 +19,8 @@ const browserPath =
 beforeAll(async () => {
   const result = await build({
     stdin: {
-      contents: "export { mountFakeNeis } from './fake-neis-grid'",
+      contents:
+        "export { mountFakeNeis } from './fake-neis-grid'\nexport { installFakeNeisData } from './fake-neis-data'",
       resolveDir: resolve(__dirname, 'fixtures'),
     },
     bundle: true,
@@ -79,6 +80,53 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
     expect(results.filter((r) => r.ok)).toHaveLength(1)
     expect(results.find((r) => !r.ok)).toMatchObject({ reason: expect.stringContaining('진행 중') })
     expect(await page.evaluate(() => (window as any).grid.edits())).toBe(2)
+  })
+
+  // 나이스에서 가져오기: the 누가기록 screen's data, not what its grid draws
+  it('나이스 누가기록 화면의 학급 명단과 누가기록을 읽는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await page.evaluate(() => {
+      const w = window as any
+      w.fixture.installFakeNeisData(window, {
+        students: [
+          { no: '1', name: '김하늘' },
+          { no: '2', name: '이바다' },
+        ],
+        numbered: true,
+        records: [{ no: '2', date: '20260310', text: '화분을 돌봄.' }],
+      })
+    })
+    expect(await driver.readClass()).toEqual({
+      ok: true,
+      recordsFor: 'all',
+      recordsRead: 1,
+      unplaced: 0,
+      students: [
+        { cls: '3', no: '1', name: '김하늘', records: [] },
+        {
+          cls: '3',
+          no: '2',
+          name: '이바다',
+          records: [{ date: '20260310', text: '화분을 돌봄.' }],
+        },
+      ],
+    })
+  })
+
+  it('학급 명단이 없는 나이스 화면이면 누가기록 화면을 열라고 안내한다', async () => {
+    const { driver } = await setup('https://sen.neis.go.kr/')
+    expect(await driver.readClass()).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('누가기록'),
+    })
+  })
+
+  it('나이스가 열려 있지 않으면 로그인부터 안내한다', async () => {
+    const { driver } = await setup('https://example.com/')
+    expect(await driver.readClass()).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('로그인'),
+    })
   })
 
   it('사용자가 닫은 전용 브라우저를 다음 요청에서 다시 연다', async () => {
