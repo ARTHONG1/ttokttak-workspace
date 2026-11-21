@@ -54,6 +54,35 @@ const pageText = (doc: Doc, page: number): string => {
 
 const squeeze = (text: string): string => text.replace(/\s+/g, '')
 
+/**
+ * where each section starts in the body's paragraph count: the page carets and the control
+ * list count the body's paragraphs across sections, the editing calls within one section
+ */
+function sectionBases(doc: Doc): number[] {
+  const out: number[] = []
+  let base = 0
+  for (let s = 0; s < doc.getSectionCount(); s++) {
+    out.push(base)
+    base += doc.getParagraphCount(s)
+  }
+  return out
+}
+
+interface Caret {
+  list?: number
+  para?: number
+  pos?: number
+}
+
+function pageCarets(doc: Doc): Caret[] {
+  try {
+    const parsed: unknown = JSON.parse(doc.getPageCaretStarts())
+    return Array.isArray(parsed) ? (parsed as Caret[]) : []
+  } catch {
+    return []
+  }
+}
+
 function positions(doc: Doc): PagePos[] {
   const n = doc.pageCount()
   const out: PagePos[] = []
@@ -61,19 +90,16 @@ function positions(doc: Doc): PagePos[] {
   // whose first line is the rest of a paragraph begun on the page before read as a clean
   // one, was cut, and only the text check refused it, with a vague "differs". The caret
   // starts (the editor's MovePage) say where the page really begins.
-  let carets: { para?: number; pos?: number }[]
-  try {
-    carets = JSON.parse(doc.getPageCaretStarts()) as { para?: number; pos?: number }[]
-  } catch {
-    carets = []
-  }
+  const carets = pageCarets(doc)
+  const bases = sectionBases(doc)
   for (let p = 0; p < n; p++) {
     const pos = JSON.parse(doc.getPositionOfPage(p)) as Partial<PagePos> & { ok?: boolean }
     const sec = pos.sec ?? 0
     const para = pos.para ?? 0
     let charOffset = pos.charOffset ?? 0
     const caret = carets[p]
-    if (p > 0 && charOffset === 0 && caret?.para === para && (caret.pos ?? 0) > 0) {
+    const inBody = (bases[sec] ?? 0) + para
+    if (p > 0 && charOffset === 0 && caret?.para === inBody && (caret.pos ?? 0) > 0) {
       try {
         // the caret counts inline controls too: only text before it on the page before counts
         const before = doc.logicalToTextOffset(sec, para, caret.pos!)
@@ -152,31 +178,234 @@ function deleteRun(doc: Doc, pos: PagePos[], a: number, b: number): void {
   else if (e.sec === s.sec + 1 && e.para === 0) endPara = count
   else throw new HangulOrganizeError('sections', a)
   if (endPara <= s.para) throw new HangulOrganizeError('joined', a)
+  if (s.para === 0 && endPara === count) throw new HangulOrganizeError('whole-section', a)
   const last = endPara - 1
-  if (s.para > 0) {
-    const before = s.para - 1
-    doc.deleteRange(
-      s.sec,
-      before,
-      doc.getParagraphLength(s.sec, before),
-      last,
-      doc.getParagraphLength(s.sec, last),
+  const base = sectionBases(doc)[s.sec] ?? 0
+  const length = (q: number): number => doc.getParagraphLength(s.sec, q)
+  // The pages' paragraphs go whole, text and objects: a range from the end of the paragraph
+  // before took the table standing at that end (a page kept alone lost its cover table), one
+  // to the start of the paragraph after took the table standing there, and the text check,
+  // which reads no tables, let both through. A paragraph holding settings the pages after
+  // still use (the section's own, a 꼬리말 or 단 정의 set on a page taken out) stays, emptied,
+  // and the first paragraph after the pages moves up into it, keeping its own shape.
+  const holders =
+    endPara === count
+      ? []
+      : [
+          ...new Set([
+            ...(s.para === 0 ? [0] : []),
+            ...bodyControls(doc)
+              .filter(
+                (c) =>
+                  CARRIED.has(c.ctrlId ?? '') &&
+                  typeof c.para === 'number' &&
+                  c.para >= base + s.para &&
+                  c.para <= base + last,
+              )
+              .map((c) => c.para! - base),
+          ]),
+        ].sort((x, y) => x - y)
+  if (holders.length === 0) {
+    doc.deleteRange(s.sec, s.para, 0, last, length(last))
+    doc.deleteParagraph(s.sec, s.para)
+    return
+  }
+  const shape = (JSON.parse(doc.getParaPropertiesAt(s.sec, endPara)) as { paraShapeId?: number })
+    .paraShapeId
+  const kept = new Set(holders)
+  for (let q = last; q >= s.para;) {
+    if (kept.has(q)) {
+      q--
+      continue
+    }
+    let top = q
+    while (top - 1 >= s.para && !kept.has(top - 1)) top--
+    doc.deleteRange(s.sec, top, 0, q, length(q))
+    doc.deleteParagraph(s.sec, top)
+    q = top - 1
+  }
+  // the holders now stand from s.para on: each keeps only its settings, then they become one
+  for (let i = holders.length - 1; i >= 0; i--) {
+    const q = s.para + i
+    if (length(q) > 0) doc.deleteRange(s.sec, q, 0, q, length(q))
+    for (const c of bodyControls(doc)
+      .filter((c) => c.para === base + q)
+      .reverse()) {
+      // what a range leaves (an inline line, a picture) was on the pages taken out too
+      const id = c.ctrlId ?? ''
+      if (!(q === 0 ? SECTION_SETTINGS : CARRIED).has(id) && typeof c.controlIndex === 'number')
+        doc.deleteControlAt(0, base + q, c.controlIndex)
+    }
+  }
+  for (let i = holders.length - 1; i >= 1; i--) doc.mergeParagraph(s.sec, s.para + i)
+  // one 단 정의 rules a paragraph: the section's own in its first (set to the kept page's
+  // columns afterwards), else the last of those carried
+  const colds = bodyControls(doc).filter((c) => c.para === base + s.para && c.ctrlId === 'cold')
+  const extra = s.para === 0 ? colds.slice(1) : colds.slice(0, -1)
+  for (const c of extra.reverse())
+    if (typeof c.controlIndex === 'number') doc.deleteControlAt(0, base + s.para, c.controlIndex)
+  doc.mergeParagraph(s.sec, s.para + 1)
+  if (typeof shape === 'number') doc.setParaShapeId(s.sec, s.para, shape)
+}
+
+/** what a section keeps in its first paragraph for all its pages: paper, columns, numbering, headers */
+const SECTION_SETTINGS = new Set(['secd', 'cold', 'pgnp', 'nwno', 'head', 'foot'])
+/** settings set on a page that hold for the pages after it (감추기 and the like are the page's own) */
+const CARRIED = new Set(['cold', 'pgnp', 'nwno', 'head', 'foot'])
+
+interface BodyControl {
+  ctrlId?: string
+  list?: number
+  para?: number
+  controlIndex?: number
+}
+
+/** the controls of the body text (paragraphs counted across sections) */
+function bodyControls(doc: Doc): BodyControl[] {
+  try {
+    const parsed: unknown = JSON.parse(doc.getControls())
+    return Array.isArray(parsed) ? (parsed as BodyControl[]).filter((c) => c.list === 0) : []
+  } catch {
+    return []
+  }
+}
+
+interface Columns {
+  columnCount: number
+  columnType: number
+  sameWidth: boolean
+  spacing: number
+}
+
+const readColumns = (raw: string): Columns | null => {
+  try {
+    const c = JSON.parse(raw) as Partial<Columns>
+    return typeof c.columnCount === 'number' &&
+      typeof c.columnType === 'number' &&
+      typeof c.spacing === 'number'
+      ? {
+          columnCount: c.columnCount,
+          columnType: c.columnType,
+          sameWidth: c.sameWidth !== false,
+          spacing: c.spacing,
+        }
+      : null
+  } catch {
+    return null
+  }
+}
+
+const sameColumns = (x: Columns | null, y: Columns | null): boolean =>
+  !!x &&
+  !!y &&
+  x.columnCount === y.columnCount &&
+  x.columnType === y.columnType &&
+  x.sameWidth === y.sameWidth &&
+  x.spacing === y.spacing
+
+/**
+ * The columns each page starts with. Columns can be set part way through a section (a 단 정의
+ * in a later paragraph) and hold until the next one; the engine reads them per section only,
+ * but a section split at a page (한/글's 구역 나누기) takes the columns in force there. Read
+ * on a scratch copy, split from the last page so the earlier ones stay where they are.
+ */
+async function columnsAt(
+  bytes: Uint8Array,
+  points: { sec: number; para: number }[],
+): Promise<Map<string, Columns | null>> {
+  const out = new Map<string, Columns | null>()
+  const key = (sec: number, para: number): string => sec + ':' + para
+  const asked = [...new Map(points.map((p) => [key(p.sec, p.para), p])).values()]
+  if (asked.length === 0) return out
+  const scratch = await open(bytes)
+  try {
+    for (const { sec, para } of asked.sort((x, y) => y.sec - x.sec || y.para - x.para)) {
+      try {
+        if (para === 0) {
+          out.set(key(sec, para), readColumns(scratch.getColumnDef(sec)))
+          continue
+        }
+        const made = JSON.parse(scratch.splitSection(sec, para, 0)) as { section?: number }
+        out.set(
+          key(sec, para),
+          typeof made.section === 'number' ? readColumns(scratch.getColumnDef(made.section)) : null,
+        )
+      } catch {
+        out.set(key(sec, para), null)
+      }
+    }
+  } finally {
+    scratch.free()
+  }
+  return out
+}
+
+/** a page's table text and its objects (tables, pictures, lines), which its text leaves out */
+function pageExtras(doc: Doc, page: number): { cells: string; objects: string[] } {
+  let cells = ''
+  try {
+    const layout = JSON.parse(doc.getPageTextLayout(page)) as {
+      runs?: { text?: string; cellPath?: unknown[] }[]
+    }
+    for (const r of layout.runs ?? [])
+      if (Array.isArray(r.cellPath) && r.cellPath.length > 0) cells += r.text ?? ''
+  } catch {
+    // no layout: nothing to compare on this page
+  }
+  let objects: string[] = []
+  try {
+    const layout = JSON.parse(doc.getPageControlLayout(page)) as {
+      controls?: { type?: string; stableIndex?: unknown }[]
+    }
+    objects = (layout.controls ?? []).map(
+      (c) => (c.type ?? '') + ' ' + JSON.stringify(c.stableIndex ?? null),
     )
-  } else {
-    // the first paragraph of a section holds its settings (paper, columns): it stays, and the
-    // first paragraph after the pages moves up into it, keeping that paragraph's own shape
-    if (endPara === count) throw new HangulOrganizeError('whole-section', a)
-    const starts = JSON.parse(doc.getPageCaretStarts()) as {
-      list: number
-      para: number
-      pos: number
-    }[]
-    const caret = starts[a]
-    const from = caret && caret.para === 0 ? caret.pos : 0
-    const shape = (JSON.parse(doc.getParaPropertiesAt(s.sec, endPara)) as { paraShapeId?: number })
-      .paraShapeId
-    doc.deleteRange(s.sec, 0, from, endPara, 0)
-    if (typeof shape === 'number') doc.setParaShapeId(s.sec, 0, shape)
+  } catch {
+    // no layout: nothing to compare on this page
+  }
+  return { cells, objects }
+}
+
+interface Extras {
+  /** the table text's characters, sorted (a table that moved to another page still matches) */
+  cells: string
+  /** each kind of object and how many of it */
+  objects: string
+}
+
+/** the pages' table text and objects of one document; several documents' add up (joinHangul) */
+function extrasOf(doc: Doc, pages: number[], add?: Extras[]): Extras {
+  return extrasFrom(
+    pages.map((p) => pageExtras(doc, p)),
+    add,
+  )
+}
+
+function extrasFrom(pages: { cells: string; objects: string[] }[], add?: Extras[]): Extras {
+  let cells = ''
+  const seen = new Set<string>()
+  for (const e of pages) {
+    cells += e.cells
+    for (const o of e.objects) seen.add(o)
+  }
+  const kinds = new Map<string, number>()
+  for (const o of seen) {
+    const kind = o.slice(0, o.indexOf(' '))
+    kinds.set(kind, (kinds.get(kind) ?? 0) + 1)
+  }
+  for (const other of add ?? []) {
+    cells += other.cells
+    for (const part of other.objects.split(',')) {
+      const m = /^(.*?)(\d+)$/.exec(part)
+      if (m) kinds.set(m[1]!, (kinds.get(m[1]!) ?? 0) + Number(m[2]))
+    }
+  }
+  return {
+    cells: [...squeeze(cells)].sort().join(''),
+    objects: [...kinds]
+      .sort(([x], [y]) => (x < y ? -1 : 1))
+      .map(([k, v]) => k + v)
+      .join(','),
   }
 }
 
@@ -189,12 +418,17 @@ export interface HangulResult {
 const pageDefs = (doc: Doc): string[] =>
   Array.from({ length: doc.getSectionCount() }, (_, s) => doc.getPageDef(s))
 
-/** check a result: the kept pages' text, the sections and their paper */
+/**
+ * check a result: the kept pages' text, their tables' text and objects (the page text leaves
+ * tables out: a cover table taken out with its page once came back unnoticed), the sections
+ * and their paper
+ */
 async function verify(
   result: Uint8Array,
   want: string,
   sections: number,
   defs: string[] | null,
+  extras?: Extras,
 ): Promise<number> {
   const back = await open(result).catch(() => {
     throw new HangulOrganizeError('mismatch')
@@ -206,6 +440,14 @@ async function verify(
     if (back.getSectionCount() !== sections) throw new HangulOrganizeError('mismatch')
     if (defs && pageDefs(back).join('|') !== defs.join('|'))
       throw new HangulOrganizeError('mismatch')
+    if (extras) {
+      const got = extrasOf(
+        back,
+        Array.from({ length: n }, (_, p) => p),
+      )
+      if (got.cells !== extras.cells || got.objects !== extras.objects)
+        throw new HangulOrganizeError('mismatch')
+    }
     return n
   } finally {
     back.free()
@@ -228,6 +470,21 @@ export async function keepHangulPages(
     const texts = Array.from({ length: n }, (_, p) => pageText(doc, p))
     const sections = doc.getSectionCount()
     const defs = pageDefs(doc)
+    const keptPages = [...kept].sort((x, y) => x - y)
+    // each page read once (the layouts take a while on a long document)
+    const perPage = Array.from({ length: n }, (_, p) => pageExtras(doc, p))
+    const extras = extrasFrom(keptPages.map((p) => perPage[p]!))
+    // a table (or picture) that runs from one page onto the next goes with both or neither
+    const objects = perPage.map((e) => new Set(e.objects))
+    // one on every page (a page border, a header's picture) belongs to all of them
+    const everywhere = new Set(
+      n > 1 ? [...objects[0]!].filter((o) => objects.every((s) => s.has(o))) : [],
+    )
+    for (let p = 1; p < n; p++) {
+      if (kept.has(p) === kept.has(p - 1)) continue
+      for (const o of objects[p]!)
+        if (!everywhere.has(o) && objects[p - 1]!.has(o)) throw new HangulOrganizeError('joined', p)
+    }
     // a run that crosses into another section is taken out section by section
     const runs: [number, number][] = []
     for (const [a, b] of runsOf(gone)) {
@@ -240,11 +497,30 @@ export async function keepHangulPages(
       }
       runs.push([start, b])
     }
-    for (const [a, b] of runs.reverse()) deleteRun(doc, pos, a, b)
+    // a kept page that opens its section once the pages before it go starts with the
+    // section's own 단 정의, which may not be the one it had: it gets the columns it had
+    // (one after a run in the middle of a section takes the run's 단 정의 along, deleteRun)
+    const opening: number[] = []
+    for (const [a, b] of runs) {
+      const next = b + 1
+      if (next < n && kept.has(next) && pos[next]!.sec === pos[a]!.sec && pos[a]!.para === 0)
+        opening.push(next)
+    }
+    const startOf = (p: number) => ({ sec: pos[p]!.sec, para: pos[p]!.para })
+    const colsKey = (x: { sec: number; para: number }): string => x.sec + ':' + x.para
+    const columns = await columnsAt(bytes, opening.map(startOf))
+    for (const [a, b] of [...runs].reverse()) deleteRun(doc, pos, a, b)
+    const warnings: string[] = []
+    for (const p of opening) {
+      const want = columns.get(colsKey(startOf(p))) ?? null
+      const sec = pos[p]!.sec
+      if (!want || sameColumns(readColumns(doc.getColumnDef(sec)), want)) continue
+      if (want.sameWidth) doc.setColumnDef(sec, want.columnCount, want.columnType, 1, want.spacing)
+      else warnings.push(p + 1 + '쪽의 다단 너비가 원본과 다를 수 있어요.')
+    }
     const out = exportAs(doc, format)
     const want = texts.filter((_, p) => kept.has(p)).join('')
-    const pages = await verify(out, want, sections, defs)
-    const warnings: string[] = []
+    const pages = await verify(out, want, sections, defs, extras)
     if (pages !== kept.size) {
       warnings.push(
         '쪽 수가 ' +
@@ -597,13 +873,29 @@ export function appendHwpx(base: ZipPackage, adds: ZipPackage[]): void {
 
 /** an HWP or HWPX document as an HWPX package (the engine writes the HWP one) */
 async function asHwpx(bytes: Uint8Array, format: 'hwp' | 'hwpx'): Promise<ZipPackage> {
-  if (format === 'hwpx') return readZip(bytes)
+  if (format === 'hwpx') {
+    const pkg = await readZip(bytes)
+    // appendHwpx reads the parts by the prefixes 한/글 writes (hh:, hs:, hp:); a package
+    // written with others (ns0: from an XML library) is valid but was joined without its
+    // sections counted: the engine writes it again the usual way
+    if (standardPrefixes(pkg)) return pkg
+  }
   const doc = await open(bytes)
   try {
     return await readZip(exportAs(doc, 'hwpx'), { trusted: true })
   } finally {
     doc.free()
   }
+}
+
+function standardPrefixes(pkg: ZipPackage): boolean {
+  const head = readText(pkg, 'Contents/header.xml') ?? ''
+  const sections = sectionNames(pkg)
+  return (
+    /<hh:head\b/.test(head) &&
+    sections.length > 0 &&
+    sections.every((name) => /<hs:sec\b/.test(readText(pkg, name) ?? ''))
+  )
 }
 
 /** join documents in order into the first one's format; checked by its text after */
@@ -613,12 +905,19 @@ export async function joinHangul(
 ): Promise<HangulResult> {
   let want = ''
   let pagesBefore = 0
+  const parts: Extras[] = []
   for (const input of inputs) {
     const doc = await open(input.bytes)
     try {
       const n = doc.pageCount()
       pagesBefore += n
       want += Array.from({ length: n }, (_, p) => pageText(doc, p)).join('')
+      parts.push(
+        extrasOf(
+          doc,
+          Array.from({ length: n }, (_, p) => p),
+        ),
+      )
     } finally {
       doc.free()
     }
@@ -645,6 +944,12 @@ export async function joinHangul(
     pages = back.pageCount()
     const got = squeeze(Array.from({ length: pages }, (_, p) => pageText(back, p)).join(''))
     if (got !== squeeze(want)) throw new HangulOrganizeError('mismatch')
+    // the tables and pictures come along too (the page text reads none of them)
+    const all = Array.from({ length: pages }, (_, p) => p)
+    const extras = extrasOf(back, all)
+    const expected = extrasOf(back, [], parts)
+    if (extras.cells !== expected.cells || extras.objects !== expected.objects)
+      throw new HangulOrganizeError('mismatch')
   } finally {
     back.free()
   }

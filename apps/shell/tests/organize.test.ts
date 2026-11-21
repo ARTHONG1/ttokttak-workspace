@@ -8,12 +8,12 @@ import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { openPptx } from '@genoffice/pptx-engine'
 import { hwpToText, loadRhwpEngine } from '@genoffice/file-parse'
-import { hangulPages, keepHangulPages } from '../src/main/organize/hangul'
+import { hangulPages, joinHangul, keepHangulPages } from '../src/main/organize/hangul'
 import { OrganizeService, cardsFor, piecesOf, rangeLabel } from '../src/main/organize/service'
 import { droppedPaths } from '../src/main/dropped-paths'
 import { recodePdfImageInJs, recodePictureInJs } from '../src/main/organize/pictures'
 import { docxText } from '../src/main/organize/docx'
-import { readZip } from '../src/main/organize/zip'
+import { readText, readZip, writeText, writeZip } from '../src/main/organize/zip'
 import { danglingRels } from '../src/main/organize/pptx'
 import type { OrganizeRunResult } from '../src/shared/organize-api'
 
@@ -411,7 +411,8 @@ describe('똑딱정리 Hangul', () => {
     )
     expect(picked.fileName).toBe('memo-source-3-4쪽.hwp')
     expect(picked.facts[0]).toBe('2쪽')
-  }, 60_000)
+    // every page's layout is read to check tables and pictures: slow when the whole suite runs
+  }, 120_000)
 
   // a page that starts partway through a paragraph (its first line the rest of one begun on
   // the page before): the engine's page position names only the paragraph, so the page was
@@ -431,6 +432,66 @@ describe('똑딱정리 Hangul', () => {
     // the long paragraph begins on the first page: every page after it starts inside it
     expect(pages.map((p) => p.joined)).toEqual([false, ...pages.slice(1).map(() => true)])
     await expect(keepHangulPages(bytes, 'hwp', [1])).rejects.toMatchObject({ reason: 'joined' })
+  }, 60_000)
+
+  // a cover page whose table stands in its own paragraph at the page's end, and a second
+  // page of text. Cutting from the end of the paragraph before took the table along (a real
+  // paper kept alone lost its title table), and the text check, which reads no tables, let
+  // it through; cutting from the start of the cover kept the cover's table on page 2.
+  async function coverWithTable(floating: boolean): Promise<Uint8Array> {
+    const { HwpDocument } = await loadRhwpEngine()
+    const doc = HwpDocument.createEmpty()
+    doc.createBlankDocument()
+    doc.insertText(0, 0, 0, '표지 제목')
+    if (floating) {
+      doc.createTableEx(
+        JSON.stringify({ sectionIdx: 0, paraIdx: 0, charOffset: 0, rowCount: 2, colCount: 2 }),
+      )
+    } else {
+      doc.splitParagraph(0, 0, 5)
+      doc.createTable(0, 1, 0, 2, 2)
+    }
+    const table = controlOf(doc, 'tbl')
+    doc.insertTextInCell(0, table.para, table.controlIndex, 0, 0, 0, '표 안 글')
+    const last = doc.getParagraphCount(0) - 1
+    doc.breakAtCursor(0, last, 0, 'page')
+    doc.insertText(0, doc.getParagraphCount(0) - 1, 0, '둘째 쪽 글')
+    const bytes = doc.exportHwp()
+    doc.free()
+    return bytes
+  }
+  function controlOf(
+    doc: { getControls(): string },
+    id: string,
+  ): { para: number; controlIndex: number } {
+    const c = (
+      JSON.parse(doc.getControls()) as { ctrlId: string; para: number; controlIndex: number }[]
+    ).find((x) => x.ctrlId === id)
+    if (!c) throw new Error('no ' + id)
+    return c
+  }
+  async function tablesIn(bytes: Uint8Array): Promise<number> {
+    const { HwpDocument } = await loadRhwpEngine()
+    const doc = new HwpDocument(bytes)
+    try {
+      return (JSON.parse(doc.getControls()) as { ctrlId: string }[]).filter(
+        (c) => c.ctrlId === 'tbl',
+      ).length
+    } finally {
+      doc.free()
+    }
+  }
+
+  it('keeps the table of a page kept, and leaves out the table of a page taken out', async () => {
+    for (const floating of [false, true]) {
+      const bytes = await coverWithTable(floating)
+      expect(await hangulPages(bytes)).toHaveLength(2)
+      const cover = await keepHangulPages(bytes, 'hwp', [0])
+      expect(await tablesIn(cover.bytes)).toBe(1)
+      const second = await keepHangulPages(bytes, 'hwp', [1])
+      expect(await tablesIn(second.bytes)).toBe(0)
+      expect(second.pages).toBe(1)
+    }
   }, 60_000)
 
   it('refuses a page it cannot take out cleanly, and says which', async () => {
@@ -459,5 +520,47 @@ describe('똑딱정리 Hangul', () => {
     if (!mixed.ok) throw new Error(mixed.error)
     const asHwp = ok(await s.run({ token: mixed.token, action: 'merge' }, () => {}))
     expect(asHwp.extension).toBe('hwp')
+  }, 60_000)
+
+  // an HWPX written by an XML library names its parts ns0:, ns1: (a real paper, 2026-11-21):
+  // valid, read fine, but the join looked for 한/글's hh:, did not count its sections, and
+  // showed only the first document (refused at the check, so nothing could be joined)
+  it('joins an HWPX written with other XML prefixes', async () => {
+    const { HwpDocument } = await loadRhwpEngine()
+    const make = (words: string): Uint8Array => {
+      const doc = HwpDocument.createEmpty()
+      doc.createBlankDocument()
+      doc.insertText(0, 0, 0, words)
+      const made = doc.exportHwpxWithReport()
+      const bytes = made.takeBytes()
+      made.free()
+      doc.free()
+      return bytes
+    }
+    const renamed = async (words: string): Promise<Uint8Array> => {
+      const pkg = await readZip(make(words))
+      for (const [name, from, to] of [
+        ['Contents/header.xml', 'hh', 'ns1'],
+        ['Contents/section0.xml', 'hs', 'ns0'],
+      ] as const) {
+        const xml = readText(pkg, name) ?? ''
+        writeText(
+          pkg,
+          name,
+          xml.replace(new RegExp('(</?|xmlns:)' + from + '([:=])', 'g'), '$1' + to + '$2'),
+        )
+      }
+      return writeZip(pkg)
+    }
+    const joined = await joinHangul(
+      [
+        { bytes: await renamed('첫째 문서의 글'), format: 'hwpx' },
+        { bytes: await renamed('둘째 문서의 글'), format: 'hwpx' },
+      ],
+      'hwpx',
+    )
+    const text = await hwpToText(joined.bytes)
+    expect(text).toContain('첫째 문서의 글')
+    expect(text).toContain('둘째 문서의 글')
   }, 60_000)
 })
