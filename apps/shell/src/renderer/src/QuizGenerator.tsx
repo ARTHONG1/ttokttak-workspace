@@ -25,6 +25,8 @@ import {
   mergeTranslation,
   newId,
   parseQuizReply,
+  joinQuizParts,
+  splitCounts,
   totalOf,
   translationPrompt,
   type Difficulty,
@@ -35,6 +37,18 @@ import {
 } from './quiz-model'
 import { buildQuiznWorkbook, buildWorksheetPdf, recordQuizVideo } from './quiz-export'
 import { QuizWordSearch, type SaveActions } from './QuizWordSearch'
+
+/** questions asked of the built-in AI at once: two with explanations fit its answer */
+const LOCAL_QUESTIONS_PER_ASK = 2
+
+/** the AI the next request goes to is the built-in one (its answers are short) */
+async function usesBuiltInAi(): Promise<boolean> {
+  try {
+    return (await window.aiOffice?.getAiSettings?.())?.provider === 'local'
+  } catch {
+    return false
+  }
+}
 
 /**
  * 특화 기능 > 퀴즈 생성기, after the author's ACE QUIZ LAB: 학습 자료 (typed, a PDF or Hangul
@@ -688,13 +702,39 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
       return say('총 문제 수는 1에서 30 사이여야 합니다.', true)
     setBusy('generate')
     try {
-      const reply = await askAi(generationPrompt(counts, difficulty), content.trim(), [], 12000)
-      const data = parseQuizReply(reply)
+      // the built-in AI answers about 1,000 tokens at most: a few questions per request
+      const parts = (await usesBuiltInAi())
+        ? splitCounts(counts, LOCAL_QUESTIONS_PER_ASK)
+        : [counts]
+      const made: QuizData[] = []
+      let lastError: unknown = null
+      for (const [index, part] of parts.entries()) {
+        if (parts.length > 1)
+          say('퀴즈를 만드는 중이에요 (' + (index + 1) + '/' + parts.length + ')')
+        try {
+          const reply = await askAi(generationPrompt(part, difficulty), content.trim(), [], 12000)
+          made.push(parseQuizReply(reply))
+        } catch (e) {
+          // one part that could not be read leaves the others: the quiz is shorter, and says so
+          if (parts.length === 1) throw e
+          lastError = e
+        }
+      }
+      if (made.length === 0)
+        throw lastError ?? new Error('AI가 제공된 내용으로 문제를 만들지 못했어요.')
+      const data = joinQuizParts(made)
       changeQuiz(data)
       setTab(
         QUESTION_TYPES.find((t) => data.questions.some((q) => q.type === t)) ?? 'multiple-choice',
       )
-      say(data.questions.length + '문제를 만들었어요.')
+      say(
+        data.questions.length < total
+          ? total +
+              '문제 중 ' +
+              data.questions.length +
+              '문제를 만들었어요. 더 필요하면 다시 만들어 주세요.'
+          : data.questions.length + '문제를 만들었어요.',
+      )
       requestAnimationFrame(() =>
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       )
@@ -713,8 +753,15 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
     setBusy('translate')
     say(lang.label + '(으)로 번역하고 있어요...')
     try {
-      const reply = await askAi(translationPrompt(lang.name), JSON.stringify(quiz), [], 12000)
-      const done = mergeTranslation(quiz, reply)
+      // on the built-in AI a whole quiz's translation does not fit one answer: a few at a time
+      const per = (await usesBuiltInAi()) ? LOCAL_QUESTIONS_PER_ASK : quiz.questions.length
+      const translated: Question[] = []
+      for (let i = 0; i < quiz.questions.length; i += Math.max(1, per)) {
+        const chunk: QuizData = { questions: quiz.questions.slice(i, i + Math.max(1, per)) }
+        const reply = await askAi(translationPrompt(lang.name), JSON.stringify(chunk), [], 12000)
+        translated.push(...mergeTranslation(chunk, reply).questions)
+      }
+      const done: QuizData = { questions: translated }
       setTranslations((t) => ({ ...t, [code]: done }))
       setLanguage(code)
       say('퀴즈를 ' + lang.label + '(으)로 번역했어요.')

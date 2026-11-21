@@ -391,3 +391,50 @@ export function fillQuiznSheet(sheetXml: string, data: QuizData): string {
   })
   return xml
 }
+
+/**
+ * The counts in parts of at most `per` questions, each type's count kept. The built-in AI
+ * answers at most about 1,000 tokens: five questions with explanations in one JSON reply were
+ * cut off and could not be read, so on it a quiz is asked for a few questions at a time.
+ */
+export function splitCounts(counts: QuizCounts, per: number): QuizCounts[] {
+  const keys: (keyof QuizCounts)[] = [
+    'multipleChoice',
+    'ox',
+    'shortAnswer',
+    'ordering',
+    'initialConsonant',
+  ]
+  const queue = keys.flatMap((key) => Array.from({ length: counts[key] }, () => key))
+  const parts: QuizCounts[] = []
+  for (let i = 0; i < queue.length; i += Math.max(1, per)) {
+    const part: QuizCounts = {
+      multipleChoice: 0,
+      ox: 0,
+      shortAnswer: 0,
+      ordering: 0,
+      initialConsonant: 0,
+    }
+    for (const key of queue.slice(i, i + Math.max(1, per))) part[key] += 1
+    parts.push(part)
+  }
+  return parts
+}
+
+/** the parts' questions as one quiz: a question asked twice is kept once, every id its own */
+export function joinQuizParts(parts: QuizData[]): QuizData {
+  const seen = new Set<string>()
+  const ids = new Set<string>()
+  const questions: Question[] = []
+  for (const part of parts) {
+    for (const q of part.questions) {
+      const key = q.type + '|' + q.question.replace(/\s+/g, '')
+      if (seen.has(key)) continue
+      seen.add(key)
+      const id = ids.has(q.id) ? newId() : q.id
+      ids.add(id)
+      questions.push(id === q.id ? q : { ...q, id })
+    }
+  }
+  return { questions }
+}

@@ -9,10 +9,12 @@ import {
   fillQuiznSheet,
   generationPrompt,
   isCorrect,
+  joinQuizParts,
   mergeTranslation,
   normalizeQuestion,
   parseQuizReply,
   quiznRow,
+  splitCounts,
 } from '../src/renderer/src/quiz-model'
 import { captionText, readYoutubeTranscript, youtubeIdOf } from '../src/main/quiz-source'
 import {
@@ -315,5 +317,49 @@ describe('what a feature page may save and read', () => {
     expect(
       checkSaveRequest({ name: 'a/b.zip', filterName: 'ZIP', extensions: ['zip'], bytes })?.name,
     ).toBe('a_b.zip')
+  })
+})
+
+// the built-in AI answers at most about 1,000 tokens: five questions with explanations in one
+// JSON reply were cut off, and 퀴즈 생성 on it only said "AI 답을 읽지 못했어요" (2026-11-21)
+describe('a quiz in parts for the built-in AI', () => {
+  it('splits the counts into small parts, each type kept', () => {
+    const parts = splitCounts(
+      { multipleChoice: 3, ox: 1, shortAnswer: 0, ordering: 1, initialConsonant: 0 },
+      2,
+    )
+    expect(parts).toEqual([
+      { multipleChoice: 2, ox: 0, shortAnswer: 0, ordering: 0, initialConsonant: 0 },
+      { multipleChoice: 1, ox: 1, shortAnswer: 0, ordering: 0, initialConsonant: 0 },
+      { multipleChoice: 0, ox: 0, shortAnswer: 0, ordering: 1, initialConsonant: 0 },
+    ])
+    expect(
+      splitCounts(
+        { multipleChoice: 1, ox: 0, shortAnswer: 0, ordering: 0, initialConsonant: 0 },
+        2,
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('joins the parts without the same question twice and with distinct ids', () => {
+    const q = (id: string, question: string) =>
+      normalizeQuestion({
+        id,
+        type: 'ox',
+        question,
+        options: ['O', 'X'],
+        answer: 'O',
+        explanation: '',
+      })!
+    const joined = joinQuizParts([
+      { questions: [q('1', '물은 증발한다.'), q('2', '구름은 물방울이다.')] },
+      { questions: [q('1', '물은 증발한다.'), q('2', '비는 땅으로 내린다.')] },
+    ])
+    expect(joined.questions.map((x) => x.question)).toEqual([
+      '물은 증발한다.',
+      '구름은 물방울이다.',
+      '비는 땅으로 내린다.',
+    ])
+    expect(new Set(joined.questions.map((x) => x.id)).size).toBe(3)
   })
 })
