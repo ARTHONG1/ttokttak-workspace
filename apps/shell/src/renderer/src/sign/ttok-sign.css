@@ -355,6 +355,16 @@
   line-height: 1.5;
   color: var(--sf-ink-3);
 }
+/* what the PDF conversion left out, kept in view while the document is signed */
+.ts-doc-warn {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--sf-warn-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sf-danger);
+}
 
 /* the pictures' own buttons: forget (top right), download (bottom right) */
 .ts-picture-download {

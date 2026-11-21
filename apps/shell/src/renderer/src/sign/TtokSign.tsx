@@ -131,6 +131,8 @@ interface OpenDocument {
   name: string
   bytes: Uint8Array
   converted: boolean
+  /** what the conversion left out: shown under the document while it is signed */
+  notes: string[]
   pdf: PDFDocumentProxy
   sizes: PageSize[]
 }
@@ -482,8 +484,18 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       setItems([])
       setSelectedId(null)
       setSavedPath(null)
-      setDoc({ name: result.name, bytes: result.bytes, converted: result.converted, pdf, sizes })
-      if (result.converted) say('PDF로 바꿨어요. 이제 서명을 넣어 주세요.')
+      const notes = result.notes ?? []
+      setDoc({
+        name: result.name,
+        bytes: result.bytes,
+        converted: result.converted,
+        notes,
+        pdf,
+        sizes,
+      })
+      if (notes.length)
+        say('PDF로 바꿨지만 빠진 부분이 있어요. 문서 칸의 안내를 확인해 주세요.', true)
+      else if (result.converted) say('PDF로 바꿨어요. 이제 서명을 넣어 주세요.')
     } catch (err) {
       console.warn('[sign] open failed', err)
       setError('문서를 열지 못했어요. 다시 해 주세요.')
@@ -717,6 +729,11 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
             ) : (
               <p className="sf-box-sub">아직 올린 문서가 없어요.</p>
             )}
+            {doc?.notes.map((note) => (
+              <p key={note} className="ts-doc-warn" role="status">
+                {note}
+              </p>
+            ))}
             {doc && (
               <button
                 type="button"

@@ -80,6 +80,21 @@ describe('documentToPdf', () => {
     expect(d.removed).toEqual(['/tmp/sign-x'])
   })
 
+  // a workbook's sheet too large for a PDF is left out by the export: the signer is told
+  it('passes on what the conversion left out', async () => {
+    const d = deps({
+      convertToPdf: vi.fn(async () => ['시트 1개는 너무 커서 넣지 못했어요: 원자료', '']),
+    })
+    const result = await documentToPdf('/docs/통계.xlsx', d)
+    expect(result).toEqual({
+      ok: true,
+      name: '통계',
+      bytes: PDF,
+      converted: true,
+      notes: ['시트 1개는 너무 커서 넣지 못했어요: 원자료'],
+    })
+  })
+
   it('says what to do when the conversion fails, and still removes the folder', async () => {
     const d = deps({
       convertToPdf: vi.fn(async () => {

@@ -46,8 +46,11 @@ export function signSourceOf(path: string): SignSource | null {
 export interface SignDocumentDeps {
   fileSize(path: string): Promise<number>
   readFile(path: string): Promise<Uint8Array>
-  /** the app's headless PDF export; throws when no PDF was written (its notes are not used here) */
-  convertToPdf(input: string, outPath: string): Promise<unknown>
+  /**
+   * the app's headless PDF export; throws when no PDF was written, and returns what it left
+   * out (a workbook's sheets too large for a PDF), which the signer is shown
+   */
+  convertToPdf(input: string, outPath: string): Promise<string[] | void>
   imagesToPdf(images: Uint8Array[]): Promise<Uint8Array>
   makeTempDir(): Promise<string>
   removeDir(dir: string): Promise<void>
@@ -113,10 +116,12 @@ export async function documentToPdf(
   const dir = await deps.makeTempDir()
   try {
     const outPath = join(dir, name + '.pdf')
-    await deps.convertToPdf(path, outPath)
+    const notes = ((await deps.convertToPdf(path, outPath)) ?? []).filter(
+      (note) => typeof note === 'string' && note.trim() !== '',
+    )
     const bytes = await deps.readFile(outPath)
     if (!isPdf(bytes) || bytes.byteLength > SIGN_MAX_BYTES) throw new Error('no PDF')
-    return { ok: true, name, bytes, converted: true }
+    return { ok: true, name, bytes, converted: true, ...(notes.length ? { notes } : {}) }
   } catch (err) {
     console.warn('[sign] could not convert', basename(path), err)
     return { ok: false, error: NOT_CONVERTED }
