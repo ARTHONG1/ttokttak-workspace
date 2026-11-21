@@ -75,7 +75,9 @@ describe('atomic export destinations', () => {
       'export async function printWorkbook',
     )
 
-    expect(pdf).toContain('await atomicWriteFile(selection.filePath, pdf)')
+    // the PDF (or, for a headless export in parts, the PDF with this part added) goes
+    // through a temporary file to the chosen path
+    expect(pdf).toMatch(/await atomicWriteFile\(\s*selection\.filePath,/)
     expect(pdf).not.toContain('writeFile(selection.filePath')
   })
 
