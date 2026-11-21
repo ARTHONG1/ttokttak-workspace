@@ -16,6 +16,7 @@ import {
 } from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
 import { MODEL_BYTES, MODEL_FILES, MODEL_NAME, MODEL_PAGE, type ModelSpec } from '../shared/model'
+import { askFailure } from './ai-turn'
 import { LocalAi, type ModelSource } from './local-ai'
 import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
@@ -201,7 +202,7 @@ function registerIpc(): void {
     try {
       return { ok: true, text: await ai.ask(r.requestId, r.system, r.text, temperature) }
     } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      return askFailure(err)
     }
   })
   ipcMain.on(CHANNELS.unsaved, (_event, value: unknown) => {

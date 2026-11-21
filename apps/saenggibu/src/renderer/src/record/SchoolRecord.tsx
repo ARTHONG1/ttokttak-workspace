@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Modal, ToastView, copyText, downloadBlob, useToast } from '../common'
+import { Modal, StudentProblem, ToastView, copyText, downloadBlob, useToast } from '../common'
 import {
   ACTIVITY_SYSTEM,
   BEHAVIOR_SYSTEM,
@@ -355,7 +355,7 @@ export function SchoolRecord(): ReactElement {
 
   /**
    * [멈추기]: no student is started after this, and the ones being written are called off (a
-   * run asks up to three at once: waiting for them took half a minute, and they were written)
+   * run once asked three at once: waiting for them took half a minute, and they were written)
    */
   const stopMode = (m: RecordMode) => {
     stop.current[m] = true
@@ -413,6 +413,7 @@ export function SchoolRecord(): ReactElement {
     let failed = 0
     let streak = 0
     let firstError = ''
+    const unwritten: string[] = []
     try {
       await runPool(
         targets,
@@ -426,9 +427,15 @@ export function SchoolRecord(): ReactElement {
           } catch (error) {
             if (error instanceof Stopped) return
             failed += 1
-            streak += 1
+            const list = worksRef.current[m].students
+            unwritten.push(
+              student.name.trim() || list.findIndex((s) => s.id === student.id) + 1 + '번',
+            )
             firstError ||= error instanceof Error ? error.message : String(error)
-            // the AI is not answering at all: the rest of the class would fail the same way
+            // the AI is not answering at all: the rest of the class would fail the same way.
+            // Notes too long (or an answer that ran on) are this student's alone: go on
+            if (error instanceof StudentProblem) return
+            streak += 1
             if (streak >= 2) stop.current[m] = true
           } finally {
             setBusy((prev) => ({ ...prev, [m]: prev[m].filter((id) => id !== student.id) }))
@@ -442,17 +449,17 @@ export function SchoolRecord(): ReactElement {
     }
     const name = RESULT_NAME[m]
     if (done === 0) return say(firstError || name + ' 생성을 멈췄어요.', true)
-    const left = targets.length - done
+    const left = targets.length - done - failed
+    const names =
+      unwritten.slice(0, 5).join(', ') +
+      (unwritten.length > 5 ? ' 외 ' + (unwritten.length - 5) + '명' : '')
     say(
       done +
         '명의 ' +
         name +
         '을 만들었어요.' +
-        (failed > 0
-          ? ' ' + left + '명은 만들지 못했어요. ' + firstError
-          : left > 0
-            ? ' ' + left + '명은 멈춰서 남았어요.'
-            : ''),
+        (failed > 0 ? ' 만들지 못한 학생 ' + failed + '명(' + names + '): ' + firstError : '') +
+        (left > 0 ? ' ' + left + '명은 멈춰서 남았어요.' : ''),
       failed > 0,
     )
   }

@@ -5,6 +5,7 @@
  * clipping it cut off the observation's end and the closing instruction ("나이스 입력용 …을
  * 작성하십시오"), and the answer then went its own way with nothing said.
  */
+import type { AskResult } from '../shared/api'
 
 /** instructions + request together, in UTF-8 bytes */
 export const MAX_TURN_BYTES = 7000
@@ -26,4 +27,18 @@ export function plainTurn(system: string, text: string): Turn {
     return { ok: false, error: '요청이 똑딱AI의 입력 한도를 넘었어요. 지시사항을 줄여 주세요.' }
   if (bytes(text) > MAX_TURN_BYTES - sysBytes) return { ok: false, error: TOO_LONG }
   return { ok: true, system, text }
+}
+
+/**
+ * A request that failed for its own student: too long to send, or an answer that ran on. The
+ * page goes on with the next student; a failure of the AI itself (not there, not starting,
+ * not answering) stops a whole-class run instead. (Two notes too long in a row once stopped
+ * a class of 40 after five, the rest told they were too long.)
+ */
+export class RequestProblem extends Error {}
+
+/** a failed ask as the page gets it */
+export function askFailure(err: unknown): Extract<AskResult, { ok: false }> {
+  const error = err instanceof Error ? err.message : String(err)
+  return err instanceof RequestProblem ? { ok: false, error, student: true } : { ok: false, error }
 }

@@ -71,8 +71,12 @@ export const NEIS_BYTE_LIMIT = 1500
 
 export const MAX_STUDENTS = 50
 
-/** how many students are written at once */
-export const GENERATE_AT_ONCE = 3
+/**
+ * students written at once on the built-in 똑딱AI: one after another, in the list's order (its
+ * server answers one request at a time anyway, and a stop or a failure then concerns only the
+ * student being written)
+ */
+export const GENERATE_AT_ONCE = 1
 
 export interface Student {
   id: string

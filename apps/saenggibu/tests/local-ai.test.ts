@@ -2,7 +2,13 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, TOO_LONG, plainTurn } from '../src/main/ai-turn'
+import {
+  MAX_SYSTEM_BYTES,
+  MAX_TURN_BYTES,
+  TOO_LONG,
+  askFailure,
+  plainTurn,
+} from '../src/main/ai-turn'
 import { LocalAi, aiFiles, notReadyMessage, requestBody, serverArgs } from '../src/main/local-ai'
 import { ModelStore } from '../src/main/model-store'
 import { MODEL_BYTES, MODEL_FILES } from '../src/shared/model'
@@ -124,5 +130,18 @@ describe('one writing turn', () => {
   })
   it('refuses instructions longer than its limit', () => {
     expect(plainTurn('가'.repeat(MAX_SYSTEM_BYTES), '')).toMatchObject({ ok: false })
+  })
+  // a whole-class run goes past a student whose notes are too long, and stops when the AI
+  // itself fails (it stopped a class of 40 after five when two notes were too long)
+  it("tells the page a request too long is that student's own, and an AI not ready is not", async () => {
+    const ai = new LocalAi(tmpdir(), { file: join(tmpdir(), 'no-model.gguf') })
+    expect(await ai.ask('a', '지시', '나'.repeat(5000)).catch(askFailure)).toEqual({
+      ok: false,
+      error: TOO_LONG,
+      student: true,
+    })
+    const notReady = await ai.ask('b', '지시', '관찰 기록').catch(askFailure)
+    expect(notReady).toMatchObject({ ok: false })
+    expect(notReady).not.toHaveProperty('student')
   })
 })

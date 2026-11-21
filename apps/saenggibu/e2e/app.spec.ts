@@ -115,7 +115,7 @@ test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', asyn
       fullPage: true,
     })
 
-    // [멈추기] calls off the students being written: a run asks three at once, and waiting
+    // [멈추기] calls off the student being written: when a run asked three at once, waiting
     // for them took half a minute while all three were written (2026-11-21)
     await page.getByRole('tab', { name: /행발/ }).click()
     await page.getByTestId('record-count').fill('3')
@@ -447,5 +447,142 @@ test('takes the class and its 누가기록 from NEIS into 행발', async () => {
     await expect(page.getByTestId('record-name')).toHaveCount(3)
   } finally {
     await closeApp(app)
+  }
+})
+
+/**
+ * A big class (40; the list holds 50): taken from NEIS, written all at once one after another,
+ * sent in the list's order, and kept with [임시 저장] for the next launch. Two students' notes
+ * are too long for the built-in AI: they are left unwritten and named, and the rest of the
+ * class is still written (two in a row once stopped the class after five). The AI and NEIS
+ * answer from this test.
+ */
+test('a class of 40 is taken, written, sent and kept whole', async () => {
+  test.setTimeout(120_000)
+  const userData = mkdtempSync(join(tmpdir(), 'saenggibu-e2e-'))
+  const launch = () =>
+    electron.launch({
+      args: [APP],
+      env: {
+        ...process.env,
+        SAENGGIBU_AI_DIR: AI_DIR,
+        SAENGGIBU_MODEL_FILE: join(userData, 'no-model.gguf'),
+        SAENGGIBU_USER_DATA: userData,
+      } as Record<string, string>,
+    })
+  const name = (n: number) => '학생' + String(n).padStart(2, '0')
+  const LONG = [5, 6]
+  const students = Array.from({ length: 40 }, (_, i) => ({
+    cls: '2',
+    no: String(i + 1),
+    name: name(i + 1),
+    records: [
+      {
+        date: '20260310',
+        text:
+          i +
+          1 +
+          '번 학생이 모둠 활동에서 맡은 일을 끝까지 해냄.' +
+          (LONG.includes(i + 1) ? ' 긴 기록' + '가'.repeat(1600) : ''),
+      },
+    ],
+  }))
+  const app = await launch()
+  try {
+    const page = await app.firstWindow()
+    await app.evaluate(
+      ({ ipcMain }, read) => {
+        const g = globalThis as { asks?: number; most?: number; now?: number; sent?: string }
+        g.asks = 0
+        g.most = 0
+        g.now = 0
+        for (const c of ['saenggibu:ask', 'saenggibu:read-neis-class', 'saenggibu:send-to-neis'])
+          ipcMain.removeHandler(c)
+        ipcMain.handle('saenggibu:read-neis-class', () => read)
+        // what the built-in AI answers: a request too long is refused at once as this student's
+        // problem (main/ai-turn.ts); any other gets a text of its own after a moment
+        ipcMain.handle('saenggibu:ask', async (_event, r: { text: string }) => {
+          g.asks = (g.asks ?? 0) + 1
+          if (r.text.includes('긴 기록'))
+            return { ok: false, error: '입력한 내용이 너무 길어요.', student: true }
+          g.now = (g.now ?? 0) + 1
+          g.most = Math.max(g.most ?? 0, g.now)
+          await new Promise((done) => setTimeout(done, 40))
+          g.now -= 1
+          const n = Number(/(\d+)번 학생이/.exec(r.text)?.[1] ?? 0)
+          let seed = n * 7919 + 13
+          let text = n + '번 '
+          for (let k = 0; k < 90; k++) {
+            seed = (seed * 1103515245 + 12345) % 2147483648
+            text += String.fromCharCode(0xac00 + (seed % 11172)) + (k % 4 === 3 ? ' ' : '')
+          }
+          return { ok: true, text: text.trim() + '함.' }
+        })
+        ipcMain.handle('saenggibu:send-to-neis', (_event, text: string) => {
+          g.sent = text
+          return { ok: true, route: 'direct', message: '나이스에 채웠어요.', written: 38, next: 40 }
+        })
+      },
+      { ok: true, students, recordsRead: 40, recordsFor: 'all', unplaced: 0 },
+    )
+    const values = (id: string) =>
+      page.getByTestId(id).evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))
+
+    await page.getByRole('tab', { name: /행발/ }).click()
+    await page.getByTestId('record-neis').click()
+    await page.getByTestId('record-neis-read').click()
+    await expect(page.getByTestId('record-neis-summary')).toContainText('학생 40명')
+    await page.getByTestId('record-neis-apply').click()
+    await expect(page.getByTestId('record-name')).toHaveCount(40)
+    await expect(page.getByTestId('record-count')).toHaveValue('40')
+
+    // the whole class, one at a time; the two too long are named and the rest written
+    await page.getByTestId('record-generate-all').click()
+    await expect(page.getByRole('status').filter({ hasText: '행발을 만들었어요' })).toContainText(
+      '38명의 행발을 만들었어요',
+      { timeout: 60_000 },
+    )
+    await expect(page.getByRole('status').filter({ hasText: '행발을 만들었어요' })).toContainText(
+      '만들지 못한 학생 2명(' + name(5) + ', ' + name(6) + ')',
+    )
+    const results = await values('record-result')
+    results.forEach((text, i) =>
+      LONG.includes(i + 1)
+        ? expect(text).toBe('')
+        : expect(text).toMatch(new RegExp('^' + (i + 1) + '번 ')),
+    )
+    const g = await app.evaluate(() => globalThis as unknown as { asks: number; most: number })
+    expect(g.asks).toBe(40)
+    expect(g.most).toBe(1)
+    await expect(page.getByTestId('record-alike')).toHaveCount(0)
+
+    // sent in the list's order, the unwritten two kept in their rows
+    await page.getByTestId('record-send').click()
+    await expect(page.getByTestId('record-send-note')).toContainText('나이스에 채웠어요')
+    const sent = JSON.parse(
+      await app.evaluate(() => (globalThis as unknown as { sent: string }).sent),
+    ) as { students: { name: string; text: string }[] }
+    expect(sent.students.map((s) => s.name)).toEqual(students.map((s) => s.name))
+    expect(sent.students.filter((s) => s.text).length).toBe(38)
+
+    // kept, and whole again on the next launch
+    await page.getByTestId('record-save').click()
+    await expect(page.getByTestId('record-open-list')).toHaveText('불러오기 (1)')
+  } finally {
+    await closeApp(app)
+  }
+  const again = await launch()
+  try {
+    const next = await again.firstWindow()
+    await next.getByTestId('record-open-list').click()
+    await next.getByRole('dialog').getByRole('button', { name: '불러오기' }).click()
+    await expect(next.getByTestId('record-name')).toHaveCount(40)
+    expect(
+      await next
+        .getByTestId('record-result')
+        .evaluateAll((els) => els.filter((e) => (e as HTMLTextAreaElement).value).length),
+    ).toBe(38)
+  } finally {
+    await closeApp(again)
   }
 })

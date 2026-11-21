@@ -5,12 +5,29 @@
  * (apps/saenggibu/src/renderer/src/record/record-ai.ts); the pages use only these three.
  */
 import { askAi } from '../special-common'
-import { cleanReply } from './record-core'
+import { GENERATE_AT_ONCE, cleanReply } from './record-core'
 import { NOT_REWORDED, REWORD_SYSTEM, rewordRequest, sameWording } from './record-similarity'
 
 /** one answer, under an id that [멈추기] can call off */
 export const askRecordAi = (system: string, text: string, id: string): Promise<string> =>
   askAi(system, text, [], 4000, { feature: 'school_record', requestId: id })
+
+/** students written at once on a connected AI (Codex, Claude, the web's Gemini) */
+const CONNECTED_AT_ONCE = 3
+
+/**
+ * how many students a whole-class run writes at once: on the built-in 똑딱AI one after another
+ * (GENERATE_AT_ONCE, as in 똑딱생기부), on a connected AI three side by side
+ */
+export async function studentsAtOnce(): Promise<number> {
+  try {
+    return (await window.aiOffice?.getAiSettings?.())?.provider === 'local'
+      ? GENERATE_AT_ONCE
+      : CONNECTED_AT_ONCE
+  } catch {
+    return GENERATE_AT_ONCE
+  }
+}
 
 /** call a running request off: its stream ends with what came so far, which the page drops */
 export function cancelRecordAi(id: string): void {

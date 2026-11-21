@@ -12,7 +12,14 @@ export interface AskRequest {
    */
   temperature?: number
 }
-export type AskResult = { ok: true; text: string } | { ok: false; error: string }
+export type AskResult =
+  | { ok: true; text: string }
+  | {
+      ok: false
+      error: string
+      /** this request's own problem (too long, an answer that ran on): the next can go on */
+      student?: boolean
+    }
 
 /**
  * The built-in 똑딱AI, as the page shows it. The model is downloaded once (verifying →

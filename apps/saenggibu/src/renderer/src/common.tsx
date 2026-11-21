@@ -7,6 +7,9 @@ import type { ReactElement, ReactNode } from 'react'
  */
 
 /** one answer of the built-in 똑딱AI; id lets the page call it off, temperature is 0 unless given */
+/** a request that failed for its own student (notes too long, an answer that ran on) */
+export class StudentProblem extends Error {}
+
 export async function askAi(
   system: string,
   text: string,
@@ -18,7 +21,7 @@ export async function askAi(
     text,
     ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
   })
-  if (!out.ok) throw new Error(out.error)
+  if (!out.ok) throw out.student ? new StudentProblem(out.error) : new Error(out.error)
   return out.text
 }
 
@@ -43,7 +46,10 @@ export interface Toast {
   bad?: boolean
 }
 
-/** a short message at the bottom of the page; say(text, true) shows it as a failure */
+/**
+ * a short message at the bottom of the page; say(text, true) shows it as a failure, and
+ * longer (the end of a class run that left students unwritten must not be missed)
+ */
 export function useToast(): [Toast | null, (text: string, bad?: boolean) => void] {
   const [toast, setToast] = useState<Toast | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -51,7 +57,7 @@ export function useToast(): [Toast | null, (text: string, bad?: boolean) => void
   const say = (text: string, bad = false) => {
     clearTimeout(timer.current)
     setToast({ text, bad })
-    timer.current = setTimeout(() => setToast(null), 2800)
+    timer.current = setTimeout(() => setToast(null), bad ? 8000 : 2800)
   }
   return [toast, say]
 }

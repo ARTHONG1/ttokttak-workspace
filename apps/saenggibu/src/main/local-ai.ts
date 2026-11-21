@@ -14,7 +14,7 @@ import { availableParallelism } from 'node:os'
 import { basename, dirname, join, relative } from 'node:path'
 import { readdir, rm, stat } from 'node:fs/promises'
 import type { AiState } from '../shared/api'
-import { MAX_ANSWER_TOKENS, plainTurn } from './ai-turn'
+import { MAX_ANSWER_TOKENS, RequestProblem, plainTurn } from './ai-turn'
 import { ModelError, type ModelStore, type Progress } from './model-store'
 
 export const AI_MODEL = 'ttokttak-saenggibu'
@@ -367,7 +367,7 @@ export class LocalAi {
   /** one answer: the page's instructions and request, at the model's measured settings */
   async ask(requestId: string, system: string, text: string, temperature = 0): Promise<string> {
     const turn = plainTurn(system, text)
-    if (!turn.ok) throw new Error(turn.error)
+    if (!turn.ok) throw new RequestProblem(turn.error)
     const endpoint = await this.ensure()
     const controller = new AbortController()
     this.running.set(requestId, controller)
@@ -384,7 +384,7 @@ export class LocalAi {
       }
       const choice = json.choices?.[0]
       // a 1,500-byte entry is far under the cap: one that reaches it is cut off mid-sentence
-      if (choice?.finish_reason === 'length') throw new Error(RAN_ON)
+      if (choice?.finish_reason === 'length') throw new RequestProblem(RAN_ON)
       return choice?.message?.content ?? ''
     } catch (err) {
       if (controller.signal.aborted) throw new Error('멈췄어요.', { cause: err })

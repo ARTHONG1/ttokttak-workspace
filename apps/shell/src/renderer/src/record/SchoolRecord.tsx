@@ -14,7 +14,6 @@ import {
   ACTIVITY_SYSTEM,
   BEHAVIOR_SYSTEM,
   CUSTOM_SUBJECT,
-  GENERATE_AT_ONCE,
   LENGTHS,
   LEVELS,
   MAX_SESSIONS,
@@ -58,7 +57,7 @@ import {
   type Work,
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
-import { askRecordAi, cancelRecordAi, rewordWithAi } from './record-ai'
+import { askRecordAi, cancelRecordAi, rewordWithAi, studentsAtOnce } from './record-ai'
 import { SimilarityCheck } from './SimilarityCheck'
 import {
   NOT_REWORDED,
@@ -347,7 +346,8 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   /**
    * [멈추기]: no student is started after this, and the ones being written are called off (a
-   * run asks up to three at once: waiting for them took half a minute, and they were written)
+   * run on a connected AI asks three at once: waiting for them took half a minute, and they
+   * were written)
    */
   const stopMode = (m: RecordMode) => {
     stop.current[m] = true
@@ -408,7 +408,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     try {
       await runPool(
         targets,
-        GENERATE_AT_ONCE,
+        await studentsAtOnce(),
         async (student) => {
           try {
             const result = await tracked(m, (id) => writeOne(m, student, id))
