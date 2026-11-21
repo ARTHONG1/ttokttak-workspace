@@ -75,12 +75,13 @@ export async function askAi(
   text: string,
   images: { base64: string; mime: string }[] = [],
   maxTokens = 4000,
-  extra: { grammar?: string; feature?: string } = {},
+  extra: { grammar?: string; feature?: string; requestId?: string } = {},
 ): Promise<string> {
   const api = window.aiOffice
   if (typeof api?.aiStream !== 'function') throw new Error('이 화면에서는 AI를 쓸 수 없어요.')
   const settings = await api.aiGetSettings()
-  const requestId = crypto.randomUUID()
+  // a caller that may call the request off (생기부's [멈추기]) names it
+  const requestId = extra.requestId ?? crypto.randomUUID()
   return new Promise<string>((resolve, reject) => {
     let out = ''
     const off = api.onAiStream((chunk) => {

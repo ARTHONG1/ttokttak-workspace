@@ -71,19 +71,26 @@ export function serverArgs(
   ]
 }
 
-/** the request body of one 생기부 turn: the model's measured settings */
-export function requestBody(system: string, text: string): Record<string, unknown> {
+/** the request body of one 생기부 turn: the model's measured settings (temperature 0) */
+export function requestBody(
+  system: string,
+  text: string,
+  temperature = 0,
+): Record<string, unknown> {
   return {
     model: AI_MODEL,
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: text },
     ],
-    temperature: 0,
+    temperature,
     max_tokens: MAX_ANSWER_TOKENS,
     stream: false,
   }
 }
+
+/** an answer that ran to the token cap instead of ending: a loop, not a 생기부 entry */
+export const RAN_ON = '똑딱AI의 답이 끝나지 않고 계속 길어져 멈췄어요. 다시 생성해 주세요.'
 
 /** what a writing request is told while the model is not usable yet */
 export function notReadyMessage(state: AiState): string {
@@ -358,7 +365,7 @@ export class LocalAi {
   }
 
   /** one answer: the page's instructions and request, at the model's measured settings */
-  async ask(requestId: string, system: string, text: string): Promise<string> {
+  async ask(requestId: string, system: string, text: string, temperature = 0): Promise<string> {
     const turn = plainTurn(system, text)
     if (!turn.ok) throw new Error(turn.error)
     const endpoint = await this.ensure()
@@ -368,12 +375,17 @@ export class LocalAi {
       const res = await fetch(endpoint.url + '/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + endpoint.key },
-        body: JSON.stringify(requestBody(turn.system, turn.text)),
+        body: JSON.stringify(requestBody(turn.system, turn.text, temperature)),
         signal: controller.signal,
       })
       if (!res.ok) throw new Error('똑딱AI가 답하지 못했어요 (' + res.status + '). 다시 해 주세요.')
-      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] }
-      return json.choices?.[0]?.message?.content ?? ''
+      const json = (await res.json()) as {
+        choices?: { message?: { content?: string }; finish_reason?: string }[]
+      }
+      const choice = json.choices?.[0]
+      // a 1,500-byte entry is far under the cap: one that reaches it is cut off mid-sentence
+      if (choice?.finish_reason === 'length') throw new Error(RAN_ON)
+      return choice?.message?.content ?? ''
     } catch (err) {
       if (controller.signal.aborted) throw new Error('멈췄어요.', { cause: err })
       throw err

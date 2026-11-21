@@ -6,9 +6,18 @@ import type { ReactElement, ReactNode } from 'react'
  * clipboard, a download, a toast and a dialog.
  */
 
-/** one answer of the built-in 똑딱AI */
-export async function askAi(system: string, text: string): Promise<string> {
-  const out = await window.saenggibu.ask({ requestId: crypto.randomUUID(), system, text })
+/** one answer of the built-in 똑딱AI; id lets the page call it off, temperature is 0 unless given */
+export async function askAi(
+  system: string,
+  text: string,
+  options: { id?: string; temperature?: number } = {},
+): Promise<string> {
+  const out = await window.saenggibu.ask({
+    requestId: options.id ?? crypto.randomUUID(),
+    system,
+    text,
+    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+  })
   if (!out.ok) throw new Error(out.error)
   return out.text
 }

@@ -17,6 +17,13 @@ const api: SaenggibuApi = {
   readTableFile: () => ipcRenderer.invoke(CHANNELS.readTableFile),
   sendToNeis: (text) => ipcRenderer.invoke(CHANNELS.sendToNeis, text),
   version: () => ipcRenderer.invoke(CHANNELS.version),
+  setUnsaved: (unsaved) => ipcRenderer.send(CHANNELS.unsaved, unsaved === true),
+  onSaveBeforeClose(handler) {
+    const listener = () => handler()
+    ipcRenderer.on(CHANNELS.saveBeforeClose, listener)
+    return () => ipcRenderer.removeListener(CHANNELS.saveBeforeClose, listener)
+  },
+  closeNow: () => ipcRenderer.invoke(CHANNELS.closeNow),
 }
 
 contextBridge.exposeInMainWorld('saenggibu', api)

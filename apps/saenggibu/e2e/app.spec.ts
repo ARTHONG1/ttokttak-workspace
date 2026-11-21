@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { _electron as electron, expect, test } from '@playwright/test'
+import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test'
 
 /**
  * 똑딱생기부 itself, launched from its build (out/): the page, the built-in 똑딱AI writing one
@@ -21,6 +21,19 @@ const ADAPTER =
   process.env.SAENGGIBU_TEST_ADAPTER ||
   join(MODELS, 'ddak/models/school_record/school-record-v7-b-app-lora/school_record.gguf')
 const NOMINAL = /(함|됨|임|음|보임|남|냄|름|님|줌|킴|침|큼|듦)\.?$/
+
+/**
+ * Close an app whose page may hold students' work: it asks before they go (main/index.ts), and
+ * here the question is answered [저장하지 않고 닫기].
+ */
+async function closeApp(app: ElectronApplication): Promise<void> {
+  await app
+    .evaluate(({ dialog }) => {
+      dialog.showMessageBox = (async () => ({ response: 1, checkboxChecked: false })) as never
+    })
+    .catch(() => undefined)
+  await app.close()
+}
 
 test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', async () => {
   test.skip(
@@ -101,8 +114,133 @@ test('똑딱생기부 writes 행발 and 세특 with the built-in 똑딱AI', asyn
       path: join(APP, 'test-results/saenggibu-activity.png'),
       fullPage: true,
     })
+
+    // [멈추기] calls off the students being written: a run asks three at once, and waiting
+    // for them took half a minute while all three were written (2026-11-21)
+    await page.getByRole('tab', { name: /행발/ }).click()
+    await page.getByTestId('record-count').fill('3')
+    await page.getByTestId('record-count').press('Enter')
+    const notes = [
+      '청소 당번을 성실히 하며 교실 화분을 돌봄.',
+      '모둠 활동에서 갈등을 조정하고 의견을 모음.',
+      '독서 기록장을 꾸준히 쓰고 친구에게 책을 추천함.',
+    ]
+    for (const [i, note] of notes.entries()) {
+      await page
+        .getByTestId('record-name')
+        .nth(i)
+        .fill('학생' + (i + 1))
+      await page.getByTestId('record-notes').nth(i).fill(note)
+      await page.getByTestId('record-result').nth(i).fill('')
+    }
+    await page.getByTestId('record-generate-all').click()
+    await expect(page.getByTestId('record-stop')).toBeVisible()
+    await page.getByTestId('record-stop').click()
+    await expect(page.getByTestId('record-stop')).toHaveCount(0, { timeout: 10_000 })
+    const written = await page
+      .getByTestId('record-result')
+      .evaluateAll((areas) => areas.filter((a) => (a as HTMLTextAreaElement).value).length)
+    expect(written).toBeLessThan(3)
+    await expect(page.locator('.sf-toast')).not.toContainText('만들지 못했어요')
+
+    // 겹치는 글 한꺼번에 바꾸기 counts only the texts that came back changed (one handed
+    // back word for word was counted as reworded)
+    const alike =
+      '여러 가지 물질의 밀도를 측정하고 결과를 그래프로 정리하여 발표함. 실험 결과를 표로 정리하고 오차의 원인을 모둠원과 토의함.'
+    for (let i = 0; i < 3; i++) await page.getByTestId('record-result').nth(i).fill(alike)
+    await expect(page.getByTestId('record-alike')).toHaveCount(3)
+    await page.getByTestId('record-reword-all').click()
+    await expect(page.getByTestId('record-stop')).toBeVisible()
+    await expect(page.getByTestId('record-stop')).toHaveCount(0, { timeout: 240_000 })
+    const claimed = Number(
+      /(\d+)명의 글 표현을 바꿨어요/.exec(
+        (await page.locator('.sf-toast').textContent()) ?? '',
+      )?.[1],
+    )
+    const changed = await page
+      .getByTestId('record-result')
+      .evaluateAll(
+        (areas, text) => areas.filter((a) => (a as HTMLTextAreaElement).value !== text).length,
+        alike,
+      )
+    expect(claimed).toBe(changed)
   } finally {
-    await app.close()
+    await closeApp(app)
+  }
+})
+
+/**
+ * The students' work stays in the page until [임시 저장]. A close asks before it goes and can
+ * save it on the way out; [학생 목록 비우기] asks before it empties a list. (Both took a
+ * class's texts with nothing said, 2026-11-21.) No model is needed for this.
+ */
+test('asks before the students go, on close and on clearing the list', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'saenggibu-e2e-'))
+  const launch = () =>
+    electron.launch({
+      args: [APP],
+      env: {
+        ...process.env,
+        SAENGGIBU_AI_DIR: AI_DIR,
+        SAENGGIBU_MODEL_FILE: join(userData, 'no-model.gguf'),
+        SAENGGIBU_USER_DATA: userData,
+      } as Record<string, string>,
+    })
+  // the close question answers itself in this test: response 0 saves, 2 keeps the window
+  const answerClose = (app: Awaited<ReturnType<typeof launch>>, response: number) =>
+    app.evaluate(({ dialog }, r) => {
+      const g = globalThis as { asked?: number }
+      g.asked = 0
+      dialog.showMessageBox = (async () => {
+        g.asked = (g.asked ?? 0) + 1
+        return { response: r, checkboxChecked: false }
+      }) as never
+    }, response)
+  const asked = (app: Awaited<ReturnType<typeof launch>>) =>
+    app.evaluate(() => (globalThis as { asked?: number }).asked ?? 0)
+
+  const app = await launch()
+  const page = await app.firstWindow()
+  await page.getByRole('tab', { name: /행발/ }).click()
+  await page.getByTestId('record-name').first().fill('김하늘')
+  await page.getByTestId('record-notes').first().fill('친구의 의견을 끝까지 듣고 정리해 발표함.')
+
+  // clearing asks first; [취소] keeps the student
+  await page.getByTestId('record-clear').click()
+  await page.getByRole('dialog').getByRole('button', { name: '취소' }).click()
+  await expect(page.getByTestId('record-name').first()).toHaveValue('김하늘')
+  await page.getByTestId('record-clear').click()
+  await page.getByTestId('record-clear-confirm').click()
+  await expect(page.getByTestId('record-name').first()).toHaveValue('')
+
+  // a close with a student in the page asks; [취소] keeps the window
+  await page.getByTestId('record-name').first().fill('이바다')
+  await answerClose(app, 2)
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close())
+  await expect.poll(() => asked(app)).toBe(1)
+  await expect(page.getByTestId('record-name').first()).toHaveValue('이바다')
+
+  // [임시 저장하고 닫기]: saved, then closed
+  await answerClose(app, 0)
+  const closed = app.waitForEvent('close')
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close())
+  await closed
+
+  // the next launch has it under [불러오기], and closes without asking (an asked close would
+  // be answered [취소] here and never end)
+  const again = await launch()
+  try {
+    const next = await again.firstWindow()
+    await expect(next.getByTestId('record-open-list')).toHaveText('불러오기 (1)')
+    await next.getByTestId('record-open-list').click()
+    await next.getByRole('dialog').getByRole('button', { name: '불러오기' }).click()
+    await expect(next.getByTestId('record-name').first()).toHaveValue('이바다')
+    await answerClose(again, 2)
+    const done = again.waitForEvent('close')
+    await again.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close())
+    await done
+  } finally {
+    await again.close().catch(() => undefined)
   }
 })
 
@@ -181,7 +319,7 @@ test('the first launch downloads the model and says so', async () => {
       // downloaded and checked: the banner goes away
       await expect(banner).toHaveCount(0, { timeout: 30_000 })
     } finally {
-      await app.close()
+      await closeApp(app)
     }
 
     // nothing at the address: the banner offers [다시 받기] and [파일로 넣기]

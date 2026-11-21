@@ -5,6 +5,7 @@ import {
   pairsToCsv,
   rewordRequest,
   rewordTargets,
+  sameWording,
   sharedPieces,
   similarity,
   similarPairs,
@@ -20,6 +21,13 @@ const B =
 const C = '리코더 연주에서 정확한 운지와 고른 호흡으로 곡의 분위기를 살려 표현함.'
 
 describe('similarity', () => {
+  // the built-in model now and then hands a text back as it was: not counted as reworded
+  it('tells a rewording that changed nothing from one that did', () => {
+    expect(sameWording(A, A)).toBe(true)
+    expect(sameWording(A, A.replace(/ /g, '  '))).toBe(true)
+    expect(sameWording(A, B)).toBe(false)
+  })
+
   it('is 100 for the same text, whatever the spacing and marks', () => {
     expect(similarity(A, A)).toBe(100)
     expect(similarity(A, A.replace(/ /g, '').replace(/\./g, ' / '))).toBe(100)

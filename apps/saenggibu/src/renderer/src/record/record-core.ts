@@ -242,7 +242,7 @@ export const BEHAVIOR_SYSTEM = [
 ].join('\n')
 
 /**
- * 창체 특기사항. The built-in 똑딱AI 생기부 V7 B saw these exact instructions in a few of its
+ * 창체 특기사항. 똑딱AI's 생기부 training (V7 B, now its 생기부 adapter) saw these exact instructions in a few of its
  * training rows and dev prompts (apps/saenggibu/tests/prompt-contract.test.ts pins them with the
  * others), but on fewer cases than 세특 and 행발: its answers here are a draft to read.
  */
@@ -399,6 +399,9 @@ export function cleanReply(reply: string): string {
       )
       .replace(/^["'“‘「]+/, '')
       .replace(/["'”’」]+$/, '')
+      // rule 6 of every 생기부 instruction: no "이 학생은"/"위 학생은" opening (the 2B model
+      // still opens with one now and then; 2 of 4 행발 in a class, 2026-11-21)
+      .replace(/^(?:이|위|해당|본)\s*학생(?:은|이|의 경우)\s*,?\s*/, '')
       .trim()
   )
 }
@@ -484,7 +487,11 @@ const isLevel = (value: string): value is Level => (LEVELS as readonly string[])
 export type StudentFields = Omit<Student, 'id'>
 
 /** the students of a CSV this page saved, or of the original site's (found by column name) */
-export function studentsFromCsv(text: string, mode: RecordMode): StudentFields[] {
+export function studentsFromCsv(
+  text: string,
+  mode: RecordMode,
+  limit: number = MAX_STUDENTS,
+): StudentFields[] {
   const rows = parseCsv(text)
   const header = (rows[0] ?? []).map(headerKey)
   const find = (names: string[]) => header.findIndex((h) => names.includes(h))
@@ -506,7 +513,7 @@ export function studentsFromCsv(text: string, mode: RecordMode): StudentFields[]
       }
     })
     .filter((s) => s.name || s.notes || s.result)
-    .slice(0, MAX_STUDENTS)
+    .slice(0, limit)
 }
 
 const csvCell = (value: string): string =>
@@ -536,7 +543,8 @@ export const templateCsv = (mode: RecordMode): string =>
  * The names of a class list read as text: a sheet's rows as "a | b | c" (how the app
  * reads a spreadsheet for the AI), or a CSV or TSV. The names are under 성명 or 이름.
  */
-export function rosterNames(text: string): string[] {
+/** the names under a '성명' or '이름' header, up to limit (the page tells what it left out) */
+export function rosterNames(text: string, limit: number = MAX_STUDENTS): string[] {
   const split = (line: string): string[] =>
     (line.includes('|')
       ? line.split('|')
@@ -560,7 +568,7 @@ export function rosterNames(text: string): string[] {
     const name = cells[column] ?? ''
     if (name && !/^\(\d+ empty\)$/.test(name)) names.push(name)
   }
-  return names.slice(0, MAX_STUDENTS)
+  return names.slice(0, limit)
 }
 
 /* ------------------------------------------------------------------ students */

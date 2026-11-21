@@ -34,6 +34,12 @@ if (process.env.SAENGGIBU_USER_DATA) app.setPath('userData', process.env.SAENGGI
 
 let win: BrowserWindow | null = null
 let neis: PlaywrightNeisDriver | undefined
+/** the page holds students' work not kept with [임시 저장]; closing asks first */
+let unsaved = false
+/** the teacher answered the question: this close goes through */
+let closing = false
+/** the question is on screen: another close (a second Cmd+Q) does not ask again */
+let asking = false
 
 /**
  * The model: the base and the 생기부 adapter, downloaded into userData/ai. A development run
@@ -78,6 +84,8 @@ function modelSource(): ModelSource {
 const ai = new LocalAi(process.resourcesPath, modelSource())
 
 function createWindow(): void {
+  unsaved = false
+  closing = false
   win = new BrowserWindow({
     width: 1180,
     height: 860,
@@ -94,6 +102,35 @@ function createWindow(): void {
     },
   })
   win.once('ready-to-show', () => win?.show())
+  // students' names, notes and texts live in the page until [임시 저장]: a close (the
+  // window's button, Cmd+Q, Alt+F4) asks before they go, as a document editor does
+  win.on('close', (event) => {
+    if (!unsaved || closing || !win) return
+    event.preventDefault()
+    if (asking) return
+    asking = true
+    const owner = win
+    void dialog
+      .showMessageBox(owner, {
+        type: 'warning',
+        buttons: ['임시 저장하고 닫기', '저장하지 않고 닫기', '취소'],
+        defaultId: 0,
+        cancelId: 2,
+        noLink: true,
+        message: '저장하지 않은 학생 글이 있어요.',
+        detail:
+          '닫으면 지금 입력한 학생 이름, 관찰 기록, AI가 쓴 글이 사라져요. 임시 저장하면 다음에 [불러오기]로 다시 열 수 있어요.',
+      })
+      .then(({ response }) => {
+        asking = false
+        if (owner.isDestroyed()) return
+        if (response === 0) owner.webContents.send(CHANNELS.saveBeforeClose)
+        else if (response === 1) {
+          closing = true
+          owner.close()
+        }
+      })
+  })
   win.on('closed', () => {
     win = null
   })
@@ -157,11 +194,24 @@ function registerIpc(): void {
       typeof r.text !== 'string'
     )
       return { ok: false, error: '요청을 읽지 못했어요.' }
+    const temperature =
+      typeof r.temperature === 'number' && r.temperature >= 0 && r.temperature <= 1.5
+        ? r.temperature
+        : 0
     try {
-      return { ok: true, text: await ai.ask(r.requestId, r.system, r.text) }
+      return { ok: true, text: await ai.ask(r.requestId, r.system, r.text, temperature) }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
     }
+  })
+  ipcMain.on(CHANNELS.unsaved, (_event, value: unknown) => {
+    unsaved = value === true
+  })
+  ipcMain.handle(CHANNELS.closeNow, (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    if (!owner) return
+    closing = true
+    owner.close()
   })
   ipcMain.handle(CHANNELS.cancel, (_event, id: unknown) => {
     if (typeof id === 'string') ai.cancel(id)

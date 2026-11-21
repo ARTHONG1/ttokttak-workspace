@@ -6,7 +6,6 @@ import {
   Modal,
   SpecialAiPicker,
   ToastView,
-  askAi,
   copyText,
   downloadBlob,
   useToast,
@@ -59,11 +58,11 @@ import {
   type Work,
 } from './record-core'
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
+import { askRecordAi, cancelRecordAi, rewordWithAi } from './record-ai'
 import { SimilarityCheck } from './SimilarityCheck'
 import {
-  REWORD_SYSTEM,
+  NOT_REWORDED,
   WARN_FLOOR,
-  rewordRequest,
   rewordTargets,
   sharedPhrases,
   similarity,
@@ -211,9 +210,12 @@ const textsOf = (work: Work): (Entry & { id: string })[] =>
     text: s.result.trim(),
   }))
 
-/** the AI says the same text in other words, away from the wording it shares */
-const askRewording = (text: string, others: readonly string[]): Promise<string> =>
-  askAi(REWORD_SYSTEM, rewordRequest(text, others), [], 4000, { feature: 'school_record' })
+/** a request [멈추기] called off: not a failure, and its answer (if any) is dropped */
+class Stopped extends Error {
+  constructor() {
+    super('멈췄어요.')
+  }
+}
 
 export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const [mode, setMode] = useState<RecordMode>('subject')
@@ -236,11 +238,19 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     behavior: false,
     activity: false,
   })
+  /** the AI requests each tab has running: [멈추기] calls them off instead of waiting for them */
+  const inflight = useRef<Record<RecordMode, Set<string>>>({
+    subject: new Set(),
+    behavior: new Set(),
+    activity: new Set(),
+  })
+  const calledOff = useRef(new Set<string>())
   const [sessions, setSessions] = useState<SavedSession[]>(() =>
     sessionsFrom(localStorage.getItem(SESSIONS_KEY), newId),
   )
   const [listOpen, setListOpen] = useState(false)
   const [loadOpen, setLoadOpen] = useState(false)
+  const [clearOpen, setClearOpen] = useState(false)
   const [readingRoster, setReadingRoster] = useState(false)
   const [showProblem, setShowProblem] = useState(false)
   const [countText, setCountText] = useState<string | null>(null)
@@ -317,32 +327,56 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   /* ---------------------------------------------------------------- writing */
 
-  const writeOne = async (m: RecordMode, student: Student): Promise<string> => {
+  /** one AI request of a tab, under an id [멈추기] can call off */
+  const tracked = async <T,>(m: RecordMode, run: (id: string) => Promise<T>): Promise<T> => {
+    const id = crypto.randomUUID()
+    inflight.current[m].add(id)
+    try {
+      const out = await run(id)
+      // a stream called off ends with what came so far: that is no entry
+      if (calledOff.current.has(id)) throw new Stopped()
+      return out
+    } catch (error) {
+      if (calledOff.current.has(id)) throw new Stopped()
+      throw error
+    } finally {
+      inflight.current[m].delete(id)
+      calledOff.current.delete(id)
+    }
+  }
+
+  /**
+   * [멈추기]: no student is started after this, and the ones being written are called off (a
+   * run asks up to three at once: waiting for them took half a minute, and they were written)
+   */
+  const stopMode = (m: RecordMode) => {
+    stop.current[m] = true
+    for (const id of inflight.current[m]) {
+      calledOff.current.add(id)
+      cancelRecordAi(id)
+    }
+  }
+
+  const writeOne = async (m: RecordMode, student: Student, id: string): Promise<string> => {
     const w = worksRef.current[m]
     const order = w.students.findIndex((s) => s.id === student.id) + 1 || undefined
     const reply =
       m === 'subject'
-        ? await askAi(
+        ? await askRecordAi(
             SUBJECT_SYSTEM,
             subjectRequest(w.info, w.length, w.instructions, student, order),
-            [],
-            4000,
-            { feature: 'school_record' },
+            id,
           )
         : m === 'activity'
-          ? await askAi(
+          ? await askRecordAi(
               ACTIVITY_SYSTEM,
               activityRequest(w.info, w.length, w.instructions, student, order),
-              [],
-              4000,
-              { feature: 'school_record' },
+              id,
             )
-          : await askAi(
+          : await askRecordAi(
               BEHAVIOR_SYSTEM,
               behaviorRequest(w.length, w.instructions, student, order),
-              [],
-              4000,
-              { feature: 'school_record' },
+              id,
             )
     const out = cleanReply(reply)
     if (!out) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
@@ -377,11 +411,12 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         GENERATE_AT_ONCE,
         async (student) => {
           try {
-            const result = await writeOne(m, student)
+            const result = await tracked(m, (id) => writeOne(m, student, id))
             patchStudent(m, student.id, { result })
             done += 1
             streak = 0
           } catch (error) {
+            if (error instanceof Stopped) return
             failed += 1
             streak += 1
             firstError ||= error instanceof Error ? error.message : String(error)
@@ -447,8 +482,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     const text = worksRef.current[m].students.find((s) => s.id === id)?.result.trim() ?? ''
     if (!text) return 0
     const others = alikeTexts(m, id, text)
-    const reply = cleanReply(await askRewording(text, others))
-    if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
+    const reply = await tracked(m, (requestId) => rewordWithAi(text, others, requestId))
     const key = m + ':' + id
     // a second rewording still takes back to the text before the first one
     setReworded((prev) => ({
@@ -497,6 +531,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     setBusy((prev) => ({ ...prev, [m]: [...prev[m], ...ids] }))
     setRunning((prev) => ({ ...prev, [m]: true }))
     let done = 0
+    let unchanged = 0
     let failed = ''
     try {
       for (const id of ids) {
@@ -505,7 +540,14 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
           await rewordOne(m, id)
           done += 1
         } catch (error) {
-          failed = error instanceof Error ? error.message : String(error)
+          if (error instanceof Stopped) break
+          const message = error instanceof Error ? error.message : String(error)
+          // a text the AI handed back as it was: the others can still be reworded
+          if (message === NOT_REWORDED) {
+            unchanged += 1
+            continue
+          }
+          failed = message
           break
         } finally {
           setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => x !== id) }))
@@ -519,8 +561,11 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     say(
       done +
         '명의 글 표현을 바꿨어요. ' +
+        (unchanged > 0
+          ? unchanged + '명은 AI가 같은 글을 돌려줘 그대로예요. 직접 고쳐 주세요. '
+          : '') +
         (failed || (left > 0 ? '아직 ' + left + '명의 글이 겹쳐요.' : '이제 겹치는 글이 없어요.')),
-      Boolean(failed) || left > 0,
+      Boolean(failed) || left > 0 || unchanged > 0,
     )
   }
 
@@ -557,6 +602,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   const clearStudents = () => {
     patch(mode, (w) => ({ ...w, students: [newStudent()] }))
+    setClearOpen(false)
     say('학생 목록을 비웠어요.')
   }
 
@@ -576,7 +622,8 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       if (!result) return
       if (!result.ok) return say(result.error, true)
       if (result.kind !== 'text') return
-      const names = rosterNames(result.text)
+      const all = rosterNames(result.text, Number.MAX_SAFE_INTEGER)
+      const names = all.slice(0, MAX_STUDENTS)
       if (names.length === 0) {
         return say("파일에서 '성명'이나 '이름' 칸을 찾지 못했어요.", true)
       }
@@ -586,7 +633,14 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
           i < names.length ? { ...s, name: names[i] } : s,
         ),
       }))
-      say(names.length + '명의 이름을 불러왔어요.')
+      say(
+        names.length +
+          '명의 이름을 불러왔어요.' +
+          (all.length > names.length
+            ? ' 명렬표에 ' + all.length + '명이 있어 앞의 ' + MAX_STUDENTS + '명만 넣었어요.'
+            : ''),
+        all.length > names.length,
+      )
     } catch (error) {
       say(error instanceof Error ? error.message : String(error), true)
     } finally {
@@ -596,11 +650,23 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   const loadCsv = async (file: File) => {
     try {
-      const rows = studentsFromCsv(decodeCsvBytes(new Uint8Array(await file.arrayBuffer())), mode)
+      const all = studentsFromCsv(
+        decodeCsvBytes(new Uint8Array(await file.arrayBuffer())),
+        mode,
+        Number.MAX_SAFE_INTEGER,
+      )
+      const rows = all.slice(0, MAX_STUDENTS)
       if (rows.length === 0) return say('파일에 학생 내용이 없어요.', true)
       patch(mode, (w) => ({ ...w, students: rows.map((row) => newStudent(row)) }))
       setLoadOpen(false)
-      say(rows.length + '명의 내용을 불러왔어요.')
+      say(
+        rows.length +
+          '명의 내용을 불러왔어요.' +
+          (all.length > rows.length
+            ? ' 파일에 ' + all.length + '명이 있어 앞의 ' + MAX_STUDENTS + '명만 넣었어요.'
+            : ''),
+        all.length > rows.length,
+      )
     } catch (error) {
       say(error instanceof Error ? error.message : 'CSV 파일을 읽지 못했어요.', true)
     }
@@ -982,7 +1048,15 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                 >
                   유사도 자세히 보기
                 </button>
-                <button type="button" className="sf-text-btn" onClick={clearStudents}>
+                <button
+                  type="button"
+                  className="sf-text-btn"
+                  data-testid="record-clear"
+                  disabled={anyBusy}
+                  onClick={() =>
+                    work.students.some(hasContent) ? setClearOpen(true) : clearStudents()
+                  }
+                >
                   학생 목록 비우기
                 </button>
               </div>
@@ -1046,9 +1120,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                   type="button"
                   className="sf-secondary sf-sm sf-danger"
                   data-testid="record-stop"
-                  onClick={() => {
-                    stop.current[mode] = true
-                  }}
+                  onClick={() => stopMode(mode)}
                 >
                   <span className="sf-spinner" aria-hidden="true" />
                   멈추기 ({modeBusy.length}명 남음)
@@ -1340,6 +1412,30 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
           if (file) void loadCsv(file)
         }}
       />
+
+      {clearOpen && (
+        <Modal title="학생 목록 비우기" onClose={() => setClearOpen(false)}>
+          <div className="sr-modal-body">
+            <p>
+              {resultName} 탭의 학생 {work.students.filter(hasContent).length}명의 이름, 관찰 기록,
+              글을 모두 지울까요? 임시 저장하지 않았다면 되돌릴 수 없어요.
+            </p>
+            <div className="sr-two">
+              <button type="button" className="sf-secondary" onClick={() => setClearOpen(false)}>
+                취소
+              </button>
+              <button
+                type="button"
+                className="sf-secondary sf-danger"
+                data-testid="record-clear-confirm"
+                onClick={clearStudents}
+              >
+                비우기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {loadOpen && (
         <Modal title="내용 불러오기 (CSV)" onClose={() => setLoadOpen(false)}>

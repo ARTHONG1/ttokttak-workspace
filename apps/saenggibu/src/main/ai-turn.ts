@@ -1,8 +1,9 @@
 /**
- * One 생기부 writing turn for the built-in 2B model, the way 똑딱작업실 sends a plain writing
- * request: the page's own instructions as they are (they are what the 생기부 model was
- * trained on), and the request clipped so that both fit the 4,096-token context with room
- * for the answer.
+ * One 생기부 writing turn for the built-in 2B model: the page's own instructions as they are
+ * (they are what the 생기부 model was trained on) and the request, both within the 4,096-token
+ * context with room for the answer. A request too long for it is refused with what to shorten:
+ * clipping it cut off the observation's end and the closing instruction ("나이스 입력용 …을
+ * 작성하십시오"), and the answer then went its own way with nothing said.
  */
 
 /** instructions + request together, in UTF-8 bytes */
@@ -16,18 +17,13 @@ export type Turn = { ok: true; system: string; text: string } | { ok: false; err
 
 const bytes = (text: string): number => Buffer.byteLength(text, 'utf8')
 
+export const TOO_LONG =
+  '입력한 내용이 너무 길어요. 과제·활동 설명, 성취기준, 관찰 기록을 합쳐 1,500자 정도로 줄여 주세요.'
+
 export function plainTurn(system: string, text: string): Turn {
   const sysBytes = bytes(system)
   if (sysBytes > MAX_SYSTEM_BYTES)
     return { ok: false, error: '요청이 똑딱AI의 입력 한도를 넘었어요. 지시사항을 줄여 주세요.' }
-  const budget = MAX_TURN_BYTES - sysBytes
-  if (bytes(text) <= budget) return { ok: true, system, text }
-  let clipped = text
-    .slice(0, Math.floor((text.length * budget) / bytes(text)))
-    .replace(/[\uD800-\uDBFF]$/, '')
-  // a dense slice can still be over: trim further
-  while (bytes(clipped) > budget) {
-    clipped = clipped.slice(0, Math.floor(clipped.length * 0.9)).replace(/[\uD800-\uDBFF]$/, '')
-  }
-  return { ok: true, system, text: clipped }
+  if (bytes(text) > MAX_TURN_BYTES - sysBytes) return { ok: false, error: TOO_LONG }
+  return { ok: true, system, text }
 }

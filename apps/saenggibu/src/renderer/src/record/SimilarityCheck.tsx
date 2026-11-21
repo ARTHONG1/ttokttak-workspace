@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { askAi, downloadBlob } from '../common'
-import { cleanReply, hasContent, type RecordMode, type Work } from './record-core'
+import { downloadBlob } from '../common'
+import { cancelRecordAi, rewordWithAi } from './record-ai'
+import { hasContent, type RecordMode, type Work } from './record-core'
 import {
   MAX_ENTRIES,
-  REWORD_SYSTEM,
+  NOT_REWORDED,
   entriesFromText,
   entriesToCsv,
   pairsToCsv,
-  rewordRequest,
   rewordTargets,
   sharedPieces,
   similarPairs,
@@ -90,6 +90,9 @@ export function SimilarityCheck({
   const [busy, setBusy] = useState<number[]>([])
   const [running, setRunning] = useState(false)
   const stop = useRef(false)
+  /** the rewording request running, and the one [멈추기] called off (its answer is dropped) */
+  const requestRef = useRef<string | null>(null)
+  const calledOffRef = useRef<string | null>(null)
   /** what a text was before it was reworded, to take a rewording back */
   const [before, setBefore] = useState<Record<string, string>>({})
 
@@ -124,8 +127,18 @@ export function SimilarityCheck({
       .filter((_, i) => i !== index)
       .map((e) => e.text)
       .filter((t) => similarity(self.text, t) >= Math.min(floor, 30))
-    const reply = cleanReply(await askAi(REWORD_SYSTEM, rewordRequest(self.text, others)))
-    if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
+    const id = crypto.randomUUID()
+    requestRef.current = id
+    let reply: string
+    try {
+      reply = await rewordWithAi(self.text, others, id)
+    } catch (error) {
+      if (calledOffRef.current === id) throw new Error('멈췄어요.', { cause: error })
+      throw error
+    } finally {
+      requestRef.current = null
+    }
+    if (calledOffRef.current === id) throw new Error('멈췄어요.')
     const key = keyOf(index)
     setBefore((prev) => (key in prev ? prev : { ...prev, [key]: self.text }))
     setText(index, reply)
@@ -158,6 +171,7 @@ export function SimilarityCheck({
     setRunning(true)
     setBusy(targets)
     let done = 0
+    let unchanged = 0
     let failed = ''
     for (const index of targets) {
       if (stop.current) break
@@ -165,7 +179,14 @@ export function SimilarityCheck({
         await rewordOne(index)
         done += 1
       } catch (error) {
-        failed = error instanceof Error ? error.message : String(error)
+        if (stop.current) break
+        const message = error instanceof Error ? error.message : String(error)
+        // a text the AI handed back as it was: the others can still be reworded
+        if (message === NOT_REWORDED) {
+          unchanged += 1
+          continue
+        }
+        failed = message
         break
       } finally {
         setBusy((prev) => prev.filter((i) => i !== index))
@@ -177,8 +198,11 @@ export function SimilarityCheck({
     say(
       done +
         '명의 글 표현을 바꿨어요. ' +
+        (unchanged > 0
+          ? unchanged + '명은 AI가 같은 글을 돌려줘 그대로예요. 직접 고쳐 주세요. '
+          : '') +
         (failed ? failed : left > 0 ? '아직 ' + left + '쌍이 겹쳐요.' : '겹치는 쌍이 없어요.'),
-      Boolean(failed) || left > 0,
+      Boolean(failed) || left > 0 || unchanged > 0,
     )
   }
 
@@ -384,6 +408,10 @@ export function SimilarityCheck({
                   className="sf-secondary sf-sm sf-danger"
                   onClick={() => {
                     stop.current = true
+                    if (requestRef.current) {
+                      calledOffRef.current = requestRef.current
+                      cancelRecordAi(requestRef.current)
+                    }
                   }}
                 >
                   <span className="sf-spinner" aria-hidden="true" />

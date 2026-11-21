@@ -5,6 +5,11 @@ export interface AskRequest {
   requestId: string
   system: string
   text: string
+  /**
+   * 0 (the model's measured setting) unless asked: a rewording that came back word for word
+   * is asked once more with some variety
+   */
+  temperature?: number
 }
 export type AskResult = { ok: true; text: string } | { ok: false; error: string }
 
@@ -56,6 +61,12 @@ export interface SaenggibuApi {
   readTableFile(): Promise<TableFileResult | null>
   sendToNeis(text: string): Promise<NeisResult>
   version(): Promise<string>
+  /** whether the page holds students' work not yet kept with [임시 저장] (asked about on close) */
+  setUnsaved(unsaved: boolean): void
+  /** the window is closing and the teacher chose [임시 저장하고 닫기]: save, then closeNow */
+  onSaveBeforeClose(handler: () => void): () => void
+  /** close the window now (after saving for it) */
+  closeNow(): Promise<void>
 }
 
 export type { RecordPackage }
@@ -72,4 +83,7 @@ export const CHANNELS = {
   readTableFile: 'saenggibu:read-table-file',
   sendToNeis: 'saenggibu:send-to-neis',
   version: 'saenggibu:version',
+  unsaved: 'saenggibu:unsaved',
+  saveBeforeClose: 'saenggibu:save-before-close',
+  closeNow: 'saenggibu:close-now',
 } as const

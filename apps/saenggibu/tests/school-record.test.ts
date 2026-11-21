@@ -134,6 +134,15 @@ describe('AI reply clean-up', () => {
     ).toBe('기록표를 꼼꼼히 정리함.')
     expect(cleanReply('  \n ')).toBe('')
   })
+
+  // rule 6 of the instructions: no "이 학생은" opening (2 of 4 행발 in a class still had one)
+  it('drops an opening "이 학생은" the instructions forbid, and nothing later', () => {
+    expect(cleanReply('이 학생은 수업 시간에 질문을 자주 함.')).toBe('수업 시간에 질문을 자주 함.')
+    expect(cleanReply('위 학생은, 맡은 일을 끝까지 해냄.')).toBe('맡은 일을 끝까지 해냄.')
+    expect(cleanReply('모둠 활동에서 학생은 의견을 조율함.')).toBe(
+      '모둠 활동에서 학생은 의견을 조율함.',
+    )
+  })
 })
 
 describe('CSV', () => {
@@ -225,6 +234,14 @@ describe('roster', () => {
   it('reads 이름 from a CSV too', () => {
     expect(rosterNames('번호,이름\n1,김하늘\n2,이바다\n')).toEqual(['김하늘', '이바다'])
     expect(rosterNames('번호\t성 명\n1\t김하늘')).toEqual(['김하늘'])
+  })
+
+  // a roster of 60 came in as 50 with nothing said: the page now reads all and says so
+  it('reads past the class limit when asked, so the page can say what it left out', () => {
+    const text =
+      '번호,이름\n' + Array.from({ length: 60 }, (_, i) => i + 1 + ',학생' + (i + 1)).join('\n')
+    expect(rosterNames(text)).toHaveLength(50)
+    expect(rosterNames(text, Number.MAX_SAFE_INTEGER)).toHaveLength(60)
   })
 
   it('finds nothing without a name column', () => {

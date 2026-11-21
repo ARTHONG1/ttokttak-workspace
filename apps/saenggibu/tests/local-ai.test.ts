@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, plainTurn } from '../src/main/ai-turn'
+import { MAX_SYSTEM_BYTES, MAX_TURN_BYTES, TOO_LONG, plainTurn } from '../src/main/ai-turn'
 import { LocalAi, aiFiles, notReadyMessage, requestBody, serverArgs } from '../src/main/local-ai'
 import { ModelStore } from '../src/main/model-store'
 import { MODEL_BYTES, MODEL_FILES } from '../src/shared/model'
@@ -53,6 +53,8 @@ describe('the built-in 똑딱AI', () => {
         { role: 'user', content: '요청' },
       ],
     })
+    // a rewording asked again after it came back word for word
+    expect(requestBody('지시', '요청', 0.7)).toMatchObject({ temperature: 0.7 })
   })
 
   it('tells a writing request how far the download is', () => {
@@ -113,14 +115,12 @@ describe('one writing turn', () => {
   it('goes as it is when it fits', () => {
     expect(plainTurn('지시', '관찰 기록')).toEqual({ ok: true, system: '지시', text: '관찰 기록' })
   })
-  it('clips a long request to what fits beside the instructions', () => {
+  // clipping cut the observation's end and the closing instruction with nothing said
+  it('refuses a request too long to fit beside the instructions, saying what to shorten', () => {
     const system = '가'.repeat(500)
-    const out = plainTurn(system, '나'.repeat(5000))
-    expect(out.ok).toBe(true)
-    if (!out.ok) return
-    expect(out.system).toBe(system)
-    expect(bytes(out.system) + bytes(out.text)).toBeLessThanOrEqual(MAX_TURN_BYTES)
-    expect(out.text.length).toBeGreaterThan(1000)
+    expect(plainTurn(system, '나'.repeat(5000))).toEqual({ ok: false, error: TOO_LONG })
+    const fits = '나'.repeat(Math.floor((MAX_TURN_BYTES - bytes(system)) / 3))
+    expect(plainTurn(system, fits)).toEqual({ ok: true, system, text: fits })
   })
   it('refuses instructions longer than its limit', () => {
     expect(plainTurn('가'.repeat(MAX_SYSTEM_BYTES), '')).toMatchObject({ ok: false })

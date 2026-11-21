@@ -71,6 +71,17 @@ function percentOf(a: Prepared, b: Prepared): number {
 /** how alike two texts are, 0..100 */
 export const similarity = (a: string, b: string): number => percentOf(prepare(a), prepare(b))
 
+/**
+ * A rewording that hands the text back in the same words (the built-in 2B model does now and
+ * then, at temperature 0 every time for that text): it is not counted as reworded.
+ */
+export function sameWording(before: string, after: string): boolean {
+  const squeeze = (s: string): string => s.replace(/\s+/g, '')
+  return squeeze(before) === squeeze(after) || similarity(before, after) >= 95
+}
+
+export const NOT_REWORDED = 'AI가 같은 글을 그대로 돌려줘 표현을 바꾸지 못했어요. 직접 고쳐 주세요.'
+
 /** every pair of entries at or over the floor, the most alike first */
 export function similarPairs(entries: readonly Entry[], floor: number): Pair[] {
   const prepared = entries.map((e) => prepare(e.text))

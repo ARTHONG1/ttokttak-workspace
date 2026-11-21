@@ -54,6 +54,8 @@ test('생기부 checks its inputs, counts NEIS bytes and keeps saved work', asyn
     await page.getByTestId('record-tab-subject').click()
     await page.getByTestId('record-save').click()
     await page.getByText('학생 목록 비우기').click()
+    // a list with students asks first (it emptied with nothing said)
+    await page.getByTestId('record-clear-confirm').click()
     await expect(page.getByTestId('record-student')).toHaveCount(1)
     await page.getByTestId('record-open-list').click()
     await expect(page.getByTestId('record-session')).toHaveCount(1)
