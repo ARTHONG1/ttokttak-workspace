@@ -946,6 +946,23 @@ button.sf-card:hover .sf-card-go svg {
   color: var(--sf-ink);
   word-break: keep-all;
 }
+.ct-desc-subheading {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--sf-ink);
+}
+.ct-desc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--sf-ink);
+}
 .ct-desc-foot {
   display: flex;
   flex-wrap: wrap;

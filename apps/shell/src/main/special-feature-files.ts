@@ -21,6 +21,9 @@ export const FEATURE_LINKS = {
   quizn: 'https://quizn.show/',
   aceCanvas: 'https://ace-canvas--project-0c1d3dab-8644-4690-9e4.asia-east1.hosted.app/',
   aceCanvasVideo: 'https://youtu.be/1wl_L17E8R4',
+  /** 똑딱수업 > 반짝 은하 and its how-to video */
+  banjjak: 'https://banjjak.banjjak-skdl3965.workers.dev/',
+  banjjakVideo: 'https://www.youtube.com/watch?v=3jqIJk5MGoo&t=1s',
   /** 똑딱업무 > 똑딱서명's introduction video */
   ttokSignVideo: 'https://youtu.be/tLxKYB8qInY',
 } as const

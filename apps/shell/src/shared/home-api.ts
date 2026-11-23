@@ -349,6 +349,8 @@ export interface HomeApi {
       | 'quizn'
       | 'aceCanvas'
       | 'aceCanvasVideo'
+      | 'banjjak'
+      | 'banjjakVideo'
       | 'ttokSignVideo'
       | import('./intro-links').IntroLinkKey,
   ): Promise<void>

@@ -5,7 +5,8 @@ import './special-features.css'
 
 /**
  * 똑딱수업: classroom activity tools opened from the home screen (desktop and web).
- * ACE 명화 ("나도 미술가, AI와 함께하는 명화 따라잡기!") is the first live classroom tool.
+ * ACE 명화 ("나도 미술가, AI와 함께하는 명화 따라잡기!") and 반짝 은하 (students' self-introduction
+ * stars gathered into the class's galaxy) are the live classroom tools, in this order.
  */
 
 export const ACE_CANVAS_TITLE = 'ACE 명화'
@@ -19,6 +20,82 @@ export const ACE_CANVAS_VIDEO_URL = 'https://youtu.be/1wl_L17E8R4'
 export const ACE_CANVAS_EMBED_URL = 'https://www.youtube.com/embed/1wl_L17E8R4?rel=0'
 export const ACE_CANVAS_APP_URL =
   'https://ace-canvas--project-0c1d3dab-8644-4690-9e4.asia-east1.hosted.app/'
+
+type ClassLinkSite = 'aceCanvas' | 'aceCanvasVideo' | 'banjjak' | 'banjjakVideo'
+
+interface ClassTool {
+  /** the data-testid stem of its card */
+  id: string
+  title: string
+  subtitle: string
+  summary: string
+  /** the 설명 dialog: its paragraphs, then its feature list */
+  description: readonly string[]
+  features?: readonly string[]
+  closing?: string
+  badge: string
+  tags: readonly string[]
+  appUrl: string
+  appSite: ClassLinkSite
+  videoUrl: string
+  videoSite: ClassLinkSite
+  embedUrl: string
+  videoTitle: string
+  icon: () => ReactElement
+}
+
+export const BANJJAK_TITLE = '반짝 은하'
+export const BANJJAK_SUBTITLE =
+  '나의 이야기가 별이 되고, 친구들의 별이 모여 우리 반만의 은하가 됩니다.'
+export const BANJJAK_APP_URL = 'https://banjjak.banjjak-skdl3965.workers.dev/'
+export const BANJJAK_VIDEO_URL = 'https://www.youtube.com/watch?v=3jqIJk5MGoo&t=1s'
+
+const CLASS_TOOLS: readonly ClassTool[] = [
+  {
+    id: 'ace-canvas',
+    title: ACE_CANVAS_TITLE,
+    subtitle: ACE_CANVAS_SUBTITLE,
+    summary: ACE_CANVAS_SUMMARY,
+    description: [ACE_CANVAS_DESCRIPTION],
+    badge: '참여형 미술 수업',
+    tags: ['명화 관찰·묘사', 'QR·방 코드 참여', '투표·AI 심사', 'AI 그림 생성'],
+    appUrl: ACE_CANVAS_APP_URL,
+    appSite: 'aceCanvas',
+    videoUrl: ACE_CANVAS_VIDEO_URL,
+    videoSite: 'aceCanvasVideo',
+    embedUrl: ACE_CANVAS_EMBED_URL,
+    videoTitle: 'ACE 명화 — 나도 미술가, AI와 함께하는 명화 따라잡기 설명 영상',
+    icon: PaletteIcon,
+  },
+  {
+    id: 'banjjak',
+    title: BANJJAK_TITLE,
+    subtitle: BANJJAK_SUBTITLE,
+    summary:
+      '학생들이 자신을 소개하는 별을 만들고, 친구들의 별을 탐색하며 서로의 장점을 발견하는 참여형 디지털 수업 웹앱이에요.',
+    description: [
+      '학생들이 자신을 소개하는 별을 만들고, 친구들의 별을 탐색하며 서로의 장점을 발견하는 참여형 디지털 수업 웹앱이에요.',
+      '선생님이 은하를 만들면 학생들은 QR코드로 간편하게 참여할 수 있어요. 자신의 개성과 생각을 담아 별을 꾸미고, 친구에게 하트와 따뜻한 응원 메시지를 남기며 함께 빛나는 은하를 완성합니다.',
+    ],
+    features: [
+      '🏷️ QR코드로 간편하게 수업 참여',
+      '⭐ 나만의 별 만들기 · 자기소개',
+      '💚 친구의 장점 발견 · 하트와 응원',
+      '🌌 3D 우주에서 우리 반 은하 감상',
+      '📸 결과 공유 · 은하 포스터 · QR 저장',
+    ],
+    closing: '우리 모두가 특별한 별! 함께 빛나는 우리 반 은하를 만들어 보세요. ✨',
+    badge: '참여형 관계 형성 수업',
+    tags: ['QR코드 참여', '나만의 별·자기소개', '하트와 응원', '3D 우리 반 은하'],
+    appUrl: BANJJAK_APP_URL,
+    appSite: 'banjjak',
+    videoUrl: BANJJAK_VIDEO_URL,
+    videoSite: 'banjjakVideo',
+    embedUrl: 'https://www.youtube.com/embed/3jqIJk5MGoo?start=1&rel=0',
+    videoTitle: '반짝 은하 사용 설명 영상',
+    icon: StarIcon,
+  },
+]
 
 const PLANNED = [
   { title: '수업 활동지', sub: '학습 목표에 맞춘 활동지와 정리 학습지' },
@@ -43,6 +120,19 @@ function PaletteIcon(): ReactElement {
   )
 }
 
+function StarIcon(): ReactElement {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m12 3.6 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8L12 3.6Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function ExternalArrow(): ReactElement {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -57,10 +147,7 @@ function ExternalArrow(): ReactElement {
   )
 }
 
-function openClassLink(
-  e: React.MouseEvent<HTMLAnchorElement>,
-  site: 'aceCanvas' | 'aceCanvasVideo',
-): void {
+function openClassLink(e: React.MouseEvent<HTMLAnchorElement>, site: ClassLinkSite): void {
   if (document.documentElement.dataset.edition === 'web') return
   if (typeof window.aiOffice?.openFeatureLink === 'function') {
     e.preventDefault()
@@ -79,7 +166,7 @@ export function ClassTools({
   /** over to 똑딱업무, whose tools work today */
   onWork?: () => void
 }): ReactElement {
-  const [showDesc, setShowDesc] = useState(false)
+  const [described, setDescribed] = useState<ClassTool | null>(null)
 
   return (
     <div className={'sf sf-' + variant} data-testid="class-tools">
@@ -93,7 +180,9 @@ export function ClassTools({
           <div>
             <span className="sf-eyebrow ct-eyebrow">똑딱수업</span>
             <h1>수업 시간에 바로 쓰는 도구</h1>
-            <p>선생님이 열고 학생들이 QR·방 코드로 참여하는 수업 도구예요. 도구는 계속 늘어납니다.</p>
+            <p>
+              선생님이 열고 학생들이 QR·방 코드로 참여하는 수업 도구예요. 도구는 계속 늘어납니다.
+            </p>
           </div>
           {onWork && (
             <button type="button" className="ct-work" data-testid="class-to-work" onClick={onWork}>
@@ -111,70 +200,74 @@ export function ClassTools({
           )}
         </header>
 
-        <article
-          className="sf-card ct-feature-card"
-          data-testid="class-tool-ace-canvas"
-          aria-label={ACE_CANVAS_TITLE}
-        >
-          <div className="ct-feature-body">
-            <div className="ct-feature-top">
-              <span className="sf-card-icon ct-feature-icon">
-                <PaletteIcon />
-              </span>
-              <span className="ct-badge">참여형 미술 수업</span>
+        {CLASS_TOOLS.map((tool) => (
+          <article
+            key={tool.id}
+            className="sf-card ct-feature-card"
+            data-testid={'class-tool-' + tool.id}
+            aria-label={tool.title}
+          >
+            <div className="ct-feature-body">
+              <div className="ct-feature-top">
+                <span className="sf-card-icon ct-feature-icon">
+                  <tool.icon />
+                </span>
+                <span className="ct-badge">{tool.badge}</span>
+              </div>
+              <h2 className="ct-feature-title">{tool.title}</h2>
+              <p className="ct-feature-sub">{tool.subtitle}</p>
+              <p className="ct-feature-sum">{tool.summary}</p>
+              <div className="sf-tags ct-feature-tags">
+                {tool.tags.map((tag) => (
+                  <span key={tag} className="sf-tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="ct-feature-actions">
+                <a
+                  href={tool.appUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ct-btn-primary"
+                  data-testid={'class-tool-' + tool.id + '-open'}
+                  onClick={(e) => openClassLink(e, tool.appSite)}
+                >
+                  바로가기
+                  <ExternalArrow />
+                </a>
+                <button
+                  type="button"
+                  className="ct-btn-secondary"
+                  data-testid={'class-tool-' + tool.id + '-desc'}
+                  onClick={() => setDescribed(tool)}
+                >
+                  설명
+                </button>
+                <a
+                  href={tool.videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ct-video-link"
+                  data-testid={'class-tool-' + tool.id + '-video-link'}
+                  onClick={(e) => openClassLink(e, tool.videoSite)}
+                >
+                  유튜브에서 영상 보기 ↗
+                </a>
+              </div>
             </div>
-            <h2 className="ct-feature-title">{ACE_CANVAS_TITLE}</h2>
-            <p className="ct-feature-sub">{ACE_CANVAS_SUBTITLE}</p>
-            <p className="ct-feature-sum">{ACE_CANVAS_SUMMARY}</p>
-            <div className="sf-tags ct-feature-tags">
-              <span className="sf-tag">명화 관찰·묘사</span>
-              <span className="sf-tag">QR·방 코드 참여</span>
-              <span className="sf-tag">투표·AI 심사</span>
-              <span className="sf-tag">AI 그림 생성</span>
-            </div>
-            <div className="ct-feature-actions">
-              <a
-                href={ACE_CANVAS_APP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ct-btn-primary"
-                data-testid="class-tool-ace-canvas-open"
-                onClick={(e) => openClassLink(e, 'aceCanvas')}
-              >
-                바로가기
-                <ExternalArrow />
-              </a>
-              <button
-                type="button"
-                className="ct-btn-secondary"
-                data-testid="class-tool-ace-canvas-desc"
-                onClick={() => setShowDesc(true)}
-              >
-                설명
-              </button>
-              <a
-                href={ACE_CANVAS_VIDEO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ct-video-link"
-                data-testid="class-tool-ace-canvas-video-link"
-                onClick={(e) => openClassLink(e, 'aceCanvasVideo')}
-              >
-                유튜브에서 영상 보기 ↗
-              </a>
-            </div>
-          </div>
 
-          <div className="ct-video-wrap" data-testid="class-tool-ace-canvas-video">
-            <iframe
-              src={ACE_CANVAS_EMBED_URL}
-              title="ACE 명화 — 나도 미술가, AI와 함께하는 명화 따라잡기 설명 영상"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
-        </article>
+            <div className="ct-video-wrap" data-testid={'class-tool-' + tool.id + '-video'}>
+              <iframe
+                src={tool.embedUrl}
+                title={tool.videoTitle}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </article>
+        ))}
 
         <div className="sf-grid ct-grid">
           {PLANNED.map((p) => (
@@ -191,29 +284,44 @@ export function ClassTools({
         </div>
       </div>
 
-      {showDesc && (
-        <Modal title="ACE 명화 상세 소개" onClose={() => setShowDesc(false)} wide>
-          <div className="ct-desc-modal" data-testid="class-tool-ace-canvas-modal">
-            <h3 className="ct-desc-heading">{ACE_CANVAS_SUBTITLE}</h3>
-            <p className="ct-desc-paragraph">{ACE_CANVAS_DESCRIPTION}</p>
+      {described && (
+        <Modal title={described.title + ' 상세 소개'} onClose={() => setDescribed(null)} wide>
+          <div className="ct-desc-modal" data-testid={'class-tool-' + described.id + '-modal'}>
+            <h3 className="ct-desc-heading">{described.subtitle}</h3>
+            {described.description.map((paragraph) => (
+              <p key={paragraph} className="ct-desc-paragraph">
+                {paragraph}
+              </p>
+            ))}
+            {described.features && (
+              <>
+                <h4 className="ct-desc-subheading">✨ 주요 기능</h4>
+                <ul className="ct-desc-list">
+                  {described.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {described.closing && <p className="ct-desc-paragraph">{described.closing}</p>}
             <div className="ct-desc-foot">
               <a
-                href={ACE_CANVAS_VIDEO_URL}
+                href={described.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ct-btn-secondary"
-                onClick={(e) => openClassLink(e, 'aceCanvasVideo')}
+                onClick={(e) => openClassLink(e, described.videoSite)}
               >
                 설명 영상 보기 ↗
               </a>
               <a
-                href={ACE_CANVAS_APP_URL}
+                href={described.appUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ct-btn-primary"
-                onClick={(e) => openClassLink(e, 'aceCanvas')}
+                onClick={(e) => openClassLink(e, described.appSite)}
               >
-                ACE 명화 바로가기
+                {described.title} 바로가기
                 <ExternalArrow />
               </a>
             </div>
