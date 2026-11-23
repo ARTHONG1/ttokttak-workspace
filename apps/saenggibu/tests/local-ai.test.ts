@@ -18,16 +18,33 @@ import { COMPACT_SYSTEM } from '../src/renderer/src/record/record-core'
 
 describe('the built-in 똑딱AI', () => {
   it('runs the base with the 생기부 adapter on, by paths inside the model folder', () => {
-    const args = serverArgs(4321, 'k', 3, 'base.gguf', 'adapters/school_record.gguf')
+    const args = serverArgs(
+      4321,
+      'k',
+      3,
+      { slots: 1, gpuLayers: 0 },
+      'base.gguf',
+      'adapters/school_record.gguf',
+    )
     const at = (flag: string) => args[args.indexOf(flag) + 1]
     expect(at('--model')).toBe('base.gguf')
     expect(at('--lora')).toBe('adapters/school_record.gguf')
     expect(at('--host')).toBe('127.0.0.1')
     expect(at('--ctx-size')).toBe('4096')
+    expect(at('--n-gpu-layers')).toBe('0')
     expect(at('--reasoning')).toBe('off')
     expect(args).toContain('--log-disable')
+    // four students at once on the GPU, each with a 4,096-token context of its own
+    const gpu = serverArgs(4321, 'k', 3, { slots: 4, gpuLayers: 99 }, 'base.gguf')
+    expect(gpu.slice(gpu.indexOf('--ctx-size'), gpu.indexOf('--ctx-size') + 4)).toEqual([
+      '--ctx-size',
+      '16384',
+      '--parallel',
+      '4',
+    ])
+    expect(gpu[gpu.indexOf('--n-gpu-layers') + 1]).toBe('99')
     // a development run on a single whole model file loads no adapter
-    expect(serverArgs(1, 'k', 1, 'other.gguf')).not.toContain('--lora')
+    expect(serverArgs(1, 'k', 1, { slots: 1, gpuLayers: 0 }, 'other.gguf')).not.toContain('--lora')
   })
 
   it('finds the server in the app; the model is no longer part of it', () => {

@@ -72,11 +72,11 @@ export const NEIS_BYTE_LIMIT = 1500
 export const MAX_STUDENTS = 50
 
 /**
- * students written at once on the built-in 똑딱AI: one after another, in the list's order (its
- * server answers one request at a time anyway, and a stop or a failure then concerns only the
- * student being written)
+ * students asked at once on the built-in 똑딱AI. On an Apple Silicon Mac its server writes four
+ * side by side (apps/saenggibu/src/main/local-ai.ts SERVER_SHAPE); on another computer it takes
+ * them one after another in the order they came, so asking four at once costs nothing there.
  */
-export const GENERATE_AT_ONCE = 1
+export const GENERATE_AT_ONCE = 4
 
 export interface Student {
   id: string
@@ -451,7 +451,8 @@ const oneLine = (value: string): string => value.trim().replace(/\s*\n\s*/g, ' '
 const CONCERN =
   /어려워|어려움|부족|미흡|서툴|서툶|못함|못하|산만|떠듦|떠듬|떠든|다툼|다투|잦음|잦은|잦고|소극적|지각/u
 /** a change for the better ("다툼이 줄어듦"): it stays with what the student does well */
-const GROWTH = /줄어|줄었|감소|개선|나아지|나아짐|좋아지|좋아짐|고쳐|극복|향상/u
+const GROWTH =
+  /줄어|줄었|감소|개선|나아지|나아짐|좋아지|좋아짐|고쳐|극복|향상|거의 없|없어지|없어짐/u
 /** a weaker sign, read only against the other half of "A지만 B" ("글씨가 바르지 않음") */
 const NEGATED = /않|없/u
 
@@ -548,7 +549,7 @@ export function compactRequest(
     if (info.achievementStandard.trim())
       lines.push('성취기준: ' + oneLine(info.achievementStandard))
     lines.push('성취도: ' + student.level)
-    lines.push(...notesBlock('관찰', student.notes, '관찰 기록 없음: 과제와 성취도만으로 쓴다'))
+    lines.push(...notesBlock('관찰', student.notes, '관찰 기록 없음'))
   } else if (mode === 'behavior') {
     lines.push(
       '[행동특성 및 종합의견] ' +
@@ -570,9 +571,7 @@ export function compactRequest(
         activity +
         (info.activityContent.trim() ? ' (' + oneLine(info.activityContent) + ')' : ''),
     )
-    lines.push(
-      ...notesBlock('학생 역할과 관찰', student.notes, '관찰 기록 없음: 활동 내용만으로 쓴다'),
-    )
+    lines.push(...notesBlock('학생 역할과 관찰', student.notes, '관찰 기록 없음'))
   }
   if (instructions.trim()) lines.push('교사 요청: ' + oneLine(instructions))
   return lines.join('\n')
@@ -612,6 +611,110 @@ const COMPACT_EXAMPLES: Record<RecordMode, readonly (readonly [string, string])[
   ],
 }
 
+/* ------------------------------------------------------------------ checking 똑딱AI's entry */
+
+/** the 2,350 Hangul syllables of KS X 1001; one outside them ("다툜") is a slip of the 2B model */
+const COMMON_SYLLABLES: ReadonlySet<string> = (() => {
+  const bytes: number[] = []
+  for (let lead = 0xb0; lead <= 0xc8; lead++)
+    for (let trail = 0xa1; trail <= 0xfe; trail++) bytes.push(lead, trail)
+  return new Set(new TextDecoder('euc-kr').decode(Uint8Array.from(bytes)))
+})()
+
+/**
+ * a sentence that keeps a concern as one: what is lacking, the effort or the help it needs, or
+ * the concern set against what came after ("다툼이 잦았으나 …")
+ */
+const CONCERN_KEPT =
+  /필요|보완|어려|부족|다소|으나|지만|편임|아쉬|않|못|서툴|미흡|한다면|는다면|개선|점차|조금씩/u
+
+/** the first two letters of each word without its particle: what two texts share about a fact */
+function wordStems(text: string): Set<string> {
+  const stems = new Set<string>()
+  for (const word of text.match(/[가-힣]+/gu) ?? []) {
+    const stem = word.replace(
+      /(?:으로|에서|에게|하며|하고|하여|하는|을|를|이|가|은|는|의|에|와|과|도|로)$/u,
+      '',
+    )
+    if (stem.length >= 2) stems.add(stem.slice(0, 2))
+  }
+  return stems
+}
+
+/** the "보완할 점" lines of a request made by compactRequest */
+function concernsOf(request: string): string[] {
+  const lines = request.split('\n')
+  const start = lines.indexOf('보완할 점:')
+  if (start < 0) return []
+  const concerns: string[] = []
+  for (const line of lines.slice(start + 1)) {
+    if (!line.startsWith('- ')) break
+    concerns.push(line.slice(2))
+  }
+  return concerns
+}
+
+/**
+ * What makes an entry the built-in 2B model wrote unusable as it is, measured against the
+ * request it answered (compactRequest): a concern written as praise or left out, Chinese or
+ * Japanese letters, an English word or a rare syllable the notes do not have, a sentence that
+ * does not end the record's way ("~함", "~음", "~임"), the same words over and over, or words of
+ * the request itself ("관찰 기록", "초등학교 5학년"). Empty when none.
+ */
+export function entryProblems(entry: string, request: string): string[] {
+  const problems: string[] = []
+  if (/[\u3040-\u30ff\u4e00-\u9fff]/u.test(entry)) problems.push('한자·일본 글자')
+  const english = (entry.match(/[A-Za-z]{2,}/g) ?? []).filter((word) => !request.includes(word))
+  if (english.length) problems.push('영어 낱말')
+  const rare = [...entry].filter(
+    (ch) => /[가-힣]/u.test(ch) && !COMMON_SYLLABLES.has(ch) && !request.includes(ch),
+  )
+  if (rare.length) problems.push('깨진 글자')
+  const sentences = entry
+    .split(/(?<=\.)\s+/)
+    .map((sentence) => sentence.trim().replace(/\.$/, ''))
+    .filter(Boolean)
+  const endsRight = (sentence: string): boolean => {
+    const last = sentence.charCodeAt(sentence.length - 1)
+    // a syllable with ㅁ under it (함, 음, 임, 됨, 보임) or ㄻ (줄어듦, 만듦)
+    const final = (last - 0xac00) % 28
+    return last >= 0xac00 && last <= 0xd7a3 && (final === 16 || final === 10)
+  }
+  if (!sentences.every(endsRight)) problems.push('문장 끝')
+  // four words in a row three times: the 2B model caught in a loop
+  const words = entry.split(/\s+/)
+  const runs = new Map<string, number>()
+  for (let at = 0; at + 4 <= words.length; at++) {
+    const run = words.slice(at, at + 4).join(' ')
+    runs.set(run, (runs.get(run) ?? 0) + 1)
+  }
+  if ([...runs.values()].some((count) => count >= 3)) problems.push('같은 말 반복')
+  if (
+    /관찰 기록|작성된 기록|성취도만으로|교사 요청|(?:초등학교|중학교|고등학교) ?\d+학년/u.test(
+      entry,
+    )
+  )
+    problems.push('요청 문구')
+  for (const concern of concernsOf(request)) {
+    const stems = wordStems(concern)
+    // the note's own word for it ("다툼", "어려워") said again keeps it a concern as well
+    const own = concern.match(CONCERN)?.[0]
+    let best = ''
+    let shared = 0
+    for (const sentence of sentences) {
+      const count = [...wordStems(sentence)].filter((stem) => stems.has(stem)).length
+      if (count > shared) {
+        best = sentence
+        shared = count
+      }
+    }
+    if (!best) problems.push('보완할 점 빠짐')
+    else if (!CONCERN_KEPT.test(best) && !(own && best.includes(own)))
+      problems.push('보완할 점을 칭찬으로 씀')
+  }
+  return problems
+}
+
 /** the AI's answer as NEIS takes it: no markdown, no heading, one paragraph */
 export function cleanReply(reply: string): string {
   const lines = reply
@@ -641,6 +744,8 @@ export function cleanReply(reply: string): string {
       // an answer wrapped in quotes loses them; a quoted title at its start keeps its own
       // ("‘이야기 속 세상’ 활동에서": stripping the first mark alone left "이야기 속 세상’ 활동에서")
       .replace(/^["'“‘「]+([\s\S]*?)["'”’」]+$/, '$1')
+      // "초등학교 5학년 학급 회의에서": the request's header said back; an entry names no grade
+      .replace(/^(?:초등학교|중학교|고등학교) ?\d+학년(?:의)? /u, '')
       // rule 6 of every 생기부 instruction: no "이 학생은"/"위 학생은" opening (the 2B model
       // still opens with one now and then; 2 of 4 행발 in a class, 2026-11-21)
       .replace(/^(?:이|위|해당|본)\s*학생(?:은|이|의 경우)\s*,?\s*/, '')

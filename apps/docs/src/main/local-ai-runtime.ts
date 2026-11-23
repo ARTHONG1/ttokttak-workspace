@@ -153,13 +153,16 @@ async function start(run: LocalAiRun): Promise<LocalAiEndpoint> {
   const port = await availablePort()
   const apiKey = randomBytes(32).toString('hex')
   const endpoint = { baseUrl: `http://127.0.0.1:${port}/v1`, apiKey, model: LOCAL_AI_MODEL }
-  // CPU-friendly first baseline. GPU offload can be opted into and benchmarked per device.
+  // on an Apple Silicon Mac the GPU, four requests at once; elsewhere the CPU, one at a time
+  // (apps/saenggibu/src/main/local-ai.ts SERVER_SHAPE has the measurements)
+  const appleGpu = process.platform === 'darwin' && process.arch === 'arm64'
+  const slots = appleGpu ? 4 : 1
   const envThreads = Number(process.env.GENOFFICE_LOCAL_AI_THREADS)
   const threads =
     Number.isInteger(envThreads) && envThreads >= 1 && envThreads <= 16
       ? envThreads
       : Math.min(4, Math.max(1, availableParallelism() - 1))
-  const gpu = Number(process.env.GENOFFICE_LOCAL_AI_GPU_LAYERS ?? 0)
+  const gpu = Number(process.env.GENOFFICE_LOCAL_AI_GPU_LAYERS ?? (appleGpu ? 99 : 0))
   const layers = Number.isInteger(gpu) && gpu >= 0 && gpu <= 99 ? gpu : 0
   // the server runs in the model's folder and is given the file by its name: the folder is
   // in the user's profile, whose name may have Korean letters the server could not open
@@ -178,9 +181,9 @@ async function start(run: LocalAiRun): Promise<LocalAiEndpoint> {
     '--no-webui',
     '--log-disable',
     '--ctx-size',
-    '4096',
+    String(4096 * slots),
     '--parallel',
-    '1',
+    String(slots),
     '--threads',
     String(threads),
     '--n-gpu-layers',

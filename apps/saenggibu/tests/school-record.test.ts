@@ -130,6 +130,9 @@ describe('AI reply clean-up', () => {
     expect(cleanReply('‘이야기 속 세상’ 활동에서 인물의 마음을 찾음.')).toBe(
       '‘이야기 속 세상’ 활동에서 인물의 마음을 찾음.',
     )
+    expect(cleanReply('초등학교 5학년 학급 회의에서 서기를 맡음.')).toBe(
+      '학급 회의에서 서기를 맡음.',
+    )
     expect(
       cleanReply(
         '원하는 분량을 기준으로 작성한 행동특성 및 종합의견은 다음과 같습니다. 기록표를 꼼꼼히 정리함.\n---',

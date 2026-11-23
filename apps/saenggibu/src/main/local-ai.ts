@@ -45,6 +45,22 @@ export function aiFiles(resourcesPath: string, platform = process.platform): AiF
 }
 
 /**
+ * How the server runs on this computer. On an Apple Silicon Mac the model runs on the GPU and
+ * writes four students at once; elsewhere on the CPU, one at a time. Measured 2026-11-24 on an
+ * M3 Pro, 8 행발 of 보통 length: CPU one at a time 3.5 s a student (4.5 GB), GPU one at a time
+ * 2.1 s (2.5 GB), GPU four at once 1.1 s (3.0 GB). On the CPU four at once gave only 1.2 times
+ * as much for another 0.5 GB. Each request keeps a 4,096-token context of its own.
+ */
+export interface ServerShape {
+  slots: number
+  gpuLayers: number
+}
+export const SERVER_SHAPE: ServerShape =
+  process.platform === 'darwin' && process.arch === 'arm64'
+    ? { slots: 4, gpuLayers: 99 }
+    : { slots: 1, gpuLayers: 0 }
+
+/**
  * The server's arguments. The server runs in the model's folder and gets the model and the
  * adapter by paths inside it: a Windows profile or app folder with Korean letters stays out
  * of argv. The adapter is on for every request (--lora applies it at scale 1).
@@ -53,6 +69,7 @@ export function serverArgs(
   port: number,
   apiKey: string,
   threads: number,
+  shape: ServerShape,
   modelFile = 'base.gguf',
   ...adapterFiles: string[]
 ): string[] {
@@ -70,13 +87,13 @@ export function serverArgs(
     '--no-webui',
     '--log-disable',
     '--ctx-size',
-    '4096',
+    String(4096 * shape.slots),
     '--parallel',
-    '1',
+    String(shape.slots),
     '--threads',
     String(threads),
     '--n-gpu-layers',
-    '0',
+    String(shape.gpuLayers),
     '--reasoning',
     'off',
     '--jinja',
@@ -329,6 +346,7 @@ export class LocalAi {
       port,
       key,
       threads,
+      SERVER_SHAPE,
       basename(modelPath),
       ...adapterPaths.map((path) => relative(cwd, path)),
     )

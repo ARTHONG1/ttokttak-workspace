@@ -4,6 +4,7 @@ import {
   compactExamples,
   compactRequest,
   emptyInfo,
+  entryProblems,
   sortedNotes,
   type CommonInfo,
   type Student,
@@ -180,6 +181,60 @@ describe("똑딱AI's own 생기부 request", () => {
     expect(COMPACT_SYSTEM).not.toMatch(/작성하십시오|대원칙|글 번호/)
   })
 
+  it('is a rewording with the phrases it shares with the others', () => {
+    expect(compactRewordRequest('글.', [], 1)).toContain('[표현 바꾸기]')
+  })
+})
+
+// answers the built-in model gave on 2026-11-24 (record-ai.ts asks again when one is found)
+describe("checking 똑딱AI's entry", () => {
+  const request = [
+    '[행동특성 및 종합의견] 분량: 3~4문장, 300자 안팎',
+    '관찰:',
+    '잘하는 점:',
+    '- 책을 많이 읽음',
+    '보완할 점:',
+    '- 글씨가 바르지 않음',
+    '- 1학기에는 친구와 자주 다툼',
+  ].join('\n')
+
+  it('passes an entry that keeps the concerns as concerns', () => {
+    expect(
+      entryProblems(
+        '책을 많이 읽으며 생각을 넓혀 가는 태도가 돋보임. 글씨를 바르게 쓰는 습관을 기르는 노력이 필요함. 1학기에는 친구와 다툼이 잦아 보임.',
+        request,
+      ),
+    ).toEqual([])
+  })
+
+  it('finds a concern written as praise, and one left out', () => {
+    expect(
+      entryProblems(
+        '책을 많이 읽음. 글씨를 세심하게 살피고 꼼꼼히 수정하는 노력은 학급 활동의 질을 높이는 데 기여함.',
+        request,
+      ),
+    ).toEqual(['보완할 점을 칭찬으로 씀', '보완할 점 빠짐'])
+  })
+
+  it('finds foreign letters, a broken syllable and a sentence that does not end the record way', () => {
+    const fine = ' 글씨를 바르게 쓰는 연습이 필요함. 1학기에는 다툼이 잦았으나 지금은 줄어듦.'
+    expect(entryProblems('글씨가 깔끔해져야 할 字迹임.' + fine, request)).toEqual([
+      '한자·일본 글자',
+    ])
+    // "다툜" in place of "다툼": the concern's own word is gone with it
+    expect(entryProblems('친구와 자주 다툜음.' + fine, request)).toEqual([
+      '깨진 글자',
+      '보완할 점을 칭찬으로 씀',
+    ])
+    expect(entryProblems('책을 많이 읽습니다.' + fine, request)).toEqual(['문장 끝'])
+    expect(entryProblems('개념을 이해하고 '.repeat(4) + '이해함.' + fine, request)).toEqual([
+      '같은 말 반복',
+    ])
+    expect(entryProblems('관찰 기록이 없어 책을 많이 읽음.' + fine, request)).toEqual(['요청 문구'])
+  })
+})
+
+describe("똑딱AI's rewording request", () => {
   it('is a rewording with the phrases it shares with the others', () => {
     const text = '수업 시간에 적극적으로 참여하며 맡은 역할을 책임감 있게 수행함.'
     const lines = compactRewordRequest(text, ['모둠에서 맡은 역할을 책임감 있게 수행함.'], 1).split(
