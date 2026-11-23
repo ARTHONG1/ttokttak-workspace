@@ -406,6 +406,8 @@ export interface RecordTurn {
   text: string
   /** model answers sent before the request as earlier turns of the conversation: [request, answer] */
   examples?: readonly (readonly [string, string])[]
+  /** the GBNF grammar the built-in model's answer is held to (entryGrammar) */
+  grammar?: string
   observation?: { category: '행발' | '평어' | '창체'; note: string }
 }
 
@@ -449,7 +451,10 @@ const oneLine = (value: string): string => value.trim().replace(/\s*\n\s*/g, ' '
 
 /** words in a note that mark something the student still has to work on */
 const CONCERN =
-  /어려워|어려움|부족|미흡|서툴|서툶|못함|못하|산만|떠듦|떠듬|떠든|다툼|다투|잦음|잦은|잦고|소극적|지각/u
+  /어려워|어려움|부족|미흡|서툴|서툶|못함|못하|산만|떠듦|떠듬|떠든|떠들|다툼|다투|잦음|잦은|잦고|소극적|지각|대충|소홀|안 해|안 함|안 하|않음|않고|하지 않|미루|미룸|잊어|잊음|빠뜨|빼먹|장난|딴짓|늦게|편식|고집|짜증|거짓말|놀리|놀림|방해/u
+/** a bad habit said not to happen ("포기하지 않음", "숙제를 빠뜨리지 않음"): praise */
+const PRAISED_NEGATION =
+  /(?:포기하|빠뜨리|빼먹|늦|잊|미루|다투|싸우|떠들|장난치|놀리|방해하|지각하|결석하|거짓말하|화내|울|편식하|고집하|짜증내|딴짓하)지\s*않/u
 /** a change for the better ("다툼이 줄어듦"): it stays with what the student does well */
 const GROWTH =
   /줄어|줄었|감소|개선|나아지|나아짐|좋아지|좋아짐|고쳐|극복|향상|거의 없|없어지|없어짐/u
@@ -508,7 +513,12 @@ export function sortedNotes(notes: string): { good: string[]; concern: string[] 
       const first = nominal(contrast[1])
       good.push(half === 0 ? contrast[2] : first)
       concern.push(half === 0 ? first : contrast[2])
-    } else if (CONCERN.test(observation) && !GROWTH.test(observation)) concern.push(observation)
+    } else if (
+      CONCERN.test(observation) &&
+      !GROWTH.test(observation) &&
+      !PRAISED_NEGATION.test(observation)
+    )
+      concern.push(observation)
     else good.push(observation)
   }
   return { good, concern }
@@ -674,27 +684,32 @@ export function entryProblems(entry: string, request: string): string[] {
     .split(/(?<=\.)\s+/)
     .map((sentence) => sentence.trim().replace(/\.$/, ''))
     .filter(Boolean)
-  const endsRight = (sentence: string): boolean => {
-    const last = sentence.charCodeAt(sentence.length - 1)
-    // a syllable with ㅁ under it (함, 음, 임, 됨, 보임) or ㄻ (줄어듦, 만듦)
-    const final = (last - 0xac00) % 28
-    return last >= 0xac00 && last <= 0xd7a3 && (final === 16 || final === 10)
-  }
+  const endsRight = (sentence: string): boolean => isRecordEnding(sentence.slice(-1))
   if (!sentences.every(endsRight)) problems.push('문장 끝')
-  // four words in a row three times: the 2B model caught in a loop
+  // a word or two said again at once ("꼼꼼하게 꼼꼼하게"), or five words in a row said twice: a
+  // sentence written again, or the 2B model caught in a loop
   const words = entry.split(/\s+/)
-  const runs = new Map<string, number>()
-  for (let at = 0; at + 4 <= words.length; at++) {
-    const run = words.slice(at, at + 4).join(' ')
-    runs.set(run, (runs.get(run) ?? 0) + 1)
+  const runs = new Set<string>()
+  const saidAgain = (at: number, size: number): boolean =>
+    at >= size && words.slice(at - size, at).join(' ') === words.slice(at, at + size).join(' ')
+  for (let at = 0; at < words.length; at++) {
+    const run = words.slice(at, at + 5).join(' ')
+    if (saidAgain(at, 1) || saidAgain(at, 2) || runs.has(run)) {
+      problems.push('같은 말 반복')
+      break
+    }
+    if (at + 5 <= words.length) runs.add(run)
   }
-  if ([...runs.values()].some((count) => count >= 3)) problems.push('같은 말 반복')
-  if (
-    /관찰 기록|작성된 기록|성취도만으로|교사 요청|(?:초등학교|중학교|고등학교) ?\d+학년/u.test(
-      entry,
-    )
-  )
-    problems.push('요청 문구')
+  // the request's own words, unless the teacher's notes have them too ("관찰 기록지를 대충 씀")
+  const notes = request
+    .split('\n')
+    .filter((line) => line.startsWith('- ') && line !== '- 관찰 기록 없음')
+    .join('\n')
+  const requestWords =
+    entry.match(
+      /관찰 기록|작성된 기록|성취도만으로|교사 요청|(?:초등학교|중학교|고등학교) ?\d+학년/gu,
+    ) ?? []
+  if (requestWords.some((words) => !notes.includes(words))) problems.push('요청 문구')
   for (const concern of concernsOf(request)) {
     const stems = wordStems(concern)
     // the note's own word for it ("다툼", "어려워") said again keeps it a concern as well
@@ -709,10 +724,68 @@ export function entryProblems(entry: string, request: string): string[] {
       }
     }
     if (!best) problems.push('보완할 점 빠짐')
-    else if (!CONCERN_KEPT.test(best) && !(own && best.includes(own)))
+    else if (
+      PRAISED_NEGATION.test(best) ||
+      !(CONCERN_KEPT.test(best) || CONCERN.test(best) || (own && best.includes(own)))
+    )
       problems.push('보완할 점을 칭찬으로 씀')
   }
   return problems
+}
+
+/** a syllable an entry's sentence ends on: ㅁ under it (함, 음, 임, 됨, 보임) or ㄻ (줄어듦, 만듦) */
+function isRecordEnding(syllable: string): boolean {
+  const code = syllable.charCodeAt(0)
+  const final = (code - 0xac00) % 28
+  return code >= 0xac00 && code <= 0xd7a3 && (final === 16 || final === 10)
+}
+
+/**
+ * The GBNF grammar 똑딱AI's answer is held to (llama-server's "grammar"): the number of
+ * sentences the request asks for, each ending "~함/~음/~임" and a full stop, written in the
+ * 2,350 common syllables, digits, the marks an entry uses and any letter of the request itself.
+ * Chinese letters, a broken syllable, "~습니다" or an answer that runs on cannot come out.
+ */
+export function entryGrammar(request: string): string {
+  const count = request.match(/분량: (\d+)(?:~(\d+))?문장( 이상)?/u)
+  const fewest = count ? Number(count[1]) : 3
+  const most = count?.[2] ? Number(count[2]) : count?.[3] ? fewest + 1 : count ? fewest : 4
+  const syllables = [...COMMON_SYLLABLES]
+  const letters = new Set([
+    ...syllables,
+    ...(request.match(/[가-힣A-Za-z]/gu) ?? []),
+    ...'0123456789 ,·‘’()~%',
+  ])
+  const charClass = (chars: Iterable<string>): string =>
+    '[' + [...chars].join('').replace(/[\]\\^-]/g, (mark) => '\\' + mark) + ']'
+  return [
+    'root ::= sentence' +
+      (most > 1 ? ' (" " sentence){' + (fewest - 1) + ',' + (most - 1) + '}' : ''),
+    'sentence ::= letter{8,150} ending "."',
+    'letter ::= ' + charClass(letters),
+    'ending ::= ' + charClass(syllables.filter(isRecordEnding)),
+  ].join('\n')
+}
+
+/**
+ * The best of several answers to one request: the fewest entryProblems, then the fewest words
+ * that neither the request nor another answer has. A fact the 2B model made up ("책상 앞에 앉는
+ * 순간 책장을 넘기는") comes in one answer only; what the notes said comes in each of them.
+ */
+export function pickEntry(
+  entries: readonly string[],
+  request: string,
+): { entry: string; problems: number } {
+  const asked = wordStems(request)
+  const scored = entries.map((entry, at) => {
+    const others = entries.filter((_, other) => other !== at).map(wordStems)
+    const ownWords = [...wordStems(entry)].filter(
+      (stem) => !asked.has(stem) && others.every((words) => !words.has(stem)),
+    )
+    return { entry, problems: entryProblems(entry, request).length, ownWords: ownWords.length }
+  })
+  scored.sort((a, b) => a.problems - b.problems || a.ownWords - b.ownWords)
+  return { entry: scored[0].entry, problems: scored[0].problems }
 }
 
 /** the AI's answer as NEIS takes it: no markdown, no heading, one paragraph */

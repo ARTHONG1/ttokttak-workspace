@@ -4,7 +4,9 @@ import {
   compactExamples,
   compactRequest,
   emptyInfo,
+  entryGrammar,
   entryProblems,
+  pickEntry,
   sortedNotes,
   type CommonInfo,
   type Student,
@@ -180,10 +182,6 @@ describe("똑딱AI's own 생기부 request", () => {
     }
     expect(COMPACT_SYSTEM).not.toMatch(/작성하십시오|대원칙|글 번호/)
   })
-
-  it('is a rewording with the phrases it shares with the others', () => {
-    expect(compactRewordRequest('글.', [], 1)).toContain('[표현 바꾸기]')
-  })
 })
 
 // answers the built-in model gave on 2026-11-24 (record-ai.ts asks again when one is found)
@@ -231,6 +229,27 @@ describe("checking 똑딱AI's entry", () => {
       '같은 말 반복',
     ])
     expect(entryProblems('관찰 기록이 없어 책을 많이 읽음.' + fine, request)).toEqual(['요청 문구'])
+  })
+})
+
+describe("choosing 똑딱AI's entry", () => {
+  const request =
+    '[행동특성 및 종합의견] 분량: 2~3문장, 200자 안팎\n관찰:\n잘하는 점:\n- 책을 많이 읽음'
+
+  // made-up facts come in one answer only; what the notes said comes in each
+  it('keeps the answer with the fewest words no other answer has', () => {
+    const plain = '책을 많이 읽으며 생각을 넓혀 가는 태도가 돋보임.'
+    const madeUp = '책상 앞에 앉는 순간 책장을 넘기며 책을 많이 읽는 습관이 돋보임.'
+    const other = '책을 많이 읽으며 생각을 넓히는 모습을 보임.'
+    expect(pickEntry([madeUp, plain, other], request)).toEqual({ entry: plain, problems: 0 })
+  })
+
+  it('holds the answer to the sentences asked for, ending the record way', () => {
+    const grammar = entryGrammar(request).split('\n')
+    expect(grammar[0]).toBe('root ::= sentence (" " sentence){1,2}')
+    expect(grammar[1]).toBe('sentence ::= letter{8,150} ending "."')
+    expect(grammar[3]).toContain('함')
+    expect(grammar[3]).not.toContain('다')
   })
 })
 

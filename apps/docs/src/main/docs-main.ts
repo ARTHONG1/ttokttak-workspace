@@ -4273,12 +4273,15 @@ export function registerAiIpc(): void {
       let stopReason: string | undefined
       // a grammar only means something to the built-in llama-server; capped so a renderer cannot
       // hand it an unbounded string
+      // 생기부's own request brings its grammar inside it (school-record-turn.ts)
       const grammar =
-        provider === 'local' &&
-        typeof request.grammar === 'string' &&
-        request.grammar.length <= 200_000
-          ? request.grammar
-          : ''
+        provider !== 'local'
+          ? ''
+          : 'grammar' in asked && asked.grammar
+            ? asked.grammar
+            : typeof request.grammar === 'string' && request.grammar.length <= 200_000
+              ? request.grammar
+              : ''
       // the feature's own adapter (품의), for this request only
       const lora = held?.lora ?? null
       const bodyExtras = {

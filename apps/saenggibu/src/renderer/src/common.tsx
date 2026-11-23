@@ -20,6 +20,7 @@ export async function askAi(
     system: string
     text: string
     examples?: readonly (readonly [string, string])[]
+    grammar?: string
     observation?: unknown
   } } = {},
 ): Promise<string> {

@@ -87,7 +87,7 @@ describe('the built-in 똑딱AI', () => {
     const body = requestBody('규칙', '요청', COMPACT_SAMPLING, undefined, [
       ['예시 요청', '예시 답'],
     ])
-    expect(body).toMatchObject({ temperature: 0.3, top_k: 20, top_p: 0.9, repeat_penalty: 1.05 })
+    expect(body).toMatchObject({ temperature: 0.3, top_k: 20, top_p: 0.9, dry_multiplier: 0.8 })
     expect(body.messages).toEqual([
       { role: 'system', content: '규칙' },
       { role: 'user', content: '예시 요청' },

@@ -60,25 +60,35 @@ export function askFailure(err: unknown): Extract<AskResult, { ok: false }> {
 
 export type RecordFormat = 'instructions' | 'compact'
 
-/** llama-server's sampling settings for one request */
+/** llama-server's sampling settings for one request, and the grammar its answer is held to */
 export interface Sampling {
   temperature: number
   top_k?: number
   top_p?: number
   repeat_penalty?: number
+  dry_multiplier?: number
+  dry_base?: number
+  dry_allowed_length?: number
+  dry_penalty_last_n?: number
+  grammar?: string
 }
 
 /**
  * The sampling of 똑딱AI's own 생기부 request. Measured 2026-11-24 on the V7-B adapter: at
  * temperature 0 the same notes came back copied or reversed and [다시 생성] gave the same text;
  * at 0.3 with top_k 20 the answers kept to the notes more often and still varied a little.
- * Higher settings (0.5~0.7) brought invented facts back.
+ * Higher settings (0.5~0.7) brought invented facts back. Words said again are held back by the
+ * DRY sampler rather than a repeat penalty: one answer had run on with one phrase for 1,900
+ * letters.
  */
 export const COMPACT_SAMPLING: Sampling = {
   temperature: 0.3,
   top_k: 20,
   top_p: 0.9,
-  repeat_penalty: 1.05,
+  dry_multiplier: 0.8,
+  dry_base: 1.75,
+  dry_allowed_length: 2,
+  dry_penalty_last_n: 512,
 }
 
 /**
@@ -91,7 +101,7 @@ export function pickTurn(
     system: string
     text: string
     temperature: number
-    compact?: { system: string; text: string; examples?: readonly Example[] }
+    compact?: { system: string; text: string; examples?: readonly Example[]; grammar?: string }
   },
   format: RecordFormat,
 ): { system: string; text: string; examples: readonly Example[]; sampling: Sampling } {
@@ -100,7 +110,10 @@ export function pickTurn(
       system: request.compact.system,
       text: request.compact.text,
       examples: request.compact.examples ?? [],
-      sampling: COMPACT_SAMPLING,
+      sampling: {
+        ...COMPACT_SAMPLING,
+        ...(request.compact.grammar ? { grammar: request.compact.grammar } : {}),
+      },
     }
   return {
     system: request.system,

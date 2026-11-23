@@ -259,6 +259,9 @@ function registerIpc(): void {
                     typeof pair[1] === 'string',
                 )
               : [],
+            ...(typeof r.compact.grammar === 'string' && r.compact.grammar.length <= 200_000
+              ? { grammar: r.compact.grammar }
+              : {}),
           }
         : undefined
     const turn = pickTurn(

@@ -16,14 +16,17 @@ import { MAX_PLAIN_BYTES } from './local-ai-turn'
  * The sampling of 똑딱AI's own 생기부 request. Measured 2026-11-24 on the V7-B adapter: at
  * temperature 0 the same notes came back copied or reversed and [다시 생성] gave the same text;
  * at 0.3 with top_k 20 the answers kept to the notes more often and still varied a little.
- * Higher settings (0.5~0.7) brought invented facts back. 똑딱생기부 uses the same
- * (apps/saenggibu/src/main/ai-turn.ts COMPACT_SAMPLING).
+ * Higher settings (0.5~0.7) brought invented facts back. Words said again are held back by the
+ * DRY sampler. 똑딱생기부 uses the same (apps/saenggibu/src/main/ai-turn.ts COMPACT_SAMPLING).
  */
 export const SCHOOL_RECORD_SAMPLING = {
   temperature: 0.3,
   top_k: 20,
   top_p: 0.9,
-  repeat_penalty: 1.05,
+  dry_multiplier: 0.8,
+  dry_base: 1.75,
+  dry_allowed_length: 2,
+  dry_penalty_last_n: 512,
 } as const
 
 export interface SchoolRecordTurn extends Pick<AiStreamRequest, 'system' | 'messages'> {
@@ -31,6 +34,8 @@ export interface SchoolRecordTurn extends Pick<AiStreamRequest, 'system' | 'mess
   examples: AgentMessage[]
   /** the sampling this form was measured with; none for the instructions */
   sampling?: typeof SCHOOL_RECORD_SAMPLING
+  /** the GBNF grammar the answer is held to (record-core.ts entryGrammar) */
+  grammar?: string
 }
 
 const bytes = (text: string): number => Buffer.byteLength(text, 'utf8')
@@ -63,5 +68,8 @@ export function schoolRecordTurn(
     messages: [{ role: 'user', text: compact.text }],
     examples,
     sampling: SCHOOL_RECORD_SAMPLING,
+    ...(typeof compact.grammar === 'string' && compact.grammar.length <= 200_000
+      ? { grammar: compact.grammar }
+      : {}),
   }
 }

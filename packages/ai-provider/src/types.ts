@@ -340,6 +340,7 @@ export interface AiStreamRequest {
     system: string
     text: string
     examples?: readonly (readonly [string, string])[]
+    grammar?: string
     observation?: unknown
   }
 }
