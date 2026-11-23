@@ -51,11 +51,18 @@ import {
   type StudentFields,
   type Work,
 } from './record-core'
-import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
+import {
+  createRecordSender,
+  recordPackageFromWork,
+  recordSendProblem,
+  type RecordSendProgress,
+} from './record-send'
 import { askRecordAi, cancelRecordAi, rewordWithAi } from './record-ai'
 import { NeisImport } from './NeisImport'
 import { applyNeisClass } from './record-neis'
 import type { NeisClassResult } from '../../../shared/neis-class'
+import type { NeisStage } from '../../../shared/api'
+import { RECORD_MODE_NAME } from '../../../shared/record-package'
 import { SimilarityCheck } from './SimilarityCheck'
 import {
   NOT_REWORDED,
@@ -73,8 +80,7 @@ import './school-record.css'
  * The teacher sets the length and any instruction, fills in the students (by hand, from
  * a class list or from a CSV), and the connected AI writes one student at a time. The
  * result stays editable, with NEIS's byte count beside it, and leaves as a copy, a CSV, or
- * straight into NEIS: [나이스로 보내기] hands the class to the 똑딱작업실 extension, which
- * types it into the NEIS grid.
+ * straight into NEIS through the app's own browser.
  */
 
 const newId = (): string => crypto.randomUUID()
@@ -121,6 +127,17 @@ const RESULT_NAME: Record<RecordMode, string> = {
   subject: '세특',
   behavior: '행발',
   activity: '특기사항',
+}
+const NEIS_STAGE_TEXT: Record<NeisStage, string> = {
+  'browser-opening': '전송용 브라우저를 열고 있어요.',
+  'waiting-login': '전송용 브라우저에서 업무포털에 로그인하고 나이스를 열어 주세요.',
+  'finding-screen': '나이스에서 보낼 글을 입력하는 화면을 열어 주세요.',
+  'waiting-selection': '나이스 표에서 입력을 시작할 학생 줄을 선택해 주세요.',
+  writing: '이름을 확인하며 학생 글을 입력하고 있어요.',
+  verifying: '입력한 값을 나이스 표에서 다시 확인하고 있어요.',
+  done: '나이스 입력을 확인했어요.',
+  failed: '나이스 전송을 멈췄어요.',
+  cancelled: '나이스 전송을 취소했어요.',
 }
 const NOTES_LABEL: Record<RecordMode, string> = {
   subject: '개별 관찰 및 특성 기록 (선택)',
@@ -276,13 +293,23 @@ export function SchoolRecord(): ReactElement {
   const [phrasesOf, setPhrasesOf] = useState<string | null>(null)
   /** a reworded text and what it was, by mode + ':' + id, to take the rewording back */
   const [reworded, setReworded] = useState<Record<string, { old: string; now: string }>>({})
-  const [sending, setSending] = useState(false)
+  const sender = useRef<ReturnType<typeof createRecordSender> | null>(null)
+  const [sending, setSending] = useState<RecordSendProgress | null>(null)
   const [sendNote, setSendNote] = useState<{
     mode: RecordMode
     ok: boolean
     text: string
-    pkgText: string
   } | null>(null)
+  useEffect(() => {
+    const task = createRecordSender(window.saenggibu, setSending, (sentMode, result) => {
+      setSendNote({ mode: sentMode, ok: result.ok, text: result.message })
+    })
+    sender.current = task
+    return () => {
+      sender.current = null
+      task.dispose()
+    }
+  }, [])
 
   const work = works[mode]
   const resultName = RESULT_NAME[mode]
@@ -742,19 +769,16 @@ export function SchoolRecord(): ReactElement {
   }
 
   // 나이스로 보내기: the app fills the NEIS grid in its own browser window
-  const sendToNeis = async () => {
+  const sendToNeis = () => {
+    if (sending) {
+      sender.current?.focus(mode)
+      return
+    }
     const found = recordSendProblem(mode, work)
     if (found) return say(found, true)
     const pkgText = JSON.stringify(recordPackageFromWork(mode, work))
-    setSending(true)
-    try {
-      const out = await sendRecord(pkgText)
-      setSendNote({ mode, ok: out.ok, text: out.message, pkgText })
-    } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
-    } finally {
-      setSending(false)
-    }
+    setSendNote(null)
+    sender.current?.start(mode, pkgText)
   }
 
   /* ---------------------------------------------------------------- saved work */
@@ -1162,7 +1186,7 @@ export function SchoolRecord(): ReactElement {
                 type="button"
                 className="sf-secondary sf-sm"
                 data-testid="record-neis"
-                disabled={anyBusy}
+                disabled={anyBusy || !!sending}
                 onClick={() => setNeisOpen(true)}
               >
                 나이스에서 가져오기
@@ -1188,11 +1212,10 @@ export function SchoolRecord(): ReactElement {
                 type="button"
                 className="sf-secondary sf-sm"
                 data-testid="record-send"
-                disabled={sending || anyBusy}
-                onClick={() => void sendToNeis()}
+                disabled={sending ? sending.mode !== mode || sending.cancelling : anyBusy}
+                onClick={sendToNeis}
               >
-                {sending && <span className="sf-spinner" aria-hidden="true" />}
-                나이스로 보내기
+                {sending?.mode === mode ? '전송용 창 보기' : '나이스로 보내기'}
               </button>
               {running[mode] ? (
                 <button
@@ -1217,6 +1240,24 @@ export function SchoolRecord(): ReactElement {
               )}
             </div>
 
+            {sending && (
+              <div className="sf-send-note" data-testid="record-send-progress">
+                <p role="status">
+                  <strong>{RECORD_MODE_NAME[sending.mode]} 나이스 전송</strong>{' '}
+                  {sending.cancelling
+                    ? '전송을 멈추고 있어요.'
+                    : (sending.hint ?? NEIS_STAGE_TEXT[sending.stage])}
+                </p>
+                <button
+                  type="button"
+                  className="sf-secondary sf-sm"
+                  disabled={sending.cancelling}
+                  onClick={() => sender.current?.cancel()}
+                >
+                  전송 취소
+                </button>
+              </div>
+            )}
             {sendNote && sendNote.mode === mode && (
               <div
                 className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}

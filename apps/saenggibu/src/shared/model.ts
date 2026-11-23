@@ -38,6 +38,14 @@ export const MODEL_FILES: readonly ModelSpec[] = [
   },
 ]
 
+export const RECORD_V10: ModelSpec = {
+  file: 'adapters/school_record-v10-94.gguf',
+  bytes: 151_376_160,
+  sha256: '81bb9ac26b743accc98accc7515a6ff3bd5765f1c10dd2a22aa4a7c341fce5c4',
+  url: '',
+}
+export const RECORD_V10_NAME = '똑딱AI 생기부 V10'
+
 /** all the files together */
 export const MODEL_BYTES = MODEL_FILES.reduce((n, f) => n + f.bytes, 0)
 

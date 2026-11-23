@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { neisRequest, isNeisTarget, type NeisDriver } from '../src/main/neis-driver'
 import { buildRecordPackage } from '../src/shared/record-package'
-import { recordPackageFromWork, recordSendProblem } from '../src/renderer/src/record/record-send'
+import {
+  createRecordSender,
+  recordPackageFromWork,
+  recordSendProblem,
+} from '../src/renderer/src/record/record-send'
+import type { NeisProgress, NeisResult } from '../src/shared/api'
 import { emptyInfo, type Work } from '../src/renderer/src/record/record-core'
 
 const pkg = (students: { name: string; text: string }[]) =>
@@ -89,4 +94,57 @@ describe('나이스로 보내기: 창체', () => {
     const text = JSON.stringify(recordPackageFromWork('activity', activityWork('elementary', long)))
     expect(await neisRequest(text, driver())).toMatchObject({ ok: true, written: 1 })
   })
+})
+
+it('전송 창을 다시 보여도 같은 요청을 쓰고 늦은 진행 알림과 응답을 무시한다', async () => {
+  let receive!: (event: NeisProgress) => void
+  const calls: { text: string; id: string; resolve: (result: NeisResult) => void }[] = []
+  const focused: string[] = []
+  const cancelled: string[] = []
+  const finished: NeisResult[] = []
+  const updates: (NeisProgress | null)[] = []
+  const sender = createRecordSender(
+    {
+      sendToNeis: (text, id) => new Promise((resolve) => calls.push({ text, id, resolve })),
+      focusNeisSend: async (id) => {
+        focused.push(id)
+      },
+      cancelNeisSend: async (id) => {
+        cancelled.push(id)
+      },
+      onNeisProgress: (handler) => {
+        receive = handler
+        return () => undefined
+      },
+    },
+    (state) => updates.push(state),
+    (_mode, result) => finished.push(result),
+  )
+
+  sender.start('subject', '처음 보낸 글')
+  sender.focus('behavior')
+  sender.focus('subject')
+  const first = calls[0]
+  expect(calls).toHaveLength(1)
+  expect(focused).toEqual([first.id])
+  sender.cancel()
+  sender.cancel()
+  expect(cancelled).toEqual([first.id])
+  const stopped = { ok: false, route: 'direct', message: '취소' } as const
+  first.resolve(stopped)
+  await Promise.resolve()
+
+  sender.start('behavior', '두 번째 글')
+  const second = calls[1]
+  receive({ requestId: first.id, stage: 'done', elapsedMs: 30 })
+  await Promise.resolve()
+  expect(updates.at(-1)).toMatchObject({ requestId: second.id, stage: 'browser-opening' })
+  expect(finished).toEqual([stopped])
+
+  sender.dispose()
+  second.resolve(stopped)
+  receive({ requestId: second.id, stage: 'cancelled', elapsedMs: 10 })
+  await Promise.resolve()
+  expect(cancelled).toEqual([first.id, second.id])
+  expect(finished).toEqual([stopped])
 })

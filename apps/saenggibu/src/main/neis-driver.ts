@@ -6,8 +6,8 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { BrowserContext, Frame } from 'playwright-core'
-import type { NeisResult } from '../shared/api'
+import type { BrowserContext, Frame, Page } from 'playwright-core'
+import type { NeisResult, NeisStage } from '../shared/api'
 import { classResult, readClassInPage, type NeisClassResult } from '../shared/neis-class'
 import {
   NEIS_BYTE_LIMIT,
@@ -15,16 +15,25 @@ import {
   parseRecordPackage,
   type RecordPackage,
 } from '../shared/record-package'
-import { fillNeis } from './neis-fill'
+import { fillNeis, pinNeis, probeNeis } from './neis-fill'
 
 export type DriverResult =
   { ok: true; written: number; next: number; startedFrom?: number } | { ok: false; reason: string }
 export interface NeisDriver {
-  send(payload: RecordPackage): Promise<DriverResult>
+  send(payload: RecordPackage, options?: NeisSendOptions): Promise<DriverResult>
+}
+
+interface NeisSendOptions {
+  signal?: AbortSignal
+  onStage?: (stage: NeisStage, hint?: string) => void
 }
 
 /** the page's text checked as a 생기부 꾸러미, then filled by the driver */
-export async function neisRequest(text: string, driver: NeisDriver): Promise<NeisResult> {
+export async function neisRequest(
+  text: string,
+  driver: NeisDriver,
+  options?: NeisSendOptions,
+): Promise<NeisResult> {
   const fail = (message: string): NeisResult => ({ ok: false, route: 'direct', message })
   if (text.length > 100_000) return fail('보낼 내용이 너무 커요.')
   const parsed = parseRecordPackage(text)
@@ -42,7 +51,7 @@ export async function neisRequest(text: string, driver: NeisDriver): Promise<Nei
   )
     return fail('1,500바이트를 넘는 학생 글이 있어요. 줄인 뒤 보내 주세요.')
   try {
-    const result = await driver.send(payload)
+    const result = await driver.send(payload, options)
     if (!result.ok) return fail(result.reason)
     return {
       ok: true,
@@ -64,6 +73,8 @@ export interface NeisDriverOptions {
   userDataDir: string
   neisUrl?: string
   executablePath?: string
+  waitTimeoutMs?: number
+  pollMs?: number
 }
 
 export function findBrowser(explicit?: string): string | undefined {
@@ -108,6 +119,89 @@ function effectiveFrameUrl(frame: Frame): string {
 }
 
 const PLACES_FILE = 'neis-place.json'
+type OpenResult = { ok: true } | { ok: false; reason: string }
+const CANCELLED = '나이스 전송을 취소했어요.'
+const WINDOW_CLOSED = '전송용 브라우저 창을 닫았어요. 다시 보내 주세요.'
+const TIMEOUT = '나이스 전송 대기 시간이 지났어요.'
+const MULTIPLE_SCREENS = '입력 화면이 여러 개예요. 보낼 나이스 화면 하나만 남겨 주세요.'
+const MULTIPLE_ROWS =
+  '입력할 표나 여러 학생 줄이 선택돼 있어요. 표 하나에서 학생 한 줄만 선택해 주세요.'
+
+/** Only race preparation. An in-flight write keeps exclusive ownership until it settles. */
+function interruptible<T>(
+  work: Promise<T>,
+  signal: AbortSignal,
+  disposeLate?: (value: T) => void,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const stop = () => reject(signal.reason)
+    signal.addEventListener('abort', stop, { once: true })
+    work.then(
+      (value) => {
+        signal.removeEventListener('abort', stop)
+        if (signal.aborted) disposeLate?.(value)
+        else resolve(value)
+      },
+      (error) => {
+        signal.removeEventListener('abort', stop)
+        reject(error)
+      },
+    )
+    if (signal.aborted) stop()
+  })
+}
+
+/** Navigation replaces frames; a scan made across such a change is stale. */
+function observeBrowser(context: BrowserContext, abort: () => void) {
+  let revision = 0
+  let wake: (() => void) | undefined
+  const pages = new Set<Page>()
+  const changed = () => {
+    revision++
+    wake?.()
+  }
+  const pageClosed = (page: Page) => {
+    pages.delete(page)
+    if (context.pages().every((page) => page.isClosed())) abort()
+    changed()
+  }
+  const track = (page: Page) => {
+    pages.add(page)
+    page.once('close', pageClosed)
+    changed()
+  }
+  context.pages().forEach(track)
+  context.on('page', track)
+  context.on('framenavigated', changed)
+  context.on('framedetached', changed)
+  context.on('close', abort)
+  return {
+    get revision() {
+      return revision
+    },
+    pause(ms: number, signal: AbortSignal) {
+      return new Promise<void>((resolve) => {
+        const end = () => {
+          clearTimeout(timer)
+          wake = undefined
+          signal.removeEventListener('abort', end)
+          resolve()
+        }
+        const timer = setTimeout(end, ms)
+        wake = end
+        signal.addEventListener('abort', end, { once: true })
+        if (signal.aborted) end()
+      })
+    },
+    dispose() {
+      for (const page of pages) page.off('close', pageClosed)
+      context.off('page', track)
+      context.off('framenavigated', changed)
+      context.off('framedetached', changed)
+      context.off('close', abort)
+    },
+  }
+}
 
 type Launch = (options: NeisDriverOptions) => Promise<BrowserContext>
 async function launchBrowser(options: NeisDriverOptions): Promise<BrowserContext> {
@@ -125,6 +219,9 @@ async function launchBrowser(options: NeisDriverOptions): Promise<BrowserContext
 
 export class PlaywrightNeisDriver implements NeisDriver {
   private context: BrowserContext | null = null
+  private opening: Promise<OpenResult> | null = null
+  private sending: AbortController | null = null
+  private closed = false
   private busy = false
   constructor(
     private readonly options: NeisDriverOptions,
@@ -153,43 +250,146 @@ export class PlaywrightNeisDriver implements NeisDriver {
     } catch {}
   }
 
-  async send(payload: RecordPackage): Promise<DriverResult> {
+  async send(payload: RecordPackage, options: NeisSendOptions = {}): Promise<DriverResult> {
     if (this.busy)
       return { ok: false, reason: '다른 입력이 진행 중이에요. 끝난 뒤 다시 보내 주세요.' }
     this.busy = true
+    const controller = new AbortController()
+    this.sending = controller
+    const { signal } = controller
+    const cancel = () => controller.abort(CANCELLED)
+    options.signal?.addEventListener('abort', cancel, { once: true })
+    if (options.signal?.aborted || this.closed) cancel()
+    const timeoutMs = this.options.waitTimeoutMs ?? 600_000
+    const deadline = Date.now() + timeoutMs
+    const timeout = setTimeout(() => controller.abort(TIMEOUT), timeoutMs)
+    let browser: ReturnType<typeof observeBrowser> | undefined
+    let lastStage: NeisStage | undefined
+    let lastHint: string | undefined
+    const stage = (value: NeisStage, hint?: string) => {
+      if (lastStage === value && lastHint === hint) return
+      lastStage = value
+      lastHint = hint
+      options.onStage?.(value, hint)
+    }
+    const fail = (reason: string): DriverResult => {
+      stage(signal.reason === CANCELLED ? 'cancelled' : 'failed')
+      return { ok: false, reason }
+    }
     try {
-      const opened = await this.open()
-      if (!opened.ok) return opened
-      if (!this.context) return { ok: false, reason: '전용 브라우저를 열지 못했어요.' }
+      signal.throwIfAborted()
+      stage('browser-opening')
+      const opened = await this.open(signal)
+      if (!opened.ok) return fail(opened.reason)
+      signal.throwIfAborted()
+      const context = this.context
+      if (!context) return fail(WINDOW_CLOSED)
+      browser = observeBrowser(context, () => controller.abort(WINDOW_CLOSED))
+      await this.showNeis(signal)
 
-      const candidates: Frame[] = []
-      for (const page of this.context.pages()) {
-        for (const frame of page.frames()) {
-          const url = effectiveFrameUrl(frame)
-          if (!isNeisTarget(url)) continue
-          this.rememberOrigin(url)
-          const ready = (await frame.locator('.cl-grid-row.cl-selected:visible').count()) > 0
-          if (ready) candidates.push(frame)
+      type Ready = Extract<Awaited<ReturnType<typeof probeNeis>>, { kind: 'ready' }>
+      const origins = new Set<string>()
+      while (true) {
+        signal.throwIfAborted()
+        const revision = browser.revision
+        const screens: { frame: Frame; state: Ready | { kind: 'selection' | 'multiple' } }[] = []
+        let onNeis = false
+        let scanFailed = false
+        for (const page of context.pages()) {
+          for (const frame of page.frames()) {
+            signal.throwIfAborted()
+            const url = effectiveFrameUrl(frame)
+            if (page.isClosed() || !isNeisTarget(url)) continue
+            const host = new URL(url).hostname
+            onNeis ||= host !== 'www.neis.go.kr' && host !== 'neis.go.kr'
+            const origin = new URL(url).origin
+            if (!origins.has(origin)) {
+              this.rememberOrigin(origin)
+              origins.add(origin)
+            }
+            const state = await interruptible(
+              probeNeis(frame, payload.mode).catch(() => null),
+              signal,
+            )
+            if (!state || state.kind === 'changed') {
+              scanFailed = true
+            } else if (state.kind === 'ready') {
+              screens.push({ frame, state })
+            } else if (state.kind !== 'no-screen') {
+              screens.push({ frame, state: { kind: state.kind } })
+            }
+          }
         }
+        signal.throwIfAborted()
+        if (revision !== browser.revision) continue
+        const [screen] = screens
+        if (
+          !scanFailed &&
+          screens.length === 1 &&
+          screen.state.kind === 'ready' &&
+          !screen.state.editing
+        ) {
+          const { frame, state } = screen
+          const grid = await interruptible(
+            pinNeis(frame, payload.mode, state.identity).catch(() => null),
+            signal,
+            (late) => {
+              void late?.dispose().catch(() => undefined)
+            },
+          )
+          if (grid) {
+            try {
+              const foreground = await interruptible(
+                frame
+                  .page()
+                  .bringToFront()
+                  .then(
+                    () => true,
+                    () => false,
+                  ),
+                signal,
+              )
+              signal.throwIfAborted()
+              if (!foreground || revision !== browser.revision || frame.isDetached()) continue
+              stage('writing')
+              const result = await fillNeis(frame, grid, state, payload, {
+                signal,
+                deadline,
+                onVerifying: () => stage('verifying'),
+              })
+              if (!result.ok) return fail(result.reason)
+              stage('done')
+              return result
+            } finally {
+              await grid.dispose().catch(() => undefined)
+            }
+          }
+        }
+        if (screens.length > 1) stage('waiting-selection', MULTIPLE_SCREENS)
+        else if (screen)
+          stage('waiting-selection', screen.state.kind === 'multiple' ? MULTIPLE_ROWS : undefined)
+        else stage(onNeis ? 'finding-screen' : 'waiting-login')
+        await browser.pause(this.options.pollMs ?? 500, signal)
       }
-      if (candidates.length > 1)
-        return {
-          ok: false,
-          reason:
-            '입력 가능한 나이스 화면이 여러 개예요. 보낼 화면 하나만 남긴 뒤 다시 보내 주세요.',
-        }
-      if (!candidates.length) {
-        await this.showNeis()
-        return {
-          ok: false,
-          reason:
-            '전용 브라우저에서 업무포털에 로그인하고 나이스 입력 화면의 첫 학생 줄을 선택한 뒤, 앱에서 다시 보내 주세요.',
-        }
+    } catch {
+      if (signal.reason === TIMEOUT) {
+        const hint =
+          lastHint ??
+          (lastStage === 'waiting-selection'
+            ? '나이스에서 보낼 학생 줄을 선택해 주세요.'
+            : '전용 브라우저에서 업무포털 로그인과 나이스 입력 화면을 확인해 주세요.')
+        return fail(`${TIMEOUT} ${hint}`)
       }
-      const frame = candidates[0]
-      await frame.page().bringToFront()
-      return await fillNeis(frame, payload)
+      return fail(
+        signal.aborted
+          ? String(signal.reason)
+          : '브라우저 연결이 끊겼거나 나이스 화면이 바뀌었어요. 화면을 확인해 주세요.',
+      )
     } finally {
+      browser?.dispose()
+      clearTimeout(timeout)
+      options.signal?.removeEventListener('abort', cancel)
+      this.sending = null
       this.busy = false
     }
   }
@@ -251,10 +451,27 @@ export class PlaywrightNeisDriver implements NeisDriver {
   }
 
   /** the app's own browser window, opened once (and again after the teacher closed it) */
-  private async open(): Promise<{ ok: true } | { ok: false; reason: string }> {
+  private async open(signal?: AbortSignal): Promise<OpenResult> {
+    // A cancelled launch can still be starting at the OS level. Let it release the
+    // persistent profile before another operation tries to acquire it.
+    if (this.opening) {
+      if (signal) await interruptible(this.opening, signal)
+      else await this.opening
+    }
+    signal?.throwIfAborted()
+    if (this.closed) return { ok: false, reason: WINDOW_CLOSED }
     if (this.context) return { ok: true }
+    const opening = this.launchContext(signal).finally(() => {
+      this.opening = null
+    })
+    this.opening = opening
+    return signal ? interruptible(opening, signal) : opening
+  }
+
+  private async launchContext(signal?: AbortSignal): Promise<OpenResult> {
+    let context: BrowserContext
     try {
-      this.context = await this.launch(this.options)
+      context = await this.launch(this.options)
     } catch (err) {
       const msg = String((err as Error)?.message ?? err)
       if (/SingletonLock|ProcessSingleton|profile.*in use|already in use/i.test(msg)) {
@@ -270,7 +487,11 @@ export class PlaywrightNeisDriver implements NeisDriver {
           '전용 브라우저를 열지 못했어요. Chrome 또는 Edge 설치와 열려 있는 전송용 창을 확인해 주세요.',
       }
     }
-    const context = this.context
+    if (this.closed || signal?.aborted) {
+      await context.close().catch(() => undefined)
+      return { ok: false, reason: WINDOW_CLOSED }
+    }
+    this.context = context
     context.on('close', () => {
       if (this.context === context) this.context = null
     })
@@ -279,22 +500,63 @@ export class PlaywrightNeisDriver implements NeisDriver {
   }
 
   /** NEIS in the window, in front (the place used last time, or the national portal) */
-  private async showNeis(): Promise<void> {
-    if (!this.context) return
+  private async showNeis(signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted()
+    const context = this.context
+    if (!context) return
     const url = this.options.neisUrl || this.readSavedOrigin() || 'https://www.neis.go.kr'
-    let page = this.context.pages().find((p) => isNeisTarget(p.url()))
+    let page = context.pages().find((p) => isNeisTarget(p.url()))
     if (!page) {
-      page = this.context.pages()[0] ?? (await this.context.newPage())
-      if (page.url() === 'about:blank')
-        await page.goto(url, { timeout: 20_000, waitUntil: 'domcontentloaded' })
+      page = context.pages()[0]
+      if (!page) {
+        const newPage = context.newPage()
+        page = signal
+          ? await interruptible(newPage, signal, (late) => {
+              void late.close().catch(() => undefined)
+            })
+          : await newPage
+      }
+      signal?.throwIfAborted()
+      if (page.url() === 'about:blank') {
+        const navigation = page.goto(url, {
+          timeout: 20_000,
+          waitUntil: signal ? 'commit' : 'domcontentloaded',
+        })
+        if (signal)
+          await interruptible(
+            navigation.catch(() => undefined),
+            signal,
+          )
+        else await navigation
+      }
     }
-    await page.bringToFront()
+    signal?.throwIfAborted()
+    const foreground = page.bringToFront()
+    if (signal)
+      await interruptible(
+        foreground.catch(() => undefined),
+        signal,
+      )
+    else await foreground
+  }
+
+  async focusSendWindow(): Promise<void> {
+    if (!this.sending || this.sending.signal.aborted) return
+    const pages = this.context?.pages().filter((page) => !page.isClosed())
+    const page =
+      pages?.find((page) =>
+        page.frames().some((frame) => isNeisTarget(effectiveFrameUrl(frame))),
+      ) ?? pages?.at(-1)
+    await page?.bringToFront().catch(() => undefined)
   }
 
   async close(): Promise<void> {
+    this.closed = true
+    this.sending?.abort(WINDOW_CLOSED)
     const context = this.context
     this.context = null
     await context?.close()
+    await this.opening
   }
 }
 

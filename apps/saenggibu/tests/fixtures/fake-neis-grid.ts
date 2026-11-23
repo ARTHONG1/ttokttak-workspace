@@ -20,6 +20,12 @@ export interface FakeNeis {
 }
 
 export interface FakeNeisOptions {
+  /** The editable column as labelled on this screen. */
+  heading?: string
+  /** The editor closes, but the grid rejects the change. */
+  discard?: boolean
+  /** Enter leaves the editor open. The grid commits on blur. */
+  blurCommit?: boolean
   /** Tab does not leave this row (0 first) */
   stuckAt?: number
   /** F2 opens no editor on this row */
@@ -41,6 +47,14 @@ export function mountFakeNeis(
   }
   const grid = el('div', 'cl-grid')
   grid.setAttribute('role', 'grid')
+  const header = el('div', 'cl-grid-header')
+  for (const label of ['번호', '성명', options.heading ?? '세부능력 및 특기사항']) {
+    const column = el('div', 'cl-grid-cell')
+    column.setAttribute('role', 'columnheader')
+    column.textContent = label
+    header.append(column)
+  }
+  grid.append(header)
   const rowEls = rows.map((row, i) => {
     const rowEl = el('div', 'cl-grid-row')
     rowEl.setAttribute('aria-rowindex', String(i + 1))
@@ -76,13 +90,26 @@ export function mountFakeNeis(
       const editor = doc.createElement('textarea')
       editor.className = 'cl-text'
       editor.value = texts[selected]
+      if (options.blurCommit) {
+        const index = selected
+        editor.addEventListener(
+          'blur',
+          () => {
+            texts[index] = editor.value
+            editor.remove()
+            last.textContent = texts[index]
+          },
+          { once: true },
+        )
+      }
       last.textContent = ''
       last.append(editor)
       editor.focus()
       return
     }
     if (e.key === 'Enter' && target.tagName === 'TEXTAREA') {
-      texts[selected] = (target as HTMLTextAreaElement).value
+      if (options.blurCommit) return
+      if (!options.discard) texts[selected] = (target as HTMLTextAreaElement).value
       target.remove()
       last.textContent = texts[selected]
       last.focus()

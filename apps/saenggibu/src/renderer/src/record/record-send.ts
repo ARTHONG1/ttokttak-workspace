@@ -8,7 +8,7 @@ import {
   writtenCount,
   type RecordPackage,
 } from '../../../shared/record-package'
-import type { NeisResult } from '../../../shared/api'
+import type { NeisProgress, NeisResult, SaenggibuApi } from '../../../shared/api'
 import { byteLimit, neisBytes, sessionTitle, type RecordMode, type Work } from './record-core'
 
 /**
@@ -51,10 +51,72 @@ export function recordSendProblem(mode: RecordMode, work: Work): string | null {
   return null
 }
 
-/** the main process fills NEIS; its answer goes back to the page as it is */
-export function sendRecord(
-  text: string,
-  send: (text: string) => Promise<NeisResult> = (t) => window.saenggibu.sendToNeis(t),
-): Promise<NeisResult> {
-  return send(text)
+export interface RecordSendProgress extends NeisProgress {
+  mode: RecordMode
+  cancelling: boolean
+}
+
+/** Keep one request and its original payload until the main process has stopped writing. */
+export function createRecordSender(
+  api: Pick<SaenggibuApi, 'sendToNeis' | 'focusNeisSend' | 'cancelNeisSend' | 'onNeisProgress'>,
+  update: (progress: RecordSendProgress | null) => void,
+  finish: (mode: RecordMode, result: NeisResult) => void,
+) {
+  let active: { progress: RecordSendProgress } | null = null
+  let disposed = false
+  const unsubscribe = api.onNeisProgress((event) => {
+    if (active?.progress.requestId !== event.requestId) return
+    active.progress = {
+      ...event,
+      mode: active.progress.mode,
+      cancelling: active.progress.cancelling,
+    }
+    update(active.progress)
+  })
+  return {
+    start(mode: RecordMode, text: string) {
+      if (active || disposed) return
+      const requestId = crypto.randomUUID()
+      active = {
+        progress: { requestId, mode, stage: 'browser-opening', elapsedMs: 0, cancelling: false },
+      }
+      update(active.progress)
+      const settle = (result: NeisResult) => {
+        if (active?.progress.requestId !== requestId) return
+        active = null
+        update(null)
+        finish(mode, result)
+      }
+      void api.sendToNeis(text, requestId).then(settle, () =>
+        settle({
+          ok: false,
+          route: 'direct',
+          message: '나이스 전송 연결이 끊겼어요. 입력 화면을 확인해 주세요.',
+        }),
+      )
+    },
+    focus(mode: RecordMode) {
+      if (active?.progress.mode !== mode || active.progress.cancelling) return
+      void api.focusNeisSend(active.progress.requestId).catch(() => undefined)
+    },
+    cancel() {
+      if (!active || active.progress.cancelling) return
+      const request = active
+      request.progress = { ...request.progress, cancelling: true }
+      update(request.progress)
+      void api.cancelNeisSend(request.progress.requestId).catch(() => {
+        if (active !== request) return
+        request.progress = { ...request.progress, cancelling: false }
+        update(request.progress)
+      })
+    },
+    dispose() {
+      disposed = true
+      const request = active
+      active = null
+      unsubscribe()
+      if (request && !request.progress.cancelling)
+        void api.cancelNeisSend(request.progress.requestId).catch(() => undefined)
+    },
+  }
 }

@@ -58,6 +58,24 @@ export type NeisResult =
   | { ok: true; route: 'direct'; message: string; written: number; next: number }
   | { ok: false; route: 'direct'; message: string }
 
+export type NeisStage =
+  | 'browser-opening'
+  | 'waiting-login'
+  | 'finding-screen'
+  | 'waiting-selection'
+  | 'writing'
+  | 'verifying'
+  | 'done'
+  | 'failed'
+  | 'cancelled'
+
+export interface NeisProgress {
+  requestId: string
+  stage: NeisStage
+  elapsedMs: number
+  hint?: string
+}
+
 /** window.saenggibu: everything the page reaches outside itself */
 export interface SaenggibuApi {
   ask(request: AskRequest): Promise<AskResult>
@@ -73,7 +91,10 @@ export interface SaenggibuApi {
   openModelPage(): Promise<void>
   /** null = canceled */
   readTableFile(): Promise<TableFileResult | null>
-  sendToNeis(text: string): Promise<NeisResult>
+  sendToNeis(text: string, requestId: string): Promise<NeisResult>
+  focusNeisSend(requestId: string): Promise<void>
+  cancelNeisSend(requestId: string): Promise<void>
+  onNeisProgress(handler: (progress: NeisProgress) => void): () => void
   /** 나이스에서 가져오기: the class list and 누가기록 of the NEIS screen in the app's browser */
   readNeisClass(): Promise<NeisClassResult>
   version(): Promise<string>
@@ -98,6 +119,9 @@ export const CHANNELS = {
   openModelPage: 'saenggibu:open-model-page',
   readTableFile: 'saenggibu:read-table-file',
   sendToNeis: 'saenggibu:send-to-neis',
+  focusNeisSend: 'saenggibu:focus-neis-send',
+  cancelNeisSend: 'saenggibu:cancel-neis-send',
+  neisProgress: 'saenggibu:neis-progress',
   readNeisClass: 'saenggibu:read-neis-class',
   version: 'saenggibu:version',
   unsaved: 'saenggibu:unsaved',

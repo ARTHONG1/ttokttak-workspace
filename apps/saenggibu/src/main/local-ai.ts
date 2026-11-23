@@ -80,7 +80,7 @@ export function requestBody(
   return {
     model: AI_MODEL,
     messages: [
-      { role: 'system', content: system },
+      ...(system ? [{ role: 'system', content: system }] : []),
       { role: 'user', content: text },
     ],
     temperature,

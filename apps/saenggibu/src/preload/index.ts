@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import { CHANNELS, type AiState, type SaenggibuApi } from '../shared/api'
+import { CHANNELS, type AiState, type NeisProgress, type SaenggibuApi } from '../shared/api'
 
 const api: SaenggibuApi = {
   ask: (request) => ipcRenderer.invoke(CHANNELS.ask, request),
@@ -15,7 +15,14 @@ const api: SaenggibuApi = {
   importModel: () => ipcRenderer.invoke(CHANNELS.importModel),
   openModelPage: () => ipcRenderer.invoke(CHANNELS.openModelPage),
   readTableFile: () => ipcRenderer.invoke(CHANNELS.readTableFile),
-  sendToNeis: (text) => ipcRenderer.invoke(CHANNELS.sendToNeis, text),
+  sendToNeis: (text, requestId) => ipcRenderer.invoke(CHANNELS.sendToNeis, text, requestId),
+  focusNeisSend: (requestId) => ipcRenderer.invoke(CHANNELS.focusNeisSend, requestId),
+  cancelNeisSend: (requestId) => ipcRenderer.invoke(CHANNELS.cancelNeisSend, requestId),
+  onNeisProgress(handler) {
+    const listener = (_event: IpcRendererEvent, progress: NeisProgress) => handler(progress)
+    ipcRenderer.on(CHANNELS.neisProgress, listener)
+    return () => ipcRenderer.removeListener(CHANNELS.neisProgress, listener)
+  },
   readNeisClass: () => ipcRenderer.invoke(CHANNELS.readNeisClass),
   version: () => ipcRenderer.invoke(CHANNELS.version),
   setUnsaved: (unsaved) => ipcRenderer.send(CHANNELS.unsaved, unsaved === true),

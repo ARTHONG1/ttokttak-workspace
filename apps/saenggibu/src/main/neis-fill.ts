@@ -1,206 +1,366 @@
-import type { Frame } from 'playwright-core'
-import type { RecordPackage } from '../shared/record-package'
+import type { ElementHandle, Frame } from 'playwright-core'
+import type { RecordMode, RecordPackage } from '../shared/record-package'
 
-const rowSelector = '.cl-grid-row.cl-selected'
-const cellSelector = 'div[role="gridcell"]'
-const editorSelector = 'textarea.cl-text, .cl-grid-row.cl-selected textarea'
-const compact = (value: string): string => value.replace(/\s+/g, '')
-const normSpace = (value: string): string => value.replace(/\s+/g, ' ').trim()
+const HEADINGS: Record<RecordMode, string[]> = {
+  subject: [
+    '세부능력및특기사항',
+    '교과별세부능력및특기사항',
+    '과목별세부능력및특기사항',
+    '개인별세부능력및특기사항',
+  ],
+  behavior: ['행동특성및종합의견'],
+  activity: [
+    '창의적체험활동특기사항',
+    '자율활동특기사항',
+    '자율자치활동특기사항',
+    '동아리활동특기사항',
+    '진로활동특기사항',
+    '봉사활동특기사항',
+  ],
+}
 
-type SelectionSnapshot =
-  | { ok: true; identity: string; nameCells: string[]; existingText: string }
-  | { ok: false; kind: 'none' | 'ambiguous-grid' | 'multi-row' | 'malformed' }
+type Selection = { kind: 'ready'; identity: string; name: string; text: string; editing: boolean }
+type NotReady = { kind: 'no-screen' | 'selection' | 'multiple' | 'changed' }
+type Grid = ElementHandle<HTMLElement>
+interface GridQuery {
+  headings: string[]
+  grid?: HTMLElement
+  editor?: HTMLTextAreaElement
+  identity?: string
+  action?: 'pin' | 'cell' | 'editor' | 'fill' | 'blur' | 'discard'
+  text?: string
+  deadline?: number
+}
 
-/** Serialized into the page; keep this function independent of module state. */
-function readSelection(): SelectionSnapshot {
-  const visible = (el: Element): boolean => (el as HTMLElement).getClientRects().length > 0
-  const rows = Array.from(
-    document.querySelectorAll<HTMLElement>('.cl-grid-row.cl-selected'),
-  ).filter(visible)
-  if (rows.length === 0) return { ok: false, kind: 'none' }
-  const grids = new Set(rows.map((row) => row.closest('.cl-grid') ?? document.body))
-  if (grids.size > 1) return { ok: false, kind: 'ambiguous-grid' }
-  const rowIndexes = new Set(
-    rows
-      .map((row) => row.getAttribute('aria-rowindex') ?? row.getAttribute('data-rowindex'))
-      .filter((v): v is string => Boolean(v)),
+/** Runs in the frame. Readiness is read-only. Mutations revalidate the pinned grid and row. */
+function neisGrid(query: GridQuery): Selection | NotReady | HTMLElement {
+  const changed = { kind: 'changed' } as const
+  const origin = window.origin === 'null' ? null : new URL(window.origin)
+  if (
+    origin?.protocol !== 'https:' ||
+    origin.hostname === 'open.neis.go.kr' ||
+    !(origin.hostname === 'neis.go.kr' || origin.hostname.endsWith('.neis.go.kr'))
   )
-  if (rowIndexes.size > 1) return { ok: false, kind: 'multi-row' }
-  // eXBuilder6 draws a row with frozen columns as two .cl-grid-row.cl-selected parts in one .cl-grid:
-  // the first part's right-most cell holds the editable text, while fixed columns carry the student name.
-  // Note: an empty text cell can have 0px height before F2 opens its editor, so do not filter cells by rect height.
-  const primaryCells = Array.from(rows[0].querySelectorAll<HTMLElement>('div[role="gridcell"]'))
-  const textCell = primaryCells[primaryCells.length - 1]
-  if (!textCell) return { ok: false, kind: 'malformed' }
-  const allCells = rows.flatMap((row) =>
-    Array.from(row.querySelectorAll<HTMLElement>('div[role="gridcell"]')),
+    return query.grid ? changed : { kind: 'no-screen' }
+  if (query.deadline !== undefined && Date.now() >= query.deadline) return changed
+
+  const visible = (el: Element): boolean =>
+    el.getClientRects().length > 0 && getComputedStyle(el).visibility === 'visible'
+  const belongsTo = (el: Element, grid: Element): boolean => el.closest('.cl-grid') === grid
+  const label = (el: Element): string =>
+    (el.getAttribute('aria-label') || el.textContent || '').replace(/[\s·ㆍ]/g, '')
+  const grids = Array.from(document.querySelectorAll<HTMLElement>('.cl-grid')).filter(visible)
+  const candidates = grids.flatMap((grid) => {
+    const headers = (selector: string) =>
+      Array.from(grid.querySelectorAll(selector)).filter(
+        (col) => belongsTo(col, grid) && visible(col),
+      )
+    const accessible = headers('[role="columnheader"]')
+    const columns = accessible.length ? accessible : headers('.cl-grid-header .cl-grid-cell')
+    const names = columns.filter((col) => ['성명', '이름', '학생명'].includes(label(col)))
+    const entries = columns.filter((col) => query.headings.includes(label(col)))
+    return names.length === 1 && entries.length === 1
+      ? [{ grid, columns, nameColumn: names[0], textColumn: entries[0] }]
+      : []
+  })
+  if (candidates.length === 0) return { kind: 'no-screen' }
+  if (candidates.length > 1) return { kind: 'multiple' }
+  const { grid, columns, nameColumn, textColumn } = candidates[0]
+  if (query.grid && query.grid !== grid) return changed
+  const rows = Array.from(grid.querySelectorAll<HTMLElement>('.cl-grid-row.cl-selected')).filter(
+    (row) => belongsTo(row, grid) && visible(row),
   )
-  const otherCells = allCells.filter((cell) => cell !== textCell)
-  if (otherCells.length === 0) return { ok: false, kind: 'malformed' }
-  const nameCells = otherCells
-    .map((cell) => (cell.textContent ?? '').replace(/\s+/g, ''))
-    .filter(Boolean)
-  const identity = JSON.stringify([
-    rows[0].getAttribute('aria-rowindex'),
-    rows[0].getAttribute('data-rowindex'),
-    ...otherCells.map((cell) => (cell.textContent ?? '').replace(/\s+/g, '')),
-  ])
-  return {
-    ok: true,
-    identity,
-    nameCells,
-    existingText: (textCell.textContent ?? '').trim(),
+  if (!rows.length) return { kind: 'selection' }
+  const rowIndex = (row: HTMLElement) =>
+    row.getAttribute('aria-rowindex') ?? row.getAttribute('data-rowindex')
+  if (
+    rows.length > 2 ||
+    (rows.length === 2 && (!rowIndex(rows[0]) || rowIndex(rows[0]) !== rowIndex(rows[1])))
+  )
+    return { kind: 'multiple' }
+
+  // Frozen columns can split one selected student across panes. Use explicit column indexes
+  // for split panes, and use DOM order only if a row contains all the identified headers.
+  const rowCells = rows.map((row) =>
+    Array.from(row.querySelectorAll<HTMLElement>('[role="gridcell"]')).filter(
+      (cell) => belongsTo(cell, grid) && cell.closest('.cl-grid-row') === row,
+    ),
+  )
+  const cells = rowCells.flat()
+  const findCell = (column: Element): HTMLElement | undefined => {
+    const at = columns.indexOf(column)
+    const index = column.getAttribute('aria-colindex') ?? String(at + 1)
+    const indexed = cells.filter((cell) => cell.getAttribute('aria-colindex') === index)
+    if (indexed.length) return indexed.length === 1 ? indexed[0] : undefined
+    if (
+      rowCells.length === 1 &&
+      rowCells[0].length === columns.length &&
+      !cells.some((cell) => cell.hasAttribute('aria-colindex'))
+    )
+      return cells[at]
+    return undefined
   }
+  const nameCell = findCell(nameColumn)
+  const cell = findCell(textColumn)
+  const name = (nameCell?.textContent ?? '').replace(/\s+/g, '')
+  if (!cell || !nameCell || !name || !visible(nameCell)) return { kind: 'selection' }
+  const identity = JSON.stringify([
+    rowIndex(rows[0]),
+    label(textColumn),
+    ...cells.filter((other) => other !== cell).map((other) => (other.textContent ?? '').trim()),
+  ])
+  if (query.identity !== undefined && query.identity !== identity) return changed
+
+  const text = (cell.textContent ?? '').trim()
+  const editors = Array.from(grid.querySelectorAll('textarea')).filter(visible)
+  const editor =
+    editors.length === 1 &&
+    cell.contains(editors[0]) &&
+    !editors[0].disabled &&
+    !editors[0].readOnly
+      ? editors[0]
+      : null
+  if (query.action === 'pin') return editors.length ? changed : grid
+  if (query.action === 'cell') return editors.length ? changed : cell
+  if (query.action === 'editor')
+    return editor &&
+      document.activeElement === editor &&
+      (query.text === undefined || editor.value === query.text)
+      ? editor
+      : changed
+  if (query.editor && query.editor !== editor) return changed
+  const update = (editor: HTMLTextAreaElement, value: string) => {
+    editor.value = value
+    editor.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+  if (query.action === 'fill') {
+    if (
+      !editor ||
+      document.activeElement !== editor ||
+      editor.value ||
+      text ||
+      query.text === undefined
+    )
+      return changed
+    update(editor, query.text)
+    if (editor.value !== query.text) return changed
+    editor.setSelectionRange(editor.value.length, editor.value.length)
+  }
+  if (query.action === 'blur' || query.action === 'discard') {
+    // A textarea that leaves Enter to the browser may append one line break.
+    // Only touch the same editor while it still contains this request's draft.
+    if (
+      !editor ||
+      query.text === undefined ||
+      (editor.value !== query.text && editor.value !== query.text + '\n')
+    )
+      return changed
+    if (query.action === 'discard') {
+      update(editor, '')
+    } else {
+      if (document.activeElement !== editor) return changed
+      if (editor.value !== query.text) update(editor, query.text)
+      editor.blur()
+    }
+  } else if (query.editor && editor?.value !== query.text) {
+    return changed
+  }
+  return { kind: 'ready', identity, name, text, editing: editors.length > 0 }
+}
+
+export async function probeNeis(frame: Frame, mode: RecordMode): Promise<Selection | NotReady> {
+  const state = await frame.evaluate(neisGrid, { headings: HEADINGS[mode] })
+  return state as Selection | NotReady
+}
+
+export async function pinNeis(
+  frame: Frame,
+  mode: RecordMode,
+  identity: string,
+): Promise<Grid | null> {
+  const handle = await frame.evaluateHandle(neisGrid, {
+    headings: HEADINGS[mode],
+    identity,
+    action: 'pin' as const,
+  })
+  const grid = handle.asElement() as Grid | null
+  if (!grid) await handle.dispose()
+  return grid
 }
 
 export async function fillNeis(
   frame: Frame,
+  grid: Grid,
+  initial: Selection,
   pkg: RecordPackage,
+  options: { signal: AbortSignal; deadline: number; onVerifying: () => void },
 ): Promise<
   { ok: true; written: number; next: number; startedFrom?: number } | { ok: false; reason: string }
 > {
+  const { signal, deadline } = options
+  const active = () => {
+    signal.throwIfAborted()
+    if (Date.now() >= deadline) throw new Error('neis-timeout')
+  }
+  const args = { headings: HEADINGS[pkg.mode], grid, deadline }
+  type Query = Omit<GridQuery, 'grid' | 'headings' | 'deadline' | 'editor'> & {
+    editor?: ElementHandle<HTMLTextAreaElement>
+  }
+  const inspect = async (query: Query = {}) => {
+    active()
+    const state = await frame.evaluate(neisGrid, { ...args, ...query })
+    active()
+    return state as Selection | NotReady
+  }
+  const target = (query: Query) => frame.evaluateHandle(neisGrid, { ...args, ...query })
+  const press = async (
+    action: 'cell' | 'editor',
+    identity: string,
+    key: string,
+    text?: string,
+  ): Promise<boolean> => {
+    active()
+    const handle = await target({ action, identity, text })
+    try {
+      active()
+      const element = handle.asElement() as ElementHandle<HTMLElement> | null
+      if (!element) return false
+      await element.press(key, { timeout: 1_000 })
+      active()
+      return true
+    } finally {
+      await handle.dispose()
+    }
+  }
+  const poll = async (ms: number, read: () => Promise<boolean>): Promise<boolean> => {
+    const until = Date.now() + ms
+    do {
+      if (await read()) return true
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    } while (Date.now() < until)
+    return false
+  }
+  const write = async (identity: string, text: string): Promise<string | null> => {
+    if (!(await press('cell', identity, 'F2'))) return '입력할 학생 선택이 바뀌었어요.'
+    const readRow = async () => {
+      const state = await inspect({ identity })
+      if (state.kind !== 'ready') throw new Error('neis-selection-changed')
+      return state
+    }
+    if (!(await poll(2_000, async () => (await readRow()).editing)))
+      return '나이스 입력 칸을 열지 못했어요.'
+    const handle = await target({ action: 'editor', identity })
+    const editor = handle.asElement() as ElementHandle<HTMLTextAreaElement> | null
+    let filled = false
+    let verified = false
+    try {
+      if (!editor) return '선택한 학생의 편집기를 확인하지 못했어요.'
+      filled = true // The page may have placed the draft before its reply is interrupted.
+      const entered = await inspect({ action: 'fill', identity, text, editor })
+      if (entered.kind !== 'ready') {
+        filled = false
+        return '입력 칸이 바뀌었거나 편집기에 다른 글이 있어요. 나이스 화면을 확인해 주세요.'
+      }
+      if (
+        (await inspect({ identity, text, editor })).kind !== 'ready' ||
+        !(await editor.evaluate((area) => document.activeElement === area))
+      )
+        return '입력할 학생 선택이 바뀌었어요.'
+      active()
+      await editor.press('Enter', { timeout: 1_000 })
+      active()
+      options.onVerifying()
+      const closed = await poll(400, async () => !(await readRow()).editing)
+      if (!closed) await inspect({ action: 'blur', identity, text, editor })
+      verified = await poll(2_000, async () => {
+        const state = await readRow()
+        return !state.editing && state.text === text
+      })
+      return verified ? null : '입력값을 나이스 표에서 다시 확인하지 못했어요.'
+    } finally {
+      if (editor && filled && !verified) {
+        await frame
+          .evaluate(neisGrid, {
+            ...args,
+            deadline: undefined,
+            action: 'discard' as const,
+            identity,
+            text,
+            editor,
+          })
+          .catch(() => undefined)
+      }
+      await handle.dispose().catch(() => undefined)
+    }
+  }
+
   let written = 0
-  const fail = (reason: string, resumeAt?: number) => ({
+  const matches = (name: string, selection: Selection) =>
+    Boolean(name) && name.replace(/\s+/g, '') === selection.name
+  const startIndex = pkg.students.findIndex((student) => matches(student.name, initial))
+  let index = Math.max(0, startIndex)
+  const fail = (reason: string, resumeAt = index) => ({
     ok: false as const,
     reason:
-      resumeAt !== undefined && resumeAt < pkg.students.length
-        ? `${reason} ${written}명 입력 확인. 이어서 보내려면 ${resumeAt + 1}번째 학생(${pkg.students[resumeAt].name}) 줄을 선택해 주세요.`
-        : `${reason} ${written}명 입력 확인. 다시 보내려면 첫 학생 줄부터 선택해 주세요.`,
+      `${reason} ${written}명 입력 확인.` +
+      (resumeAt < pkg.students.length
+        ? ` 이어서 보내려면 ${resumeAt + 1}번째 학생(${pkg.students[resumeAt].name}) 줄을 선택해 주세요.`
+        : ' 나이스 화면에 들어간 내용을 확인해 주세요.'),
   })
-  try {
-    const initial = await frame.evaluate(readSelection)
-    if (!initial.ok) {
-      if (initial.kind === 'multi-row')
-        return fail('나이스 표에서 여러 학생 줄이 한꺼번에 선택돼 있어요. 한 줄만 선택해 주세요.')
-      if (initial.kind === 'ambiguous-grid')
-        return fail('선택된 표가 여러 개예요. 입력할 나이스 표 한 곳만 선택해 주세요.')
-      return fail('나이스 입력 화면에서 선택된 학생 줄을 찾지 못했어요.')
-    }
-    const startIndex = pkg.students.findIndex(
-      (s) => Boolean(s.name) && initial.nameCells.includes(compact(s.name)),
-    )
-    if (startIndex < 0) {
-      return fail('1번째 학생의 이름과 선택된 나이스 줄이 달라 입력을 멈췄어요.')
-    }
+  const changed = () => fail('입력 화면이나 학생 선택이 바뀌었어요. 내용을 확인해 주세요.')
 
-    for (let index = startIndex; index < pkg.students.length; index++) {
+  try {
+    if (startIndex < 0) return fail('보낼 학생의 이름과 선택된 나이스 줄이 달라요.')
+    let expected = initial.identity
+    for (; index < pkg.students.length; index++) {
       const student = pkg.students[index]
-      const sel = index === startIndex ? initial : await frame.evaluate(readSelection)
-      if (!sel.ok) return fail('선택된 학생 줄을 하나로 확인하지 못했어요.', index)
-      const identity = sel.identity
-      if (!student.name || !sel.nameCells.includes(compact(student.name))) {
-        return fail(
-          `${index + 1}번째 학생(${student.name})의 이름과 선택된 나이스 줄이 달라 입력을 멈췄어요.`,
-          index,
-        )
-      }
-      const primaryRow = frame.locator(rowSelector + ':visible').first()
-      const primaryCells = primaryRow.locator(cellSelector)
-      const cellCount = await primaryCells.count()
-      if (cellCount < 1) return fail('나이스 학생 줄의 입력 칸을 찾지 못했어요.', index)
-      const cell = primaryCells.nth(cellCount - 1)
-      const existing = sel.existingText
+      const state = await inspect({ identity: expected })
+      if (state.kind !== 'ready' || state.editing) return changed()
+      if (!matches(student.name, state))
+        return fail(`${index + 1}번째 학생(${student.name})의 이름과 선택된 나이스 줄이 달라요.`)
+      const { identity, text } = state
       if (student.text) {
-        if (existing && normSpace(existing) !== normSpace(student.text))
+        if (text && text !== student.text)
           return fail(
             `${index + 1}번째 학생(${student.name}) 칸에 다른 글이 있어요. 기존 글을 확인해 주세요.`,
-            index,
           )
-        if (normSpace(existing) === normSpace(student.text)) {
-          written++
+        if (!text) {
+          const error = await write(identity, student.text)
+          if (error) return fail(error)
         } else {
-          await cell.focus()
-          await frame.page().keyboard.press('F2')
-          const editor = frame.locator(editorSelector).first()
-          try {
-            await editor.waitFor({ state: 'visible', timeout: 2_000 })
-          } catch {
-            return fail(`${index + 1}번째 학생의 입력 칸을 열지 못했어요.`, index)
-          }
-          const during = await frame.evaluate(readSelection)
-          if (!during.ok || during.identity !== identity)
-            return fail('입력할 학생 선택이 바뀌었어요.', index)
-          await editor.fill(student.text)
-          if (normSpace(await editor.inputValue()) !== normSpace(student.text))
-            return fail('편집기에 들어간 글이 보낼 글과 달라요.', index)
-          await editor.press('Enter')
-          try {
-            // Some textarea editors commit on blur rather than closing on physical Enter.
-            const closedOnEnter = await editor
-              .waitFor({ state: 'hidden', timeout: 400 })
-              .then(() => true)
-              .catch(() => false)
-            if (!closedOnEnter) {
-              await editor.evaluate((el, val) => {
-                const area = el as HTMLTextAreaElement
-                if (area.value !== val) {
-                  area.value = val
-                  area.dispatchEvent(new Event('input', { bubbles: true }))
-                }
-                area.dispatchEvent(new Event('blur', { bubbles: true }))
-              }, student.text)
-            }
-            await editor.waitFor({ state: 'hidden', timeout: 2_000 })
-            await frame.waitForFunction(
-              (text) => {
-                const row = document.querySelector('.cl-grid-row.cl-selected')
-                if (!row) return false
-                const cells = Array.from(row.querySelectorAll<HTMLElement>('div[role="gridcell"]'))
-                const got = (cells[cells.length - 1]?.textContent ?? '').replace(/\s+/g, ' ').trim()
-                const want = text.replace(/\s+/g, ' ').trim()
-                return got === want
-              },
-              student.text,
-              { timeout: 2_000 },
-            )
-          } catch {
-            return fail(`${index + 1}번째 학생의 입력값을 화면에서 다시 확인하지 못했어요.`, index)
-          }
-          const after = await frame.evaluate(readSelection)
-          if (!after.ok || after.identity !== identity)
-            return fail('입력 후 학생 선택이 바뀌었어요. 내용을 확인해 주세요.', index)
-          written++
+          options.onVerifying()
         }
+        active()
+        written++
       }
-      if (index < pkg.students.length - 1) {
-        await cell.focus()
-        await frame.page().keyboard.press('Tab')
-        try {
-          // Poll a fresh identity: disappearing rows or changed text are not row movement.
-          const deadline = Date.now() + 2_000
-          let moved = false
-          let retriedViaEditor = Boolean(
-            student.text && normSpace(existing) !== normSpace(student.text),
+      if (index + 1 < pkg.students.length) {
+        const advance = () =>
+          poll(300, async () => {
+            const next = await inspect()
+            if (next.kind !== 'ready' || next.editing || next.identity === identity) return false
+            expected = next.identity
+            return true
+          })
+        if (!(await press('cell', identity, 'Tab'))) return changed()
+        let moved = await advance()
+        if (!moved && (!student.text || text === student.text)) {
+          // Some grids start Tab navigation only after the current editor has opened and closed.
+          if (!(await press('cell', identity, 'F2'))) return changed()
+          if (
+            await poll(250, async () => {
+              const state = await inspect({ identity })
+              return state.kind === 'ready' && state.editing
+            })
           )
-          while (Date.now() < deadline) {
-            const next = await frame.evaluate(readSelection)
-            if (next.ok && next.identity !== identity) {
-              moved = true
-              break
-            }
-            if (!retriedViaEditor && deadline - Date.now() <= 1_750) {
-              retriedViaEditor = true
-              await cell.focus()
-              await frame.page().keyboard.press('F2')
-              const passEditor = frame.locator(editorSelector).first()
-              const opened = await passEditor
-                .waitFor({ state: 'visible', timeout: 250 })
-                .then(() => true)
-                .catch(() => false)
-              if (opened) {
-                await passEditor.press('Enter')
-                await passEditor.waitFor({ state: 'hidden', timeout: 500 }).catch(() => undefined)
-              }
-              await cell.focus()
-              await frame.page().keyboard.press('Tab')
-            }
-            await frame.page().waitForTimeout(50)
-          }
-          if (!moved)
-            return fail(`${index + 1}번째 학생 뒤에 다음 나이스 줄로 이동하지 못했어요.`, index + 1)
-        } catch {
-          return fail(`${index + 1}번째 학생 뒤에 다음 나이스 줄로 이동하지 못했어요.`, index + 1)
+            await press('editor', identity, 'Enter', text)
+          await poll(500, async () => {
+            const state = await inspect({ identity })
+            return state.kind === 'ready' && !state.editing
+          })
+          if (!(await press('cell', identity, 'Tab'))) return changed()
+          moved = await advance()
         }
+        if (!moved) return fail('다음 나이스 줄로 이동하지 못했어요.', index + 1)
       }
     }
     return {
@@ -210,8 +370,8 @@ export async function fillNeis(
       ...(startIndex > 0 ? { startedFrom: startIndex } : {}),
     }
   } catch {
-    return fail(
-      '브라우저 연결이나 입력 화면이 바뀌어 멈췄어요. 화면에 들어간 내용을 확인해 주세요.',
-    )
+    if (signal.aborted) return fail(String(signal.reason))
+    if (Date.now() >= deadline) return fail('나이스 전송 시간이 지났어요.')
+    return changed()
   }
 }

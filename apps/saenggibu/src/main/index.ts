@@ -3,6 +3,7 @@
  * with the app, the roster/texts file picker and 나이스로 보내기 in the app's own browser.
  * It shares no code or settings with 똑딱작업실: its own name, app id and user-data folder.
  */
+import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   BrowserWindow,
@@ -13,6 +14,8 @@ import {
   powerSaveBlocker,
   session,
   shell,
+  type IpcMainInvokeEvent,
+  type WebContents,
 } from 'electron'
 import { CHANNELS, type AskRequest } from '../shared/api'
 import {
@@ -21,6 +24,8 @@ import {
   MODEL_NAME,
   MODEL_PAGE,
   RECORD_FORMAT,
+  RECORD_V10,
+  RECORD_V10_NAME,
   type ModelSpec,
 } from '../shared/model'
 import { askFailure, pickTurn, type RecordFormat } from './ai-turn'
@@ -42,6 +47,15 @@ if (process.env.SAENGGIBU_USER_DATA) app.setPath('userData', process.env.SAENGGI
 
 let win: BrowserWindow | null = null
 let neis: PlaywrightNeisDriver | undefined
+let activeNeisSend:
+  | {
+      owner: WebContents
+      requestId: string
+      controller: AbortController
+      orphaned: boolean
+    }
+  | undefined
+let closingNeis: Promise<void> | undefined
 /** the page holds students' work not kept with [임시 저장]; closing asks first */
 let unsaved = false
 /** the teacher answered the question: this close goes through */
@@ -55,6 +69,13 @@ let asking = false
  * download tests, at one other file to download instead of both (SAENGGIBU_MODEL_URL, _BYTES,
  * _SHA256, and _IDLE_MS for a short stall limit); an installed app ignores all of them.
  */
+const modelDir = join(app.getPath('userData'), 'ai')
+const localV10 = statSync(join(modelDir, RECORD_V10.file), { throwIfNoEntry: false })
+const useV10 =
+  (app.isPackaged || (!process.env.SAENGGIBU_MODEL_FILE && !process.env.SAENGGIBU_MODEL_URL)) &&
+  localV10?.isFile() === true &&
+  localV10.size === RECORD_V10.bytes
+
 function modelSource(): ModelSource {
   const env = process.env
   if (!app.isPackaged && env.SAENGGIBU_MODEL_FILE)
@@ -69,7 +90,7 @@ function modelSource(): ModelSource {
             sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
           },
         ]
-      : MODEL_FILES
+      : useV10 ? [MODEL_FILES[0], RECORD_V10] : MODEL_FILES
   const idleMs = !app.isPackaged ? Number(env.SAENGGIBU_MODEL_IDLE_MS) || undefined : undefined
   // the download's own connections (with the system's proxy settings, as Chromium has them),
   // kept apart from the page and without a disk cache: the 2 GB answer goes to the model only
@@ -81,9 +102,11 @@ function modelSource(): ModelSource {
   const stores = specs.map(
     (spec) =>
       new ModelStore(
-        join(app.getPath('userData'), 'ai'),
+        modelDir,
         spec,
-        (url, init) => downloads().fetch(url, { ...init, cache: 'no-store' }),
+        (url, init) => url
+          ? downloads().fetch(url, { ...init, cache: 'no-store' })
+          : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
         { idleMs, reconnect: () => downloads().closeAllConnections() },
       ),
   )
@@ -99,7 +122,7 @@ function recordFormat(): RecordFormat {
   const asked = process.env.SAENGGIBU_RECORD_FORMAT
   return !app.isPackaged && (asked === 'instructions' || asked === 'compact')
     ? asked
-    : RECORD_FORMAT
+    : useV10 ? 'compact' : RECORD_FORMAT
 }
 const ai = new LocalAi(process.resourcesPath, modelSource())
 
@@ -154,6 +177,17 @@ function createWindow(): void {
   win.on('closed', () => {
     win = null
   })
+  const contents = win.webContents
+  const cancelNeis = () => {
+    if (activeNeisSend?.owner !== contents) return
+    activeNeisSend.orphaned = true
+    activeNeisSend.controller.abort()
+  }
+  contents.once('destroyed', cancelNeis)
+  contents.on('render-process-gone', cancelNeis)
+  contents.on('did-start-navigation', ({ isMainFrame, isSameDocument }) => {
+    if (isMainFrame && !isSameDocument) cancelNeis()
+  })
   // links open in the system browser; the page itself never navigates away
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) void shell.openExternal(url)
@@ -181,8 +215,8 @@ function registerIpc(): void {
   powerMonitor.on('unlock-screen', () => ai.resumeDropped())
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
   ipcMain.handle(CHANNELS.modelInfo, () => ({
-    name: MODEL_NAME,
-    bytes: MODEL_BYTES,
+    name: useV10 ? RECORD_V10_NAME : MODEL_NAME,
+    bytes: useV10 ? MODEL_FILES[0].bytes + RECORD_V10.bytes : MODEL_BYTES,
     page: MODEL_PAGE,
   }))
   ipcMain.handle(CHANNELS.retryModel, () => {
@@ -255,11 +289,59 @@ function registerIpc(): void {
     if (picked.canceled || !picked.filePaths[0]) return null
     return readTableFile(picked.filePaths[0])
   })
-  ipcMain.handle(CHANNELS.sendToNeis, async (_event, text: unknown) => {
-    if (typeof text !== 'string')
+  const ownsNeis = (event: IpcMainInvokeEvent, requestId: unknown): boolean =>
+    event.senderFrame?.parent === null &&
+    activeNeisSend?.owner === event.sender &&
+    !activeNeisSend.orphaned &&
+    activeNeisSend.requestId === requestId
+  ipcMain.handle(CHANNELS.sendToNeis, async (event, text: unknown, requestId: unknown) => {
+    const owner = event.sender
+    const frame = event.senderFrame
+    if (
+      owner !== win?.webContents ||
+      frame?.parent !== null ||
+      typeof text !== 'string' ||
+      typeof requestId !== 'string' ||
+      !requestId ||
+      requestId.length > 100
+    )
       return { ok: false, route: 'direct', message: '보낼 내용을 읽지 못했어요.' }
+    if (activeNeisSend)
+      return { ok: false, route: 'direct', message: '다른 나이스 전송이 진행 중이에요.' }
     neis ??= createNeisDriver(app.getPath('userData'))
-    return neisRequest(text, neis)
+    const controller = new AbortController()
+    const request = { owner, requestId, controller, orphaned: false }
+    activeNeisSend = request
+    const started = Date.now()
+    try {
+      return await neisRequest(text, neis, {
+        signal: controller.signal,
+        onStage: (stage, hint) => {
+          if (
+            activeNeisSend !== request ||
+            request.orphaned ||
+            frame.isDestroyed() ||
+            frame.detached
+          )
+            return
+          if (controller.signal.aborted && stage !== 'cancelled') return
+          frame.send(CHANNELS.neisProgress, {
+            requestId,
+            stage,
+            elapsedMs: Date.now() - started,
+            hint,
+          })
+        },
+      })
+    } finally {
+      if (activeNeisSend === request) activeNeisSend = undefined
+    }
+  })
+  ipcMain.handle(CHANNELS.focusNeisSend, async (event, requestId: unknown) => {
+    if (ownsNeis(event, requestId)) await neis?.focusSendWindow()
+  })
+  ipcMain.handle(CHANNELS.cancelNeisSend, (event, requestId: unknown) => {
+    if (ownsNeis(event, requestId)) activeNeisSend?.controller.abort()
   })
   // 나이스에서 가져오기: read only; the same window and profile as 나이스로 보내기
   ipcMain.handle(CHANNELS.readNeisClass, async () => {
@@ -287,8 +369,19 @@ if (!app.requestSingleInstanceLock()) {
     })
   })
   app.on('window-all-closed', () => app.quit())
-  app.on('will-quit', () => {
+  app.on('will-quit', (event) => {
+    if (closingNeis) {
+      event.preventDefault()
+      return
+    }
     ai.stop()
-    void neis?.close().catch(() => undefined)
+    if (!neis) return
+    event.preventDefault()
+    closingNeis = neis.close().catch(() => undefined)
+    neis = undefined
+    void closingNeis.finally(() => {
+      closingNeis = undefined
+      app.quit()
+    })
   })
 }

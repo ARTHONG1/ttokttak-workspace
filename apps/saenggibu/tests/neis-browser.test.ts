@@ -38,7 +38,10 @@ afterAll(async () => {
   await browser?.close()
 })
 
-async function setup(url: string): Promise<{ page: Page; driver: PlaywrightNeisDriver }> {
+async function setup(
+  url: string,
+  waitTimeoutMs = 3_500,
+): Promise<{ page: Page; driver: PlaywrightNeisDriver }> {
   context = await browser.newContext()
   await context.route('**/*', (route) =>
     route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }),
@@ -48,7 +51,10 @@ async function setup(url: string): Promise<{ page: Page; driver: PlaywrightNeisD
   await page.addScriptTag({ content: script })
   return {
     page,
-    driver: new PlaywrightNeisDriver({ userDataDir: 'unused' }, async () => context),
+    driver: new PlaywrightNeisDriver(
+      { userDataDir: 'unused', waitTimeoutMs, pollMs: 25 },
+      async () => context,
+    ),
   }
 }
 const record = () =>
@@ -131,7 +137,7 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
 
   it('사용자가 닫은 전용 브라우저를 다음 요청에서 다시 연다', async () => {
     let launches = 0
-    const driver = new PlaywrightNeisDriver({ userDataDir: 'unused' }, async () => {
+    const driver = new PlaywrightNeisDriver({ userDataDir: 'unused', pollMs: 25 }, async () => {
       launches++
       context = await browser.newContext()
       await context.route('**/*', (route) =>
@@ -139,16 +145,180 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
       )
       return context
     })
-    expect(await driver.send(record())).toMatchObject({
-      ok: false,
-      reason: expect.stringContaining('로그인'),
-    })
+    const stages: string[] = []
+    const sending = driver.send(record(), { onStage: (stage) => stages.push(stage) })
+    await expect.poll(() => stages.at(-1)).toBe('waiting-login')
     await context.close()
+    expect(await sending).toMatchObject({ ok: false, reason: expect.stringContaining('닫았어요') })
+    expect(await driver.readClass()).toMatchObject({ ok: false })
+    expect(launches).toBe(2)
+  })
+
+  it('시작 중 취소한 브라우저가 뒤늦게 열려도 다음 요청에서 사용하지 않는다', async () => {
+    const { page } = await setup('https://sen.neis.go.kr/')
+    await neis(page)
+    const late = await browser.newContext()
+    let finishLaunch!: (value: BrowserContext) => void
+    const launch = new Promise<BrowserContext>((resolve) => {
+      finishLaunch = resolve
+    })
+    let launches = 0
+    const driver = new PlaywrightNeisDriver({ userDataDir: 'unused' }, async () =>
+      ++launches === 1 ? launch : context,
+    )
+    const controller = new AbortController()
+    try {
+      const sending = driver.send(record(), { signal: controller.signal })
+      controller.abort()
+      expect(await sending).toMatchObject({ ok: false, reason: expect.stringContaining('취소') })
+      const next = driver.send(record())
+      finishLaunch(late)
+      expect(await next).toMatchObject({ ok: true, written: 2 })
+      expect(browser.contexts()).not.toContain(late)
+      expect(launches).toBe(2)
+    } finally {
+      finishLaunch(late)
+      await late.close()
+    }
+  })
+
+  it.each([
+    ['subject', '세부능력 및 특기사항'],
+    ['behavior', '행동특성 및 종합의견'],
+    ['activity', '창의적 체험활동 특기사항'],
+  ] as const)('%s 전송은 로그인과 새 화면의 학생 선택을 이어서 기다린다', async (mode, heading) => {
+    const { driver } = await setup('https://example.test/login')
+    const stages: string[] = []
+    const sending = driver.send({ ...record(), mode }, { onStage: (stage) => stages.push(stage) })
+    await expect.poll(() => stages.at(-1)).toBe('waiting-login')
+    const popup = await context.newPage()
+    await popup.goto('https://sen.neis.go.kr/menu')
+    await expect.poll(() => stages.at(-1)).toBe('finding-screen')
+    const frameReady = popup.waitForEvent('framenavigated', (frame) =>
+      frame.url().endsWith('/grid'),
+    )
+    await popup.evaluate(() => {
+      const frame = document.createElement('iframe')
+      frame.src = '/grid'
+      document.body.append(frame)
+    })
+    const frame = await frameReady
+    await frame.addScriptTag({ content: script })
+    await frame.evaluate((heading) => {
+      const w = window as any
+      w.grid = w.fixture.mountFakeNeis(document, [{ name: '김하늘' }, { name: '이바다' }], {
+        heading,
+      })
+    }, heading)
+    await expect.poll(() => stages.at(-1)).toBe('waiting-selection')
+    expect(await driver.readClass()).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('진행 중'),
+    })
+    await frame.evaluate(() => (window as any).grid.select(0))
+    expect(await sending).toMatchObject({ ok: true, written: 2 })
+    expect(stages).toEqual([
+      'browser-opening',
+      'waiting-login',
+      'finding-screen',
+      'waiting-selection',
+      'writing',
+      'verifying',
+      'done',
+    ])
+    expect(await frame.evaluate(() => (window as any).grid.texts())).toEqual(['관찰함.', '탐구함.'])
+  })
+
+  it.each(['cancel', 'timeout'])('%s 뒤에 학생을 골라도 이전 요청은 쓰지 않는다', async (stop) => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/', 1_200)
+    const controller = new AbortController()
+    await page.evaluate(() => {
+      const w = window as any
+      w.grid = w.fixture.mountFakeNeis(document, [{ name: '김하늘' }, { name: '이바다' }])
+    })
+    const stages: string[] = []
+    const sending = driver.send(record(), {
+      signal: controller.signal,
+      onStage: (stage) => stages.push(stage),
+    })
+    await expect.poll(() => stages.at(-1)).toBe('waiting-selection')
+    if (stop === 'cancel') controller.abort()
+    expect(await sending).toMatchObject({ ok: false })
+    expect(stages.at(-1)).toBe(stop === 'cancel' ? 'cancelled' : 'failed')
+    await page.evaluate(() => (window as any).grid.select(0))
+    expect(await page.evaluate(() => (window as any).grid.edits())).toBe(0)
+    expect(await driver.send(record())).toMatchObject({ ok: true, written: 2 })
+  })
+
+  it('같은 이름이 선택되어도 다른 업무의 표는 열지 않는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/', 500)
+    await neis(page)
+    expect(await driver.send({ ...record(), mode: 'behavior' })).toMatchObject({ ok: false })
+    expect(await page.evaluate(() => (window as any).grid.edits())).toBe(0)
+  })
+
+  it('편집기에 쓴 글을 표가 반영하지 않으면 검증 성공으로 세지 않는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await page.evaluate(() => {
+      const w = window as any
+      w.grid = w.fixture.mountFakeNeis(document, [{ name: '김하늘' }, { name: '이바다' }], {
+        discard: true,
+      })
+      w.grid.select(0)
+    })
     expect(await driver.send(record())).toMatchObject({
       ok: false,
-      reason: expect.stringContaining('로그인'),
+      reason: expect.stringContaining('나이스 표에서 다시 확인하지 못했어요. 0명'),
     })
-    expect(launches).toBe(2)
+    expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['', ''])
+  })
+
+  it('검증 중 취소하면 다음 학생에게 쓰지 않는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await neis(page)
+    const controller = new AbortController()
+    const result = await driver.send(record(), {
+      signal: controller.signal,
+      onStage: (stage) => {
+        if (stage === 'verifying') controller.abort()
+      },
+    })
+    expect(result).toMatchObject({ ok: false, reason: expect.stringContaining('취소') })
+    expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['관찰함.', ''])
+  })
+
+  it('취소된 편집 초안이 나중에 포커스를 옮길 때 반영되지 않는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await page.evaluate(() => {
+      const w = window as any
+      w.grid = w.fixture.mountFakeNeis(document, [{ name: '김하늘' }, { name: '이바다' }], {
+        blurCommit: true,
+      })
+      w.grid.select(0)
+    })
+    const controller = new AbortController()
+    const result = await driver.send(record(), {
+      signal: controller.signal,
+      onStage: (stage) => {
+        if (stage === 'verifying') controller.abort()
+      },
+    })
+    expect(result).toMatchObject({ ok: false, reason: expect.stringContaining('취소') })
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['', ''])
+  })
+
+  it('Enter 대신 포커스 이동으로 확정되는 편집기의 값도 표에서 확인한다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await page.evaluate(() => {
+      const w = window as any
+      w.grid = w.fixture.mountFakeNeis(document, [{ name: '김하늘' }, { name: '이바다' }], {
+        blurCommit: true,
+      })
+      w.grid.select(0)
+    })
+    expect(await driver.send(record())).toMatchObject({ ok: true, written: 2 })
+    expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['관찰함.', '탐구함.'])
   })
 
   it('나이스에 키 입력하고 셀 값을 다시 읽는다', async () => {
@@ -211,18 +381,24 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
     expect(await page.locator('.cl-selected [role=gridcell]').last().textContent()).toBe('기존 글')
   })
 
-  it('같은 업무의 탭이 두 개면 입력하지 않는다', async () => {
+  it('같은 업무의 탭이 두 개면 한 화면만 남을 때까지 입력하지 않는다', async () => {
     const { page, driver } = await setup('https://sen.neis.go.kr/')
     await neis(page)
     const second = await context.newPage()
     await second.goto('https://sen.neis.go.kr/other')
     await second.addScriptTag({ content: script })
     await neis(second)
-    expect(await driver.send(record())).toMatchObject({
-      ok: false,
-      reason: expect.stringContaining('여러 개'),
+    let hint: string | undefined
+    const sending = driver.send(record(), {
+      onStage: (_stage, value) => {
+        hint = value
+      },
     })
+    await expect.poll(() => hint).toContain('여러 개')
     expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['', ''])
+    expect(await second.evaluate(() => (window as any).grid.texts())).toEqual(['', ''])
+    await second.close()
+    expect(await sending).toMatchObject({ ok: true, written: 2 })
   })
 
   it('교외 사이트와 오픈 데이터 주소로 학생 내용을 보내지 않는다', () => {
@@ -242,6 +418,12 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
       let selected = 0
       const render = () => {
         grid.replaceChildren()
+        for (const label of ['번호', '성명', '과목', '세부능력 및 특기사항']) {
+          const header = document.createElement('div')
+          header.setAttribute('role', 'columnheader')
+          header.textContent = label
+          grid.append(header)
+        }
         students.forEach((s, idx) => {
           // Body pane comes first in DOM, fixed name pane comes second (real eXBuilder6 split layout)
           const bodyRow = document.createElement('div')
@@ -253,6 +435,7 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
           subj.textContent = '과학'
           const textCell = document.createElement('div')
           textCell.setAttribute('role', 'gridcell')
+          textCell.setAttribute('aria-colindex', '4')
           textCell.tabIndex = -1
           textCell.textContent = s.text
           bodyRow.append(subj, textCell)
@@ -266,6 +449,7 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
           noCell.textContent = s.no
           const nameCell = document.createElement('div')
           nameCell.setAttribute('role', 'gridcell')
+          nameCell.setAttribute('aria-colindex', '2')
           nameCell.textContent = s.name
           fixedRow.append(noCell, nameCell)
 
@@ -349,7 +533,7 @@ describe.skipIf(!browserPath)('나이스로 보내기 실제 Chromium 시험 (�
   })
 
   it('나이스 표에 여러 학생 줄이 동시에 선택돼 있으면 아무 칸도 수정하지 않고 멈춘다', async () => {
-    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    const { page, driver } = await setup('https://sen.neis.go.kr/', 800)
     await neis(page)
     await page.evaluate(() => {
       document.querySelectorAll('.cl-grid-row').forEach((r) => r.classList.add('cl-selected'))
