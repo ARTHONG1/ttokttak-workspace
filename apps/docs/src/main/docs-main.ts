@@ -134,10 +134,10 @@ import {
   draftFromObservation,
   parseObservation,
 } from '../../../saenggibu/src/shared/observation-turn'
+import { SCHOOL_RECORD_FORMAT } from './local-ai-model-files'
 import { schoolRecordTurn } from './school-record-turn'
 import {
   localAiSelectionChanged,
-  localSchoolRecordFormat,
   registerLocalAiModels,
   usesLocalSchoolRecordV10,
 } from './local-ai-models-ipc'
@@ -4220,7 +4220,7 @@ export function registerAiIpc(): void {
     // 생기부 on the built-in model: its short format once its adapter learned it
     // (school-record-turn.ts); connected AIs keep the instructions
     const asked =
-      provider === 'local' ? schoolRecordTurn(request, localSchoolRecordFormat()) : { system, messages }
+      provider === 'local' ? schoolRecordTurn(request, SCHOOL_RECORD_FORMAT) : { system, messages }
     const modelTurn =
       provider === 'local'
         ? prepareLocalAiTurn(asked.system, asked.messages, tools)
@@ -4273,7 +4273,7 @@ export function registerAiIpc(): void {
         try {
           let text = draftFromObservation(observation)
           if (!text) {
-            const held = await acquireLocalAi('school_record')
+            const held = await acquireLocalAi('school_record_v10')
             releaseLocal = held.release
             controller.signal.throwIfAborted()
             const { baseUrl, apiKey, model } = held.endpoint

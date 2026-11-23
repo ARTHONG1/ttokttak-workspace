@@ -22,9 +22,7 @@ import {
   LOCAL_AI_MODEL_FILES,
   LOCAL_AI_MODEL_PAGE,
   LOCAL_AI_MODELS_DIR,
-  SCHOOL_RECORD_FORMAT,
   SCHOOL_RECORD_V10,
-  type SchoolRecordFormat,
 } from './local-ai-model-files'
 import { LocalAiModels, type LocalAiModelState } from './local-ai-model-store'
 import { localAiExecutable, useLocalAiModels } from './local-ai-runtime'
@@ -43,12 +41,9 @@ export type LocalAiModelsInfo = LocalAiModelState & { totalBytes: number; school
 let models: LocalAiModels | null = null
 let modelFiles = LOCAL_AI_MODEL_FILES
 
+/** V10-94 is verified and loads with the server: V10.1's observation writing can use it */
 export function usesLocalSchoolRecordV10(): boolean {
-  return modelFiles.includes(SCHOOL_RECORD_V10)
-}
-
-export function localSchoolRecordFormat(): SchoolRecordFormat {
-  return usesLocalSchoolRecordV10() ? 'compact' : SCHOOL_RECORD_FORMAT
+  return models?.pathsFor('main')?.adapters.some((a) => a.name === SCHOOL_RECORD_V10.id) ?? false
 }
 
 function info(): LocalAiModelsInfo | null {
@@ -99,7 +94,7 @@ export function registerLocalAiModels(wantsLocal: () => boolean): void {
   const dir = join(app.getPath('userData'), LOCAL_AI_MODELS_DIR)
   const candidate = statSync(join(dir, SCHOOL_RECORD_V10.file), { throwIfNoEntry: false })
   if (candidate?.isFile() && candidate.size === SCHOOL_RECORD_V10.bytes)
-    modelFiles = LOCAL_AI_MODEL_FILES.map((file) => file.id === 'school_record' ? SCHOOL_RECORD_V10 : file)
+    modelFiles = [...LOCAL_AI_MODEL_FILES, SCHOOL_RECORD_V10]
   models = new LocalAiModels(
     dir,
     (url, init) => url

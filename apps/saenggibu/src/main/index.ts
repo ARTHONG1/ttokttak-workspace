@@ -92,7 +92,7 @@ function modelSource(): ModelSource {
             sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
           },
         ]
-      : useV10 ? [MODEL_FILES[0], RECORD_V10] : MODEL_FILES
+      : useV10 ? [...MODEL_FILES, RECORD_V10] : MODEL_FILES
   const idleMs = !app.isPackaged ? Number(env.SAENGGIBU_MODEL_IDLE_MS) || undefined : undefined
   // the download's own connections (with the system's proxy settings, as Chromium has them),
   // kept apart from the page and without a disk cache: the 2 GB answer goes to the model only
@@ -124,7 +124,7 @@ function recordFormat(): RecordFormat {
   const asked = process.env.SAENGGIBU_RECORD_FORMAT
   return !app.isPackaged && (asked === 'instructions' || asked === 'compact')
     ? asked
-    : useV10 ? 'compact' : RECORD_FORMAT
+    : RECORD_FORMAT
 }
 const ai = new LocalAi(process.resourcesPath, modelSource())
 
@@ -218,7 +218,7 @@ function registerIpc(): void {
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
   ipcMain.handle(CHANNELS.modelInfo, () => ({
     name: useV10 ? RECORD_V10_NAME : MODEL_NAME,
-    bytes: useV10 ? MODEL_FILES[0].bytes + RECORD_V10.bytes : MODEL_BYTES,
+    bytes: useV10 ? MODEL_BYTES + RECORD_V10.bytes : MODEL_BYTES,
     page: MODEL_PAGE,
   }))
   ipcMain.handle(CHANNELS.retryModel, () => {
@@ -263,7 +263,7 @@ function registerIpc(): void {
       recordFormat(),
     )
     try {
-      const observation = useV10 && recordFormat() === 'compact'
+      const observation = useV10
         ? parseObservation(r.compact?.observation)
         : null
       const text = observation

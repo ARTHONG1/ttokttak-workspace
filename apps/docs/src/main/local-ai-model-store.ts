@@ -361,8 +361,8 @@ export function notReadyMessage(state: LocalAiModelState): string {
  */
 export class LocalAiModels {
   private state: LocalAiModelState = { state: 'checking', ready: [] }
-  private readonly stores: Map<LocalAiFileId, ModelFileStore>
-  private readonly verified = new Set<LocalAiFileId>()
+  private readonly stores: Map<LocalAiModelFile['id'], ModelFileStore>
+  private readonly verified = new Set<LocalAiModelFile['id']>()
   private readonly listeners = new Set<(state: LocalAiModelState) => void>()
   private preparing: Promise<void> | null = null
   private checking: Promise<boolean> | null = null
@@ -408,10 +408,12 @@ export class LocalAiModels {
   pathsFor(run: LocalAiRun): { model: string; adapters: { name: string; path: string }[] } | null {
     if (!this.readyRuns().includes(run)) return null
     const { model, adapters } = LOCAL_AI_RUNS[run]
-    const pathOf = (id: LocalAiFileId) => this.stores.get(id)!.path
+    const pathOf = (id: LocalAiModelFile['id']) => this.stores.get(id)!.path
+    // V10-94 comes after the run's own adapters, so their numbering stays as it was
+    const extra: LocalAiModelFile['id'][] = this.verified.has('school_record_v10') ? ['school_record_v10'] : []
     return {
       model: pathOf(model),
-      adapters: adapters.map((name) => ({ name, path: pathOf(name) })),
+      adapters: [...adapters, ...extra].map((name) => ({ name, path: pathOf(name) })),
     }
   }
 

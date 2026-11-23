@@ -23,7 +23,8 @@ export const LOCAL_AI_MODELS_DIR = 'local-ai-models'
 export type LocalAiFileId = 'base' | 'document' | 'pumui' | 'school_record'
 
 export interface LocalAiModelFile {
-  id: LocalAiFileId
+  /** a run's file, or V10-94 (school_record_v10), loaded beside the runs only when present */
+  id: LocalAiFileId | 'school_record_v10'
   /** where it goes, relative to the models folder */
   file: string
   bytes: number
@@ -62,8 +63,13 @@ export const LOCAL_AI_MODEL_FILES: readonly LocalAiModelFile[] = [
   },
 ]
 
+/**
+ * 똑딱AI 생기부 V10-94, loaded beside the V7-B 생기부 adapter when it is in the models folder.
+ * Only V10.1's observation writing (보통 분량, no teacher request) turns it on: every other
+ * 생기부 request stays on V7-B with the page's instructions. It has no download address yet.
+ */
 export const SCHOOL_RECORD_V10: LocalAiModelFile = {
-  id: 'school_record',
+  id: 'school_record_v10',
   file: 'adapters/school_record-v10-94.gguf',
   bytes: 151_376_160,
   sha256: '81bb9ac26b743accc98accc7515a6ff3bd5765f1c10dd2a22aa4a7c341fce5c4',

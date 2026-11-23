@@ -48,7 +48,7 @@ export function serverArgs(
   apiKey: string,
   threads: number,
   modelFile = 'base.gguf',
-  adapterFile?: string,
+  ...adapterFiles: string[]
 ): string[] {
   return [
     '--model',
@@ -74,7 +74,7 @@ export function serverArgs(
     '--reasoning',
     'off',
     '--jinja',
-    ...(adapterFile ? ['--lora', adapterFile] : []),
+    ...adapterFiles.flatMap((file) => ['--lora', file]),
   ]
 }
 
@@ -83,6 +83,7 @@ export function requestBody(
   system: string,
   text: string,
   temperature = 0,
+  lora?: { id: number; scale: number }[],
 ): Record<string, unknown> {
   return {
     model: AI_MODEL,
@@ -93,6 +94,7 @@ export function requestBody(
     temperature,
     max_tokens: MAX_ANSWER_TOKENS,
     stream: false,
+    ...(lora ? { lora } : {}),
   }
 }
 
@@ -151,7 +153,8 @@ export class LocalAi {
   private starting: Promise<Endpoint> | null = null
   private preparing: Promise<void> | null = null
   private modelPath: string | null = null
-  private adapterPath: string | null = null
+  /** the 생기부 adapter first (V7-B); V10-94 after it when V10.1 is on this computer */
+  private adapterPaths: string[] = []
   private stopping = false
   /** the next automatic try after a dropped download */
   private later: ReturnType<typeof setTimeout> | null = null
@@ -206,7 +209,7 @@ export class LocalAi {
   private async prepareOnce(): Promise<void> {
     if ('file' in this.source) {
       this.modelPath = this.source.file
-      this.adapterPath = this.source.adapter ?? null
+      this.adapterPaths = this.source.adapter ? [this.source.adapter] : []
     } else {
       const stores = this.source.stores
       this.set({ state: 'verifying' })
@@ -259,7 +262,7 @@ export class LocalAi {
         done += store.spec.bytes
       }
       this.modelPath = stores[0].path
-      this.adapterPath = stores[1]?.path ?? null
+      this.adapterPaths = stores.slice(1).map((store) => store.path)
       await dropEarlierFiles(stores)
     }
     await this.ensure().catch(() => undefined)
@@ -301,8 +304,8 @@ export class LocalAi {
   private async start(modelPath: string): Promise<Endpoint> {
     if (this.stopping) throw new Error('똑딱생기부를 닫는 중이에요.')
     const files = aiFiles(this.resourcesPath)
-    const adapterPath = this.adapterPath
-    if (!files || !existsSync(modelPath) || (adapterPath && !existsSync(adapterPath))) {
+    const adapterPaths = this.adapterPaths
+    if (!files || !existsSync(modelPath) || adapterPaths.some((path) => !existsSync(path))) {
       this.set({ state: 'missing' })
       throw new Error('똑딱AI 파일을 찾지 못했어요. 똑딱생기부를 다시 설치해 주세요.')
     }
@@ -316,7 +319,7 @@ export class LocalAi {
       key,
       threads,
       basename(modelPath),
-      adapterPath ? relative(cwd, adapterPath) : undefined,
+      ...adapterPaths.map((path) => relative(cwd, path)),
     )
     const child = spawn(files.executable, args, {
       cwd,
@@ -382,7 +385,7 @@ export class LocalAi {
       const res = await fetch(endpoint.url + '/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + endpoint.key },
-        body: JSON.stringify(requestBody(turn.system, turn.text, temperature)),
+        body: JSON.stringify(requestBody(turn.system, turn.text, temperature, this.loraFor(0, 1))),
         signal: controller.signal,
       })
       if (!res.ok) throw new Error('똑딱AI가 답하지 못했어요 (' + res.status + '). 다시 해 주세요.')
@@ -417,7 +420,7 @@ export class LocalAi {
         observation,
         examples(),
         AI_MODEL,
-        (scale) => [{ id: 0, scale }],
+        (scale) => this.loraFor(this.adapterPaths.length - 1, scale) ?? [],
         (body) => completeObservation(
           endpoint.url + '/v1/chat/completions', endpoint.key, body, controller.signal,
         ),
@@ -428,6 +431,15 @@ export class LocalAi {
     } finally {
       this.running.delete(requestId)
     }
+  }
+
+  /**
+   * One adapter on for a request, every loaded one named, when more than one is loaded (llama-server
+   * applies each loaded adapter at full scale otherwise). One adapter alone needs no choice.
+   */
+  private loraFor(on: number, scale: number): { id: number; scale: number }[] | undefined {
+    if (this.adapterPaths.length < 2) return undefined
+    return this.adapterPaths.map((_, id) => ({ id, scale: id === on ? scale : 0 }))
   }
 
   cancel(requestId: string): void {
