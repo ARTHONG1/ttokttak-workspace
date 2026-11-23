@@ -80,7 +80,12 @@ export async function askAi(
     feature?: string
     requestId?: string
     /** 생기부: the same request in 똑딱AI's short format (only the built-in model gets it) */
-    compact?: { system: string; text: string; observation?: unknown }
+    compact?: {
+      system: string
+      text: string
+      examples?: readonly (readonly [string, string])[]
+      observation?: unknown
+    }
   } = {},
 ): Promise<string> {
   const api = window.aiOffice

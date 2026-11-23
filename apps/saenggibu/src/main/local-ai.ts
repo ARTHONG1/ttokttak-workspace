@@ -21,7 +21,13 @@ import {
   type Observation,
   type ObservationExample,
 } from '../shared/observation-turn'
-import { MAX_ANSWER_TOKENS, RequestProblem, plainTurn } from './ai-turn'
+import {
+  MAX_ANSWER_TOKENS,
+  RequestProblem,
+  plainTurn,
+  type Example,
+  type Sampling,
+} from './ai-turn'
 import { ModelError, type ModelStore, type Progress } from './model-store'
 
 export const AI_MODEL = 'ttokttak-saenggibu'
@@ -78,20 +84,25 @@ export function serverArgs(
   ]
 }
 
-/** the request body of one 생기부 turn: the model's measured settings (temperature 0) */
+/** the request body of one 생기부 turn: model answers first as earlier turns, then the request */
 export function requestBody(
   system: string,
   text: string,
-  temperature = 0,
+  sampling: Sampling = { temperature: 0 },
   lora?: { id: number; scale: number }[],
+  examples: readonly Example[] = [],
 ): Record<string, unknown> {
   return {
     model: AI_MODEL,
     messages: [
       ...(system ? [{ role: 'system', content: system }] : []),
+      ...examples.flatMap(([request, answer]) => [
+        { role: 'user', content: request },
+        { role: 'assistant', content: answer },
+      ]),
       { role: 'user', content: text },
     ],
-    temperature,
+    ...sampling,
     max_tokens: MAX_ANSWER_TOKENS,
     stream: false,
     ...(lora ? { lora } : {}),
@@ -374,9 +385,15 @@ export class LocalAi {
     }
   }
 
-  /** one answer: the page's instructions and request, at the model's measured settings */
-  async ask(requestId: string, system: string, text: string, temperature = 0): Promise<string> {
-    const turn = plainTurn(system, text)
+  /** one answer: the instructions, the model answers that fit and the request */
+  async ask(
+    requestId: string,
+    system: string,
+    text: string,
+    sampling: Sampling = { temperature: 0 },
+    examples: readonly Example[] = [],
+  ): Promise<string> {
+    const turn = plainTurn(system, text, examples)
     if (!turn.ok) throw new RequestProblem(turn.error)
     const endpoint = await this.ensure()
     const controller = new AbortController()
@@ -385,7 +402,9 @@ export class LocalAi {
       const res = await fetch(endpoint.url + '/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + endpoint.key },
-        body: JSON.stringify(requestBody(turn.system, turn.text, temperature, this.loraFor(0, 1))),
+        body: JSON.stringify(
+          requestBody(turn.system, turn.text, sampling, this.loraFor(0, 1), turn.examples),
+        ),
         signal: controller.signal,
       })
       if (!res.ok) throw new Error('똑딱AI가 답하지 못했어요 (' + res.status + '). 다시 해 주세요.')
@@ -421,9 +440,13 @@ export class LocalAi {
         examples(),
         AI_MODEL,
         (scale) => this.loraFor(this.adapterPaths.length - 1, scale) ?? [],
-        (body) => completeObservation(
-          endpoint.url + '/v1/chat/completions', endpoint.key, body, controller.signal,
-        ),
+        (body) =>
+          completeObservation(
+            endpoint.url + '/v1/chat/completions',
+            endpoint.key,
+            body,
+            controller.signal,
+          ),
       )
     } catch (err) {
       if (controller.signal.aborted) throw new Error('멈췄어요.', { cause: err })

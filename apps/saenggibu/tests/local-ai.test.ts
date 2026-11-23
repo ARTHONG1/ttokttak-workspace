@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  COMPACT_SAMPLING,
   MAX_SYSTEM_BYTES,
   MAX_TURN_BYTES,
   TOO_LONG,
@@ -62,7 +63,20 @@ describe('the built-in 똑딱AI', () => {
       ],
     })
     // a rewording asked again after it came back word for word
-    expect(requestBody('지시', '요청', 0.7)).toMatchObject({ temperature: 0.7 })
+    expect(requestBody('지시', '요청', { temperature: 0.7 })).toMatchObject({ temperature: 0.7 })
+  })
+
+  it("sends 똑딱AI's own request after its model answers, at the sampling it was measured with", () => {
+    const body = requestBody('규칙', '요청', COMPACT_SAMPLING, undefined, [
+      ['예시 요청', '예시 답'],
+    ])
+    expect(body).toMatchObject({ temperature: 0.3, top_k: 20, top_p: 0.9, repeat_penalty: 1.05 })
+    expect(body.messages).toEqual([
+      { role: 'system', content: '규칙' },
+      { role: 'user', content: '예시 요청' },
+      { role: 'assistant', content: '예시 답' },
+      { role: 'user', content: '요청' },
+    ])
   })
 
   it('tells a writing request how far the download is', () => {
@@ -121,14 +135,29 @@ describe('the first launch', () => {
 describe('one writing turn', () => {
   const bytes = (s: string) => Buffer.byteLength(s, 'utf8')
   it('goes as it is when it fits', () => {
-    expect(plainTurn('지시', '관찰 기록')).toEqual({ ok: true, system: '지시', text: '관찰 기록' })
+    expect(plainTurn('지시', '관찰 기록')).toEqual({
+      ok: true,
+      system: '지시',
+      text: '관찰 기록',
+      examples: [],
+    })
   })
   // clipping cut the observation's end and the closing instruction with nothing said
   it('refuses a request too long to fit beside the instructions, saying what to shorten', () => {
     const system = '가'.repeat(500)
     expect(plainTurn(system, '나'.repeat(5000))).toEqual({ ok: false, error: TOO_LONG })
     const fits = '나'.repeat(Math.floor((MAX_TURN_BYTES - bytes(system)) / 3))
-    expect(plainTurn(system, fits)).toEqual({ ok: true, system, text: fits })
+    expect(plainTurn(system, fits)).toEqual({ ok: true, system, text: fits, examples: [] })
+  })
+  // a long note goes without the model answers rather than being refused for them
+  it('takes the model answers that fit beside the request, and drops the rest', () => {
+    const example = ['가'.repeat(400), '나'.repeat(400)] as const
+    expect(plainTurn('규칙', '관찰', [example, example])).toMatchObject({
+      ok: true,
+      examples: [example, example],
+    })
+    const long = '다'.repeat(Math.floor((MAX_TURN_BYTES - 2000) / 3))
+    expect(plainTurn('규칙', long, [example, example])).toMatchObject({ ok: true, examples: [] })
   })
   it('refuses instructions longer than its limit', () => {
     expect(plainTurn('가'.repeat(MAX_SYSTEM_BYTES), '')).toMatchObject({ ok: false })
@@ -156,29 +185,35 @@ describe('the form a 생기부 request goes in', () => {
     system: '긴 지시문',
     text: '요청',
     temperature: 0.7,
-    compact: { system: COMPACT_SYSTEM, text: '[행발]\n관찰:\n- 성실함.\n분량: 보통\n변형: 2' },
+    compact: {
+      system: COMPACT_SYSTEM,
+      text: '[행동특성 및 종합의견] 분량: 3~4문장, 300자 안팎\n관찰:\n잘하는 점:\n- 성실함',
+      examples: [['예시 요청', '예시 답']] as const,
+    },
   }
   it('is the instructions and the request while the adapter learned those', () => {
     expect(pickTurn(request, 'instructions')).toEqual({
       system: '긴 지시문',
       text: '요청',
-      temperature: 0.7,
+      examples: [],
+      sampling: { temperature: 0.7 },
     })
   })
-  it('is the short format, at temperature 0, once the adapter learned it', () => {
+  it("is 똑딱AI's own request with its model answers, at the sampling it was measured with", () => {
     expect(pickTurn(request, 'compact')).toEqual({
       system: COMPACT_SYSTEM,
       text: request.compact.text,
-      temperature: 0,
+      examples: request.compact.examples,
+      sampling: COMPACT_SAMPLING,
     })
     const { compact: _compact, ...withoutShort } = request
     expect(pickTurn(withoutShort, 'compact')).toMatchObject({ system: '긴 지시문' })
   })
   // the mark goes with the adapter: a new adapter pinned without a thought for it fails here
-  it('is the instructions for the adapter pinned today, trained on them', () => {
+  it("is 똑딱AI's own request for the adapter pinned today", () => {
     expect({ adapter: MODEL_FILES[1].sha256.slice(0, 16), format: RECORD_FORMAT }).toEqual({
       adapter: 'c4b61189e93ca7ee',
-      format: 'instructions',
+      format: 'compact',
     })
   })
 })

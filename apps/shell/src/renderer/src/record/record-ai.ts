@@ -5,11 +5,10 @@
  * (apps/saenggibu/src/renderer/src/record/record-ai.ts); the pages use only these three.
  */
 import { askAi } from '../special-common'
-import { COMPACT_SYSTEM, GENERATE_AT_ONCE, cleanReply, type RecordTurn } from './record-core'
+import { GENERATE_AT_ONCE, cleanReply, type RecordTurn } from './record-core'
 import {
   NOT_REWORDED,
   REWORD_SYSTEM,
-  compactRewordRequest,
   rewordRequest,
   sameWording,
 } from './record-similarity'
@@ -63,10 +62,7 @@ export async function rewordWithAi(
   others: readonly string[],
   id: string,
 ): Promise<string> {
-  const compact = { system: COMPACT_SYSTEM, text: compactRewordRequest(text, others, 1) }
-  const reply = cleanReply(
-    await askRecordAi(REWORD_SYSTEM, rewordRequest(text, others), id, compact),
-  )
+  const reply = cleanReply(await askRecordAi(REWORD_SYSTEM, rewordRequest(text, others), id))
   if (!reply) throw new Error('AI가 빈 답을 보냈어요. 다시 해 주세요.')
   if (sameWording(text, reply)) throw new Error(NOT_REWORDED)
   return reply

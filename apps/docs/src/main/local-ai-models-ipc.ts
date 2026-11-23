@@ -36,22 +36,19 @@ export const LOCAL_AI_MODEL_CHANNELS = {
 } as const
 
 /** what the settings page shows: the state, and how much there is to download in all */
-export type LocalAiModelsInfo = LocalAiModelState & { totalBytes: number; schoolRecordVersion?: string }
+export type LocalAiModelsInfo = LocalAiModelState & {
+  totalBytes: number
+  schoolRecordVersion?: string
+}
 
 let models: LocalAiModels | null = null
 let modelFiles = LOCAL_AI_MODEL_FILES
-
-/** V10-94 is verified and loads with the server: V10.1's observation writing can use it */
-export function usesLocalSchoolRecordV10(): boolean {
-  return models?.pathsFor('main')?.adapters.some((a) => a.name === SCHOOL_RECORD_V10.id) ?? false
-}
 
 function info(): LocalAiModelsInfo | null {
   if (!models) return null
   return {
     ...models.current(),
     totalBytes: modelFiles.reduce((n, f) => n + f.bytes, 0),
-    ...(usesLocalSchoolRecordV10() ? { schoolRecordVersion: '똑딱AI 생기부 V10.1' } : {}),
   }
 }
 
@@ -97,9 +94,10 @@ export function registerLocalAiModels(wantsLocal: () => boolean): void {
     modelFiles = [...LOCAL_AI_MODEL_FILES, SCHOOL_RECORD_V10]
   models = new LocalAiModels(
     dir,
-    (url, init) => url
-      ? downloadSession().fetch(url, { ...init, cache: 'no-store' })
-      : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
+    (url, init) =>
+      url
+        ? downloadSession().fetch(url, { ...init, cache: 'no-store' })
+        : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
     { files: modelFiles, reconnect: () => downloadSession().closeAllConnections() },
   )
   useLocalAiModels(models)

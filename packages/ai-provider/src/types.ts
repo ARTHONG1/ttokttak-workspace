@@ -336,7 +336,12 @@ export interface AiStreamRequest {
    * instructions (apps/docs/src/main/school-record-turn.ts). Only the built-in model receives
    * it, and only once its 생기부 adapter learned that format; every other provider ignores it.
    */
-  compact?: { system: string; text: string; observation?: unknown }
+  compact?: {
+    system: string
+    text: string
+    examples?: readonly (readonly [string, string])[]
+    observation?: unknown
+  }
 }
 
 /** Token usage a provider reported for one model turn. Both fields are best-effort:

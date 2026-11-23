@@ -127,20 +127,9 @@ import {
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
 import { acquireLocalAi, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
-import { loadObservationExamples } from '../../../saenggibu/src/shared/observation-examples'
-import {
-  completeObservation,
-  composeObservation,
-  draftFromObservation,
-  parseObservation,
-} from '../../../saenggibu/src/shared/observation-turn'
 import { SCHOOL_RECORD_FORMAT } from './local-ai-model-files'
 import { schoolRecordTurn } from './school-record-turn'
-import {
-  localAiSelectionChanged,
-  registerLocalAiModels,
-  usesLocalSchoolRecordV10,
-} from './local-ai-models-ipc'
+import { localAiSelectionChanged, registerLocalAiModels } from './local-ai-models-ipc'
 import {
   localExactEditFollowup,
   localExactSlideStep,
@@ -4217,14 +4206,21 @@ export function registerAiIpc(): void {
       }
       return
     }
-    // 생기부 on the built-in model: its short format once its adapter learned it
+    // 생기부 on the built-in model: 똑딱AI's own request with its model answers as earlier turns
     // (school-record-turn.ts); connected AIs keep the instructions
     const asked =
-      provider === 'local' ? schoolRecordTurn(request, SCHOOL_RECORD_FORMAT) : { system, messages }
-    const modelTurn =
+      provider === 'local'
+        ? schoolRecordTurn(request, SCHOOL_RECORD_FORMAT)
+        : { system, messages, examples: [] }
+    const prepared =
       provider === 'local'
         ? prepareLocalAiTurn(asked.system, asked.messages, tools)
         : { system, messages, tools }
+    // a writing turn keeps only its last request: the model answers go back in front of it
+    const modelTurn =
+      asked.examples.length > 0
+        ? { ...prepared, messages: [...asked.examples, ...prepared.messages] }
+        : prepared
     if ('error' in modelTurn && modelTurn.error) {
       send(aiStreamErrorChunk(requestId, new Error(modelTurn.error)))
       return
@@ -4235,9 +4231,15 @@ export function registerAiIpc(): void {
     // 품의서 생성 on the built-in model asks for a whole cart as JSON under its grammar: it gets
     // the room and the settings its adapter was measured with (temperature 0).
     const localExtract = provider === 'local' && request.feature === 'pumui'
-    // 생기부 on the built-in model: its own adapter, measured at temperature 0 as well
-    const localMeasured =
-      localExtract || (provider === 'local' && request.feature === 'school_record')
+    // 생기부 on the built-in model: its own request at the sampling it was measured with, the
+    // long instructions at temperature 0 as V7 B was measured
+    const localRecord = provider === 'local' && request.feature === 'school_record'
+    const sampling =
+      'sampling' in asked && asked.sampling
+        ? asked.sampling
+        : localExtract || localRecord
+          ? { temperature: 0 }
+          : {}
     const maxTokens =
       provider === 'local'
         ? Math.min(
@@ -4262,39 +4264,8 @@ export function registerAiIpc(): void {
       lastPing = now
       out.push({ requestId, type: 'ping' })
     }
-    const observation = provider === 'local' && request.feature === 'school_record' &&
-      tools.length === 0 && usesLocalSchoolRecordV10()
-      ? parseObservation(request.compact?.observation)
-      : null
     let releaseLocal = () => {}
     try {
-      if (observation) {
-        const keepAlive = setInterval(ping, 5_000)
-        try {
-          let text = draftFromObservation(observation)
-          if (!text) {
-            const held = await acquireLocalAi('school_record_v10')
-            releaseLocal = held.release
-            controller.signal.throwIfAborted()
-            const { baseUrl, apiKey, model } = held.endpoint
-            text = await composeObservation(
-              observation,
-              loadObservationExamples(app.getPath('userData')),
-              model,
-              (scale) => held.lora?.map((adapter) => ({
-                ...adapter,
-                scale: adapter.scale * scale,
-              })) ?? [],
-              (body) => completeObservation(baseUrl + '/chat/completions', apiKey, body, controller.signal),
-            )
-          }
-          if (!controller.signal.aborted) out.push({ requestId, type: 'delta', text })
-          out.push({ requestId, type: 'done' })
-          return
-        } finally {
-          clearInterval(keepAlive)
-        }
-      }
       // the built-in AI: this feature's model run, held until the request ends
       const held = provider === 'local' ? await acquireLocalAi(request.feature) : null
       if (held) releaseLocal = held.release
@@ -4313,7 +4284,7 @@ export function registerAiIpc(): void {
       const bodyExtras = {
         ...(grammar ? { grammar } : {}),
         ...(lora ? { lora } : {}),
-        ...(localMeasured ? { temperature: 0 } : {}),
+        ...sampling,
       }
       await streamForProvider(
         provider,

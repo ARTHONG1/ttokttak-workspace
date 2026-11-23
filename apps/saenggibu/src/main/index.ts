@@ -3,7 +3,6 @@
  * with the app, the roster/texts file picker and 나이스로 보내기 in the app's own browser.
  * It shares no code or settings with 똑딱작업실: its own name, app id and user-data folder.
  */
-import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   BrowserWindow,
@@ -24,14 +23,10 @@ import {
   MODEL_NAME,
   MODEL_PAGE,
   RECORD_FORMAT,
-  RECORD_V10,
-  RECORD_V10_NAME,
   type ModelSpec,
 } from '../shared/model'
 import { askFailure, pickTurn, type RecordFormat } from './ai-turn'
 import { LocalAi, type ModelSource } from './local-ai'
-import { loadObservationExamples } from '../shared/observation-examples'
-import { parseObservation } from '../shared/observation-turn'
 import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
 import { TABLE_EXTENSIONS, readTableFile } from './table-file'
@@ -72,11 +67,6 @@ let asking = false
  * _SHA256, and _IDLE_MS for a short stall limit); an installed app ignores all of them.
  */
 const modelDir = join(app.getPath('userData'), 'ai')
-const localV10 = statSync(join(modelDir, RECORD_V10.file), { throwIfNoEntry: false })
-const useV10 =
-  (app.isPackaged || (!process.env.SAENGGIBU_MODEL_FILE && !process.env.SAENGGIBU_MODEL_URL)) &&
-  localV10?.isFile() === true &&
-  localV10.size === RECORD_V10.bytes
 
 function modelSource(): ModelSource {
   const env = process.env
@@ -92,7 +82,7 @@ function modelSource(): ModelSource {
             sha256: env.SAENGGIBU_MODEL_SHA256 ?? '',
           },
         ]
-      : useV10 ? [...MODEL_FILES, RECORD_V10] : MODEL_FILES
+      : MODEL_FILES
   const idleMs = !app.isPackaged ? Number(env.SAENGGIBU_MODEL_IDLE_MS) || undefined : undefined
   // the download's own connections (with the system's proxy settings, as Chromium has them),
   // kept apart from the page and without a disk cache: the 2 GB answer goes to the model only
@@ -106,9 +96,10 @@ function modelSource(): ModelSource {
       new ModelStore(
         modelDir,
         spec,
-        (url, init) => url
-          ? downloads().fetch(url, { ...init, cache: 'no-store' })
-          : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
+        (url, init) =>
+          url
+            ? downloads().fetch(url, { ...init, cache: 'no-store' })
+            : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
         { idleMs, reconnect: () => downloads().closeAllConnections() },
       ),
   )
@@ -217,8 +208,8 @@ function registerIpc(): void {
   powerMonitor.on('unlock-screen', () => ai.resumeDropped())
   ipcMain.handle(CHANNELS.aiState, () => ai.current())
   ipcMain.handle(CHANNELS.modelInfo, () => ({
-    name: useV10 ? RECORD_V10_NAME : MODEL_NAME,
-    bytes: useV10 ? MODEL_BYTES + RECORD_V10.bytes : MODEL_BYTES,
+    name: MODEL_NAME,
+    bytes: MODEL_BYTES,
     page: MODEL_PAGE,
   }))
   ipcMain.handle(CHANNELS.retryModel, () => {
@@ -256,19 +247,26 @@ function registerIpc(): void {
         : 0
     const compact =
       r.compact && typeof r.compact.system === 'string' && typeof r.compact.text === 'string'
-        ? { system: r.compact.system, text: r.compact.text }
+        ? {
+            system: r.compact.system,
+            text: r.compact.text,
+            examples: Array.isArray(r.compact.examples)
+              ? r.compact.examples.filter(
+                  (pair) =>
+                    Array.isArray(pair) &&
+                    pair.length === 2 &&
+                    typeof pair[0] === 'string' &&
+                    typeof pair[1] === 'string',
+                )
+              : [],
+          }
         : undefined
     const turn = pickTurn(
       { system: r.system, text: r.text, temperature, ...(compact ? { compact } : {}) },
       recordFormat(),
     )
     try {
-      const observation = useV10
-        ? parseObservation(r.compact?.observation)
-        : null
-      const text = observation
-        ? await ai.writeObservation(r.requestId, observation, () => loadObservationExamples(app.getPath('userData')))
-        : await ai.ask(r.requestId, turn.system, turn.text, turn.temperature)
+      const text = await ai.ask(r.requestId, turn.system, turn.text, turn.sampling, turn.examples)
       return { ok: true, text }
     } catch (err) {
       return askFailure(err)

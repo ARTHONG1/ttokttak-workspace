@@ -16,7 +16,12 @@ export class StudentProblem extends Error {}
 export async function askAi(
   system: string,
   text: string,
-  options: { id?: string; temperature?: number; compact?: { system: string; text: string; observation?: unknown } } = {},
+  options: { id?: string; temperature?: number; compact?: {
+    system: string
+    text: string
+    examples?: readonly (readonly [string, string])[]
+    observation?: unknown
+  } } = {},
 ): Promise<string> {
   const out = await window.saenggibu.ask({
     requestId: options.id ?? crypto.randomUUID(),

@@ -50,10 +50,11 @@ export const RECORD_V10_NAME = '똑딱AI 생기부 V10.1'
 export const MODEL_BYTES = MODEL_FILES.reduce((n, f) => n + f.bytes, 0)
 
 /**
- * How the 생기부 adapter pinned above learned to be asked: 'instructions' (the long instructions
- * of record-core.ts, as V7 B was trained) or 'compact' (똑딱AI's short format, the workspace's
- * docs/똑딱AI-생기부-짧은-입력-규칙.md). Change it with the adapter, in the same commit: the
- * other form makes that adapter write worse. 똑딱작업실 keeps the same mark beside its files
+ * How the 생기부 adapter pinned above is asked: 'instructions' (the long instructions of
+ * record-core.ts, as V7 B was trained) or 'compact' (똑딱AI's own request in record-core.ts:
+ * short rules, model answers as earlier turns, the notes sorted; ai-turn.ts COMPACT_SAMPLING).
+ * 'compact' since 2026-11-24, when it kept V7 B to the notes more often than the instructions.
+ * 똑딱작업실 keeps the same mark beside its files
  * (apps/docs/src/main/local-ai-model-files.ts SCHOOL_RECORD_FORMAT).
  */
-export const RECORD_FORMAT: 'instructions' | 'compact' = 'instructions'
+export const RECORD_FORMAT: 'instructions' | 'compact' = 'compact'

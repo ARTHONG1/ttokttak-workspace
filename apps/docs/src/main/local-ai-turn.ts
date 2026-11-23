@@ -12,7 +12,7 @@ const MAX_TOOL_COUNT = 4
 // instructions and no tools. The 4096-token context must also hold the answer
 // (up to LOCAL_PLAIN_MAX_TOKENS), so the instructions and request together stay
 // under about 2,300 tokens of Korean text.
-const MAX_PLAIN_BYTES = 7000
+export const MAX_PLAIN_BYTES = 7000
 // When the caller's instruction + text exceed MAX_PLAIN_BYTES, keep all of the
 // system prompt and clip the user text to what fits so a long pasted article,
 // PDF extract or YouTube transcript still runs on the bundled model.

@@ -377,96 +377,239 @@ export function activityRequest(
   return lines.join('\n')
 }
 
-/* ------------------------------------------------------------------ 똑딱AI's short format */
+/* ------------------------------------------------------------------ 똑딱AI's own request */
 
 /**
- * 똑딱AI's own 생기부 format (the workspace's docs/똑딱AI-생기부-짧은-입력-규칙.md): an adapter
- * trained on it is given no instructions, only a line naming the task and that task's fields,
- * and writes the entry. Connected AIs (Codex, Claude, the web's Gemini) and an adapter trained
- * on the long instructions above get those instead. A page builds both forms of a request; the
- * main process sends the short one only to 똑딱AI, and only once its pinned 생기부 adapter
- * learned it.
+ * The request the built-in 똑딱AI (Qwen3.5-2B with its V7-B 생기부 adapter) is asked in: short
+ * rules, model answers sent as earlier turns of the conversation, and the student's facts with
+ * the teacher's notes sorted into what the student does well and what to work on. Measured on
+ * 2026-11-24 against the long instructions above on the same notes: no "~습니다", fewer invented
+ * facts and lengths closer to the request, and strengths and concerns kept apart. Connected AIs
+ * (Codex, Claude, the web's Gemini) get the long instructions; the main process sends this form
+ * to 똑딱AI only.
  */
-export const COMPACT_SYSTEM = '학교생활기록부 문장 작성'
+export const COMPACT_SYSTEM = [
+  '너는 대한민국 학교생활기록부를 쓰는 담임교사다. 교사가 준 정보로 나이스에 그대로 넣을 문단 하나를 쓴다.',
+  '- 모든 문장은 "~함", "~임", "~음", "~됨", "~보임", "~기대됨"처럼 끝낸다. "~습니다", "~했다", "~이다"로 끝내지 않는다.',
+  '- 관찰에 적힌 사실만 근거로 쓴다. 관찰에 없는 활동, 수상, 성적, 직책, 숫자, 사건, 어려움, 단점을 지어내지 않는다.',
+  '- 관찰 항목마다 그 행동을 구체적으로 풀어 쓰고, 그 행동에서 드러나는 태도나 역량을 덧붙인다. 관찰이 짧으면 행동의 의미를 넓혀 분량을 채운다.',
+  '- 장점은 장점으로, 부족한 점은 부족한 점으로 쓴다. 부족한 점은 노력하는 모습이나 성장 방향으로 부드럽게 표현한다.',
+  '- 관찰이 "잘하는 점"과 "보완할 점"으로 나뉘어 있으면, 잘하는 점은 칭찬으로, 보완할 점은 노력이 필요한 점으로만 쓴다. 둘을 서로 바꾸지 않는다.',
+  '- "교사 요청"이 있으면 가장 먼저 따른다.',
+  '- "학생은", "이 학생은", "교사는"으로 시작하지 않고, 이름, 제목, 기호, 줄바꿈 없이 한 문단으로 쓴다.',
+  '- 요청한 문장 수와 글자 수를 지킨다.',
+].join('\n')
 
-/** a request in both forms: the instructions and the request, and the short format */
+/** a request in both forms: the long instructions and the request, and 똑딱AI's own request */
 export interface RecordTurn {
   system: string
   text: string
+  /** model answers sent before the request as earlier turns of the conversation: [request, answer] */
+  examples?: readonly (readonly [string, string])[]
   observation?: { category: '행발' | '평어' | '창체'; note: string }
 }
 
-/** variants of a short-format request: a class's students take them in turn */
-export const VARIANTS = 4
-
-/** the variant for the student at this place in the list (1-based), moved on once per [다시 생성] */
-export function variantOf(order: number | undefined, again = 0): number {
-  const at = Math.max(0, (order ?? 1) - 1) + Math.max(0, Math.floor(again))
-  return (at % VARIANTS) + 1
+/** the length asked for, per kind of entry (평어: an elementary school's 교과 세특) */
+const LENGTH_TARGETS: Record<
+  'behavior' | 'subject' | 'elementary' | 'activity',
+  Record<LengthId, string>
+> = {
+  behavior: {
+    'very-short': '1~2문장, 100자 안팎',
+    short: '2~3문장, 200자 안팎',
+    medium: '3~4문장, 300자 안팎',
+    long: '4~5문장, 450자 안팎',
+    'very-long': '5문장 이상, 500자 이내',
+  },
+  subject: {
+    'very-short': '1문장, 100자 안팎',
+    short: '2문장, 180자 안팎',
+    medium: '3문장, 250자 안팎',
+    long: '4~5문장, 400자 안팎',
+    'very-long': '5~6문장, 500자 이내',
+  },
+  elementary: {
+    'very-short': '1문장, 70자 안팎',
+    short: '2문장, 120자 안팎',
+    medium: '2~3문장, 150자 안팎',
+    long: '3~4문장, 250자 안팎',
+    'very-long': '4~5문장, 350자 안팎',
+  },
+  activity: {
+    'very-short': '1문장, 80자 안팎',
+    short: '2문장, 150자 안팎',
+    medium: '3문장, 250자 안팎',
+    long: '4문장, 350자 안팎',
+    'very-long': '5문장, 450자 이내',
+  },
 }
 
 /** a one-line field: its line breaks become spaces */
 const oneLine = (value: string): string => value.trim().replace(/\s*\n\s*/g, ' ')
 
-/** a list field: one item a line, without a bullet of its own */
-const listItems = (value: string): string[] =>
-  value
-    .split(/\r?\n/)
-    .map((line) =>
-      line
+/** words in a note that mark something the student still has to work on */
+const CONCERN =
+  /어려워|어려움|부족|미흡|서툴|서툶|못함|못하|산만|떠듦|떠듬|떠든|다툼|다투|잦음|잦은|잦고|소극적|지각/u
+/** a change for the better ("다툼이 줄어듦"): it stays with what the student does well */
+const GROWTH = /줄어|줄었|감소|개선|나아지|나아짐|좋아지|좋아짐|고쳐|극복|향상/u
+/** a weaker sign, read only against the other half of "A지만 B" ("글씨가 바르지 않음") */
+const NEGATED = /않|없/u
+
+/** a verb or adjective stem as a record ending: 찾 → 찾음, 정확하 → 정확함, 만들 → 만듦, 돕 → 도움 */
+function nominal(stem: string): string {
+  if (stem.endsWith('돕')) return stem.slice(0, -1) + '도움'
+  const last = stem.charCodeAt(stem.length - 1)
+  if (last < 0xac00 || last > 0xd7a3) return stem
+  const final = (last - 0xac00) % 28
+  // no final consonant: ㅁ becomes it (하 → 함); ㄹ takes ㅁ with it (만들 → 만듦); else 음 (찾 → 찾음)
+  if (final === 0) return stem.slice(0, -1) + String.fromCharCode(last + 16)
+  if (final === 8) return stem.slice(0, -1) + String.fromCharCode(last + 2)
+  return stem + '음'
+}
+
+/** which half of "A지만 B" is the one to work on, when only one of them reads so */
+function concernHalf(first: string, second: string): 0 | 1 | null {
+  for (const sign of [CONCERN, NEGATED]) {
+    const inFirst = sign.test(first)
+    const inSecond = sign.test(second)
+    if (inFirst !== inSecond) return inFirst ? 0 : 1
+    if (inFirst) return null
+  }
+  return null
+}
+
+/**
+ * The teacher's notes, one observation a line, sorted into what the student does well and what
+ * to work on. "인물의 마음을 잘 찾지만 근거를 말하기 어려워함" becomes one of each: in one line
+ * the 2B model reversed them two times out of three. A note is put with the things to work on
+ * only on a plain sign of it; any other note, and a change for the better, stays with the rest.
+ */
+export function sortedNotes(notes: string): { good: string[]; concern: string[] } {
+  const good: string[] = []
+  const concern: string[] = []
+  const observations = notes
+    .split(/\r?\n|(?<=[.!?])\s+/)
+    .map((part) =>
+      part
         .trim()
         .replace(/^[-•·*]\s*/, '')
+        .replace(/[.!?]+$/, '')
         .trim(),
     )
     .filter(Boolean)
-    .map((line) => '- ' + line)
+  for (const observation of observations) {
+    const contrast = observation.match(/^(.+?)(?:지만|으나|는데)\s+(.+)$/u)
+    const half =
+      contrast && contrast[1].length >= 3 && contrast[2].length >= 3 && !GROWTH.test(observation)
+        ? concernHalf(contrast[1], contrast[2])
+        : null
+    if (contrast && half !== null) {
+      const first = nominal(contrast[1])
+      good.push(half === 0 ? contrast[2] : first)
+      concern.push(half === 0 ? first : contrast[2])
+    } else if (CONCERN.test(observation) && !GROWTH.test(observation)) concern.push(observation)
+    else good.push(observation)
+  }
+  return { good, concern }
+}
 
-/** one student's 세특, 행발 or 창체 in 똑딱AI's short format */
+function notesBlock(heading: string, notes: string, none: string): string[] {
+  const { good, concern } = sortedNotes(notes)
+  if (!good.length && !concern.length) return [heading + ':', '- ' + none]
+  return [
+    heading + ':',
+    ...(good.length ? ['잘하는 점:', ...good.map((g) => '- ' + g)] : []),
+    ...(concern.length ? ['보완할 점:', ...concern.map((c) => '- ' + c)] : []),
+  ]
+}
+
+/** one student's 세특, 평어, 행발 or 창체 as 똑딱AI's own request */
 export function compactRequest(
   mode: RecordMode,
   info: CommonInfo,
   length: LengthId,
   instructions: string,
   student: Student,
-  variant: number,
 ): string {
-  const lines: string[] = []
-  const field = (name: string, value: string): void => {
-    const v = oneLine(value)
-    if (v) lines.push(name + ': ' + v)
-  }
-  const list = (name: string, value: string): void => {
-    const items = listItems(value)
-    if (items.length) lines.push(name + ':', ...items)
-  }
   const school = SCHOOL_LEVELS.find((s) => s.id === info.schoolLevel)?.label ?? ''
   const grade = info.grade.trim() ? gradeText(info.grade) : ''
+  const who = [school, grade].filter(Boolean).join(' ')
+  const lines: string[] = []
   if (mode === 'subject') {
-    lines.push('[세특]')
-    field('학교급', school)
-    field('학년', grade)
-    field('과목', subjectOf(info))
-    field('단원', info.unitName)
-    field('과제', info.assignmentDesc)
-    field('성취기준', info.achievementStandard)
-    field('성취도', student.level)
-    list('관찰', student.notes)
+    const elementary = info.schoolLevel === 'elementary'
+    lines.push(
+      (elementary ? '[교과 평어] ' : '[교과 세부능력 및 특기사항] ') +
+        [who, subjectOf(info)].filter(Boolean).join(' ') +
+        ' · 분량: ' +
+        LENGTH_TARGETS[elementary ? 'elementary' : 'subject'][length],
+    )
+    if (info.unitName.trim()) lines.push('단원: ' + oneLine(info.unitName))
+    lines.push('과제: ' + oneLine(info.assignmentDesc))
+    if (info.achievementStandard.trim())
+      lines.push('성취기준: ' + oneLine(info.achievementStandard))
+    lines.push('성취도: ' + student.level)
+    lines.push(...notesBlock('관찰', student.notes, '관찰 기록 없음: 과제와 성취도만으로 쓴다'))
   } else if (mode === 'behavior') {
-    lines.push('[행발]')
-    list('관찰', student.notes)
+    lines.push(
+      '[행동특성 및 종합의견] ' +
+        (who ? who + ' · ' : '') +
+        '분량: ' +
+        LENGTH_TARGETS.behavior[length],
+    )
+    lines.push(...notesBlock('관찰', student.notes, '관찰 기록 없음'))
   } else {
-    lines.push('[창체]')
-    field('학교급', school)
-    field('학년', grade)
-    field('영역', areaLabel(info))
-    field('활동명', info.activityName)
-    field('활동 내용', info.activityContent)
-    list('학생 역할·관찰', student.notes)
+    lines.push(
+      '[창의적 체험활동 특기사항] ' +
+        [who, areaLabel(info)].filter(Boolean).join(' · ') +
+        ' · 분량: ' +
+        LENGTH_TARGETS.activity[length],
+    )
+    const activity = oneLine(info.activityName) || '활동'
+    lines.push(
+      '활동: ' +
+        activity +
+        (info.activityContent.trim() ? ' (' + oneLine(info.activityContent) + ')' : ''),
+    )
+    lines.push(
+      ...notesBlock('학생 역할과 관찰', student.notes, '관찰 기록 없음: 활동 내용만으로 쓴다'),
+    )
   }
-  field('분량', lengthLabel(length))
-  field('변형', String(variant))
-  field('교사 요청', instructions)
+  if (instructions.trim()) lines.push('교사 요청: ' + oneLine(instructions))
   return lines.join('\n')
+}
+
+/** the model answers sent before a request of this kind (fictional students, written for 똑딱AI) */
+export function compactExamples(mode: RecordMode): readonly (readonly [string, string])[] {
+  return COMPACT_EXAMPLES[mode]
+}
+
+const COMPACT_EXAMPLES: Record<RecordMode, readonly (readonly [string, string])[]> = {
+  behavior: [
+    [
+      '[행동특성 및 종합의견] 초등학교 6학년 · 분량: 3~4문장, 300자 안팎\n관찰:\n잘하는 점:\n- 모둠 활동에서 역할을 나눌 때 남는 일을 먼저 맡음\n- 쉬는 시간에 혼자 있는 친구에게 먼저 말을 걺\n보완할 점:\n- 수학 문제를 풀 때 계산 실수가 잦아 검산 습관을 들이는 중임',
+      '모둠 활동에서 역할을 나눌 때 친구들이 맡지 않은 일을 먼저 맡아 끝까지 해내며 공동체를 위해 자신의 몫을 기꺼이 감당하는 책임감을 보임. 쉬는 시간에 혼자 있는 친구에게 먼저 다가가 말을 건네는 모습에서 주변을 세심하게 살피는 따뜻한 배려심이 드러남. 수학 문제 풀이에서 계산 실수가 잦은 편이나 스스로 검산하는 습관을 들이려고 꾸준히 노력하고 있어 학습의 정확성이 점차 높아지고 있음. 맡은 일을 성실히 해내는 태도와 친구를 아끼는 마음을 바탕으로 학급에서 신뢰받는 구성원으로 성장할 것으로 기대됨.',
+    ],
+    [
+      '[행동특성 및 종합의견] 중학교 1학년 · 분량: 3~4문장, 300자 안팎\n관찰:\n잘하는 점:\n- 발표를 잘함',
+      '수업 시간에 자신의 생각을 적극적으로 발표하며 배운 내용을 자기 말로 정리하여 표현하는 능력이 돋보임. 자신의 의견을 분명하게 밝히는 자신감은 학급 토의와 모둠 활동의 분위기를 활발하게 만드는 데 도움이 됨. 발표에 적극적인 만큼 친구의 발표에도 귀 기울이며 서로의 생각을 비교해 보는 경험을 쌓는다면 생각의 폭을 넓히고 깊이를 더해 갈 것으로 기대됨.',
+    ],
+  ],
+  subject: [
+    [
+      '[교과 세부능력 및 특기사항] 중학교 1학년 사회 · 분량: 3문장, 250자 안팎\n과제: 우리 지역 지형도 읽고 지도 만들기\n성취기준: [9사01-02] 지도에 나타난 지형 정보를 읽고 해석한다.\n성취도: 상\n관찰:\n잘하는 점:\n- 등고선을 해석해 산과 하천 위치를 지도에 표시함',
+      '‘우리 지역 지형도 읽고 지도 만들기’ 활동에서 등고선을 해석하여 산지와 하천의 위치를 지도에 정확하게 표시함. 등고선의 간격과 높이 정보를 바탕으로 지형의 특징을 구분하는 등 지도에 담긴 정보를 읽어 내는 능력이 우수함. 지도 속 지형 정보를 실제 지역의 모습과 연결하여 이해하며 지리적 사고력을 갖추고 있음.',
+    ],
+    [
+      '[교과 평어] 초등학교 3학년 수학 · 분량: 2~3문장, 150자 안팎\n과제: 여러 물건의 들이와 무게 비교하기\n성취기준: [4수03-14] 들이와 무게를 어림하고 측정할 수 있다.\n성취도: 보통\n관찰:\n잘하는 점:\n- 단위는 앎\n보완할 점:\n- 어림하기를 어려워함',
+      '‘여러 물건의 들이와 무게 비교하기’ 활동에서 들이와 무게의 단위를 알고 단위를 사용하여 물건의 양을 나타냄. 물건의 들이와 무게를 어림하는 데에는 어려움이 있어 생활 속 물건을 직접 재어 보며 양감을 기르는 경험이 필요함.',
+    ],
+  ],
+  activity: [
+    [
+      '[창의적 체험활동 특기사항] 중학교 2학년 · 자율·자치활동 · 분량: 3문장, 250자 안팎\n활동: 학급 환경 개선 캠페인 (캠페인을 기획하고 홍보물을 만들어 실천함)\n학생 역할과 관찰:\n잘하는 점:\n- 포스터 제작을 맡음\n- 친구들 의견을 모아 문구를 고침',
+      '학급 환경 개선 캠페인에서 홍보 포스터 제작을 맡아 친구들의 의견을 모아 문구를 여러 차례 다듬으며 전달력을 높임. 캠페인의 취지를 쉽게 전하기 위해 표현을 고민하는 과정에서 학급의 문제에 관심을 갖고 해결에 참여하려는 태도를 보임. 맡은 역할을 끝까지 책임감 있게 수행하여 학급 구성원들이 캠페인에 함께하는 데 기여함.',
+    ],
+  ],
 }
 
 /** the AI's answer as NEIS takes it: no markdown, no heading, one paragraph */
@@ -493,8 +636,11 @@ export function cleanReply(reply: string): string {
         /^[^.。]{0,120}(?:다음과 같습니다|다음과 같이 작성|작성했습니다|작성합니다)[.:]?\s*/,
         '',
       )
-      .replace(/^["'“‘「]+/, '')
-      .replace(/["'”’」]+$/, '')
+      // "1 학기", "2 학년": the 2B model now and then splits a number from its unit
+      .replace(/(\d) (학기|학년|학급)/g, '$1$2')
+      // an answer wrapped in quotes loses them; a quoted title at its start keeps its own
+      // ("‘이야기 속 세상’ 활동에서": stripping the first mark alone left "이야기 속 세상’ 활동에서")
+      .replace(/^["'“‘「]+([\s\S]*?)["'”’」]+$/, '$1')
       // rule 6 of every 생기부 instruction: no "이 학생은"/"위 학생은" opening (the 2B model
       // still opens with one now and then; 2 of 4 행발 in a class, 2026-11-21)
       .replace(/^(?:이|위|해당|본)\s*학생(?:은|이|의 경우)\s*,?\s*/, '')

@@ -85,7 +85,7 @@ export type SchoolRecordFormat = 'instructions' | 'compact'
  * the same commit: the other form makes that adapter write worse. 똑딱생기부 keeps the same mark
  * (apps/saenggibu/src/shared/model.ts RECORD_FORMAT).
  */
-export const SCHOOL_RECORD_FORMAT: SchoolRecordFormat = 'instructions'
+export const SCHOOL_RECORD_FORMAT: SchoolRecordFormat = 'compact'
 
 /**
  * The server runs: the model each loads and its adapters, in the order llama-server numbers
