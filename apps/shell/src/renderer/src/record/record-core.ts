@@ -387,12 +387,13 @@ export function activityRequest(
  * main process sends the short one only to 똑딱AI, and only once its pinned 생기부 adapter
  * learned it.
  */
-export const COMPACT_SYSTEM = '학교생활기록부 문장 작성'
+export const COMPACT_SYSTEM = ''
 
 /** a request in both forms: the instructions and the request, and the short format */
 export interface RecordTurn {
   system: string
   text: string
+  observation?: { category: '행발' | '평어' | '창체'; note: string }
 }
 
 /** variants of a short-format request: a class's students take them in turn */

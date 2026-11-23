@@ -393,6 +393,7 @@ export const COMPACT_SYSTEM = ''
 export interface RecordTurn {
   system: string
   text: string
+  observation?: { category: '행발' | '평어' | '창체'; note: string }
 }
 
 /** variants of a short-format request: a class's students take them in turn */

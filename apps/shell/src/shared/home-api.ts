@@ -734,4 +734,5 @@ export type LocalAiModelsInfo = {
   retrying?: boolean
   /** all the files together */
   totalBytes: number
+  schoolRecordVersion?: string
 }

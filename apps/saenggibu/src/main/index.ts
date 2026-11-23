@@ -30,6 +30,8 @@ import {
 } from '../shared/model'
 import { askFailure, pickTurn, type RecordFormat } from './ai-turn'
 import { LocalAi, type ModelSource } from './local-ai'
+import { loadObservationExamples } from '../shared/observation-examples'
+import { parseObservation } from '../shared/observation-turn'
 import { ModelStore } from './model-store'
 import { createNeisDriver, neisRequest, type PlaywrightNeisDriver } from './neis-driver'
 import { TABLE_EXTENSIONS, readTableFile } from './table-file'
@@ -261,7 +263,13 @@ function registerIpc(): void {
       recordFormat(),
     )
     try {
-      return { ok: true, text: await ai.ask(r.requestId, turn.system, turn.text, turn.temperature) }
+      const observation = useV10 && recordFormat() === 'compact'
+        ? parseObservation(r.compact?.observation)
+        : null
+      const text = observation
+        ? await ai.writeObservation(r.requestId, observation, () => loadObservationExamples(app.getPath('userData')))
+        : await ai.ask(r.requestId, turn.system, turn.text, turn.temperature)
+      return { ok: true, text }
     } catch (err) {
       return askFailure(err)
     }

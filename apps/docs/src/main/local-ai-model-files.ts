@@ -62,6 +62,14 @@ export const LOCAL_AI_MODEL_FILES: readonly LocalAiModelFile[] = [
   },
 ]
 
+export const SCHOOL_RECORD_V10: LocalAiModelFile = {
+  id: 'school_record',
+  file: 'adapters/school_record-v10-94.gguf',
+  bytes: 151_376_160,
+  sha256: '81bb9ac26b743accc98accc7515a6ff3bd5765f1c10dd2a22aa4a7c341fce5c4',
+  url: '',
+}
+
 export type SchoolRecordFormat = 'instructions' | 'compact'
 
 /**

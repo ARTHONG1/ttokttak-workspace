@@ -16,7 +16,7 @@ export interface AskRequest {
    * compactRequest): sent instead, at temperature 0, once the pinned 생기부 adapter learned it
    * (shared/model.ts RECORD_FORMAT)
    */
-  compact?: { system: string; text: string }
+  compact?: { system: string; text: string; observation?: unknown }
 }
 export type AskResult =
   | { ok: true; text: string }

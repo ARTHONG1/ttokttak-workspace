@@ -368,8 +368,17 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     // 똑딱AI's short format: the student's variant, the next one on a [다시 생성]
     const key = m + ':' + student.id
     if (student.result.trim()) rewrites.current[key] = (rewrites.current[key] ?? 0) + 1
+    const category = m === 'behavior' ? '행발' as const
+      : m === 'activity' ? '창체' as const
+      : w.info.schoolLevel === 'elementary' ? '평어' as const : null
+    const note = m === 'activity'
+      ? [w.info.activityName, student.notes].filter(Boolean).join('\n')
+      : student.notes
     const compact = {
       system: COMPACT_SYSTEM,
+      ...(category && w.length === 'medium' && !w.instructions.trim() && student.notes.trim()
+        ? { observation: { category, note } }
+        : {}),
       text: compactRequest(
         m,
         w.info,

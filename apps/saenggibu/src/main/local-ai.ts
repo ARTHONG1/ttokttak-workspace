@@ -14,6 +14,13 @@ import { availableParallelism } from 'node:os'
 import { basename, dirname, join, relative } from 'node:path'
 import { readdir, rm, stat } from 'node:fs/promises'
 import type { AiState } from '../shared/api'
+import {
+  completeObservation,
+  composeObservation,
+  draftFromObservation,
+  type Observation,
+  type ObservationExample,
+} from '../shared/observation-turn'
 import { MAX_ANSWER_TOKENS, RequestProblem, plainTurn } from './ai-turn'
 import { ModelError, type ModelStore, type Progress } from './model-store'
 
@@ -386,6 +393,35 @@ export class LocalAi {
       // a 1,500-byte entry is far under the cap: one that reaches it is cut off mid-sentence
       if (choice?.finish_reason === 'length') throw new RequestProblem(RAN_ON)
       return choice?.message?.content ?? ''
+    } catch (err) {
+      if (controller.signal.aborted) throw new Error('멈췄어요.', { cause: err })
+      throw err
+    } finally {
+      this.running.delete(requestId)
+    }
+  }
+
+  async writeObservation(
+    requestId: string,
+    observation: Observation,
+    examples: () => ObservationExample[],
+  ): Promise<string> {
+    const edited = draftFromObservation(observation)
+    if (edited) return edited
+    const controller = new AbortController()
+    this.running.set(requestId, controller)
+    try {
+      const endpoint = await this.ensure()
+      controller.signal.throwIfAborted()
+      return await composeObservation(
+        observation,
+        examples(),
+        AI_MODEL,
+        (scale) => [{ id: 0, scale }],
+        (body) => completeObservation(
+          endpoint.url + '/v1/chat/completions', endpoint.key, body, controller.signal,
+        ),
+      )
     } catch (err) {
       if (controller.signal.aborted) throw new Error('멈췄어요.', { cause: err })
       throw err

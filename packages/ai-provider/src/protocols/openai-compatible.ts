@@ -26,7 +26,7 @@ function openAiMessages(
   messages: AgentMessage[],
   echoReasoning: boolean,
 ): unknown[] {
-  const out: unknown[] = [{ role: 'system', content: system }]
+  const out: unknown[] = system ? [{ role: 'system', content: system }] : []
   for (const m of messages) {
     if (m.role === 'user') {
       if (!m.images?.length) {

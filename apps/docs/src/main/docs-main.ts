@@ -127,9 +127,20 @@ import {
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
 import { acquireLocalAi, localAiAvailable, stopLocalAiRuntime } from './local-ai-runtime'
-import { SCHOOL_RECORD_FORMAT } from './local-ai-model-files'
+import { loadObservationExamples } from '../../../saenggibu/src/shared/observation-examples'
+import {
+  completeObservation,
+  composeObservation,
+  draftFromObservation,
+  parseObservation,
+} from '../../../saenggibu/src/shared/observation-turn'
 import { schoolRecordTurn } from './school-record-turn'
-import { localAiSelectionChanged, registerLocalAiModels } from './local-ai-models-ipc'
+import {
+  localAiSelectionChanged,
+  localSchoolRecordFormat,
+  registerLocalAiModels,
+  usesLocalSchoolRecordV10,
+} from './local-ai-models-ipc'
 import {
   localExactEditFollowup,
   localExactSlideStep,
@@ -4209,7 +4220,7 @@ export function registerAiIpc(): void {
     // 생기부 on the built-in model: its short format once its adapter learned it
     // (school-record-turn.ts); connected AIs keep the instructions
     const asked =
-      provider === 'local' ? schoolRecordTurn(request, SCHOOL_RECORD_FORMAT) : { system, messages }
+      provider === 'local' ? schoolRecordTurn(request, localSchoolRecordFormat()) : { system, messages }
     const modelTurn =
       provider === 'local'
         ? prepareLocalAiTurn(asked.system, asked.messages, tools)
@@ -4251,8 +4262,39 @@ export function registerAiIpc(): void {
       lastPing = now
       out.push({ requestId, type: 'ping' })
     }
+    const observation = provider === 'local' && request.feature === 'school_record' &&
+      tools.length === 0 && usesLocalSchoolRecordV10()
+      ? parseObservation(request.compact?.observation)
+      : null
     let releaseLocal = () => {}
     try {
+      if (observation) {
+        const keepAlive = setInterval(ping, 5_000)
+        try {
+          let text = draftFromObservation(observation)
+          if (!text) {
+            const held = await acquireLocalAi('school_record')
+            releaseLocal = held.release
+            controller.signal.throwIfAborted()
+            const { baseUrl, apiKey, model } = held.endpoint
+            text = await composeObservation(
+              observation,
+              loadObservationExamples(app.getPath('userData')),
+              model,
+              (scale) => held.lora?.map((adapter) => ({
+                ...adapter,
+                scale: adapter.scale * scale,
+              })) ?? [],
+              (body) => completeObservation(baseUrl + '/chat/completions', apiKey, body, controller.signal),
+            )
+          }
+          if (!controller.signal.aborted) out.push({ requestId, type: 'delta', text })
+          out.push({ requestId, type: 'done' })
+          return
+        } finally {
+          clearInterval(keepAlive)
+        }
+      }
       // the built-in AI: this feature's model run, held until the request ends
       const held = provider === 'local' ? await acquireLocalAi(request.feature) : null
       if (held) releaseLocal = held.release

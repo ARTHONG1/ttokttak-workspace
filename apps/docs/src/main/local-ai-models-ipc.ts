@@ -5,6 +5,7 @@
  * GENOFFICE_LOCAL_AI_MODEL). The files are downloaded when the built-in AI is the selected one:
  * on a new installation (it is preselected) or once someone picks it.
  */
+import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   app,
@@ -21,6 +22,9 @@ import {
   LOCAL_AI_MODEL_FILES,
   LOCAL_AI_MODEL_PAGE,
   LOCAL_AI_MODELS_DIR,
+  SCHOOL_RECORD_FORMAT,
+  SCHOOL_RECORD_V10,
+  type SchoolRecordFormat,
 } from './local-ai-model-files'
 import { LocalAiModels, type LocalAiModelState } from './local-ai-model-store'
 import { localAiExecutable, useLocalAiModels } from './local-ai-runtime'
@@ -34,13 +38,26 @@ export const LOCAL_AI_MODEL_CHANNELS = {
 } as const
 
 /** what the settings page shows: the state, and how much there is to download in all */
-export type LocalAiModelsInfo = LocalAiModelState & { totalBytes: number }
+export type LocalAiModelsInfo = LocalAiModelState & { totalBytes: number; schoolRecordVersion?: string }
 
 let models: LocalAiModels | null = null
+let modelFiles = LOCAL_AI_MODEL_FILES
+
+export function usesLocalSchoolRecordV10(): boolean {
+  return modelFiles.includes(SCHOOL_RECORD_V10)
+}
+
+export function localSchoolRecordFormat(): SchoolRecordFormat {
+  return usesLocalSchoolRecordV10() ? 'compact' : SCHOOL_RECORD_FORMAT
+}
 
 function info(): LocalAiModelsInfo | null {
   if (!models) return null
-  return { ...models.current(), totalBytes: LOCAL_AI_MODEL_FILES.reduce((n, f) => n + f.bytes, 0) }
+  return {
+    ...models.current(),
+    totalBytes: modelFiles.reduce((n, f) => n + f.bytes, 0),
+    ...(usesLocalSchoolRecordV10() ? { schoolRecordVersion: '똑딱AI 생기부 V10.1' } : {}),
+  }
 }
 
 /** the download's own connections: no disk cache, and an ASCII User-Agent */
@@ -79,10 +96,16 @@ export function registerLocalAiModels(wantsLocal: () => boolean): void {
   })
 
   if (!localAiExecutable() || process.env.GENOFFICE_LOCAL_AI_MODEL) return
+  const dir = join(app.getPath('userData'), LOCAL_AI_MODELS_DIR)
+  const candidate = statSync(join(dir, SCHOOL_RECORD_V10.file), { throwIfNoEntry: false })
+  if (candidate?.isFile() && candidate.size === SCHOOL_RECORD_V10.bytes)
+    modelFiles = LOCAL_AI_MODEL_FILES.map((file) => file.id === 'school_record' ? SCHOOL_RECORD_V10 : file)
   models = new LocalAiModels(
-    join(app.getPath('userData'), LOCAL_AI_MODELS_DIR),
-    (url, init) => downloadSession().fetch(url, { ...init, cache: 'no-store' }),
-    { reconnect: () => downloadSession().closeAllConnections() },
+    dir,
+    (url, init) => url
+      ? downloadSession().fetch(url, { ...init, cache: 'no-store' })
+      : Promise.reject(new Error('똑딱AI 생기부 V10 파일을 다시 넣어 주세요.')),
+    { files: modelFiles, reconnect: () => downloadSession().closeAllConnections() },
   )
   useLocalAiModels(models)
   // while the files download, the computer does not fall asleep by itself (as a browser
