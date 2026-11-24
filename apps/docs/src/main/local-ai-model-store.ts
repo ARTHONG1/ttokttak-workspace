@@ -25,7 +25,6 @@ import {
   LOCAL_AI_MODEL_FILES,
   LOCAL_AI_RUNS,
   localAiRunFiles,
-  type LocalAiFileId,
   type LocalAiModelFile,
   type LocalAiRun,
 } from './local-ai-model-files'
