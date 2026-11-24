@@ -14,6 +14,9 @@ import {
 } from './record-core'
 import { NOT_REWORDED, REWORD_SYSTEM, rewordRequest, sameWording } from './record-similarity'
 
+/** answers asked for one entry at most on 똑딱AI: the first, and again while the best has a problem */
+const RECORD_TRIES = 3
+
 /** requests [멈추기] called off: a stopped answer is not asked again */
 const calledOff = new Set<string>()
 
@@ -27,37 +30,11 @@ async function onBuiltInAi(): Promise<boolean> {
 }
 
 /**
- * Whether this is an Apple Silicon Mac, where 똑딱AI writes four answers at once on the GPU
- * (apps/docs/src/main/local-ai-runtime.ts): there one entry is asked twice side by side.
- */
-async function appleSilicon(): Promise<boolean> {
-  try {
-    const agent = (
-      navigator as Navigator & {
-        userAgentData?: {
-          getHighEntropyValues(
-            hints: string[],
-          ): Promise<{ platform?: string; architecture?: string }>
-        }
-      }
-    ).userAgentData
-    const values = await agent?.getHighEntropyValues(['platform', 'architecture'])
-    return values?.platform === 'macOS' && values.architecture === 'arm'
-  } catch {
-    return false
-  }
-}
-
-/** the id of one of the answers asked side by side for an entry */
-const answerId = (id: string, at: number): string => (at === 0 ? id : id + '~' + (at + 1))
-
-/**
  * one answer, under an id that [멈추기] can call off; compact is the same request as 똑딱AI's
  * own, which the main process sends instead only to the built-in model
- * (apps/docs/src/main/school-record-turn.ts), held to entryGrammar. There, on an Apple Silicon
- * Mac two answers are asked side by side, elsewhere one; the best (record-core.ts pickEntry)
- * is kept, and while it still has a problem (entryProblems) more are asked: four answers at
- * most on a Mac, three elsewhere.
+ * (apps/docs/src/main/school-record-turn.ts), held to entryGrammar. There, while the answer has
+ * a problem (record-core.ts entryProblems: a concern written as praise, too short…), it is
+ * asked again, three answers at most; the best of them (pickEntry) is kept.
  */
 export async function askRecordAi(
   system: string,
@@ -65,22 +42,18 @@ export async function askRecordAi(
   id: string,
   compact?: RecordTurn,
 ): Promise<string> {
-  const ask = (requestId: string, turn?: RecordTurn): Promise<string> =>
+  const ask = (turn?: RecordTurn): Promise<string> =>
     askAi(system, text, [], 4000, {
       feature: 'school_record',
-      requestId,
+      requestId: id,
       ...(turn ? { compact: turn } : {}),
     })
-  if (!compact || !(await onBuiltInAi())) return ask(id, compact)
+  if (!compact || !(await onBuiltInAi())) return ask(compact)
   const request = { ...compact, grammar: entryGrammar(compact.text) }
-  const width = (await appleSilicon()) ? 2 : 1
   const replies: string[] = []
   try {
-    for (let round = 0; round < (width > 1 ? 2 : 3) && !calledOff.has(id); round++) {
-      const answers = await Promise.all(
-        Array.from({ length: width }, (_, at) => ask(answerId(id, at), request)),
-      )
-      replies.push(...answers.map(cleanReply))
+    for (let tries = 0; tries < RECORD_TRIES && !calledOff.has(id); tries++) {
+      replies.push(cleanReply(await ask(request)))
       if (pickEntry(replies, compact.text).problems === 0) break
     }
     return pickEntry(replies, compact.text).entry
@@ -103,7 +76,7 @@ export async function studentsAtOnce(): Promise<number> {
 /** call a running request off: its stream ends with what came so far, which the page drops */
 export function cancelRecordAi(id: string): void {
   calledOff.add(id)
-  for (const at of [0, 1]) void window.aiOffice?.aiStreamCancel?.(answerId(id, at))
+  void window.aiOffice?.aiStreamCancel?.(id)
 }
 
 /**

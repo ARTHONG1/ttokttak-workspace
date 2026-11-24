@@ -391,8 +391,8 @@ export function activityRequest(
 export const COMPACT_SYSTEM = [
   '너는 대한민국 학교생활기록부를 쓰는 담임교사다. 교사가 준 정보로 나이스에 그대로 넣을 문단 하나를 쓴다.',
   '- 모든 문장은 "~함", "~임", "~음", "~됨", "~보임", "~기대됨"처럼 끝낸다. "~습니다", "~했다", "~이다"로 끝내지 않는다.',
-  '- 관찰에 적힌 사실만 근거로 쓴다. 관찰에 없는 활동, 수상, 성적, 직책, 숫자, 사건, 어려움, 단점을 지어내지 않는다.',
-  '- 관찰 항목마다 그 행동을 구체적으로 풀어 쓰고, 그 행동에서 드러나는 태도나 역량을 덧붙인다. 관찰이 짧으면 행동의 의미를 넓혀 분량을 채운다.',
+  '- 관찰에 적힌 내용을 중심으로 쓴다. 관찰과 어긋나는 내용, 수상, 성적, 직책, 숫자, 관찰에 없는 단점이나 어려움은 쓰지 않는다.',
+  '- 관찰 항목마다 그 행동을 구체적으로 풀어 쓰고, 그 행동에서 드러나는 태도나 역량을 덧붙인다. 관찰이 짧으면 그 학생에게서 자연스럽게 짐작되는 수업·생활 모습과 성장 가능성을 덧붙여 요청한 분량을 반드시 채운다. 한 문장은 60~100자로 쓴다.',
   '- 장점은 장점으로, 부족한 점은 부족한 점으로 쓴다. 부족한 점은 노력하는 모습이나 성장 방향으로 부드럽게 표현한다.',
   '- 관찰이 "잘하는 점"과 "보완할 점"으로 나뉘어 있으면, 잘하는 점은 칭찬으로, 보완할 점은 노력이 필요한 점으로만 쓴다. 둘을 서로 바꾸지 않는다.',
   '- "교사 요청"이 있으면 가장 먼저 따른다.',
@@ -418,31 +418,31 @@ const LENGTH_TARGETS: Record<
 > = {
   behavior: {
     'very-short': '1~2문장, 100자 안팎',
-    short: '2~3문장, 200자 안팎',
-    medium: '3~4문장, 300자 안팎',
-    long: '4~5문장, 450자 안팎',
-    'very-long': '5문장 이상, 500자 이내',
+    short: '3~4문장, 200자 안팎',
+    medium: '5~6문장, 300자 안팎',
+    long: '7~8문장, 450자 안팎',
+    'very-long': '8~9문장, 500자 이내',
   },
   subject: {
-    'very-short': '1문장, 100자 안팎',
-    short: '2문장, 180자 안팎',
-    medium: '3문장, 250자 안팎',
-    long: '4~5문장, 400자 안팎',
-    'very-long': '5~6문장, 500자 이내',
+    'very-short': '1~2문장, 100자 안팎',
+    short: '3~4문장, 180자 안팎',
+    medium: '4~5문장, 250자 안팎',
+    long: '6~7문장, 400자 안팎',
+    'very-long': '8문장, 500자 이내',
   },
   elementary: {
     'very-short': '1문장, 70자 안팎',
     short: '2문장, 120자 안팎',
-    medium: '2~3문장, 150자 안팎',
-    long: '3~4문장, 250자 안팎',
-    'very-long': '4~5문장, 350자 안팎',
+    medium: '3~4문장, 150자 안팎',
+    long: '5문장, 250자 안팎',
+    'very-long': '6~7문장, 350자 안팎',
   },
   activity: {
     'very-short': '1문장, 80자 안팎',
-    short: '2문장, 150자 안팎',
-    medium: '3문장, 250자 안팎',
-    long: '4문장, 350자 안팎',
-    'very-long': '5문장, 450자 이내',
+    short: '3문장, 150자 안팎',
+    medium: '4~5문장, 250자 안팎',
+    long: '6~7문장, 350자 안팎',
+    'very-long': '7~8문장, 450자 이내',
   },
 }
 
@@ -664,6 +664,11 @@ function concernsOf(request: string): string[] {
   return concerns
 }
 
+/** the letters a request made by compactRequest asks for ("300자 안팎"), 0 when it names none */
+function targetLength(request: string): number {
+  return Number(request.match(/(\d+)자 (?:안팎|이내)/u)?.[1] ?? 0)
+}
+
 /**
  * What makes an entry the built-in 2B model wrote unusable as it is, measured against the
  * request it answered (compactRequest): a concern written as praise or left out, Chinese or
@@ -676,6 +681,8 @@ export function entryProblems(entry: string, request: string): string[] {
   if (/[\u3040-\u30ff\u4e00-\u9fff]/u.test(entry)) problems.push('한자·일본 글자')
   const english = (entry.match(/[A-Za-z]{2,}/g) ?? []).filter((word) => !request.includes(word))
   if (english.length) problems.push('영어 낱말')
+  // under 70% of the length asked for: a teacher would have to write the rest
+  if (entry.length < targetLength(request) * 0.7) problems.push('분량 부족')
   const rare = [...entry].filter(
     (ch) => /[가-힣]/u.test(ch) && !COMMON_SYLLABLES.has(ch) && !request.includes(ch),
   )
@@ -686,6 +693,11 @@ export function entryProblems(entry: string, request: string): string[] {
     .filter(Boolean)
   const endsRight = (sentence: string): boolean => isRecordEnding(sentence.slice(-1))
   if (!sentences.every(endsRight)) problems.push('문장 끝')
+  // a sentence ended and the next run on after a comma or a space ("역량을 보임, 학급 …")
+  if (/(?:보임|드러남|기대됨|돋보임|필요함|기여함|수행함|발휘함)(?:,| (?=[가-힣]))/u.test(entry))
+    problems.push('문장 이어 붙임')
+  // one letter four times running ("등등등등")
+  if (/(\S)\1{3,}/u.test(entry)) problems.push('같은 말 반복')
   // a word or two said again at once ("꼼꼼하게 꼼꼼하게"), or five words in a row said twice: a
   // sentence written again, or the 2B model caught in a loop
   const words = entry.split(/\s+/)
@@ -758,10 +770,11 @@ export function entryGrammar(request: string): string {
   ])
   const charClass = (chars: Iterable<string>): string =>
     '[' + [...chars].join('').replace(/[\]\\^-]/g, (mark) => '\\' + mark) + ']'
+  // one more sentence than asked may come: held to the count, the 2B model chained what was
+  // left onto the last one ("모습을 보임, …")
   return [
-    'root ::= sentence' +
-      (most > 1 ? ' (" " sentence){' + (fewest - 1) + ',' + (most - 1) + '}' : ''),
-    'sentence ::= letter{8,150} ending "."',
+    'root ::= sentence (" " sentence){' + (fewest - 1) + ',' + most + '}',
+    'sentence ::= letter{12,170} ending "."',
     'letter ::= ' + charClass(letters),
     'ending ::= ' + charClass(syllables.filter(isRecordEnding)),
   ].join('\n')
@@ -777,14 +790,21 @@ export function pickEntry(
   request: string,
 ): { entry: string; problems: number } {
   const asked = wordStems(request)
+  const target = targetLength(request)
   const scored = entries.map((entry, at) => {
     const others = entries.filter((_, other) => other !== at).map(wordStems)
     const ownWords = [...wordStems(entry)].filter(
       (stem) => !asked.has(stem) && others.every((words) => !words.has(stem)),
     )
-    return { entry, problems: entryProblems(entry, request).length, ownWords: ownWords.length }
+    const short = Math.max(0, target - entry.length)
+    return {
+      entry,
+      problems: entryProblems(entry, request).length,
+      ownWords: ownWords.length,
+      short,
+    }
   })
-  scored.sort((a, b) => a.problems - b.problems || a.ownWords - b.ownWords)
+  scored.sort((a, b) => a.problems - b.problems || a.short - b.short || a.ownWords - b.ownWords)
   return { entry: scored[0].entry, problems: scored[0].problems }
 }
 

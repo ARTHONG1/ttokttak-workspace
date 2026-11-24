@@ -49,7 +49,7 @@ describe("똑딱AI's own 생기부 request", () => {
       ),
     ).toBe(
       [
-        '[교과 세부능력 및 특기사항] 중학교 2학년 과학 · 분량: 3문장, 250자 안팎',
+        '[교과 세부능력 및 특기사항] 중학교 2학년 과학 · 분량: 4~5문장, 250자 안팎',
         '단원: 물질의 구성',
         '과제: 여러 가지 물질의 밀도를 측정하는 탐구 실험을 설계하고 결과를 보고서로 작성함.',
         '성취기준: [9과05-03] 밀도를 측정하는 실험을 설계하고 수행하여 물질의 특성으로서 밀도를 설명할 수 있다.',
@@ -104,7 +104,7 @@ describe("똑딱AI's own 생기부 request", () => {
       ),
     ).toBe(
       [
-        '[행동특성 및 종합의견] 분량: 3~4문장, 300자 안팎',
+        '[행동특성 및 종합의견] 분량: 5~6문장, 300자 안팎',
         '관찰:',
         '잘하는 점:',
         '- 질문을 자주 함',
@@ -135,7 +135,7 @@ describe("똑딱AI's own 생기부 request", () => {
       ),
     ).toBe(
       [
-        '[창의적 체험활동 특기사항] 중학교 2학년 · 동아리활동 · 분량: 3문장, 250자 안팎',
+        '[창의적 체험활동 특기사항] 중학교 2학년 · 동아리활동 · 분량: 4~5문장, 250자 안팎',
         '활동: 과학탐구반 (생활 속 과학 원리를 주제로 모둠별 실험을 기획하고 발표함.)',
         '학생 역할과 관찰:',
         '잘하는 점:',
@@ -186,8 +186,9 @@ describe("똑딱AI's own 생기부 request", () => {
 
 // answers the built-in model gave on 2026-11-24 (record-ai.ts asks again when one is found)
 describe("checking 똑딱AI's entry", () => {
+  // no length asked for here: only the length check below looks at it
   const request = [
-    '[행동특성 및 종합의견] 분량: 3~4문장, 300자 안팎',
+    '[행동특성 및 종합의견]',
     '관찰:',
     '잘하는 점:',
     '- 책을 많이 읽음',
@@ -234,20 +235,20 @@ describe("checking 똑딱AI's entry", () => {
 
 describe("choosing 똑딱AI's entry", () => {
   const request =
-    '[행동특성 및 종합의견] 분량: 2~3문장, 200자 안팎\n관찰:\n잘하는 점:\n- 책을 많이 읽음'
+    '[행동특성 및 종합의견] 분량: 1~2문장, 40자 안팎\n관찰:\n잘하는 점:\n- 책을 많이 읽음'
 
-  // made-up facts come in one answer only; what the notes said comes in each
-  it('keeps the answer with the fewest words no other answer has', () => {
+  it('keeps the answer with the fewest problems, then the one nearest the length asked for', () => {
+    const short = '책을 읽음.'
     const plain = '책을 많이 읽으며 생각을 넓혀 가는 태도가 돋보임.'
-    const madeUp = '책상 앞에 앉는 순간 책장을 넘기며 책을 많이 읽는 습관이 돋보임.'
-    const other = '책을 많이 읽으며 생각을 넓히는 모습을 보임.'
-    expect(pickEntry([madeUp, plain, other], request)).toEqual({ entry: plain, problems: 0 })
+    const english = '책을 많이 읽으며 reading 습관이 돋보임.'
+    expect(entryProblems(short, request)).toEqual(['분량 부족'])
+    expect(pickEntry([short, english, plain], request)).toEqual({ entry: plain, problems: 0 })
   })
 
   it('holds the answer to the sentences asked for, ending the record way', () => {
     const grammar = entryGrammar(request).split('\n')
-    expect(grammar[0]).toBe('root ::= sentence (" " sentence){1,2}')
-    expect(grammar[1]).toBe('sentence ::= letter{8,150} ending "."')
+    expect(grammar[0]).toBe('root ::= sentence (" " sentence){0,2}')
+    expect(grammar[1]).toBe('sentence ::= letter{12,170} ending "."')
     expect(grammar[3]).toContain('함')
     expect(grammar[3]).not.toContain('다')
   })
