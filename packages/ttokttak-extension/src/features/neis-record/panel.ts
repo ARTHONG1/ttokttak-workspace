@@ -271,6 +271,13 @@ async function run(
   already: number,
 ): Promise<void> {
   const { panel, step } = ctx
+  const previewShown = panel.shown
+  const current = source !== 'direct' || (await ctx.isCurrent())
+  if (!panel.isOpen() || panel.shown !== previewShown) return
+  if (!current) {
+    panel.show(h('h2', {}, '받은 작업이 바뀌었어요'), back(ctx))
+    return
+  }
   const modeName = RECORD_MODE_NAME[pkg.mode]
   const againLabel = (from: number, done: number): string =>
     from === 0 && done === 0 ? '나이스에 채우기' : '이어서 채우기'
@@ -332,16 +339,18 @@ async function run(
     ),
   )
   let result: FillResult
+  const started = panel.shown
   try {
     result = await fillGrid(document, pkg.students, options, {
       wait,
-      shouldStop: () => stop,
+      shouldStop: () => stop || panel.shown !== started || !panel.isOpen(),
       panelHost: panel.root.host,
       progress: (i, s) => {
         line.textContent = i + 1 + ' / ' + pkg.students.length + (s.name ? ' · ' + s.name : '')
       },
     })
   } catch (e) {
+    if (panel.shown !== started || !panel.isOpen()) return
     step('채우기 오류 ' + String(e))
     panel.show(
       h('h2', {}, '채우지 못했어요'),
@@ -351,6 +360,7 @@ async function run(
     )
     return
   }
+  if (panel.shown !== started || !panel.isOpen()) return
   const done = already + result.written
   if (!result.stop) {
     step('채우기 성공 ' + done)

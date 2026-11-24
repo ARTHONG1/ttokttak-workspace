@@ -156,6 +156,7 @@ function FirstPage({ pdf }: { pdf: Uint8Array }): ReactElement {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let cancelled = false
+    setFailed(false)
     const task = getDocument({ data: pdf.slice(), ...docOptions() })
     void (async () => {
       try {
@@ -175,7 +176,7 @@ function FirstPage({ pdf }: { pdf: Uint8Array }): ReactElement {
     })()
     return () => {
       cancelled = true
-      void task.destroy()
+      void task.destroy().catch(() => {})
     }
   }, [pdf])
   if (failed) return <p className="tc-preview-none">미리보기를 그리지 못했어요.</p>
@@ -188,6 +189,19 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
   const [error, setError] = useState<string | null>(null)
   const [toast, say] = useToast()
   const token = view.at === 'pick' ? null : view.doc.token
+  const busyRef = useRef(false)
+  const savingRef = useRef(false)
+  const requestRef = useRef(0)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    const requests = requestRef
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      requests.current++
+    }
+  }, [])
 
   useEffect(() => {
     return window.aiOffice.onConvertProgress((progress) => {
@@ -198,10 +212,14 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
   }, [])
 
   const openWith = async (get: () => Promise<ConvertOpenResult | null>): Promise<void> => {
+    if (busyRef.current) return
+    busyRef.current = true
+    const request = ++requestRef.current
     setError(null)
     setBusy(true)
     try {
       const result = await get()
+      if (!mountedRef.current || request !== requestRef.current) return
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -210,9 +228,11 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
       setView({ at: 'choose', doc: result })
     } catch (err) {
       console.warn('[convert] open failed', err)
-      setError('문서를 열지 못했어요. 다시 해 주세요.')
+      if (mountedRef.current && request === requestRef.current)
+        setError('문서를 열지 못했어요. 다시 해 주세요.')
     } finally {
-      setBusy(false)
+      busyRef.current = false
+      if (mountedRef.current && request === requestRef.current) setBusy(false)
     }
   }
   const pickDocument = (): Promise<void> => openWith(() => window.aiOffice.openConvertDocument())
@@ -223,9 +243,14 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
   })
 
   const convert = async (doc: Picked, target: ConvertTarget): Promise<void> => {
+    if (busyRef.current) return
+    busyRef.current = true
+    const request = ++requestRef.current
+    setBusy(true)
     setView({ at: 'running', doc, target, step: 1 })
     try {
       const result = await window.aiOffice.runConvert(doc.token, target.format)
+      if (!mountedRef.current || request !== requestRef.current) return
       setView(
         result.ok
           ? { at: 'done', doc, target, made: result }
@@ -233,11 +258,17 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
       )
     } catch (err) {
       console.warn('[convert] run failed', err)
-      setView({ at: 'failed', doc, target, error: '변환하지 못했어요. 다시 해 주세요.' })
+      if (mountedRef.current && request === requestRef.current)
+        setView({ at: 'failed', doc, target, error: '변환하지 못했어요. 다시 해 주세요.' })
+    } finally {
+      busyRef.current = false
+      if (mountedRef.current && request === requestRef.current) setBusy(false)
     }
   }
 
   const download = async (made: Made, target: ConvertTarget): Promise<void> => {
+    if (savingRef.current) return
+    savingRef.current = true
     try {
       const path = await window.aiOffice.saveFeatureFile({
         name: made.fileName,
@@ -245,10 +276,12 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
         extensions: [made.extension],
         bytes: made.bytes,
       })
-      if (path) say('저장했어요.')
+      if (path && mountedRef.current) say('저장했어요.')
     } catch (err) {
       console.warn('[convert] save failed', err)
-      say('저장하지 못했어요. 다시 해 주세요.', true)
+      if (mountedRef.current) say('저장하지 못했어요. 다시 해 주세요.', true)
+    } finally {
+      savingRef.current = false
     }
   }
 
@@ -346,6 +379,7 @@ export function TtokConvert({ onBack }: { onBack: () => void }): ReactElement {
                       key={target.format}
                       className="tc-card"
                       data-testid={'tc-target-' + target.format}
+                      disabled={busy}
                       onClick={() => void convert(view.doc, target)}
                     >
                       <Badge label={BADGE[target.format]} kind={target.format} />

@@ -240,9 +240,14 @@ function SvgThumb({
     const watch = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return
       watch.disconnect()
-      void window.aiOffice.organizePageSvg(token, fileId, page).then((s) => {
-        if (!cancelled) setSvg(s)
-      })
+      void window.aiOffice
+        .organizePageSvg(token, fileId, page)
+        .then((s) => {
+          if (!cancelled) setSvg(s)
+        })
+        .catch(() => {
+          if (!cancelled) setSvg(null)
+        })
     })
     watch.observe(el)
     return () => {
@@ -286,12 +291,13 @@ function UnitPicker({
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   useEffect(() => {
     if (units.preview !== 'pdf') return
+    setPdf(null)
     let cancelled = false
     let task: ReturnType<typeof getDocument> | null = null
     void (async () => {
-      const bytes = await window.aiOffice.organizePdfBytes(token, file.id)
-      if (!bytes || cancelled) return
       try {
+        const bytes = await window.aiOffice.organizePdfBytes(token, file.id)
+        if (!bytes || cancelled) return
         task = getDocument({ data: bytes, ...docOptions() })
         const doc = await task.promise
         if (!cancelled) setPdf(doc)
@@ -301,7 +307,7 @@ function UnitPicker({
     })()
     return () => {
       cancelled = true
-      void task?.destroy()
+      void task?.destroy().catch(() => {})
     }
   }, [token, file.id, units.preview])
   const toggle = (i: number): void => {
@@ -377,6 +383,22 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
   const [error, setError] = useState<string | null>(null)
   const [toast, say] = useToast()
   const token = view.at === 'pick' ? null : view.doc.token
+  const busyRef = useRef(false)
+  const savingRef = useRef(false)
+  const requestRef = useRef(0)
+  const unitsRequestRef = useRef(0)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    const requests = requestRef
+    const unitsRequests = unitsRequestRef
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      requests.current++
+      unitsRequests.current++
+    }
+  }, [])
 
   // setup state
   const [order, setOrder] = useState<string[]>([])
@@ -398,48 +420,71 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
   useEffect(() => {
     if (!token) return
     return () => {
-      void window.aiOffice.closeOrganize(token)
+      void window.aiOffice.closeOrganize(token).catch((err) => {
+        console.warn('[organize] close failed', err)
+      })
     }
   }, [token])
 
   const openWith = async (get: () => Promise<OrganizeOpenResult | null>): Promise<void> => {
+    if (busyRef.current) return
+    busyRef.current = true
+    const request = ++requestRef.current
     setError(null)
     setBusy(true)
     try {
       const result = await get()
+      if (!mountedRef.current || request !== requestRef.current) {
+        if (result?.ok) void window.aiOffice.closeOrganize(result.token).catch(() => {})
+        return
+      }
       if (!result) return
       if (!result.ok) {
         setError(result.error)
         return
       }
+      unitsRequestRef.current++
       setView({ at: 'choose', doc: result })
     } catch (err) {
       console.warn('[organize] open failed', err)
-      setError('문서를 열지 못했어요. 다시 해 주세요.')
+      if (mountedRef.current && request === requestRef.current)
+        setError('문서를 열지 못했어요. 다시 해 주세요.')
     } finally {
-      setBusy(false)
+      busyRef.current = false
+      if (mountedRef.current && request === requestRef.current) setBusy(false)
     }
   }
   const pickDocuments = (): Promise<void> => openWith(() => window.aiOffice.openOrganizeDocuments())
 
   const addWith = async (get: () => Promise<OrganizeOpenResult | null>): Promise<void> => {
+    if (busyRef.current) return
+    busyRef.current = true
+    const request = ++requestRef.current
     setError(null)
     setBusy(true)
     try {
       const result = await get()
+      if (!mountedRef.current || request !== requestRef.current) return
       if (!result) return
       if (!result.ok) {
         setError(result.error)
         return
       }
-      const merge = result.cards.find((c) => c.action === 'merge')!
+      const merge = result.cards.find((c) => c.action === 'merge')
+      if (!merge) {
+        setError('합칠 문서를 다시 골라 주세요.')
+        return
+      }
+      unitsRequestRef.current++
       setOrder(result.files.map((f) => f.id))
       setView({ at: 'setup', doc: result, card: merge })
     } catch (err) {
       console.warn('[organize] add failed', err)
-      setError('문서를 더하지 못했어요. 다시 해 주세요.')
+      if (mountedRef.current && request === requestRef.current)
+        setError('문서를 더하지 못했어요. 다시 해 주세요.')
     } finally {
-      setBusy(false)
+      busyRef.current = false
+      if (mountedRef.current && request === requestRef.current) setBusy(false)
     }
   }
   const addDocuments = (doc: Opened): Promise<void> =>
@@ -460,6 +505,11 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
   const { over: dropOver, handlers: dropHandlers } = useFileDrop(dropDocuments)
 
   const run = async (doc: Opened, card: OrganizeCard): Promise<void> => {
+    if (busyRef.current) return
+    busyRef.current = true
+    const request = ++requestRef.current
+    unitsRequestRef.current++
+    setBusy(true)
     setView({ at: 'running', doc, card, label: '준비하는 중' })
     try {
       const result = await window.aiOffice.runOrganize({
@@ -477,6 +527,7 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
             }
           : {}),
       })
+      if (!mountedRef.current || request !== requestRef.current) return
       setView(
         result.ok
           ? { at: 'done', doc, card, made: result }
@@ -484,11 +535,17 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
       )
     } catch (err) {
       console.warn('[organize] run failed', err)
-      setView({ at: 'failed', doc, card, error: '정리하지 못했어요. 다시 해 주세요.' })
+      if (mountedRef.current && request === requestRef.current)
+        setView({ at: 'failed', doc, card, error: '정리하지 못했어요. 다시 해 주세요.' })
+    } finally {
+      busyRef.current = false
+      if (mountedRef.current && request === requestRef.current) setBusy(false)
     }
   }
 
   const openCard = (doc: Opened, card: OrganizeCard): void => {
+    if (busyRef.current) return
+    const unitsRequest = ++unitsRequestRef.current
     setError(null)
     if (card.action === 'shrink') {
       void run(doc, card)
@@ -505,14 +562,24 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
     setUnitsError(null)
     setView({ at: 'setup', doc, card })
     if (card.action === 'split' || card.action === 'remove') {
-      void window.aiOffice.organizeUnits(doc.token, doc.files[0]!.id).then((r) => {
-        if (r.ok) setUnits(r)
-        else setUnitsError(r.error)
-      })
+      void window.aiOffice
+        .organizeUnits(doc.token, doc.files[0]!.id)
+        .then((r) => {
+          if (!mountedRef.current || unitsRequest !== unitsRequestRef.current) return
+          if (r.ok) setUnits(r)
+          else setUnitsError(r.error)
+        })
+        .catch((err) => {
+          console.warn('[organize] units failed', err)
+          if (mountedRef.current && unitsRequest === unitsRequestRef.current)
+            setUnitsError('쪽을 읽지 못했어요. 다시 정리 방법을 골라 주세요.')
+        })
     }
   }
 
   const download = async (doc: Opened, made: Made): Promise<void> => {
+    if (savingRef.current) return
+    savingRef.current = true
     try {
       const path = await window.aiOffice.saveFeatureFile({
         name: made.fileName,
@@ -520,10 +587,12 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
         extensions: [made.extension],
         bytes: made.bytes,
       })
-      if (path) say('저장했어요.')
+      if (path && mountedRef.current) say('저장했어요.')
     } catch (err) {
       console.warn('[organize] save failed', err)
-      say('저장하지 못했어요. 다시 해 주세요.', true)
+      if (mountedRef.current) say('저장하지 못했어요. 다시 해 주세요.', true)
+    } finally {
+      savingRef.current = false
     }
   }
 
@@ -675,6 +744,7 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
                     key={card.action}
                     className={'tc-card to-card' + (card.caution ? ' has-caution' : '')}
                     data-testid={'to-card-' + card.action}
+                    disabled={busy}
                     onClick={() => openCard(view.doc, card)}
                   >
                     <span className="to-card-icon">
@@ -835,7 +905,10 @@ export function TtokOrganize({ onBack }: { onBack: () => void }): ReactElement {
                 <button
                   type="button"
                   className="sf-secondary"
-                  onClick={() => setView({ at: 'choose', doc: view.doc })}
+                  onClick={() => {
+                    unitsRequestRef.current++
+                    setView({ at: 'choose', doc: view.doc })
+                  }}
                 >
                   다른 정리 고르기
                 </button>

@@ -3,6 +3,7 @@ import { SITE_NAMES, type SiteId } from '../core/feature'
 import type { InboxEntry } from '../core/inbox'
 import type { Place } from '../core/places'
 import { FEATURES } from '../core/registry'
+import type { TransferStatus } from './messages'
 import { h } from './page-ui'
 
 const send = (type: string, payload?: unknown): Promise<unknown> =>
@@ -35,7 +36,10 @@ async function init(): Promise<void> {
   ;(document.getElementById('version') as HTMLElement).textContent = 'v' + __VERSION__
   const list = document.getElementById('features') as HTMLElement
   for (const f of FEATURES) {
-    const w = await waiting(f.id)
+    const [w, status] = await Promise.all([
+      waiting(f.id),
+      send('transfer:status', { feature: f.id }) as Promise<TransferStatus | null>,
+    ])
     const title = w ? titleOf(w.text) : ''
     const site = SITE_NAMES[f.site].name
     list.append(
@@ -44,18 +48,45 @@ async function init(): Promise<void> {
         { class: 'task' },
         h('h2', {}, f.title),
         h('ol', {}, ...f.steps.map(stepLine)),
-        w
+        status?.id
           ? h(
               'p',
-              { class: 'waiting' },
-              (w.from === 'desktop' ? '프로그램' : '웹 앱') +
-                '에서 보낸 작업이 기다리고 있어요' +
-                (title ? ': 「' + title + '」' : '') +
-                '. ' +
-                site +
-                ' 화면에서 [똑딱]을 누르세요.',
+              { class: 'waiting', role: 'status' },
+              status.writing
+                ? '자동 입력 중이에요. ' + site + ' 화면에서 확인해 주세요.'
+                : '자동 입력이 ' + site + ' 화면 준비를 기다리고 있어요.',
+              !status.writing &&
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    onclick: async (event: Event) => {
+                      const button = event.currentTarget as HTMLButtonElement
+                      button.disabled = true
+                      const result = (await send('transfer:cancel', {
+                        feature: f.id,
+                        id: status.id,
+                      })) as { ok?: boolean } | null
+                      button.parentElement!.textContent = result?.ok
+                        ? '자동 입력을 취소했어요. 받은 작업은 업무 화면의 [똑딱]에서 수동으로 열 수 있어요.'
+                        : '자동 입력 상태가 바뀌었어요. 업무 화면에서 확인해 주세요.'
+                    },
+                  },
+                  '자동 입력 취소',
+                ),
             )
-          : null,
+          : w
+            ? h(
+                'p',
+                { class: 'waiting' },
+                (w.from === 'desktop' ? '프로그램' : '웹 앱') +
+                  '에서 보낸 작업이 기다리고 있어요' +
+                  (title ? ': 「' + title + '」' : '') +
+                  '. ' +
+                  site +
+                  ' 화면에서 [똑딱]을 누르세요.',
+              )
+            : null,
       ),
     )
   }

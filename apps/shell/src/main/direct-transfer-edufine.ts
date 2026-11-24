@@ -7,7 +7,9 @@ export interface EdufineProbeInput {
 }
 
 export type EdufineProbeResult =
-  { state: 'no-app' } | { state: 'other-screen'; openedMenu: boolean } | { state: 'pumui' }
+  | { state: 'no-app' }
+  | { state: 'other-screen'; openedMenu: boolean }
+  | { state: 'pumui'; ready: boolean }
 
 /** Checks whether this frame hosts a running Nexacro K-Edufine app and optionally opens 품의등록. */
 export function edufineProbe({ map, tryOpenMenu }: EdufineProbeInput): EdufineProbeResult {
@@ -40,7 +42,28 @@ export function edufineProbe({ map, tryOpenMenu }: EdufineProbeInput): EdufinePr
     budget &&
     typeof budget.rowcount === 'number',
   )
-  if (isPumui) return { state: 'pumui' }
+  if (isPumui) {
+    // This probe must remain read-only. In particular, never try the add-row handler
+    // to discover whether a budget was selected: the handler can mutate the form.
+    const budgetRows = Number(budget.rowcount)
+    const budgetPosition = Number(budget.rowposition ?? -1)
+    const budgetSelected = budgetRows > 0 && budgetPosition >= 0 && budgetPosition < budgetRows
+    const unitsReady = p.unitTables.some((unitPath) => {
+      const owner = unitPath.includes('.') ? path(form, unitPath.split('.')[0]) : null
+      if (owner?.visible === false) return false
+      const table = path(form, unitPath)
+      if (!table || typeof table.getColumn !== 'function') return false
+      for (let row = 0; row < Number(table.rowcount ?? 0); row++) {
+        if (
+          String(table.getColumn(row, p.unitCode) ?? '').trim() &&
+          String(table.getColumn(row, p.unitName) ?? '').trim()
+        )
+          return true
+      }
+      return false
+    })
+    return { state: 'pumui', ready: budgetSelected && unitsReady }
+  }
   let openedMenu = false
   if (tryOpenMenu && map.menu && /^[A-Za-z0-9_]{1,40}$/.test(map.menu.pumuiMenuId)) {
     try {
@@ -97,8 +120,10 @@ export function edufinePage({
     !summary?.set_value
   )
     return { ok: false, reason: 'K-에듀파인 품의등록 화면을 열어 주세요.' }
-  if (!budget || Number(budget.rowcount ?? 0) === 0)
-    return { ok: false, reason: '예산 내역이 비어 있어요. 예산을 먼저 불러와 주세요.' }
+  const budgetRows = Number(budget?.rowcount ?? 0)
+  const budgetPosition = Number(budget?.rowposition ?? -1)
+  if (budgetRows <= 0 || budgetPosition < 0 || budgetPosition >= budgetRows)
+    return { ok: false, reason: '예산 내역에서 사용할 예산 줄을 먼저 선택해 주세요.' }
   const units: { code: string; name: string }[] = []
   for (const unitPath of p.unitTables) {
     const owner = unitPath.includes('.') ? path(form, unitPath.split('.')[0]) : null

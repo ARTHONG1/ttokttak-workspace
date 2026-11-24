@@ -8,21 +8,24 @@ submit an approval, or send undocumented HTTP requests.
 
 ## Use
 
-1. Install Chrome or Edge. Press the desktop transfer button to open a dedicated
-   browser profile under the application's user-data directory.
+1. Install Chrome or Edge. For a first K-Edufine transfer, register the HTTPS
+   address of your education office's work portal in the proposal screen.
+   Press the transfer button once to open the dedicated browser.
 2. In that window, navigate to the education office's work portal, sign in and
    complete certificate authentication yourself. Existing personal-browser
    sessions are not imported.
-3. Open the intended NEIS entry grid and select the first student's row, or open
-   K-Edufine's proposal registration form and select the budget and item type.
-4. Return to the desktop app and press the transfer button again. Keep just one
-   matching work screen open. The driver also discovers work frames and popups
-   in its own browser context.
+3. Open the intended NEIS entry grid and select the first student's row. For
+   K-Edufine, select the budget row and item type on the proposal registration
+   form. Keep one matching work screen open. The app looks for the screen
+   across tabs and popups in its dedicated browser.
+4. The pending request starts filling when the screen is ready. The desktop
+   app shows its progress and offers cancellation. A pending request waits
+   for screen readiness for up to ten minutes.
 5. Review the filled form and save or submit it yourself before closing the app.
    The app owns and closes its dedicated browser when it exits.
 
-The web edition keeps its existing extension route. Desktop never falls back to
-that route. Optional startup URLs can be provided through `TTOKTTAK_NEIS_URL` and
+The web edition sends through its browser extension. Optional desktop startup
+URLs can be provided through `TTOKTTAK_NEIS_URL` and
 `TTOKTTAK_EDUFINE_URL`; once a teacher visits NEIS or K-Edufine in the dedicated
 browser, only its HTTPS origin (without paths or query tokens) is remembered for
 future launches. The driver writes only to HTTPS NEIS work hosts (excluding the
@@ -42,7 +45,21 @@ open-data host) and HTTPS `*.go.kr` frames that host a live Nexacro K-Edufine ap
   field and the total (tolerating CRLF normalization). On failure it restores newly
   added rows and changed headings; a failed restoration is explicitly reported.
 - Concurrent requests are rejected. A closed browser is recreated on the next
-  request. Packages and login data are not logged or sent to the web-app queue.
+  request. If you cancel during input, check the form for entries already made
+  before retrying. Packages and login data stay in the local transfer path.
+
+## School PC verification
+
+1. Using test entries, start a transfer before logging in. Complete login and
+   select the student or budget on the target screen. Confirm that the app
+   fills and verifies the form after the single send.
+2. Repeat for a NEIS subject record, behavior record, activity record, and a
+   K-Edufine proposal. Check the actual student text or proposal fields and total.
+3. Cancel a new request before selecting a row, then select the row. Confirm
+   that the cancelled request leaves the form untouched.
+4. Repeat a completed request and confirm that it adds no duplicate entries.
+   If a transfer fails, copy its diagnostics from the desktop transfer controls
+   and record the step where it failed.
 
 ## Verification boundary
 

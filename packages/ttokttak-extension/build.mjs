@@ -1,6 +1,5 @@
 // Builds the 똑딱작업실 extension into dist/ (and the test page into dist-test/).
-// node build.mjs [--dev]   --dev adds http://127.0.0.1 to the host permissions and
-//                          the web app matches, for the browser tests on this machine.
+// node build.mjs [--dev]   --dev restricts test hosts and senders to http://127.0.0.1.
 import { build } from 'esbuild'
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -33,9 +32,10 @@ manifest.version = pkg.version
 manifest.key = key
 if (dev) {
   manifest.name += ' (개발)'
-  manifest.host_permissions.push('http://127.0.0.1/*')
-  manifest.externally_connectable.matches.push('http://127.0.0.1/*')
-  for (const script of manifest.content_scripts) script.matches.push('http://127.0.0.1/*')
+  const loopback = ['http://127.0.0.1/*']
+  manifest.host_permissions = loopback
+  manifest.externally_connectable.matches = loopback
+  for (const script of manifest.content_scripts) script.matches = loopback
 }
 await writeFile(join(DIST, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
 await cp(join(HERE, 'extension/popup.html'), join(DIST, 'popup.html'))

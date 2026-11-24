@@ -62,6 +62,7 @@ import {
 import { recordPackageFromWork, recordSendProblem, sendRecord } from './record-send'
 import { askRecordAi, cancelRecordAi, rewordWithAi, studentsAtOnce } from './record-ai'
 import { SimilarityCheck } from './SimilarityCheck'
+import { DirectTransferControls, useDirectTransferProgress } from '../direct-transfer-controls'
 import {
   NOT_REWORDED,
   WARN_FLOOR,
@@ -212,6 +213,10 @@ const textsOf = (work: Work): (Entry & { id: string })[] =>
     text: s.result.trim(),
   }))
 
+/** The inputs that determine a student's answer, including their hand-edited result. */
+const generationInputs = (work: Work, student: Student): string =>
+  JSON.stringify([work.length, work.instructions, work.info, student])
+
 /** a request [멈추기] called off: not a failure, and its answer (if any) is dropped */
 class Stopped extends Error {
   constructor() {
@@ -248,9 +253,34 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   })
   /** [다시 생성]s per student (mode:id): 똑딱AI's short format asks each for the next variant */
   const calledOff = useRef(new Set<string>())
-  const [sessions, setSessions] = useState<SavedSession[]>(() =>
-    sessionsFrom(localStorage.getItem(SESSIONS_KEY), newId),
-  )
+  /** A replaced roster/session must never accept replies from the previous work. */
+  const revision = useRef<Record<RecordMode, number>>({ subject: 0, behavior: 0, activity: 0 })
+  const pending = useRef<Record<RecordMode, Set<string>>>({
+    subject: new Set(),
+    behavior: new Set(),
+    activity: new Set(),
+  })
+  const wholePending = useRef<Record<RecordMode, boolean>>({
+    subject: false,
+    behavior: false,
+    activity: false,
+  })
+  const rosterPending = useRef(false)
+  const importRevision = useRef(0)
+  const sendingPending = useRef(false)
+  const directProgress = useDirectTransferProgress('neis-record')
+  const workRevision = useRef<Record<RecordMode, number>>({
+    subject: 0,
+    behavior: 0,
+    activity: 0,
+  })
+  const [sessions, setSessions] = useState<SavedSession[]>(() => {
+    try {
+      return sessionsFrom(localStorage.getItem(SESSIONS_KEY), newId)
+    } catch {
+      return []
+    }
+  })
   const [listOpen, setListOpen] = useState(false)
   const [loadOpen, setLoadOpen] = useState(false)
   const [clearOpen, setClearOpen] = useState(false)
@@ -278,8 +308,11 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   const modeBusy = busy[mode]
   const anyBusy = modeBusy.length > 0
 
-  const patch = (m: RecordMode, change: (w: Work) => Work) =>
+  const patch = (m: RecordMode, change: (w: Work) => Work) => {
+    workRevision.current[m] += 1
+    setSendNote(null)
     setWorks((prev) => ({ ...prev, [m]: change(prev[m]) }))
+  }
   const patchStudent = (m: RecordMode, id: string, fields: Partial<StudentFields>) =>
     patch(m, (w) => ({
       ...w,
@@ -361,6 +394,33 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     }
   }
 
+  const invalidateWork = (m: RecordMode) => {
+    revision.current[m] += 1
+    stopMode(m)
+    pending.current[m].clear()
+    wholePending.current[m] = false
+    setBusy((prev) => ({ ...prev, [m]: [] }))
+    setRunning((prev) => ({ ...prev, [m]: false }))
+    setReworded((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(m + ':'))),
+    )
+    setSendNote(null)
+  }
+
+  useEffect(
+    () => () => {
+      for (const m of ['subject', 'behavior', 'activity'] as const) {
+        revision.current[m] += 1
+        stop.current[m] = true
+        for (const id of inflight.current[m]) {
+          calledOff.current.add(id)
+          cancelRecordAi(id)
+        }
+      }
+    },
+    [],
+  )
+
   const writeOne = async (m: RecordMode, student: Student, id: string): Promise<string> => {
     const w = worksRef.current[m]
     const order = w.students.findIndex((s) => s.id === student.id) + 1 || undefined
@@ -411,24 +471,43 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       )
     }
     const ids = targets.map((s) => s.id)
+    if (wholePending.current[m] || ids.some((id) => pending.current[m].has(id))) return
+    const currentRevision = revision.current[m]
+    ids.forEach((id) => pending.current[m].add(id))
+    if (whole) wholePending.current[m] = true
     stop.current[m] = false
-    setBusy((prev) => ({ ...prev, [m]: [...prev[m], ...ids] }))
+    setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
     if (whole) setRunning((prev) => ({ ...prev, [m]: true }))
     let done = 0
     let failed = 0
+    let edited = 0
     let streak = 0
     let firstError = ''
     try {
+      const parallel = await studentsAtOnce()
+      if (currentRevision !== revision.current[m] || stop.current[m]) return
       await runPool(
         targets,
-        await studentsAtOnce(),
+        parallel,
         async (student) => {
           try {
-            const result = await tracked(m, (id) => writeOne(m, student, id))
+            const before = worksRef.current[m]
+            const currentStudent = before.students.find((s) => s.id === student.id)
+            if (!currentStudent) return
+            const inputs = generationInputs(before, currentStudent)
+            const result = await tracked(m, (id) => writeOne(m, currentStudent, id))
+            if (currentRevision !== revision.current[m]) return
+            const latest = worksRef.current[m]
+            const latestStudent = latest.students.find((s) => s.id === student.id)
+            if (!latestStudent || generationInputs(latest, latestStudent) !== inputs) {
+              edited += 1
+              return
+            }
             patchStudent(m, student.id, { result })
             done += 1
             streak = 0
           } catch (error) {
+            if (currentRevision !== revision.current[m]) return
             if (error instanceof Stopped) return
             failed += 1
             streak += 1
@@ -436,29 +515,46 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
             // the AI is not answering at all: the rest of the class would fail the same way
             if (streak >= 2) stop.current[m] = true
           } finally {
-            setBusy((prev) => ({ ...prev, [m]: prev[m].filter((id) => id !== student.id) }))
+            if (currentRevision === revision.current[m]) {
+              pending.current[m].delete(student.id)
+              setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
+            }
           }
         },
-        () => stop.current[m],
+        () => stop.current[m] || currentRevision !== revision.current[m],
       )
+    } catch (error) {
+      firstError ||= error instanceof Error ? error.message : String(error)
     } finally {
-      setBusy((prev) => ({ ...prev, [m]: prev[m].filter((id) => !ids.includes(id)) }))
-      if (whole) setRunning((prev) => ({ ...prev, [m]: false }))
+      if (currentRevision === revision.current[m]) {
+        ids.forEach((id) => pending.current[m].delete(id))
+        setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
+        if (whole) {
+          wholePending.current[m] = false
+          setRunning((prev) => ({ ...prev, [m]: false }))
+        }
+      }
     }
+    if (currentRevision !== revision.current[m]) return
     const name = RESULT_NAME[m]
-    if (done === 0) return say(firstError || name + ' 생성을 멈췄어요.', true)
+    if (done === 0)
+      return say(
+        firstError ||
+          (edited > 0
+            ? '입력한 내용이 수정되어 이전 AI 응답을 반영하지 않았어요.'
+            : name + ' 생성을 멈췄어요.'),
+        true,
+      )
     const left = targets.length - done
     say(
       done +
         '명의 ' +
         name +
         '을 만들었어요.' +
-        (failed > 0
-          ? ' ' + left + '명은 만들지 못했어요. ' + firstError
-          : left > 0
-            ? ' ' + left + '명은 멈춰서 남았어요.'
-            : ''),
-      failed > 0,
+        (failed > 0 ? ' ' + failed + '명은 만들지 못했어요. ' + firstError : '') +
+        (edited > 0 ? ' ' + edited + '명은 입력이 수정되어 이전 응답을 반영하지 않았어요.' : '') +
+        (left > failed + edited ? ' ' + (left - failed - edited) + '명은 멈춰서 남았어요.' : ''),
+      failed > 0 || edited > 0,
     )
   }
 
@@ -492,10 +588,15 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   /** reword one student's text away from the texts it reads like; resolves to what is left */
   const rewordOne = async (m: RecordMode, id: string): Promise<number> => {
+    const currentRevision = revision.current[m]
     const text = worksRef.current[m].students.find((s) => s.id === id)?.result.trim() ?? ''
     if (!text) return 0
     const others = alikeTexts(m, id, text)
     const reply = await tracked(m, (requestId) => rewordWithAi(text, others, requestId))
+    if (currentRevision !== revision.current[m]) throw new Stopped()
+    // A teacher may have corrected this text while the rewording was in flight.
+    if (worksRef.current[m].students.find((s) => s.id === id)?.result.trim() !== text)
+      throw new Stopped()
     const key = m + ':' + id
     // a second rewording still takes back to the text before the first one
     setReworded((prev) => ({
@@ -517,9 +618,13 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const reword = async (m: RecordMode, id: string, name: string) => {
-    setBusy((prev) => ({ ...prev, [m]: [...prev[m], id] }))
+    if (pending.current[m].has(id) || wholePending.current[m]) return
+    const currentRevision = revision.current[m]
+    pending.current[m].add(id)
+    setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
     try {
       const left = await rewordOne(m, id)
+      if (currentRevision !== revision.current[m]) return
       say(
         name +
           '의 글 표현을 바꿨어요. ' +
@@ -529,26 +634,35 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         left >= WARN_FLOOR,
       )
     } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
+      if (currentRevision === revision.current[m] && !(error instanceof Stopped)) {
+        say(error instanceof Error ? error.message : String(error), true)
+      }
     } finally {
-      setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => x !== id) }))
+      if (currentRevision === revision.current[m]) {
+        pending.current[m].delete(id)
+        setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
+      }
     }
   }
 
   /** reword the later text of every pair that reads alike, one after another */
   const rewordAll = async (m: RecordMode) => {
+    if (wholePending.current[m] || pending.current[m].size > 0) return
     const list = textsOf(worksRef.current[m])
     const ids = rewordTargets(list, WARN_FLOOR).map((i) => list[i].id)
     if (ids.length === 0) return
+    const currentRevision = revision.current[m]
+    wholePending.current[m] = true
+    ids.forEach((id) => pending.current[m].add(id))
     stop.current[m] = false
-    setBusy((prev) => ({ ...prev, [m]: [...prev[m], ...ids] }))
+    setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
     setRunning((prev) => ({ ...prev, [m]: true }))
     let done = 0
     let unchanged = 0
     let failed = ''
     try {
       for (const id of ids) {
-        if (stop.current[m]) break
+        if (stop.current[m] || currentRevision !== revision.current[m]) break
         try {
           await rewordOne(m, id)
           done += 1
@@ -563,13 +677,21 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
           failed = message
           break
         } finally {
-          setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => x !== id) }))
+          if (currentRevision === revision.current[m]) {
+            pending.current[m].delete(id)
+            setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
+          }
         }
       }
     } finally {
-      setBusy((prev) => ({ ...prev, [m]: prev[m].filter((x) => !ids.includes(x)) }))
-      setRunning((prev) => ({ ...prev, [m]: false }))
+      if (currentRevision === revision.current[m]) {
+        ids.forEach((id) => pending.current[m].delete(id))
+        wholePending.current[m] = false
+        setBusy((prev) => ({ ...prev, [m]: [...pending.current[m]] }))
+        setRunning((prev) => ({ ...prev, [m]: false }))
+      }
     }
+    if (currentRevision !== revision.current[m]) return
     const left = warnings(textsOf(worksRef.current[m]), WARN_FLOOR).size
     say(
       done +
@@ -601,19 +723,24 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
     const count = parseInt(raw, 10)
     if (!Number.isFinite(count) || count < 1) return
     const wanted = Math.min(count, MAX_STUDENTS)
+    if (wanted === work.students.length) return
     const next = resizeStudents(work.students, wanted, newStudent)
+    invalidateWork(mode)
     patch(mode, (w) => ({ ...w, students: next }))
     if (next.length > wanted) say('내용이 있는 학생은 지우지 않았어요.')
     else if (count > MAX_STUDENTS) say('한 번에 ' + MAX_STUDENTS + '명까지 쓸 수 있어요.')
   }
 
-  const removeStudent = (id: string) =>
+  const removeStudent = (id: string) => {
+    invalidateWork(mode)
     patch(mode, (w) => {
       const students = w.students.filter((s) => s.id !== id)
       return { ...w, students: students.length > 0 ? students : [newStudent()] }
     })
+  }
 
   const clearStudents = () => {
+    invalidateWork(mode)
     patch(mode, (w) => ({ ...w, students: [newStudent()] }))
     setClearOpen(false)
     say('학생 목록을 비웠어요.')
@@ -625,13 +752,23 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const loadRoster = async () => {
+    if (rosterPending.current) return
     const api = window.aiOffice
     if (typeof api?.readCartFile !== 'function') {
       return say('이 화면에서는 파일을 읽을 수 없어요.', true)
     }
+    rosterPending.current = true
+    const currentImport = ++importRevision.current
+    const currentMode = mode
+    const currentRevision = revision.current[mode]
     setReadingRoster(true)
     try {
       const result = await api.readCartFile('excel')
+      if (
+        currentRevision !== revision.current[currentMode] ||
+        currentImport !== importRevision.current
+      )
+        return
       if (!result) return
       if (!result.ok) return say(result.error, true)
       if (result.kind !== 'text') return
@@ -640,7 +777,8 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
       if (names.length === 0) {
         return say("파일에서 '성명'이나 '이름' 칸을 찾지 못했어요.", true)
       }
-      patch(mode, (w) => ({
+      invalidateWork(currentMode)
+      patch(currentMode, (w) => ({
         ...w,
         students: resizeStudents(w.students, names.length, newStudent).map((s, i) =>
           i < names.length ? { ...s, name: names[i] } : s,
@@ -655,22 +793,37 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         all.length > names.length,
       )
     } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
+      if (
+        currentRevision === revision.current[currentMode] &&
+        currentImport === importRevision.current
+      ) {
+        say(error instanceof Error ? error.message : String(error), true)
+      }
     } finally {
+      rosterPending.current = false
       setReadingRoster(false)
     }
   }
 
   const loadCsv = async (file: File) => {
+    const currentImport = ++importRevision.current
+    const currentMode = mode
+    const currentRevision = revision.current[mode]
     try {
       const all = studentsFromCsv(
         decodeCsvBytes(new Uint8Array(await file.arrayBuffer())),
-        mode,
+        currentMode,
         Number.MAX_SAFE_INTEGER,
       )
+      if (
+        currentRevision !== revision.current[currentMode] ||
+        currentImport !== importRevision.current
+      )
+        return
       const rows = all.slice(0, MAX_STUDENTS)
       if (rows.length === 0) return say('파일에 학생 내용이 없어요.', true)
-      patch(mode, (w) => ({ ...w, students: rows.map((row) => newStudent(row)) }))
+      invalidateWork(currentMode)
+      patch(currentMode, (w) => ({ ...w, students: rows.map((row) => newStudent(row)) }))
       setLoadOpen(false)
       say(
         rows.length +
@@ -681,7 +834,12 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
         all.length > rows.length,
       )
     } catch (error) {
-      say(error instanceof Error ? error.message : 'CSV 파일을 읽지 못했어요.', true)
+      if (
+        currentRevision === revision.current[currentMode] &&
+        currentImport === importRevision.current
+      ) {
+        say(error instanceof Error ? error.message : 'CSV 파일을 읽지 못했어요.', true)
+      }
     }
   }
 
@@ -697,24 +855,46 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
 
   // Desktop uses the local browser driver; web uses the browser extension.
   const sendToNeis = async () => {
+    if (sendingPending.current) return
     const found = recordSendProblem(mode, work)
     if (found) return say(found, true)
     const pkgText = JSON.stringify(recordPackageFromWork(mode, work))
     const api = window.aiOffice
+    const currentRevision = revision.current[mode]
+    const currentWorkRevision = workRevision.current[mode]
+    sendingPending.current = true
     setSending(true)
+    const requestId = !isWebEdition() ? directProgress.start() : null
+    let sendSucceeded = false
     try {
       const out = await sendRecord(pkgText, {
         web: isWebEdition(),
         directTransfer:
           typeof api?.directTransfer === 'function'
-            ? (f, t) => api.directTransfer(f, t)
+            ? (f, t) => api.directTransfer(f, t, requestId ?? undefined)
             : undefined,
         runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
       })
+      sendSucceeded = out.ok
+      if (currentRevision !== revision.current[mode]) return
+      if (currentWorkRevision !== workRevision.current[mode]) {
+        say('전송 중 글이 수정되었어요. 나이스에서 이전 내용의 전송 여부를 확인해 주세요.', true)
+        return
+      }
       setSendNote({ mode, ok: out.ok, text: out.message, pkgText })
     } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
+      if (currentRevision === revision.current[mode]) {
+        const message =
+          currentWorkRevision === workRevision.current[mode]
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : '전송 중 글이 수정되었어요. 나이스 전송 결과를 확인한 뒤 다시 시도해 주세요.'
+        say(message, true)
+      }
     } finally {
+      if (requestId) directProgress.finish(requestId, sendSucceeded)
+      sendingPending.current = false
       setSending(false)
     }
   }
@@ -746,6 +926,7 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const openSession = (session: SavedSession) => {
+    invalidateWork(session.mode)
     const students = session.work.students.length > 0 ? session.work.students : [newStudent()]
     patch(session.mode, () => ({ ...session.work, students }))
     setMode(session.mode)
@@ -1151,6 +1332,15 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
               )}
             </div>
 
+            {!isWebEdition() && (
+              <DirectTransferControls
+                feature="neis-record"
+                sending={sending}
+                progress={directProgress.progress}
+                onCancel={directProgress.cancel}
+              />
+            )}
+
             {sendNote && sendNote.mode === mode && (
               <div
                 className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
@@ -1169,11 +1359,13 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                       type="button"
                       className="sf-secondary sf-sm"
                       onClick={() =>
-                        void copyText(sendNote.pkgText).then(() =>
-                          say(
-                            '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
-                          ),
-                        )
+                        void copyText(sendNote.pkgText)
+                          .then(() =>
+                            say(
+                              '복사했어요. 나이스 화면의 [똑딱] → [복사한 생기부 작업 넣기]에 붙여 넣어 주세요.',
+                            ),
+                          )
+                          .catch(() => say('생기부 작업을 복사하지 못했어요.', true))
                       }
                     >
                       클립보드로 복사
@@ -1263,14 +1455,18 @@ export function SchoolRecord({ onBack }: { onBack: () => void }): ReactElement {
                         className="sf-secondary sf-sm"
                         disabled={!s.result.trim()}
                         onClick={() =>
-                          void copyText(s.result.trim()).then(() =>
-                            say(
-                              (s.name.trim() || i + 1 + '번 학생') +
-                                '의 ' +
-                                resultName +
-                                '을 복사했어요.',
-                            ),
-                          )
+                          void copyText(s.result.trim())
+                            .then(() =>
+                              say(
+                                (s.name.trim() || i + 1 + '번 학생') +
+                                  '의 ' +
+                                  resultName +
+                                  '을 복사했어요.',
+                              ),
+                            )
+                            .catch(() =>
+                              say('복사하지 못했어요. 클립보드 권한을 확인해 주세요.', true),
+                            )
                         }
                       >
                         복사

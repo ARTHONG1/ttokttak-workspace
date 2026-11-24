@@ -8,6 +8,12 @@ import { call } from './page-channel'
 export const nexacro = (): NexacroLike | undefined =>
   findNexacro<NexacroLike>(window as unknown as FrameWin)
 
+/** Automatic input is owned by the document running Nexacro itself. */
+export const localNexacro = (): NexacroLike | undefined => {
+  const nx = (window as unknown as FrameWin).nexacro as NexacroLike | undefined
+  return typeof nx?.getApplication === 'function' ? nx : undefined
+}
+
 export async function edufineMap(): Promise<ScreenMap> {
   const m = (await call<ScreenMap>('map:get')) as ScreenMap | { ok: false }
   return m && (m as ScreenMap).version === 1 ? (m as ScreenMap) : DEFAULT_SCREEN_MAP

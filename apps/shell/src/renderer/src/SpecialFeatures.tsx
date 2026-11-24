@@ -29,6 +29,7 @@ import { SignVideoPreview } from './sign/sign-video'
 import { ConvertIcon, TtokConvert } from './convert/TtokConvert'
 import { OrganizeIcon, TtokOrganize } from './organize/TtokOrganize'
 import { RecordIcon, SchoolRecord } from './record/SchoolRecord'
+import { DirectTransferControls, useDirectTransferProgress } from './direct-transfer-controls'
 import './special-features.css'
 import './quiz-generator.css'
 
@@ -119,6 +120,22 @@ interface StoredWork {
 }
 
 const STORAGE_KEY = 'procurement_temp_storage'
+
+const isStoredRow = (value: unknown): value is EstimateRow => {
+  if (!value || typeof value !== 'object') return false
+  const row = value as Record<string, unknown>
+  return (
+    typeof row.description === 'string' &&
+    typeof row.specification === 'string' &&
+    typeof row.unit === 'string' &&
+    typeof row.quantity === 'number' &&
+    Number.isFinite(row.quantity) &&
+    typeof row.unitPrice === 'number' &&
+    Number.isFinite(row.unitPrice) &&
+    typeof row.amount === 'number' &&
+    Number.isFinite(row.amount)
+  )
+}
 
 /**
  * Which way 품의서 생성 reads a cart: 'legacy' asks PARSE_SYSTEM for finished rows; 'v3' asks
@@ -483,12 +500,31 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   )
   const [sending, setSending] = useState(false)
   const resultRef = useRef<HTMLElement>(null)
+  const revision = useRef(0)
+  const generating = useRef(false)
+  const readingFile = useRef(false)
+  const transferring = useRef(false)
+  const directProgress = useDirectTransferProgress('edufine-pumui')
+
+  useEffect(
+    () => () => {
+      revision.current += 1
+    },
+    [],
+  )
+
+  const changed = () => {
+    revision.current += 1
+    setSendNote(null)
+    setConfirmSend(false)
+  }
 
   const total = totalOf(rows)
 
   // 품의서 생성 → K-에듀파인: the desktop app fills it itself through its own browser window
   // (no extension); the web app hands it to the extension in this browser
   const sendToEdufine = async (confirmed = false) => {
+    if (transferring.current) return
     const problem = workProblem(title, rows)
     if (problem) return say(problem, true)
     // flagged amounts go to K-에듀파인 only after one more yes
@@ -497,36 +533,54 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       pumuiPackageFromWork({ title, estimateData: rows, generatedArticle: article }),
     )
     const api = window.aiOffice
+    const current = revision.current
+    transferring.current = true
     setSending(true)
+    const requestId = !isWebEdition() ? directProgress.start() : null
+    let sendSucceeded = false
     try {
       const out = await sendPumui(pkgText, {
         web: isWebEdition(),
         directTransfer:
           typeof api?.directTransfer === 'function'
-            ? (f, t) => api.directTransfer(f, t)
+            ? (f, t) => api.directTransfer(f, t, requestId ?? undefined)
             : undefined,
         runtime: (window as unknown as { chrome?: { runtime?: never } }).chrome?.runtime,
       })
-      setSendNote({ ok: out.ok, text: out.message, pkgText })
+      sendSucceeded = out.ok
+      if (current === revision.current) setSendNote({ ok: out.ok, text: out.message, pkgText })
     } catch {
-      setSendNote({
-        ok: false,
-        text: '전송 연결을 확인하지 못했어요. 화면에 들어간 내용을 먼저 확인해 주세요.',
-        pkgText,
-      })
+      if (current === revision.current)
+        setSendNote({
+          ok: false,
+          text: '전송 연결을 확인하지 못했어요. 화면에 들어간 내용을 먼저 확인해 주세요.',
+          pkgText,
+        })
     } finally {
+      if (requestId) directProgress.finish(requestId, sendSucceeded)
+      transferring.current = false
       setSending(false)
     }
   }
 
-  const appendCart = (piece: string) =>
+  const appendCart = (piece: string) => {
+    changed()
     setCart((prev) => (prev.trim() ? prev.replace(/\s+$/, '') + '\n\n' + piece : piece))
+  }
 
   const readFromFile = async (kind: CartFileKind) => {
-    if (typeof window.aiOffice?.readCartFile !== 'function') return
+    if (
+      readingFile.current ||
+      generating.current ||
+      typeof window.aiOffice?.readCartFile !== 'function'
+    )
+      return
+    readingFile.current = true
+    const current = revision.current
     setReading(kind)
     try {
       const result = await window.aiOffice.readCartFile(kind)
+      if (current !== revision.current) return
       if (!result) return
       if (!result.ok) return say(result.error, true)
       if (result.kind === 'text') {
@@ -542,19 +596,23 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
             { base64: result.base64, mime: result.mime },
           ])
         ).trim()
+        if (current !== revision.current) return
         if (!read) return say('사진에서 상품을 찾지 못했어요.', true)
         appendCart(read)
         say(result.name + '에서 장바구니 내용을 읽었어요.')
       }
       setErrors((prev) => ({ ...prev, cart: undefined }))
     } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
+      if (current === revision.current)
+        say(error instanceof Error ? error.message : String(error), true)
     } finally {
+      readingFile.current = false
       setReading(null)
     }
   }
 
   const changeRows = (next: EstimateRow[]) => {
+    changed()
     setRows(next)
     setArticle((prev) => (prev === null ? prev : syncArticle(prev, next)))
   }
@@ -577,11 +635,14 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const generate = async () => {
+    if (generating.current || readingFile.current) return
     const found: { title?: string; cart?: string } = {}
     if (title.trim().length < 5) found.title = '품의 제목을 5자 이상 입력해주세요.'
     if (cart.trim().length < 10) found.cart = '장바구니 내용을 10자 이상 입력해주세요.'
     setErrors(found)
     if (found.title || found.cart) return
+    const current = revision.current
+    generating.current = true
     setBusy(true)
     try {
       const prepared = prepareCart(cart)
@@ -608,6 +669,7 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
       } else {
         parsed = parseRows(await askAi(PARSE_SYSTEM, work.text, [], 4000, { feature: 'pumui' }))
       }
+      if (current !== revision.current) return
       computed.current = marks
       setCheckSource(work.text)
       setCropped(work.removed)
@@ -617,12 +679,15 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
         '품의서를 만들었어요.' +
           (work.removed > 0 ? ' 추천 상품 구역 ' + work.removed + '줄을 빼고 읽었어요.' : ''),
       )
-      requestAnimationFrame(() =>
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      )
+      requestAnimationFrame(() => {
+        if (current === revision.current)
+          resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
     } catch (error) {
-      say(error instanceof Error ? error.message : String(error), true)
+      if (current === revision.current)
+        say(error instanceof Error ? error.message : String(error), true)
     } finally {
+      generating.current = false
       setBusy(false)
     }
   }
@@ -643,19 +708,25 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const loadTemp = () => {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return say('저장된 작업이 없어요.', true)
     try {
-      const work = JSON.parse(raw) as Partial<StoredWork>
-      setTitle(work.title || '')
-      setCart(work.shoppingCartText || '')
-      const loaded = Array.isArray(work.estimateData) ? work.estimateData : []
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return say('저장된 작업이 없어요.', true)
+      const work: unknown = JSON.parse(raw)
+      if (!work || typeof work !== 'object') throw new Error('Invalid saved work')
+      const saved = work as Record<string, unknown>
+      const loaded = Array.isArray(saved.estimateData) ? saved.estimateData.filter(isStoredRow) : []
+      const savedCart = typeof saved.shoppingCartText === 'string' ? saved.shoppingCartText : ''
+      changed()
+      setTitle(typeof saved.title === 'string' ? saved.title : '')
+      setCart(savedCart)
       computed.current = new WeakMap()
       // a saved work is checked again against its saved cart (the saved shape is unchanged)
-      setCheckSource(loaded.length > 0 ? prepareCart(work.shoppingCartText || '').text : null)
+      setCheckSource(loaded.length > 0 ? prepareCart(savedCart).text : null)
       setCropped(0)
       setRows(loaded)
-      setArticle(work.generatedArticle || null)
+      setArticle(typeof saved.generatedArticle === 'string' ? saved.generatedArticle : null)
+      setSendNote(null)
+      setConfirmSend(false)
       setErrors({})
       say('저장된 작업을 불러왔어요.')
     } catch {
@@ -664,11 +735,16 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
   }
 
   const deleteTemp = () => {
-    localStorage.removeItem(STORAGE_KEY)
-    say('저장된 작업을 지웠어요.')
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      say('저장된 작업을 지웠어요.')
+    } catch {
+      say('저장된 작업을 지우지 못했어요.', true)
+    }
   }
 
   const resetAll = () => {
+    changed()
     setTitle('')
     setCart('')
     setRows([])
@@ -676,6 +752,8 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
     setCheckSource(null)
     setCropped(0)
     setErrors({})
+    setSendNote(null)
+    setConfirmSend(false)
     say('모든 내용을 지웠어요.')
   }
 
@@ -719,7 +797,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
             <input
               data-testid="proposal-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                changed()
+                setTitle(e.target.value)
+              }}
               placeholder="예: 2025학년도 4학년 학급 용품 구입"
               aria-invalid={errors.title ? true : undefined}
             />
@@ -757,7 +838,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
               data-testid="proposal-cart"
               rows={8}
               value={cart}
-              onChange={(e) => setCart(e.target.value)}
+              onChange={(e) => {
+                changed()
+                setCart(e.target.value)
+              }}
               placeholder={
                 '쇼핑몰 장바구니 화면의 글을 그대로 복사해 붙여 넣으세요.\n예: 모나미 153 볼펜 흑색 12개입 3,600원 수량 5'
               }
@@ -800,7 +884,9 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                   type="button"
                   className="sf-secondary sf-sm"
                   onClick={() =>
-                    void copyText(article.trim()).then(() => say('기안문을 복사했어요.'))
+                    void copyText(article.trim())
+                      .then(() => say('기안문을 복사했어요.'))
+                      .catch(() => say('기안문을 복사하지 못했어요.', true))
                   }
                 >
                   본문 복사
@@ -825,6 +911,15 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
               </div>
             </div>
 
+            {!isWebEdition() && (
+              <DirectTransferControls
+                feature="edufine-pumui"
+                sending={sending}
+                progress={directProgress.progress}
+                onCancel={directProgress.cancel}
+              />
+            )}
+
             {sendNote && (
               <div
                 className={sendNote.ok ? 'sf-send-note' : 'sf-send-note sf-send-warn'}
@@ -844,11 +939,13 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                       type="button"
                       className="sf-secondary sf-sm"
                       onClick={() =>
-                        void copyText(sendNote.pkgText).then(() =>
-                          say(
-                            '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [복사했거나 파일로 받은 품의 넣기]에 붙여 넣어 주세요.',
-                          ),
-                        )
+                        void copyText(sendNote.pkgText)
+                          .then(() =>
+                            say(
+                              '품의를 복사했어요. K-에듀파인 화면의 [똑딱] → [복사했거나 파일로 받은 품의 넣기]에 붙여 넣어 주세요.',
+                            ),
+                          )
+                          .catch(() => say('품의를 복사하지 못했어요.', true))
                       }
                     >
                       클립보드로 복사
@@ -877,7 +974,10 @@ function ProposalGenerator({ onBack }: { onBack: () => void }): ReactElement {
                 className="sf-article"
                 rows={7}
                 value={article}
-                onChange={(e) => setArticle(e.target.value)}
+                onChange={(e) => {
+                  changed()
+                  setArticle(e.target.value)
+                }}
               />
             </label>
 

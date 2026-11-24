@@ -20,6 +20,8 @@ export interface FakeNeis {
 }
 
 export interface FakeNeisOptions {
+  /** the entry column label shown above the grid */
+  column?: string
   /** Tab does not leave this row (0 first) */
   stuckAt?: number
   /** F2 opens no editor on this row */
@@ -41,6 +43,16 @@ export function mountFakeNeis(
   }
   const grid = el('div', 'cl-grid')
   grid.setAttribute('role', 'grid')
+  if (options.column) {
+    const head = el('div', 'cl-grid-row-header')
+    for (const label of ['번호', '이름', options.column]) {
+      const cell = el('div', 'cl-grid-header-cell')
+      cell.setAttribute('role', 'columnheader')
+      cell.textContent = label
+      head.append(cell)
+    }
+    grid.append(head)
+  }
   const rowEls = rows.map((row, i) => {
     const rowEl = el('div', 'cl-grid-row')
     rowEl.setAttribute('aria-rowindex', String(i + 1))

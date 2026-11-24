@@ -30,7 +30,7 @@ import type {
 } from './convert-api'
 import type { KbFileInfo, KbReadPage, KbSearchHit } from '@genoffice/agent-core'
 import type { AiPanelPrefs } from '@genoffice/ui/ai-panel-prefs'
-import type { DirectTransfer } from './direct-transfer-api'
+import type { DirectTransfer, DirectFeature, DirectTransferProgress } from './direct-transfer-api'
 
 /** UI language; kept self-contained here (mirrors Lang in @genoffice/i18n) */
 
@@ -255,6 +255,10 @@ export interface DefaultAppStatus {
 export interface HomeApi {
   /** Desktop-only deterministic browser input; never invokes AI or an extension. */
   directTransfer: DirectTransfer
+  onDirectTransferProgress(handler: (progress: DirectTransferProgress) => void): () => void
+  cancelDirectTransfer(requestId: string): Promise<boolean>
+  getDirectTransferOrigin(feature: DirectFeature): Promise<string | null>
+  setDirectTransferOrigin(feature: DirectFeature, origin: string | null): Promise<boolean>
   /** unified recents across document types, newest first (paged) */
   recents(query?: RecentQuery): Promise<RecentPage>
   /** search indexed files by name, folder and content */
@@ -356,8 +360,8 @@ export interface HomeApi {
   ): Promise<void>
   /** open the in-app manual, at `topic` (a help topic id) when given */
   openHelp(topic?: string): Promise<void>
-  /** open an existing file, routing to the right module by extension */
-  openPath(path: string): Promise<void>
+  /** open an existing file, routing to the right module by extension; false if unavailable */
+  openPath(path: string): Promise<boolean>
   /** file picker accepting every supported extension, then routes */
   browse(): Promise<void>
   /** open a docs window at its start screen; `dir` = folder the first save should land in */
@@ -642,6 +646,10 @@ export const HOME_CHANNELS = {
   browse: 'home:browse',
   readCartFile: 'home:read-cart-file',
   directTransfer: 'home:direct-transfer',
+  directTransferProgress: 'home:direct-transfer-progress',
+  directTransferCancel: 'home:direct-transfer-cancel',
+  directTransferGetOrigin: 'home:direct-transfer-get-origin',
+  directTransferSetOrigin: 'home:direct-transfer-set-origin',
   readQuizFile: 'home:read-quiz-file',
   readYoutubeTranscript: 'home:read-youtube-transcript',
   openSignDocument: 'home:open-sign-document',

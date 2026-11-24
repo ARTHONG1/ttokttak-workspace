@@ -9,6 +9,13 @@ export interface InboxEntry {
   text: string
   from: 'web' | 'desktop'
   receivedAt: number
+  requestId?: string
+  automatic?: {
+    until: number
+    sourceTabId?: number
+    tabId?: number
+    owner?: { tabId: number; documentId: string; leaseUntil: number; cancelled?: boolean }
+  }
 }
 
 export const INBOX_MAX_MS = 24 * 3_600_000
@@ -26,7 +33,13 @@ function readEntry(entry: unknown): InboxEntry | null {
   if (typeof e.text !== 'string' || !e.text) return null
   if (e.from !== 'web' && e.from !== 'desktop') return null
   if (typeof e.receivedAt !== 'number') return null
-  return { text: e.text, from: e.from, receivedAt: e.receivedAt }
+  return {
+    text: e.text,
+    from: e.from,
+    receivedAt: e.receivedAt,
+    ...(typeof e.requestId === 'string' ? { requestId: e.requestId } : {}),
+    ...(e.requestId && e.from === 'web' && e.automatic ? { automatic: e.automatic } : {}),
+  }
 }
 
 /** a stored entry that is well formed and not older than a day, else null */

@@ -4196,6 +4196,12 @@ const tm = (key: Parameters<typeof tMain>[1], params?: Parameters<typeof tMain>[
 
 let shellWindow: BrowserWindow | null = null
 let directTransferDriver: PlaywrightDirectTransferDriver | undefined
+const directTransferControllers = new Map<string, AbortController>()
+function cancelShellDirectTransfers(): void {
+  for (const controller of directTransferControllers.values()) controller.abort()
+  directTransferControllers.clear()
+  void directTransferDriver?.close().catch(() => undefined)
+}
 let tabManager: TabManager | null = null
 
 /**
@@ -5041,6 +5047,7 @@ function createShellWindow(): void {
   win.on('session-end', () => void endForOsSession())
 
   win.on('closed', () => {
+    cancelShellDirectTransfers()
     if (shellWindow === win) shellWindow = null
     if (tabManager === manager) {
       tabManager = null
@@ -5060,6 +5067,12 @@ function createShellWindow(): void {
       clearTimeout(splitMemoryTimer)
       splitMemoryTimer = null
     }
+  })
+
+  // A destroyed or replaced renderer must not leave a write waiting in its browser.
+  win.webContents.on('render-process-gone', () => cancelShellDirectTransfers())
+  win.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => {
+    if (isMainFrame) cancelShellDirectTransfers()
   })
 
   if (process.env.ELECTRON_RENDERER_URL) {
@@ -5717,9 +5730,10 @@ function registerHomeIpc(): void {
   })
 
   ipcMain.handle(HOME_CHANNELS.openPath, (_event, path: unknown) => {
-    if (typeof path !== 'string' || !path || path.length > 4096) return
-    openDocumentPath(path)
-    fileIndexer?.refresh()
+    if (typeof path !== 'string' || !path || path.length > 4096) return false
+    const opened = openDocumentPath(path)
+    if (opened) fileIndexer?.refresh()
+    return opened
   })
 
   ipcMain.handle(HOME_CHANNELS.browse, async (event) => {
@@ -5762,23 +5776,94 @@ function registerHomeIpc(): void {
 
   // 똑딱업무 → a work site (품의서 생성 → K-에듀파인, 생기부 → 나이스): the desktop app fills
   // the site itself in its own Chrome/Edge window (direct-transfer.ts); no extension is involved
-  ipcMain.handle(HOME_CHANNELS.directTransfer, async (event, feature: unknown, text: unknown) => {
-    if (
-      process.env.WEB_SESSION_DIR ||
-      !shellWindow ||
-      shellWindow.isDestroyed() ||
-      event.sender !== shellWindow.webContents
+  const canDirectTransfer = (event: Electron.IpcMainInvokeEvent): boolean =>
+    !process.env.WEB_SESSION_DIR &&
+    Boolean(
+      shellWindow &&
+      !shellWindow.isDestroyed() &&
+      event.sender === shellWindow.webContents &&
+      event.senderFrame === event.sender.mainFrame,
     )
-      return {
-        ok: false,
-        route: 'direct',
-        message: '데스크톱 홈 화면에서만 직접 전송할 수 있어요.',
+  const directFeature = (value: unknown): value is 'neis-record' | 'edufine-pumui' =>
+    value === 'neis-record' || value === 'edufine-pumui'
+  ipcMain.handle(
+    HOME_CHANNELS.directTransfer,
+    async (event, feature: unknown, text: unknown, requestId: unknown) => {
+      if (!canDirectTransfer(event))
+        return {
+          ok: false,
+          route: 'direct',
+          message: '데스크톱 홈 화면에서만 직접 전송할 수 있어요.',
+        }
+      if (!directFeature(feature) || typeof text !== 'string' || text.length > 100_000)
+        return { ok: false, route: 'direct', message: '보낼 내용을 읽지 못했어요.' }
+      if (
+        requestId !== undefined &&
+        (typeof requestId !== 'string' || !/^[\w-]{8,90}$/.test(requestId))
+      )
+        return { ok: false, route: 'direct', message: '전송 요청을 확인하지 못했어요.' }
+      if (typeof requestId === 'string' && directTransferControllers.has(requestId))
+        return { ok: false, route: 'direct', message: '이미 진행 중인 전송이에요.' }
+      directTransferDriver ??= createDirectTransferDriver(app.getPath('userData'))
+      const controller = new AbortController()
+      const id = typeof requestId === 'string' ? requestId : ''
+      const trackingId = id || randomUUID()
+      directTransferControllers.set(trackingId, controller)
+      const started = Date.now()
+      let lastStage: import('../shared/direct-transfer-api').DirectTransferStage | undefined
+      const sendStage = (stage: import('../shared/direct-transfer-api').DirectTransferStage) => {
+        if (
+          !id ||
+          stage === lastStage ||
+          directTransferControllers.get(trackingId) !== controller ||
+          !canDirectTransfer(event)
+        )
+          return
+        lastStage = stage
+        event.sender.send(HOME_CHANNELS.directTransferProgress, {
+          requestId: id,
+          feature,
+          stage,
+          elapsedMs: Date.now() - started,
+        })
       }
-    if (typeof feature !== 'string' || typeof text !== 'string' || text.length > 100_000)
-      return { ok: false, route: 'direct', message: '보낼 내용을 읽지 못했어요.' }
-    directTransferDriver ??= createDirectTransferDriver(app.getPath('userData'))
-    return directTransferRequest(feature, text, directTransferDriver)
+      try {
+        const result = await directTransferRequest(feature, text, directTransferDriver, {
+          signal: controller.signal,
+          onStage: sendStage,
+        })
+        sendStage(result.ok ? 'done' : controller.signal.aborted ? 'cancelled' : 'failed')
+        return result
+      } finally {
+        if (directTransferControllers.get(trackingId) === controller)
+          directTransferControllers.delete(trackingId)
+      }
+    },
+  )
+  ipcMain.handle(HOME_CHANNELS.directTransferCancel, async (event, id: unknown) => {
+    if (!canDirectTransfer(event) || typeof id !== 'string') return false
+    const controller = directTransferControllers.get(id)
+    controller?.abort()
+    return Boolean(controller)
   })
+  ipcMain.handle(HOME_CHANNELS.directTransferGetOrigin, async (event, feature: unknown) => {
+    if (!canDirectTransfer(event) || !directFeature(feature)) return null
+    directTransferDriver ??= createDirectTransferDriver(app.getPath('userData'))
+    return directTransferDriver.getStartOrigin(feature)
+  })
+  ipcMain.handle(
+    HOME_CHANNELS.directTransferSetOrigin,
+    async (event, feature: unknown, origin: unknown) => {
+      if (
+        !canDirectTransfer(event) ||
+        !directFeature(feature) ||
+        (origin !== null && typeof origin !== 'string')
+      )
+        return false
+      directTransferDriver ??= createDirectTransferDriver(app.getPath('userData'))
+      return directTransferDriver.setStartOrigin(feature, origin)
+    },
+  )
 
   // 특화 기능 > 퀴즈 생성기: the 학습 자료 comes from a file the user picks here, or from a
   // YouTube video's captions fetched by this process
@@ -9542,7 +9627,7 @@ app.on('will-quit', () => {
 
 /** what every way out of a normal run releases (will-quit, and an OS session end) */
 function releaseAppResources(): void {
-  void directTransferDriver?.close().catch(() => undefined)
+  cancelShellDirectTransfers()
   fileIndexer?.stop()
   fileIndexStore?.close()
   for (const watcher of folderWatchers.values()) watcher.close()

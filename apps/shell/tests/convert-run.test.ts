@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { HwpConvertError } from '../src/main/document-convert/hwp-container'
 import type { RouteStep } from '../src/main/document-convert/routes'
 import {
+  CONVERT_MAX_BYTES,
   CONVERT_ERRORS,
   ConvertStepError,
   outputLooksRight,
@@ -123,6 +124,40 @@ describe('runConversion', () => {
       error: CONVERT_ERRORS.tooBig,
     })
     expect(deps.step).not.toHaveBeenCalled()
+  })
+
+  it('returns a conversion error when the temporary folder cannot be created', async () => {
+    const { deps, removed } = fakeDeps(
+      { 'odt-docx': ZIP, 'to-pdf': PDF },
+      {
+        makeTempDir: async () => {
+          throw new Error('temporary storage is unavailable')
+        },
+      },
+    )
+
+    await expect(runConversion(request(), deps)).resolves.toEqual({
+      ok: false,
+      error: CONVERT_ERRORS.failed,
+    })
+    expect(deps.step).not.toHaveBeenCalled()
+    expect(removed).toEqual([])
+  })
+
+  it('checks a PDF preview size before reading its bytes', async () => {
+    const { deps } = fakeDeps(
+      { 'odt-docx': ZIP, 'to-pdf': PDF },
+      {
+        fileSize: async (path) => (path.endsWith('.pdf') ? CONVERT_MAX_BYTES + 1 : 128),
+        readFile: vi.fn(async () => PDF),
+      },
+    )
+
+    await expect(runConversion(request(), deps)).resolves.toEqual({
+      ok: false,
+      error: CONVERT_ERRORS.resultTooBig,
+    })
+    expect(deps.readFile).not.toHaveBeenCalled()
   })
 
   it('refuses a format the route table has no route for', async () => {

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { applyFill, budgetMark, planFill } from '../../../src/features/edufine-pumui/fill'
+import {
+  applyFill,
+  budgetMark,
+  planFill,
+  probePumui,
+} from '../../../src/features/edufine-pumui/fill'
 import { buildPumuiPackage, type PumuiItem } from '../../../src/features/edufine-pumui/package'
+import { getPath } from '../../../src/sites/edufine/nexacro'
+
 import { findWorkForm } from '../../../src/sites/edufine/screen'
 import { DEFAULT_SCREEN_MAP as map } from '../../../src/sites/edufine/screen-map'
 import { causeScreen, makeFakeEdufine, pumuiScreen } from '../../fixtures/fake-nexacro'
@@ -151,5 +158,47 @@ describe('applyFill', () => {
       reason: '이 품의는 이 화면에 이미 채웠어요.',
       rolledBack: 0,
     })
+  })
+})
+
+describe('automatic 품의 input', () => {
+  it('reads readiness without adding a row before the user selects the budget', () => {
+    const { fake, form } = setup({ budgetSelected: false })
+    expect(probePumui(form, map).state).toBe('waiting')
+    expect(fake.writes).toEqual([])
+    fake.selectBudget()
+    expect(probePumui(form, map).state).toBe('ready')
+  })
+
+  it('refuses to overwrite existing headings and undoes column or heading readback failures', () => {
+    const { fake, form } = setup()
+    const heading = getPath(form, map.pumui.title) as {
+      value: string
+      set_value(value: string): void
+    }
+    heading.value = '기존 제목'
+    expect(applyFill(form, map, planFill(form, map, pkg), new Set(), true)).toMatchObject({
+      ok: false,
+    })
+    expect(fake.writes).toEqual([])
+    heading.value = ''
+    const ds = fake.dataset('dsPrdlstDtl')!
+    const setColumn = ds.setColumn.bind(ds)
+    ds.setColumn = (row, column, value) =>
+      setColumn(row, column, column === map.pumui.columns.name ? '다른 값' : value)
+    expect(applyFill(form, map, planFill(form, map, pkg), new Set(), true)).toMatchObject({
+      ok: false,
+      rolledBack: 3,
+    })
+    expect(ds.rows).toEqual([])
+    ds.setColumn = setColumn
+    heading.set_value = () => {}
+    expect(applyFill(form, map, planFill(form, map, pkg), new Set(), true)).toMatchObject({
+      ok: false,
+      rolledBack: 3,
+    })
+    expect(ds.rows).toEqual([])
+    expect(getPath(form, map.pumui.summary + '.value')).toBe('')
+    expect(fake.forbiddenCalls()).toBe(0)
   })
 })

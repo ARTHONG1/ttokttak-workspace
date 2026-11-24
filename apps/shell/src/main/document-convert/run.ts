@@ -117,8 +117,9 @@ export async function runConversion(
   }
   const name = basename(req.path, extname(req.path))
   const extension = extensionOf(req.format)
-  const dir = await deps.makeTempDir()
+  let dir: string | undefined
   try {
+    dir = await deps.makeTempDir()
     let input = join(dir, 'source' + extname(req.path).toLowerCase())
     await deps.copyFile(req.path, input)
     const warnings: string[] = []
@@ -132,7 +133,9 @@ export async function runConversion(
       warnings.push(...(outcome.warnings ?? []))
       facts.push(...(outcome.facts ?? []))
       if (outcome.previewSvg) previewSvg = outcome.previewSvg
-      if (output.endsWith('.pdf')) previewPdf = await deps.readFile(output)
+      if (output.endsWith('.pdf') && (await deps.fileSize(output)) <= CONVERT_MAX_BYTES) {
+        previewPdf = await deps.readFile(output)
+      }
       input = output
     }
     if ((await deps.fileSize(input)) > CONVERT_MAX_BYTES) {
@@ -154,6 +157,6 @@ export async function runConversion(
     console.warn('[convert] failed', req.kind, '→', req.format, err)
     return { ok: false, error: errorText(err) }
   } finally {
-    await deps.removeDir(dir).catch(() => {})
+    if (dir) await deps.removeDir(dir).catch(() => {})
   }
 }

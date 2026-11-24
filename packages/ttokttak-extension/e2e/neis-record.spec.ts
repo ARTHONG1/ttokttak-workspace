@@ -16,8 +16,7 @@ import { buildRecordPackage } from '../src/features/neis-record/package'
 
 /**
  * 생기부 나이스 입력 (task id neis-record) against a stand-in NEIS grid: the 똑딱 button on
- * the NEIS page, work sent from the web app shown there, and one press typing each
- * student's text into that student's row. It never presses NEIS's save.
+ * the NEIS page, automatic input after an explicit web send, and the manual paste flow. It never presses NEIS's save.
  */
 const HERE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(HERE, 'dist')
@@ -109,61 +108,78 @@ async function sendFromWebApp(text: string): Promise<{ page: Page; reply: any }>
 const texts = (page: Page): Promise<string[]> => page.evaluate(() => (window as any).__neis.texts())
 const row = (page: Page, n: number) => page.locator('.cl-grid-row').nth(n)
 
-test('a send brings NEIS forward with the class shown, and one press fills each row', async () => {
-  const neis = await openNeis()
-  const { page: sender, reply } = await sendFromWebApp(workText)
-  expect(reply).toMatchObject({ ok: true, moved: 'focused' })
+const expectedTexts = [
+  '탐구에 적극적으로 참여함.',
+  '',
+  '관찰 일지를 꼼꼼히 기록함.',
+  '발표를 논리적으로 함.',
+]
+const emptyTexts = ['', '', '', '']
+
+async function previewPastedWork(neis: Page) {
   const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
-  await expect(panel.getByRole('heading', { name: '과학 세특 · 3명' })).toBeVisible()
-  await expect(panel.getByText('글이 없는 1명의 줄은 건너뛰어요')).toBeVisible()
-  // nothing is typed before the press
-  expect(await texts(neis)).toEqual(['', '', '', ''])
-
-  await row(neis, 0).click()
-  await panel.getByRole('button', { name: '나이스에 채우기' }).click()
-  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible({ timeout: 30_000 })
-  await expect(panel.getByText('3명의 교과 세특을 나이스 표에 넣었어요')).toBeVisible()
-  expect(await texts(neis)).toEqual([
-    '탐구에 적극적으로 참여함.',
-    '',
-    '관찰 일지를 꼼꼼히 기록함.',
-    '발표를 논리적으로 함.',
-  ])
-  // saving stays with the teacher
-  expect(await neis.evaluate(() => (window as any).__saved ?? 0)).toBe(0)
-  // done work does not come back
   await neis.getByRole('button', { name: '똑딱', exact: true }).click()
-  await expect(panel.getByRole('heading', { name: '과학 세특 · 3명' })).toHaveCount(0)
-  await sender.close()
-  await neis.close()
-})
+  await panel.getByText('복사한 생기부 작업 넣기').click()
+  await panel.getByLabel('생기부 작업 붙여 넣기').fill(workText)
+  return panel
+}
 
-test('it asks for a row first, and stops before writing into another student’s row', async () => {
-  const neis = await openNeis()
+for (const mode of ['subject', 'behavior', 'activity'] as const) {
+  test(`one web send waits for the right ${mode} student row and confirms every write`, async () => {
+    const neis = await openNeis('?mode=' + mode)
+    const { page: sender, reply } = await sendFromWebApp(
+      JSON.stringify({ ...JSON.parse(workText), mode }),
+    )
+    expect(reply).toMatchObject({ ok: true, moved: 'focused' })
+    const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
+    await expect(panel.getByRole('heading', { name: '자동 입력 대기 중' })).toBeVisible()
+    expect(await texts(neis)).toEqual(emptyTexts)
+
+    await row(neis, 1).click()
+    await expect(panel.getByText('첫 학생 줄을 하나만 골라 주세요.')).toBeVisible()
+    expect(await texts(neis)).toEqual(emptyTexts)
+
+    await row(neis, 0).click()
+    await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible()
+    await expect(panel.getByText('3명의 입력값을 나이스 표에서 확인했어요.')).toBeVisible()
+    expect(await texts(neis)).toEqual(expectedTexts)
+    expect(await neis.evaluate(() => (window as any).__saved ?? 0)).toBe(0)
+    expect(
+      await sw.evaluate(
+        async () =>
+          (await (globalThis as any).chrome.storage.local.get('inbox:neis-record'))[
+            'inbox:neis-record'
+          ],
+      ),
+    ).toBeUndefined()
+    await sender.close()
+    await neis.close()
+  })
+}
+
+test('cancelling the wait leaves zero writes after row selection and offers a manual preview', async () => {
+  const neis = await openNeis('?filled=1')
   const { page: sender } = await sendFromWebApp(workText)
   const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
-  await panel.getByRole('button', { name: '나이스에 채우기' }).click()
-  await expect(panel.getByRole('heading', { name: '학생 줄을 먼저 눌러 주세요' })).toBeVisible()
-
-  // the second student's row, while the class starts with the first
-  await row(neis, 1).click()
-  await panel.getByRole('button', { name: '나이스에 채우기' }).click()
-  await expect(panel.getByRole('heading', { name: '넣지 않고 멈췄어요' })).toBeVisible()
-  expect(await texts(neis)).toEqual(['', '', '', ''])
-
-  // the right row: it goes on from there
+  await panel.getByRole('button', { name: '자동 입력 취소' }).click()
+  await expect(panel.getByRole('heading', { name: '자동 입력을 취소했어요' })).toBeVisible()
   await row(neis, 0).click()
+  // Let more than two readiness polls pass after a newly eligible selection.
+  await neis.waitForTimeout(1_800)
+  expect(await texts(neis)).toEqual(['지난 학기 글.', '', '', ''])
+  await neis.getByRole('button', { name: '똑딱', exact: true }).click()
+  await expect(panel.getByRole('heading', { name: '과학 세특 · 3명' })).toBeVisible()
+  await panel.getByLabel('새 글로 바꾸기').check()
   await panel.getByRole('button', { name: '나이스에 채우기' }).click()
-  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible({ timeout: 30_000 })
-  expect((await texts(neis))[3]).toBe('발표를 논리적으로 함.')
+  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible()
+  expect(await texts(neis)).toEqual(expectedTexts)
   await sender.close()
   await neis.close()
 })
 
 test('when the grid does not move on it stops, and goes on from the next student', async () => {
   const neis = await openNeis('?stuck=0')
-  const { page: sender } = await sendFromWebApp(workText)
-  const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
+  const panel = await previewPastedWork(neis)
   await row(neis, 0).click()
   await panel.getByRole('button', { name: '나이스에 채우기' }).click()
   await expect(panel.getByRole('heading', { name: '1명까지 넣고 멈췄어요' })).toBeVisible({
@@ -179,20 +195,6 @@ test('when the grid does not move on it stops, and goes on from the next student
     '관찰 일지를 꼼꼼히 기록함.',
     '발표를 논리적으로 함.',
   ])
-  await sender.close()
-  await neis.close()
-})
-
-test('a text already in the cell is written after by default for 세특, or replaced', async () => {
-  const neis = await openNeis('?filled=1')
-  const { page: sender } = await sendFromWebApp(workText)
-  const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
-  await panel.getByLabel('새 글로 바꾸기').check()
-  await row(neis, 0).click()
-  await panel.getByRole('button', { name: '나이스에 채우기' }).click()
-  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible({ timeout: 30_000 })
-  expect((await texts(neis))[0]).toBe('탐구에 적극적으로 참여함.')
-  await sender.close()
   await neis.close()
 })
 
@@ -212,16 +214,18 @@ test('refuses work that is not a 생기부 작업, and takes a pasted one', asyn
   await neis.close()
 })
 
-test('before NEIS was ever opened, a send waits for the 똑딱 button', async () => {
+test('the first send survives login without a remembered NEIS address', async () => {
   const { page: sender, reply } = await sendFromWebApp(workText)
   expect(reply).toMatchObject({ ok: true, moved: 'unknown' })
   await sender.close()
-  const neis = await openNeis()
-  await neis.getByRole('button', { name: '똑딱', exact: true }).click()
-  await expect(
-    neis
-      .getByRole('dialog', { name: '똑딱작업실' })
-      .getByRole('heading', { name: '과학 세특 · 3명' }),
-  ).toBeVisible()
+  const neis = await context.newPage()
+  await neis.goto(base + '/fake-neis.html?login=1')
+  await expect(neis.getByRole('button', { name: '똑딱', exact: true })).toHaveCount(0)
+  await neis.getByRole('button', { name: '로그인' }).click()
+  const panel = neis.getByRole('dialog', { name: '똑딱작업실' })
+  await expect(panel.getByRole('heading', { name: '자동 입력 대기 중' })).toBeVisible()
+  await row(neis, 0).click()
+  await expect(panel.getByRole('heading', { name: '채웠어요' })).toBeVisible()
+  expect(await texts(neis)).toEqual(expectedTexts)
   await neis.close()
 })

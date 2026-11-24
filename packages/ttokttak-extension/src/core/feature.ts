@@ -31,6 +31,7 @@ export interface DesktopTake {
   ok: boolean
   text?: string | null
   state?: string
+  requestId?: string
 }
 
 export interface FeatureContext {
@@ -41,6 +42,8 @@ export interface FeatureContext {
   peek(): Promise<string | null>
   /** forget the waiting work once it is done */
   clear(): Promise<void>
+  /** verify that a preview still refers to the current inbox entry before manual writing */
+  isCurrent(): Promise<boolean>
   /** ask 똑딱작업실 (the desktop app) for this task's work; it is kept like a waiting one */
   takeDesktop(): Promise<DesktopTake>
   /** back to the 똑딱 home of this site */

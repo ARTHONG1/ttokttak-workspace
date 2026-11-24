@@ -26,6 +26,22 @@ export type FillResult =
   | { ok: true; added: number; gridTotal: number }
   | { ok: false; reason: string; rolledBack: number; needsBudget?: boolean }
 
+export function probePumui(form: WorkForm | null, map: ScreenMap) {
+  if (!form || detectScreen(form, map).kind !== 'pumui') return { state: 'menu' as const }
+  const budget = getPath(form, map.pumui.budget)
+  const row = getPath(budget, 'rowposition')
+  const selected =
+    isDataset(budget) &&
+    typeof row === 'number' &&
+    Number.isInteger(row) &&
+    row >= 0 &&
+    row < budget.rowcount
+  const units = readUnitTable(form, map)
+  const grid = gridDataset(form, map)
+  if (!selected || !units.length || !grid) return { state: 'waiting' as const }
+  return { state: 'ready' as const, form, grid, budget, mark: budgetMark(form, map) }
+}
+
 /**
  * What the teacher's budget choice looks like right now: the budget dataset's current row
  * and any check-style columns. The panel waits for this to change after K-에듀파인 refused
@@ -94,6 +110,7 @@ export function applyFill(
   map: ScreenMap,
   plan: FillPlan,
   filled: Set<string> = new Set(),
+  protect = false,
 ): FillResult {
   if (plan.blockers.length) return fail(plan.blockers[0])
   if (filled.has(plan.key)) return fail('이 품의는 이 화면에 이미 채웠어요.')
@@ -103,12 +120,51 @@ export function applyFill(
   if (!ds || typeof add !== 'function') return fail('K-에듀파인 품의등록 화면을 열어 주세요.')
   const c = map.pumui.columns
   const start = ds.rowcount
+  const title = getPath(form, map.pumui.title) as { value?: unknown; set_value(v: string): void }
+  const summary = getPath(form, map.pumui.summary) as typeof title
+  const oldTitle = title?.value
+  const oldSummary = summary?.value
+  const normalize = (value: unknown): string => String(value ?? '').replace(/\r\n/g, '\n')
+  const matchesRow = (row: number, { item, unitCode }: FillPlan['rows'][number]): boolean =>
+    String(ds.getColumn(row, c.name) ?? '') === item.description &&
+    String(ds.getColumn(row, c.spec) ?? '') === item.specification &&
+    String(ds.getColumn(row, c.unit) ?? '') === unitCode &&
+    ds.getColumn(row, c.qty) != null &&
+    Number(ds.getColumn(row, c.qty)) === item.quantity &&
+    ds.getColumn(row, c.price) != null &&
+    Number(ds.getColumn(row, c.price)) === item.unitPrice
+  if (protect) {
+    if (probePumui(form, map).state !== 'ready' || typeof ds.deleteRow !== 'function') {
+      return fail('예산 줄과 단위 목록이 준비된 품의등록 화면을 확인해 주세요.')
+    }
+    if (
+      !(oldTitle == null || typeof oldTitle === 'string') ||
+      !(oldSummary == null || typeof oldSummary === 'string') ||
+      !title ||
+      !('value' in title) ||
+      !summary ||
+      !('value' in summary)
+    ) {
+      return fail('화면의 제목과 개요를 읽지 못했어요.')
+    }
+    if (
+      (normalize(oldTitle).trim() && normalize(oldTitle) !== normalize(plan.title)) ||
+      (normalize(oldSummary).trim() && normalize(oldSummary) !== normalize(plan.summary))
+    ) {
+      return fail('화면에 다른 제목이나 개요가 있어요. 새 품의등록 화면을 열어 주세요.')
+    }
+    for (let r = 0; r <= start - plan.rows.length; r++) {
+      if (plan.rows.every((row, i) => matchesRow(r + i, row)))
+        return fail('같은 품목이 이미 화면에 있어요. 중복 입력을 멈췄어요.')
+    }
+  }
   let added = 0
+  let changedHeadings = false
   const undo = (): number => {
     let removed = 0
     for (let r = ds.rowcount - 1; r >= start && removed < added; r--) {
       try {
-        ds.deleteRow(r)
+        if (ds.deleteRow(r) === false) break
         removed++
       } catch {
         break
@@ -116,11 +172,37 @@ export function applyFill(
     }
     return removed
   }
+  const recover = (reason: string): FillResult => {
+    const rolledBack = undo()
+    let restored = ds.rowcount === start
+    if (changedHeadings) {
+      try {
+        title.set_value(String(oldTitle ?? ''))
+        summary.set_value(String(oldSummary ?? ''))
+        restored &&=
+          normalize(title.value) === normalize(oldTitle) &&
+          normalize(summary.value) === normalize(oldSummary)
+      } catch {
+        restored = false
+      }
+    }
+    return fail(
+      reason +
+        (restored
+          ? ' 이번 입력은 되돌렸어요.'
+          : ' 일부 입력을 되돌리지 못했어요. 화면을 확인해 주세요.'),
+      rolledBack,
+    )
+  }
   try {
     for (const [i, { item, unitCode }] of plan.rows.entries()) {
       const before = ds.rowcount
       add.call(form, button, {})
       if (ds.rowcount !== before + 1) {
+        if (protect) {
+          added = Math.max(0, ds.rowcount - start)
+          return recover(i + 1 + '번째 품목 행을 추가하지 못했어요.')
+        }
         if (added === 0)
           return {
             ok: false,
@@ -142,22 +224,36 @@ export function applyFill(
       ds.setColumn(r, c.price, item.unitPrice)
     }
     let gridTotal = 0
+    if (protect && !plan.rows.every((row, i) => matchesRow(start + i, row)))
+      return recover('품목 입력값이 보낸 내용과 달라요.')
     for (let r = start; r < ds.rowcount; r++) {
       gridTotal += Math.round(Number(ds.getColumn(r, c.qty)) * Number(ds.getColumn(r, c.price)))
     }
     if (gridTotal !== plan.total) {
+      if (protect) return recover('화면에 들어간 금액 합계가 품의 합계와 달라요.')
       return fail(
         '화면에 들어간 금액 합계가 품의 합계와 달라요. 이번에 넣은 행은 되돌렸어요.',
         undo(),
       )
     }
-    const title = getPath(form, map.pumui.title) as { set_value(v: string): void }
-    const summary = getPath(form, map.pumui.summary) as { set_value(v: string): void }
+    changedHeadings = protect
     title.set_value(plan.title)
     summary.set_value(plan.summary)
+    if (
+      protect &&
+      (normalize(title.value) !== normalize(plan.title) ||
+        normalize(summary.value) !== normalize(plan.summary) ||
+        ds.rowcount !== start + plan.rows.length ||
+        !plan.rows.every((row, i) => matchesRow(start + i, row)))
+    )
+      return recover('품목이나 제목·개요가 보낸 내용과 달라요.')
     filled.add(plan.key)
     return { ok: true, added, gridTotal }
   } catch (e) {
+    if (protect) {
+      added = Math.max(added, ds.rowcount - start)
+      return recover('K-에듀파인 입력 중 오류가 났어요.')
+    }
     return fail(
       '채우는 중 오류가 났어요(' +
         String((e as Error)?.message ?? e) +

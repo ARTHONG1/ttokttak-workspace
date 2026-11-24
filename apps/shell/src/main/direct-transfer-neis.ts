@@ -7,17 +7,20 @@ const editorSelector = 'textarea.cl-text, .cl-grid-row.cl-selected textarea'
 const compact = (value: string): string => value.replace(/\s+/g, '')
 const normSpace = (value: string): string => value.replace(/\s+/g, ' ').trim()
 
-type SelectionSnapshot =
+export type SelectionSnapshot =
   | { ok: true; identity: string; nameCells: string[]; existingText: string }
-  | { ok: false; kind: 'none' | 'ambiguous-grid' | 'multi-row' | 'malformed' }
+  | { ok: false; kind: 'none' | 'ambiguous-grid' | 'multi-row' | 'malformed'; hasGrid?: boolean }
 
 /** Serialized into the page; keep this function independent of module state. */
-function readSelection(): SelectionSnapshot {
+export function readSelection(): SelectionSnapshot {
   const visible = (el: Element): boolean => (el as HTMLElement).getClientRects().length > 0
   const rows = Array.from(
     document.querySelectorAll<HTMLElement>('.cl-grid-row.cl-selected'),
   ).filter(visible)
-  if (rows.length === 0) return { ok: false, kind: 'none' }
+  if (rows.length === 0) {
+    const hasGrid = Array.from(document.querySelectorAll<HTMLElement>('.cl-grid-row')).some(visible)
+    return { ok: false, kind: 'none', hasGrid }
+  }
   const grids = new Set(rows.map((row) => row.closest('.cl-grid') ?? document.body))
   if (grids.size > 1) return { ok: false, kind: 'ambiguous-grid' }
   const rowIndexes = new Set(
@@ -56,10 +59,15 @@ function readSelection(): SelectionSnapshot {
 export async function fillNeis(
   frame: Frame,
   pkg: RecordPackage,
+  options: { signal?: AbortSignal; onVerifying?: () => void } = {},
 ): Promise<
   { ok: true; written: number; next: number; startedFrom?: number } | { ok: false; reason: string }
 > {
   let written = 0
+  let nextIndex = 0
+  const checkActive = (): void => {
+    if (options.signal?.aborted) throw new Error('direct-transfer-cancelled')
+  }
   const fail = (reason: string, resumeAt?: number) => ({
     ok: false as const,
     reason:
@@ -68,7 +76,9 @@ export async function fillNeis(
         : `${reason} ${written}명 입력 확인. 다시 보내려면 첫 학생 줄부터 선택해 주세요.`,
   })
   try {
+    checkActive()
     const initial = await frame.evaluate(readSelection)
+    checkActive()
     if (!initial.ok) {
       if (initial.kind === 'multi-row')
         return fail('나이스 표에서 여러 학생 줄이 한꺼번에 선택돼 있어요. 한 줄만 선택해 주세요.')
@@ -84,8 +94,11 @@ export async function fillNeis(
     }
 
     for (let index = startIndex; index < pkg.students.length; index++) {
+      nextIndex = index
+      checkActive()
       const student = pkg.students[index]
       const sel = index === startIndex ? initial : await frame.evaluate(readSelection)
+      checkActive()
       if (!sel.ok) return fail('선택된 학생 줄을 하나로 확인하지 못했어요.', index)
       const identity = sel.identity
       if (!student.name || !sel.nameCells.includes(compact(student.name))) {
@@ -97,6 +110,7 @@ export async function fillNeis(
       const primaryRow = frame.locator(rowSelector + ':visible').first()
       const primaryCells = primaryRow.locator(cellSelector)
       const cellCount = await primaryCells.count()
+      checkActive()
       if (cellCount < 1) return fail('나이스 학생 줄의 입력 칸을 찾지 못했어요.', index)
       const cell = primaryCells.nth(cellCount - 1)
       const existing = sel.existingText
@@ -109,21 +123,30 @@ export async function fillNeis(
         if (normSpace(existing) === normSpace(student.text)) {
           written++
         } else {
+          checkActive()
           await cell.focus()
+          checkActive()
           await frame.page().keyboard.press('F2')
+          checkActive()
           const editor = frame.locator(editorSelector).first()
           try {
             await editor.waitFor({ state: 'visible', timeout: 2_000 })
+            checkActive()
           } catch {
+            checkActive()
             return fail(`${index + 1}번째 학생의 입력 칸을 열지 못했어요.`, index)
           }
           const during = await frame.evaluate(readSelection)
+          checkActive()
           if (!during.ok || during.identity !== identity)
             return fail('입력할 학생 선택이 바뀌었어요.', index)
           await editor.fill(student.text)
+          checkActive()
           if (normSpace(await editor.inputValue()) !== normSpace(student.text))
             return fail('편집기에 들어간 글이 보낼 글과 달라요.', index)
+          checkActive()
           await editor.press('Enter')
+          checkActive()
           try {
             // Some textarea editors commit on blur rather than closing on physical Enter.
             const closedOnEnter = await editor
@@ -131,6 +154,7 @@ export async function fillNeis(
               .then(() => true)
               .catch(() => false)
             if (!closedOnEnter) {
+              checkActive()
               await editor.evaluate((el, val) => {
                 const area = el as HTMLTextAreaElement
                 if (area.value !== val) {
@@ -139,8 +163,11 @@ export async function fillNeis(
                 }
                 area.dispatchEvent(new Event('blur', { bubbles: true }))
               }, student.text)
+              checkActive()
             }
             await editor.waitFor({ state: 'hidden', timeout: 2_000 })
+            checkActive()
+            options.onVerifying?.()
             await frame.waitForFunction(
               (text) => {
                 const row = document.querySelector('.cl-grid-row.cl-selected')
@@ -153,18 +180,24 @@ export async function fillNeis(
               student.text,
               { timeout: 2_000 },
             )
+            checkActive()
           } catch {
+            checkActive()
             return fail(`${index + 1}번째 학생의 입력값을 화면에서 다시 확인하지 못했어요.`, index)
           }
           const after = await frame.evaluate(readSelection)
+          checkActive()
           if (!after.ok || after.identity !== identity)
             return fail('입력 후 학생 선택이 바뀌었어요. 내용을 확인해 주세요.', index)
           written++
         }
       }
       if (index < pkg.students.length - 1) {
+        checkActive()
         await cell.focus()
+        checkActive()
         await frame.page().keyboard.press('Tab')
+        checkActive()
         try {
           // Poll a fresh identity: disappearing rows or changed text are not row movement.
           const deadline = Date.now() + 2_000
@@ -173,25 +206,34 @@ export async function fillNeis(
             student.text && normSpace(existing) !== normSpace(student.text),
           )
           while (Date.now() < deadline) {
+            checkActive()
             const next = await frame.evaluate(readSelection)
+            checkActive()
             if (next.ok && next.identity !== identity) {
               moved = true
               break
             }
             if (!retriedViaEditor && deadline - Date.now() <= 1_750) {
               retriedViaEditor = true
+              checkActive()
               await cell.focus()
+              checkActive()
               await frame.page().keyboard.press('F2')
+              checkActive()
               const passEditor = frame.locator(editorSelector).first()
               const opened = await passEditor
                 .waitFor({ state: 'visible', timeout: 250 })
                 .then(() => true)
                 .catch(() => false)
               if (opened) {
+                checkActive()
                 await passEditor.press('Enter')
+                checkActive()
                 await passEditor.waitFor({ state: 'hidden', timeout: 500 }).catch(() => undefined)
               }
+              checkActive()
               await cell.focus()
+              checkActive()
               await frame.page().keyboard.press('Tab')
             }
             await frame.page().waitForTimeout(50)
@@ -199,10 +241,12 @@ export async function fillNeis(
           if (!moved)
             return fail(`${index + 1}번째 학생 뒤에 다음 나이스 줄로 이동하지 못했어요.`, index + 1)
         } catch {
+          checkActive()
           return fail(`${index + 1}번째 학생 뒤에 다음 나이스 줄로 이동하지 못했어요.`, index + 1)
         }
       }
     }
+    checkActive()
     return {
       ok: true,
       written,
@@ -210,6 +254,7 @@ export async function fillNeis(
       ...(startIndex > 0 ? { startedFrom: startIndex } : {}),
     }
   } catch {
+    if (options.signal?.aborted) return fail('전송을 취소했어요.', nextIndex)
     return fail(
       '브라우저 연결이나 입력 화면이 바뀌어 멈췄어요. 화면에 들어간 내용을 확인해 주세요.',
     )

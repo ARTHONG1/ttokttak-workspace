@@ -274,11 +274,18 @@ export function rangeLabel(units: number[]): string {
 export class OrganizeService {
   private session: Session | null = null
   private running = false
+  private closeWhenIdle: string | null = null
 
   constructor(private readonly deps: OrganizeDeps) {}
 
   get busy(): boolean {
     return this.running
+  }
+
+  private release(): void {
+    this.running = false
+    if (this.session?.token === this.closeWhenIdle) this.session = null
+    this.closeWhenIdle = null
   }
 
   private async hold(paths: string[]): Promise<Held[] | string> {
@@ -321,19 +328,24 @@ export class OrganizeService {
     const families = new Set(paths.map(familyOf))
     if (families.has(null)) return { ok: false, error: ORGANIZE_ERRORS.kind }
     if (families.size > 1) return { ok: false, error: ORGANIZE_ERRORS.mixed }
-    const held = await this.hold(paths)
-    if (typeof held === 'string') return { ok: false, error: held }
-    if (sizeOfAll(held) > ORGANIZE_MAX_TOTAL)
-      return { ok: false, error: ORGANIZE_ERRORS.totalTooBig }
-    const family = familyOf(paths[0]!)!
-    let units = 0
-    if (held.length === 1) {
-      const counted = await this.unitsOf(family, held[0]!)
-      if (!counted.ok) return { ok: false, error: counted.error }
-      units = counted.units.length
+    this.running = true
+    try {
+      const held = await this.hold(paths)
+      if (typeof held === 'string') return { ok: false, error: held }
+      if (sizeOfAll(held) > ORGANIZE_MAX_TOTAL)
+        return { ok: false, error: ORGANIZE_ERRORS.totalTooBig }
+      const family = familyOf(paths[0]!)!
+      let units = 0
+      if (held.length === 1) {
+        const counted = await this.unitsOf(family, held[0]!)
+        if (!counted.ok) return { ok: false, error: counted.error }
+        units = counted.units.length
+      }
+      this.session = { token: crypto.randomUUID(), family, files: held, units }
+      return this.view(this.session)
+    } finally {
+      this.release()
     }
-    this.session = { token: crypto.randomUUID(), family, files: held, units }
-    return this.view(this.session)
   }
 
   /** more files for a join: of the same kind as the first */
@@ -345,12 +357,17 @@ export class OrganizeService {
       return { ok: false, error: ORGANIZE_ERRORS.mixed }
     if (s.files.length + paths.length > ORGANIZE_MAX_FILES)
       return { ok: false, error: ORGANIZE_ERRORS.tooMany }
-    const held = await this.hold(paths)
-    if (typeof held === 'string') return { ok: false, error: held }
-    if (sizeOfAll([...s.files, ...held]) > ORGANIZE_MAX_TOTAL)
-      return { ok: false, error: ORGANIZE_ERRORS.totalTooBig }
-    s.files.push(...held)
-    return this.view(s)
+    this.running = true
+    try {
+      const held = await this.hold(paths)
+      if (typeof held === 'string') return { ok: false, error: held }
+      if (sizeOfAll([...s.files, ...held]) > ORGANIZE_MAX_TOTAL)
+        return { ok: false, error: ORGANIZE_ERRORS.totalTooBig }
+      s.files.push(...held)
+      return this.view(s)
+    } finally {
+      this.release()
+    }
   }
 
   /** the family of the picked files, for the add dialog's filter */
@@ -434,7 +451,11 @@ export class OrganizeService {
   async pdfBytes(token: string, id: string): Promise<Uint8Array | null> {
     const file = this.file(token, id)
     if (!file || this.session!.family !== 'pdf') return null
-    return this.deps.readFile(file.path)
+    try {
+      return await this.deps.readFile(file.path)
+    } catch {
+      return null
+    }
   }
 
   /** one page of a Hangul document drawn as SVG, for the page picker */
@@ -470,7 +491,7 @@ export class OrganizeService {
       console.warn('[organize] failed', s.family, request.action, err)
       return { ok: false, error: errorText(err) }
     } finally {
-      this.running = false
+      this.release()
     }
   }
 
@@ -483,9 +504,11 @@ export class OrganizeService {
     const ext = first.extension
     const word = unitWord(s.family)
     if (request.action === 'merge') {
-      const order = (request.order ?? s.files.map((f) => f.id))
+      const ids = request.order ?? s.files.map((f) => f.id)
+      const order = ids
         .map((id) => s.files.find((f) => f.id === id))
         .filter((f): f is Held => f !== undefined)
+      if (order.length !== ids.length) return { ok: false, error: ORGANIZE_ERRORS.again }
       if (order.length < 2 || new Set(order).size !== order.length)
         return { ok: false, error: ORGANIZE_ERRORS.needTwo }
       onProgress('문서 ' + order.length + '개 읽는 중')
@@ -701,7 +724,9 @@ export class OrganizeService {
 
   /** forget the picked files (the page went away) */
   close(token: string): void {
-    if (this.session?.token === token && !this.running) this.session = null
+    if (this.session?.token !== token) return
+    if (this.running) this.closeWhenIdle = token
+    else this.session = null
   }
 }
 

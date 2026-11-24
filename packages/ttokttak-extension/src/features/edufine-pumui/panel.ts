@@ -271,8 +271,15 @@ async function preview(
 async function fill(ctx: FeatureContext, pkg: PumuiPackage, source: string): Promise<void> {
   stopWatch()
   const { panel, step } = ctx
+  const shown = panel.shown
   step('채우기 ' + source)
   const map = await edufineMap()
+  const current = source !== 'direct' || (await ctx.isCurrent())
+  if (!panel.isOpen() || panel.shown !== shown) return
+  if (!current) {
+    panel.show(h('h2', {}, '받은 작업이 바뀌었어요'), back(ctx))
+    return
+  }
   const form = findWorkForm(nexacro(), map)
   if (!form) {
     panel.show(

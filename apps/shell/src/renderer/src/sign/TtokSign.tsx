@@ -71,7 +71,9 @@ function loadPictures(): SignPicture[] {
           typeof p.url === 'string' &&
           p.url.startsWith('data:image/png;base64,') &&
           Number.isFinite(p.width) &&
-          Number.isFinite(p.height),
+          p.width > 0 &&
+          Number.isFinite(p.height) &&
+          p.height > 0,
       )
       .slice(0, KEEP)
   } catch {
@@ -95,35 +97,38 @@ function pngBytes(url: string): Uint8Array {
 
 async function pictureFromFile(file: File, dropPaper: boolean): Promise<SignPicture | null> {
   const bitmap = await createImageBitmap(file)
-  const k = Math.min(1, MAX_PICTURE_PX / Math.max(bitmap.width, bitmap.height, 1))
-  const w = Math.max(1, Math.round(bitmap.width * k))
-  const h = Math.max(1, Math.round(bitmap.height * k))
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })
-  if (!ctx) return null
-  ctx.drawImage(bitmap, 0, 0, w, h)
-  bitmap.close()
-  const pixels = ctx.getImageData(0, 0, w, h)
-  const source = { data: pixels.data, width: w, height: h }
-  const cleaned = dropPaper ? cleanSignature(source) : source
-  if (!cleaned) return null
-  const out = document.createElement('canvas')
-  out.width = cleaned.width
-  out.height = cleaned.height
-  out
-    .getContext('2d')
-    ?.putImageData(
+  try {
+    const k = Math.min(1, MAX_PICTURE_PX / Math.max(bitmap.width, bitmap.height, 1))
+    const w = Math.max(1, Math.round(bitmap.width * k))
+    const h = Math.max(1, Math.round(bitmap.height * k))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    ctx.drawImage(bitmap, 0, 0, w, h)
+    const pixels = ctx.getImageData(0, 0, w, h)
+    const source = { data: pixels.data, width: w, height: h }
+    const cleaned = dropPaper ? cleanSignature(source) : source
+    if (!cleaned) return null
+    const out = document.createElement('canvas')
+    out.width = cleaned.width
+    out.height = cleaned.height
+    const outCtx = out.getContext('2d')
+    if (!outCtx) return null
+    outCtx.putImageData(
       new ImageData(cleaned.data as Uint8ClampedArray<ArrayBuffer>, cleaned.width, cleaned.height),
       0,
       0,
     )
-  return {
-    id: crypto.randomUUID(),
-    url: out.toDataURL('image/png'),
-    width: cleaned.width,
-    height: cleaned.height,
+    return {
+      id: crypto.randomUUID(),
+      url: out.toDataURL('image/png'),
+      width: cleaned.width,
+      height: cleaned.height,
+    }
+  } finally {
+    bitmap.close()
   }
 }
 
@@ -181,6 +186,8 @@ function SignPage({
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [near, setNear] = useState(index < 2)
+  const [renderFailed, setRenderFailed] = useState(false)
+  const [retry, setRetry] = useState(0)
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
@@ -200,6 +207,7 @@ function SignPage({
     if (!near) return
     let cancelled = false
     let task: { cancel(): void; promise: Promise<unknown> } | null = null
+    setRenderFailed(false)
     void (async () => {
       const page = await pdf.getPage(index + 1)
       const canvas = canvasRef.current
@@ -209,13 +217,18 @@ function SignPage({
       canvas.width = Math.round(viewport.width)
       canvas.height = Math.round(viewport.height)
       task = page.render({ canvas, viewport })
-      await task.promise.catch(() => {})
-    })()
+      await task.promise
+    })().catch((err) => {
+      if (!cancelled) {
+        console.warn('[sign] page render failed', err)
+        setRenderFailed(true)
+      }
+    })
     return () => {
       cancelled = true
       task?.cancel()
     }
-  }, [near, pdf, index, scale])
+  }, [near, pdf, index, scale, retry])
   return (
     <div
       ref={wrapRef}
@@ -228,6 +241,14 @@ function SignPage({
     >
       <canvas ref={canvasRef} className="ts-canvas" aria-hidden="true" />
       <span className="ts-page-no">{index + 1}쪽</span>
+      {renderFailed && (
+        <div className="ts-render-error" role="alert">
+          <span>이 쪽을 표시하지 못했어요.</span>
+          <button type="button" data-testid="ts-page-retry" onClick={() => setRetry((n) => n + 1)}>
+            다시 표시
+          </button>
+        </div>
+      )}
       {children}
     </div>
   )
@@ -415,6 +436,24 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
   const pagesRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const visibility = useRef(new Map<number, number>())
+  const busyRef = useRef<Busy>(null)
+  const pictureSaving = useRef(false)
+  const alive = useRef(true)
+  const pendingLoad = useRef<ReturnType<typeof getDocument> | null>(null)
+  const openRevision = useRef(0)
+  const editRevision = useRef(0)
+
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+      openRevision.current += 1
+      const task = pendingLoad.current
+      pendingLoad.current = null
+      if (task)
+        void task.destroy().catch((err) => console.warn('[sign] pending PDF cleanup failed', err))
+    }
+  }, [])
 
   // the pages fit the column they are shown in
   useEffect(() => {
@@ -427,7 +466,15 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     return () => ro.disconnect()
   }, [doc])
 
-  useEffect(() => () => void doc?.pdf.loadingTask.destroy(), [doc])
+  useEffect(
+    () => () => {
+      if (doc)
+        void doc.pdf.loadingTask
+          .destroy()
+          .catch((err) => console.warn('[sign] PDF cleanup failed', err))
+    },
+    [doc],
+  )
 
   const scale = useMemo(() => {
     const widest = Math.max(...(doc?.sizes.map((s) => s.width) ?? [595]))
@@ -455,10 +502,17 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     get: () => Promise<Awaited<ReturnType<typeof window.aiOffice.openSignDocument>>> = () =>
       window.aiOffice.openSignDocument(),
   ) => {
+    if (busyRef.current) return
+    busyRef.current = 'doc'
+    const currentOpen = ++openRevision.current
+    const active = () => alive.current && currentOpen === openRevision.current
+    let loadingTask: ReturnType<typeof getDocument> | null = null
+    let accepted = false
     setError(null)
     setBusy('doc')
     try {
       const result = await get()
+      if (!active()) return
       if (!result) return
       if (!result.ok) {
         setError(result.error)
@@ -467,20 +521,27 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       try {
         await readSignPdf(result.bytes)
       } catch (err) {
-        setError(
-          err instanceof SignPdfError && err.problem === 'encrypted'
-            ? '암호가 걸린 PDF라 서명할 수 없어요. 암호를 푼 PDF를 올려 주세요.'
-            : 'PDF를 읽지 못했어요. 파일이 손상되지 않았는지 확인해 주세요.',
-        )
+        if (active())
+          setError(
+            err instanceof SignPdfError && err.problem === 'encrypted'
+              ? '암호가 걸린 PDF라 서명할 수 없어요. 암호를 푼 PDF를 올려 주세요.'
+              : 'PDF를 읽지 못했어요. 파일이 손상되지 않았는지 확인해 주세요.',
+          )
         return
       }
-      const pdf = await getDocument({ data: result.bytes.slice(), ...docOptions() }).promise
+      if (!active()) return
+      loadingTask = getDocument({ data: result.bytes.slice(), ...docOptions() })
+      pendingLoad.current = loadingTask
+      const pdf = await loadingTask.promise
+      if (!active()) return
       const sizes: PageSize[] = []
       for (let i = 1; i <= pdf.numPages; i++) {
         const vp = (await pdf.getPage(i)).getViewport({ scale: 1 })
+        if (!active()) return
         sizes.push({ width: vp.width, height: vp.height })
       }
       visibility.current = new Map()
+      editRevision.current += 1
       setItems([])
       setSelectedId(null)
       setSavedPath(null)
@@ -493,14 +554,25 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
         pdf,
         sizes,
       })
+      pendingLoad.current = null
+      accepted = true
       if (notes.length)
         say('PDF로 바꿨지만 빠진 부분이 있어요. 문서 칸의 안내를 확인해 주세요.', true)
       else if (result.converted) say('PDF로 바꿨어요. 이제 서명을 넣어 주세요.')
     } catch (err) {
       console.warn('[sign] open failed', err)
-      setError('문서를 열지 못했어요. 다시 해 주세요.')
+      if (active()) setError('문서를 열지 못했어요. 다시 해 주세요.')
     } finally {
-      setBusy(null)
+      if (!accepted && loadingTask && pendingLoad.current === loadingTask) {
+        pendingLoad.current = null
+        try {
+          await loadingTask.destroy()
+        } catch (err) {
+          console.warn('[sign] unfinished PDF cleanup failed', err)
+        }
+      }
+      busyRef.current = null
+      if (active()) setBusy(null)
     }
   }
   // a document dragged onto the page opens here, never as an editor tab; with a document up
@@ -525,13 +597,17 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     }
     setItems((list) => [...list, item])
     setSelectedId(item.id)
+    editRevision.current += 1
     setSavedPath(null)
   }
 
   const addPicture = async (file: File) => {
+    if (busyRef.current) return
+    busyRef.current = 'picture'
     setBusy('picture')
     try {
       const picture = await pictureFromFile(file, dropPaper)
+      if (!alive.current) return
       if (!picture) {
         say('사진에서 서명을 찾지 못했어요. 흰 종이에 쓴 서명을 밝게 찍어 주세요.', true)
         return
@@ -542,9 +618,10 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
       if (doc) place(picture)
     } catch (err) {
       console.warn('[sign] picture failed', err)
-      say('그림을 읽지 못했어요. PNG나 JPG 파일을 골라 주세요.', true)
+      if (alive.current) say('그림을 읽지 못했어요. PNG나 JPG 파일을 골라 주세요.', true)
     } finally {
-      setBusy(null)
+      busyRef.current = null
+      if (alive.current) setBusy(null)
     }
   }
 
@@ -553,6 +630,8 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     setPictures(next)
     keepPictures(next)
     setItems((list) => list.filter((i) => i.sig !== id))
+    editRevision.current += 1
+    setSavedPath(null)
   }
 
   /** a signature drawn on the pad joins the pictures like an upload */
@@ -568,22 +647,43 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
 
   /** a signature picture as a PNG file of its own (transparent, cropped to the ink) */
   const downloadPicture = async (picture: SignPicture) => {
-    const path = await window.aiOffice.saveFeatureFile({
-      name: '서명.png',
-      filterName: 'PNG 그림',
-      extensions: ['png'],
-      bytes: pngBytes(picture.url),
-    })
-    if (path) say((path.split(/[\\/]/).pop() ?? '서명.png') + '을(를) 저장했어요.')
+    if (pictureSaving.current) return
+    pictureSaving.current = true
+    try {
+      const path = await window.aiOffice.saveFeatureFile({
+        name: '서명.png',
+        filterName: 'PNG 그림',
+        extensions: ['png'],
+        bytes: pngBytes(picture.url),
+      })
+      if (path && alive.current)
+        say((path.split(/[\\/]/).pop() ?? '서명.png') + '을(를) 저장했어요.')
+    } catch {
+      if (alive.current) say('서명 그림을 저장하지 못했어요. 다시 해 주세요.', true)
+    } finally {
+      pictureSaving.current = false
+    }
+  }
+
+  const openSaved = async (path: string) => {
+    try {
+      const opened = await window.aiOffice.openPath(path)
+      if (!opened) throw new Error('The saved file could not be opened.')
+    } catch (err) {
+      console.warn('[sign] open saved PDF failed', err)
+      if (alive.current) say('저장한 문서를 열지 못했어요. 파일을 직접 확인해 주세요.', true)
+    }
   }
 
   const change = (next: PlacedSign) => {
     setItems((list) => list.map((i) => (i.id === next.id ? next : i)))
+    editRevision.current += 1
     setSavedPath(null)
   }
   const remove = (id: string) => {
     setItems((list) => list.filter((i) => i.id !== id))
     setSelectedId((s) => (s === id ? null : s))
+    editRevision.current += 1
     setSavedPath(null)
   }
 
@@ -594,11 +694,15 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
     if (!doc || !selected) return
     const copies = onEveryPage(selected, doc.sizes, () => crypto.randomUUID())
     setItems((list) => [...list, ...copies])
+    editRevision.current += 1
+    setSavedPath(null)
     say(copies.length + '쪽에 같은 자리로 넣었어요.')
   }
 
   const save = async () => {
-    if (!doc || items.length === 0) return
+    if (!doc || items.length === 0 || busyRef.current) return
+    busyRef.current = 'save'
+    const currentEdit = editRevision.current
     setBusy('save')
     try {
       const used = [...new Set(items.map((i) => i.sig))].filter((id) => pictureOf(id))
@@ -611,21 +715,23 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
           placement: { cx: i.cx, cy: i.cy, width: i.width, height: i.height, angle: i.angle },
         }))
       const bytes = await stampSignatures(doc.bytes, pngs, stamps)
+      if (!alive.current || currentEdit !== editRevision.current) return
       const path = await window.aiOffice.saveFeatureFile({
         name: doc.name + '_서명.pdf',
         filterName: 'PDF',
         extensions: ['pdf'],
         bytes,
       })
-      if (path) {
+      if (path && alive.current && currentEdit === editRevision.current) {
         setSavedPath(path)
         say('서명한 PDF를 저장했어요.')
       }
     } catch (err) {
       console.warn('[sign] save failed', err)
-      say('저장하지 못했어요. 다시 해 주세요.', true)
+      if (alive.current) say('저장하지 못했어요. 다시 해 주세요.', true)
     } finally {
-      setBusy(null)
+      busyRef.current = null
+      if (alive.current) setBusy(null)
     }
   }
 
@@ -933,7 +1039,7 @@ export function TtokSign({ onBack }: { onBack: () => void }): ReactElement {
                 <button
                   type="button"
                   className="sf-text-btn"
-                  onClick={() => void window.aiOffice.openPath(savedPath)}
+                  onClick={() => void openSaved(savedPath)}
                 >
                   열어 보기
                 </button>

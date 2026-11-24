@@ -67,7 +67,7 @@ export interface Panel {
   root: ShadowRoot
 }
 
-export function mountPanel(onOpen: () => void): Panel {
+export function mountPanel(onOpen: () => void, onClose?: () => boolean): Panel {
   const host = h('div', { id: 'ttok-edufine-host' })
   const root = host.attachShadow({ mode: 'open' })
   root.append(h('style', {}, STYLE))
@@ -108,7 +108,9 @@ export function mountPanel(onOpen: () => void): Panel {
             class: 'close',
             type: 'button',
             'aria-label': '닫기',
-            onclick: () => (panel.hidden = true),
+            onclick: () => {
+              if (!onClose?.()) panel.hidden = true
+            },
           },
           '×',
         ),

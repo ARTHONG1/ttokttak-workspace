@@ -4,12 +4,20 @@
  * together, so these names change freely; what the web app and the desktop app send keeps
  * its old names too (see background.ts). Nothing is set by the teacher.
  */
+import type { RecordMode } from '../features/neis-record/package'
+
 export const PAGE_REQUESTS = [
   'map:get',
   /** { feature }: the task's waiting work (InboxEntry) or null */
   'inbox:peek',
-  /** { feature }: the task is done with its waiting work */
+  /** { feature, id }: the task is done with that particular inbox entry */
   'inbox:clear',
+  'inbox:current',
+  'transfer:status',
+  'transfer:candidate',
+  'transfer:cancel',
+  'transfer:renew',
+  'transfer:end',
   /** { feature }: ask 똑딱작업실 (the desktop app) for the task's work (NativeReply) */
   'work:take-desktop',
   'desktop:ping',
@@ -22,6 +30,17 @@ export type PageRequest = (typeof PAGE_REQUESTS)[number]
 
 /** requests only the extension popup may make ({ site }: the remembered address or null) */
 export const POPUP_REQUESTS = ['place:get'] as const
+
+export type CandidateState = 'absent' | 'menu' | 'waiting' | 'blocked' | 'ready'
+export interface TransferStatus {
+  id: string
+  until: number
+  writing: boolean
+  record?: { mode: RecordMode; firstName: string }
+}
+export type CandidateReply =
+  | { state: 'inactive' | 'waiting' | 'ambiguous' | 'menu' }
+  | { state: 'claimed'; text: string; leaseUntil: number }
 
 export const PAGE_TAG = '__ttokEdufine'
 

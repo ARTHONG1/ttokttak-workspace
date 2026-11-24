@@ -1273,7 +1273,9 @@ export function QuizGenerator({ onBack }: { onBack: () => void }): ReactElement 
                           answerText(q),
                       )
                       .join('\n\n'),
-                  ).then(() => say('문제를 복사했어요.'))
+                  )
+                    .then(() => say('문제를 복사했어요.'))
+                    .catch(() => say('문제를 복사하지 못했어요.', true))
                 }
               >
                 문제 전체 복사

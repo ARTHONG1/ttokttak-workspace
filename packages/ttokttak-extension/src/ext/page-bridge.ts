@@ -12,6 +12,11 @@ chrome.runtime.onMessage.addListener((msg: { type?: string }) => {
     window.postMessage({ [PAGE_TAG]: 'cmd', type: 'open' }, location.origin)
 })
 
+chrome.storage.onChanged.addListener((changes: Record<string, unknown>, area: string) => {
+  if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('inbox:')))
+    window.postMessage({ [PAGE_TAG]: 'cmd', type: 'transfer-changed' }, location.origin)
+})
+
 window.addEventListener('message', (e) => {
   const d = e.data
   if (e.source !== window || !d || d[PAGE_TAG] !== 'req' || !allowed.has(d.type)) return

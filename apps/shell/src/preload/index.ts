@@ -235,7 +235,7 @@ const homeApi: HomeApi = {
   },
   async openPath(path) {
     if (typeof path !== 'string' || !path) throw new Error('Invalid path.')
-    await ipcRenderer.invoke(HOME_CHANNELS.openPath, path)
+    return (await ipcRenderer.invoke(HOME_CHANNELS.openPath, path)) === true
   },
   async browse() {
     await ipcRenderer.invoke(HOME_CHANNELS.browse)
@@ -328,10 +328,31 @@ const homeApi: HomeApi = {
   async closeOrganize(token) {
     await ipcRenderer.invoke(HOME_CHANNELS.organizeClose, token)
   },
-  async directTransfer(feature, text) {
-    return (await ipcRenderer.invoke(HOME_CHANNELS.directTransfer, feature, text)) as Awaited<
-      ReturnType<HomeApi['directTransfer']>
-    >
+  async directTransfer(feature, text, requestId) {
+    return (await ipcRenderer.invoke(
+      HOME_CHANNELS.directTransfer,
+      feature,
+      text,
+      requestId,
+    )) as Awaited<ReturnType<HomeApi['directTransfer']>>
+  },
+  onDirectTransferProgress(handler) {
+    const listener = (_event: IpcRendererEvent, value: unknown) =>
+      handler(value as Parameters<typeof handler>[0])
+    ipcRenderer.on(HOME_CHANNELS.directTransferProgress, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.directTransferProgress, listener)
+  },
+  async cancelDirectTransfer(requestId) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.directTransferCancel, requestId)) === true
+  },
+  async getDirectTransferOrigin(feature) {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.directTransferGetOrigin, feature)) as
+      string | null
+  },
+  async setDirectTransferOrigin(feature, origin) {
+    return (
+      (await ipcRenderer.invoke(HOME_CHANNELS.directTransferSetOrigin, feature, origin)) === true
+    )
   },
   async readQuizFile(kind) {
     return (await ipcRenderer.invoke(HOME_CHANNELS.readQuizFile, kind)) as Awaited<

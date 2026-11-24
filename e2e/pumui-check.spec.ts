@@ -64,12 +64,25 @@ test('품의서 생성 checks the amounts against the cart and asks again before
   try {
     await page.getByTestId('trial-features').click()
     await page.getByTestId('special-feature-proposal').click()
+    await loadWork(page, CART, ROWS)
+    await page.getByRole('button', { name: '업무포털 시작 주소 등록' }).click()
+    const address = page.getByRole('textbox', { name: '업무포털 시작 주소' })
+    await address.fill('https://example.org/')
+    await page.getByRole('button', { name: '주소 저장' }).click()
+    await expect(
+      page.getByText('HTTPS로 시작하는 교육청 업무포털 주소(*.go.kr)를 확인해 주세요.'),
+    ).toBeVisible()
+    await address.fill('https://fixture.go.kr/portal')
+    await page.getByRole('button', { name: '주소 저장' }).click()
+    await page.getByRole('button', { name: '업무포털 시작 주소 변경' }).click()
+    await expect(address).toHaveValue('https://fixture.go.kr')
+    await page.getByRole('button', { name: '주소 삭제' }).click()
+    await expect(page.getByRole('button', { name: '업무포털 시작 주소 등록' })).toBeVisible()
     const check = page.getByTestId('pumui-check')
     // the 품의 목록: the check above the table and the table
     const list = page.locator('.sf-field').filter({ has: check })
 
     // the written total equals the rows: 금액 확인됨
-    await loadWork(page, CART, ROWS)
     await expect(check).toHaveAttribute('data-status', 'confirmed')
     await expect(check).toContainText('금액 확인됨')
     await list.screenshot({ path: screenshotPath('pumui-check-confirmed') })

@@ -20,5 +20,16 @@ if (q.get('frame') === '1') {
       startOn: q.get('screen') === 'other' ? 'other' : 'pumui',
     }),
   )
-  Object.assign(window, { nexacro: fake.nx, __fake: fake })
+  const show = () => Object.assign(window, { nexacro: fake.nx, __fake: fake })
+  if (!q.has('login')) show()
+  else
+    addEventListener('DOMContentLoaded', () => {
+      const login = document.createElement('button')
+      login.textContent = '로그인'
+      login.addEventListener('click', () => {
+        login.remove()
+        show()
+      })
+      document.body.append(login)
+    })
 }

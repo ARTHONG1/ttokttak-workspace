@@ -50,7 +50,15 @@ async function setup(url: string): Promise<{ page: Page; driver: PlaywrightDirec
   await page.addScriptTag({ content: script })
   return {
     page,
-    driver: new PlaywrightDirectTransferDriver({ userDataDir: 'unused' }, async () => context),
+    driver: new PlaywrightDirectTransferDriver(
+      {
+        userDataDir: 'unused',
+        waitTimeoutMs: 300,
+        pollMs: 25,
+        ...(url.includes('neis.go.kr') ? {} : { edufineUrl: url }),
+      },
+      async () => context,
+    ),
   }
 }
 const record = () =>
@@ -100,6 +108,19 @@ async function edufine(page: Page, failAddAt?: number) {
 }
 
 describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서버 아님)', () => {
+  it('K-에듀파인 주소가 없는 첫 요청은 브라우저를 띄우지 않는다', async () => {
+    let launches = 0
+    const stages: string[] = []
+    const driver = new PlaywrightDirectTransferDriver({ userDataDir: 'unused' }, async () => {
+      launches++
+      return browser.newContext()
+    })
+    expect(
+      await driver.send('edufine-pumui', pumui(), { onStage: (s) => stages.push(s) }),
+    ).toMatchObject({ ok: false, reason: expect.stringContaining('주소') })
+    expect(launches).toBe(0)
+    expect(stages).toContain('failed')
+  })
   it('동시 전송은 하나만 실행한다', async () => {
     const { page, driver } = await setup('https://sen.neis.go.kr/')
     await neis(page)
@@ -113,14 +134,17 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
   })
   it('사용자가 닫은 전용 브라우저를 다음 요청에서 다시 연다', async () => {
     let launches = 0
-    const driver = new PlaywrightDirectTransferDriver({ userDataDir: 'unused' }, async () => {
-      launches++
-      context = await browser.newContext()
-      await context.route('**/*', (route) =>
-        route.fulfill({ contentType: 'text/html', body: '<html>로그인 화면</html>' }),
-      )
-      return context
-    })
+    const driver = new PlaywrightDirectTransferDriver(
+      { userDataDir: 'unused', waitTimeoutMs: 200, pollMs: 20 },
+      async () => {
+        launches++
+        context = await browser.newContext()
+        await context.route('**/*', (route) =>
+          route.fulfill({ contentType: 'text/html', body: '<html>로그인 화면</html>' }),
+        )
+        return context
+      },
+    )
     expect(await driver.send('neis-record', record())).toMatchObject({
       ok: false,
       reason: expect.stringContaining('로그인'),
@@ -137,6 +161,57 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
     await neis(page)
     expect(await driver.send('neis-record', record())).toEqual({ ok: true, written: 2, next: 2 })
     expect(await page.evaluate(() => (window as any).grid.texts())).toEqual(['관찰함.', '탐구함.'])
+  })
+  it('학생을 선택할 때까지 기다렸다가 한 번만 입력한다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    await neis(page)
+    await page.evaluate(() =>
+      document
+        .querySelectorAll('.cl-grid-row.cl-selected')
+        .forEach((row) => row.classList.remove('cl-selected')),
+    )
+    const stages: string[] = []
+    const work = driver.send('neis-record', record(), { onStage: (stage) => stages.push(stage) })
+    await page.waitForTimeout(60)
+    expect(await page.evaluate(() => (window as any).grid.edits())).toBe(0)
+    await page.evaluate(() => (window as any).grid.select(0))
+    expect(await work).toMatchObject({ ok: true, written: 2 })
+    expect(stages).toContain('waiting-selection')
+  })
+  it('예산 줄이 선택되기 전에는 행 추가 함수조차 호출하지 않는다', async () => {
+    const { page, driver } = await setup('https://klef.ice.go.kr/keris_ui/main.do')
+    await page.evaluate(
+      (spec) => {
+        const w = window as any
+        w.edu = w.fixture.makeFakeEdufine(spec)
+        w.nexacro = w.edu.nx
+      },
+      pumuiScreen(DEFAULT_SCREEN_MAP, { budgetSelected: false }),
+    )
+    const work = driver.send('edufine-pumui', pumui())
+    await page.waitForTimeout(90)
+    expect(
+      await page.evaluate(
+        () => (window as any).edu.writes.filter((w: any) => w.op === 'call').length,
+      ),
+    ).toBe(0)
+    await page.evaluate(() => (window as any).edu.selectBudget())
+    expect(await work).toMatchObject({ ok: true, written: 1 })
+    expect(
+      await page.evaluate(
+        () => (window as any).edu.writes.filter((w: any) => w.op === 'call').length,
+      ),
+    ).toBe(1)
+  })
+  it('대기 취소 후 선택 화면이 나타나도 아무 내용도 쓰지 않는다', async () => {
+    const { page, driver } = await setup('https://sen.neis.go.kr/')
+    const controller = new AbortController()
+    const work = driver.send('neis-record', record(), { signal: controller.signal })
+    await page.waitForTimeout(50)
+    controller.abort()
+    await neis(page)
+    expect(await work).toMatchObject({ ok: false, reason: expect.stringContaining('취소') })
+    expect(await page.evaluate(() => (window as any).grid.edits())).toBe(0)
   })
   it('다른 학생 이름이면 아무 셀도 변경하지 않는다', async () => {
     const { page, driver } = await setup('https://sen.neis.go.kr/')
@@ -374,7 +449,16 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
   })
 
   it('K-에듀파인 다른 화면에 있으면 품의등록 메뉴를 자동으로 열고, 개행 정규화(\r\n)에도 롤백하지 않는다', async () => {
-    const { page, driver } = await setup('https://evpn.sen.go.kr/portal/main.do')
+    const { page } = await setup('https://evpn.sen.go.kr/portal/main.do')
+    const driver = new PlaywrightDirectTransferDriver(
+      {
+        userDataDir: 'unused',
+        edufineUrl: 'https://evpn.sen.go.kr',
+        waitTimeoutMs: 2_000,
+        pollMs: 25,
+      },
+      async () => context,
+    )
     await page.evaluate(
       (spec) => {
         const w = window as any
@@ -435,11 +519,15 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
       route.fulfill({ contentType: 'text/html', body: '<html><body>포털</body></html>' }),
     )
     const firstPage = await context.newPage()
-    const d1 = new PlaywrightDirectTransferDriver({ userDataDir: dir }, async () => context)
+    const d1 = new PlaywrightDirectTransferDriver(
+      { userDataDir: dir, waitTimeoutMs: 150, pollMs: 20 },
+      async () => context,
+    )
     const first = await d1.send('edufine-pumui', pumui())
     expect(first.ok).toBe(false)
     expect(firstPage.url()).not.toContain('neis.go.kr')
 
+    expect(d1.setStartOrigin('edufine-pumui', 'https://klef.ice.go.kr/keris_ui/main.do')).toBe(true)
     await firstPage.goto('https://klef.ice.go.kr/keris_ui/main.do?token=secret123')
     await firstPage.addScriptTag({ content: script })
     await edufine(firstPage)
@@ -454,7 +542,10 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
       route.fulfill({ contentType: 'text/html', body: '<html><body>재접속</body></html>' }),
     )
     const secondPage = await context.newPage()
-    const d2 = new PlaywrightDirectTransferDriver({ userDataDir: dir }, async () => context)
+    const d2 = new PlaywrightDirectTransferDriver(
+      { userDataDir: dir, waitTimeoutMs: 150, pollMs: 20 },
+      async () => context,
+    )
     await d2.send('edufine-pumui', pumui())
     expect(secondPage.url()).toBe('https://klef.ice.go.kr/')
   })
@@ -481,7 +572,7 @@ describe.skipIf(!browserPath)('직접 전송 실제 Chromium 시험 (학교 서�
       w.nexacro = w.edu.nx
     }, pumuiScreen(DEFAULT_SCREEN_MAP))
     const driver = new PlaywrightDirectTransferDriver(
-      { userDataDir: 'unused' },
+      { userDataDir: 'unused', edufineUrl: 'https://evpn.sen.go.kr' },
       async () => context,
     )
     expect(await driver.send('edufine-pumui', pumui())).toEqual({ ok: true, written: 1, next: 1 })

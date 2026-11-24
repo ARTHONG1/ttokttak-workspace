@@ -67,11 +67,18 @@ function press(target: Element, name: string, keyCode: number): void {
   key(target, 'keyup', name, keyCode)
 }
 
-async function waitEditor(doc: Document, wait: Wait): Promise<HTMLTextAreaElement | null> {
+async function waitEditor(
+  doc: Document,
+  wait: Wait,
+  scope?: Element,
+  active?: () => boolean,
+): Promise<HTMLTextAreaElement | null> {
   for (let i = 0; i < 40; i++) {
-    const editor =
-      doc.querySelector<HTMLTextAreaElement>(CELL_EDITOR) ??
-      doc.querySelector<HTMLTextAreaElement>(SELECTED_ROW + ' textarea')
+    if (active && !active()) return null
+    const editor = scope
+      ? scope.querySelector<HTMLTextAreaElement>('textarea')
+      : (doc.querySelector<HTMLTextAreaElement>(CELL_EDITOR) ??
+        doc.querySelector<HTMLTextAreaElement>(SELECTED_ROW + ' textarea'))
     if (editor) return editor
     await wait(50)
   }
@@ -83,11 +90,31 @@ export async function openEditor(
   doc: Document,
   cell: HTMLElement,
   wait: Wait,
+  active?: () => boolean,
 ): Promise<HTMLTextAreaElement | null> {
   cell.focus()
   await wait(80)
+  if (active && !active()) return null
   press(cell, 'F2', 113)
-  return waitEditor(doc, wait)
+  return waitEditor(doc, wait, active ? cell : undefined, active)
+}
+
+/** Commit in one task, after checking that the editor still belongs to the selected cell. */
+export function commitProtectedEditor(
+  editor: HTMLTextAreaElement,
+  value: string,
+  active: () => boolean,
+): boolean {
+  if (!active()) return false
+  const original = editor.value
+  editor.value = value
+  editor.dispatchEvent(new Event('input', { bubbles: true }))
+  if (!active() || editor.value !== value) {
+    if (editor.isConnected && editor.value === value) editor.value = original
+    return false
+  }
+  key(editor, 'keydown', 'Enter', 13)
+  return true
 }
 
 /** close the open editor with Enter; with a value, that value is what the cell keeps */

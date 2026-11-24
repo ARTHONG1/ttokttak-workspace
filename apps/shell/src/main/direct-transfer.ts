@@ -10,15 +10,28 @@ import {
 } from '@genoffice/ttokttak-extension/record'
 import { DEFAULT_SCREEN_MAP } from '@genoffice/ttokttak-extension/screen-map'
 import { UNIT_ALIASES } from '@genoffice/ttokttak-extension/units'
-import type { DirectFeature, DirectTransferResult } from '../shared/direct-transfer-api'
+import type {
+  DirectFeature,
+  DirectTransferResult,
+  DirectTransferStage,
+} from '../shared/direct-transfer-api'
 import { edufinePage, edufineProbe } from './direct-transfer-edufine'
-import { fillNeis } from './direct-transfer-neis'
+import { fillNeis, readSelection } from './direct-transfer-neis'
+import { waitForTransferFrame, type ReadyFrame } from './direct-transfer-wait'
 
 export type { DirectFeature, DirectTransferResult }
 export type DriverResult =
   { ok: true; written: number; next: number; startedFrom?: number } | { ok: false; reason: string }
+export interface DirectSendOptions {
+  signal?: AbortSignal
+  onStage?: (stage: DirectTransferStage) => void
+}
 export interface DirectTransferDriver {
-  send(feature: DirectFeature, payload: RecordPackage | PumuiPackage): Promise<DriverResult>
+  send(
+    feature: DirectFeature,
+    payload: RecordPackage | PumuiPackage,
+    options?: DirectSendOptions,
+  ): Promise<DriverResult>
 }
 
 /** No AI, cookies, credentials or external queue cross this boundary. */
@@ -26,6 +39,7 @@ export async function directTransferRequest(
   feature: string,
   text: string,
   driver: DirectTransferDriver,
+  options?: DirectSendOptions,
 ): Promise<DirectTransferResult> {
   const fail = (message: string): DirectTransferResult => ({ ok: false, route: 'direct', message })
   if (text.length > 100_000) return fail('보낼 내용이 너무 커요.')
@@ -49,7 +63,7 @@ export async function directTransferRequest(
     payload = parsed.pkg
   } else return fail('지원하지 않는 직접 전송 업무예요.')
   try {
-    const result = await driver.send(feature, payload)
+    const result = await driver.send(feature, payload, options)
     if (!result.ok) return fail(result.reason)
     return {
       ok: true,
@@ -76,6 +90,8 @@ export interface DirectTransferOptions {
   neisUrl?: string
   edufineUrl?: string
   executablePath?: string
+  waitTimeoutMs?: number
+  pollMs?: number
 }
 
 export function findDirectBrowser(explicit?: string): string | undefined {
@@ -137,13 +153,64 @@ async function launchBrowser(options: DirectTransferOptions): Promise<BrowserCon
   })
 }
 
+/** Cancellation must win over an OS browser launch or a hung browser command.
+ * A result that arrives after cancellation is disposed of without taking ownership. */
+function awaitPreparation<T>(
+  work: Promise<T>,
+  signal: AbortSignal,
+  disposeLate: (value: T) => void = () => {},
+): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const onAbort = () => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      resolve(null)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    work.then(
+      (value) => {
+        if (settled) {
+          if (signal.aborted) disposeLate(value)
+          return
+        }
+        settled = true
+        signal.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
+      (error) => {
+        if (settled) return
+        settled = true
+        signal.removeEventListener('abort', onAbort)
+        reject(error)
+      },
+    )
+    if (signal.aborted) onAbort()
+  })
+}
+
 export class PlaywrightDirectTransferDriver implements DirectTransferDriver {
   private context: BrowserContext | null = null
+  private cleanup: Promise<void> | null = null
   private busy = false
+  private activeCancel: AbortController | null = null
   constructor(
     private readonly options: DirectTransferOptions,
     private readonly launch: Launch = launchBrowser,
   ) {}
+
+  private trackCleanup(work: Promise<unknown>): Promise<void> {
+    const cleanup = work.then(
+      () => undefined,
+      () => undefined,
+    )
+    this.cleanup = cleanup
+    void cleanup.then(() => {
+      if (this.cleanup === cleanup) this.cleanup = null
+    })
+    return cleanup
+  }
 
   private readSavedOrigin(feature: DirectFeature): string | undefined {
     try {
@@ -152,6 +219,32 @@ export class PlaywrightDirectTransferDriver implements DirectTransferDriver {
       return candidate && isDirectTarget(feature, candidate) ? new URL(candidate).origin : undefined
     } catch {
       return undefined
+    }
+  }
+
+  getStartOrigin(feature: DirectFeature): string | null {
+    const configured = feature === 'edufine-pumui' ? this.options.edufineUrl : this.options.neisUrl
+    return (
+      this.readSavedOrigin(feature) ??
+      (configured && isDirectTarget(feature, configured) ? new URL(configured).origin : null)
+    )
+  }
+
+  setStartOrigin(feature: DirectFeature, address: string | null): boolean {
+    if (address !== null && !isDirectTarget(feature, address)) return false
+    try {
+      mkdirSync(this.options.userDataDir, { recursive: true, mode: 0o700 })
+      const file = join(this.options.userDataDir, PLACES_FILE)
+      let stored: Record<string, string> = {}
+      try {
+        stored = JSON.parse(readFileSync(file, 'utf8')) ?? {}
+      } catch {}
+      if (address === null) delete stored[feature]
+      else stored[feature] = new URL(address).origin
+      writeFileSync(file, JSON.stringify(stored), { mode: 0o600 })
+      return true
+    } catch {
+      return false
     }
   }
 
@@ -168,16 +261,67 @@ export class PlaywrightDirectTransferDriver implements DirectTransferDriver {
     } catch {}
   }
 
-  async send(feature: DirectFeature, payload: RecordPackage | PumuiPackage): Promise<DriverResult> {
+  async send(
+    feature: DirectFeature,
+    payload: RecordPackage | PumuiPackage,
+    options: DirectSendOptions = {},
+  ): Promise<DriverResult> {
     if (this.busy)
       return { ok: false, reason: '다른 입력이 진행 중이에요. 끝난 뒤 다시 보내 주세요.' }
     this.busy = true
+    const internalCancel = new AbortController()
+    this.activeCancel = internalCancel
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, internalCancel.signal])
+      : internalCancel.signal
+    let preparingBrowser = true
     try {
+      const cancelled = () => signal.aborted
+      const cancelResult = (): DriverResult => {
+        options.onStage?.('cancelled')
+        return { ok: false, reason: '전송을 취소했어요.' }
+      }
+      if (cancelled()) return cancelResult()
+      if (
+        this.cleanup &&
+        (await awaitPreparation(
+          this.cleanup.then(() => true),
+          signal,
+        )) === null
+      )
+        return cancelResult()
+      if (cancelled()) return cancelResult()
+      const startUrl =
+        this.getStartOrigin(feature) ||
+        (feature === 'neis-record' ? 'https://www.neis.go.kr' : undefined)
+      const hasTargetPage = (context: BrowserContext) =>
+        context
+          .pages()
+          .some((page) =>
+            page.frames().some((frame) => isDirectTarget(feature, effectiveFrameUrl(frame))),
+          )
+      if (!startUrl && (!this.context || !hasTargetPage(this.context))) {
+        options.onStage?.('failed')
+        return {
+          ok: false,
+          reason:
+            'K-에듀파인 업무포털 시작 주소를 먼저 등록해 주세요. HTTPS로 시작하는 교육청 주소가 필요해요.',
+        }
+      }
+      options.onStage?.('browser-opening')
       if (!this.context) {
         try {
-          this.context = await this.launch(this.options)
+          const launch = this.launch(this.options)
+          const launched = await awaitPreparation(launch, signal)
+          if (!launched) {
+            this.trackCleanup(launch.then((late) => late.close()))
+            return cancelResult()
+          }
+          this.context = launched
         } catch (err) {
+          if (cancelled()) return cancelResult()
           const msg = String((err as Error)?.message ?? err)
+          options.onStage?.('failed')
           if (/SingletonLock|ProcessSingleton|profile.*in use|already in use/i.test(msg)) {
             return {
               ok: false,
@@ -198,119 +342,177 @@ export class PlaywrightDirectTransferDriver implements DirectTransferDriver {
         context.setDefaultTimeout(3_000)
       }
 
-      if (feature === 'edufine-pumui') {
-        const appFrames: { frame: Frame; url: string; state: 'other-screen' | 'pumui' }[] = []
-        for (const page of this.context.pages()) {
-          for (const frame of page.frames()) {
-            const url = effectiveFrameUrl(frame)
-            if (!isDirectTarget('edufine-pumui', url)) continue
-            const probe = await frame
-              .evaluate(edufineProbe, { map: DEFAULT_SCREEN_MAP, tryOpenMenu: false })
-              .catch(() => ({ state: 'no-app' as const }))
-            if (probe.state !== 'no-app') {
-              appFrames.push({ frame, url, state: probe.state })
-            }
+      if (cancelled()) return cancelResult()
+      const context = this.context
+      if (!hasTargetPage(context)) {
+        const page =
+          context.pages()[0] ??
+          (await awaitPreparation(context.newPage(), signal, (late) => {
+            void late.close().catch(() => undefined)
+          }))
+        if (!page) return cancelResult()
+        if (cancelled()) return cancelResult()
+        if (page.url() === 'about:blank' && startUrl && isDirectTarget(feature, startUrl)) {
+          try {
+            await awaitPreparation(
+              page.goto(startUrl, { timeout: 20_000, waitUntil: 'domcontentloaded' }),
+              signal,
+            )
+          } catch {
+            if (cancelled()) return cancelResult()
           }
         }
-        if (appFrames.length > 1) {
-          return {
-            ok: false,
-            reason:
-              '입력 가능한 업무 화면이 여러 개예요. 보낼 화면 하나만 남긴 뒤 다시 보내 주세요.',
-          }
-        }
-        if (appFrames.length === 1) {
-          const target = appFrames[0]
-          this.rememberOrigin('edufine-pumui', target.url)
-          await target.frame.page().bringToFront()
-          if (target.state === 'other-screen') {
-            await target.frame
-              .evaluate(edufineProbe, { map: DEFAULT_SCREEN_MAP, tryOpenMenu: true })
-              .catch(() => undefined)
-            const deadline = Date.now() + 5_000
-            let onPumui = false
-            while (Date.now() < deadline) {
-              const next = await target.frame
-                .evaluate(edufineProbe, { map: DEFAULT_SCREEN_MAP, tryOpenMenu: false })
-                .catch(() => ({ state: 'no-app' as const }))
-              if (next.state === 'pumui') {
-                onPumui = true
-                break
+        if (cancelled()) return cancelResult()
+        if (
+          (await awaitPreparation(
+            page.bringToFront().then(() => true),
+            signal,
+          )) === null
+        )
+          return cancelResult()
+      }
+      if (cancelled()) return cancelResult()
+      preparingBrowser = false
+      // A new teacher can navigate to the school's portal while this request waits.
+      // Remember only its origin when they arrive, never a path or credential.
+      const menuOpened = new WeakSet<Frame>()
+      const until = Date.now() + (this.options.waitTimeoutMs ?? 600_000)
+      while (Date.now() < until) {
+        const remaining = until - Date.now()
+        const ready = await waitForTransferFrame(
+          context,
+          async (isActive): Promise<ReadyFrame[]> => {
+            const found: ReadyFrame[] = []
+            for (const page of context.pages()) {
+              for (const frame of page.frames()) {
+                if (!isActive()) return []
+                const url = effectiveFrameUrl(frame)
+                if (!isDirectTarget(feature, url)) continue
+                this.rememberOrigin(feature, url)
+                if (feature === 'neis-record') {
+                  const selection = await frame.evaluate(readSelection).catch(() => null)
+                  if (!isActive()) return []
+                  if (selection?.ok) found.push({ frame })
+                  else if (selection && (selection.hasGrid || selection.kind !== 'none')) {
+                    found.push({
+                      frame,
+                      stage: 'waiting-selection',
+                      ...(selection.kind === 'multi-row'
+                        ? {
+                            reason:
+                              '나이스 표에서 여러 학생 줄이 선택돼 있어요. 한 줄만 선택해 주세요.',
+                          }
+                        : selection.kind === 'ambiguous-grid'
+                          ? { reason: '선택된 나이스 표가 여러 개예요. 하나만 선택해 주세요.' }
+                          : {}),
+                    })
+                  }
+                  continue
+                }
+                const probe = await frame
+                  .evaluate(edufineProbe, {
+                    map: DEFAULT_SCREEN_MAP,
+                    tryOpenMenu: false,
+                  })
+                  .catch(() => ({ state: 'no-app' as const }))
+                if (!isActive()) return []
+                if (probe.state === 'no-app') continue
+                if (probe.state === 'pumui') {
+                  found.push({
+                    frame,
+                    ...(probe.ready ? {} : { stage: 'waiting-selection' as const }),
+                  })
+                } else {
+                  found.push({ frame, stage: 'finding-screen' })
+                  if (!menuOpened.has(frame) && isActive()) {
+                    const opening = await frame
+                      .evaluate(edufineProbe, {
+                        map: DEFAULT_SCREEN_MAP,
+                        tryOpenMenu: true,
+                      })
+                      .catch(() => null)
+                    if (!isActive()) return []
+                    if (opening?.state === 'other-screen' && opening.openedMenu)
+                      menuOpened.add(frame)
+                  }
+                }
               }
-              await target.frame.page().waitForTimeout(150)
             }
-            if (!onPumui) {
-              return { ok: false, reason: 'K-에듀파인 품의등록 화면을 열어 주세요.' }
-            }
-          }
-          return await target.frame.evaluate(edufinePage, {
+            return found
+          },
+          {
+            signal,
+            timeoutMs: Math.max(0, remaining),
+            pollMs: this.options.pollMs ?? 350,
+            onStage: options.onStage,
+          },
+        )
+        if (!('frame' in ready)) return { ok: false, reason: ready.reason }
+        if (cancelled()) return cancelResult()
+        preparingBrowser = true
+        if (
+          (await awaitPreparation(
+            ready.frame
+              .page()
+              .bringToFront()
+              .then(() => true),
+            signal,
+          )) === null
+        )
+          return cancelResult()
+        if (cancelled()) return cancelResult()
+        preparingBrowser = false
+        if (!isDirectTarget(feature, effectiveFrameUrl(ready.frame))) continue
+        options.onStage?.('writing')
+        if (feature === 'neis-record') {
+          const result = await fillNeis(ready.frame, payload as RecordPackage, {
+            signal,
+            onVerifying: () => options.onStage?.('verifying'),
+          })
+          options.onStage?.(result.ok ? 'done' : cancelled() ? 'cancelled' : 'failed')
+          return result
+        }
+        if (cancelled()) return cancelResult()
+        const result = await ready.frame
+          .evaluate(edufinePage, {
             map: DEFAULT_SCREEN_MAP,
             pkg: payload as PumuiPackage,
             unitAliases: UNIT_ALIASES,
           })
-        }
-        const url = this.options.edufineUrl || this.readSavedOrigin('edufine-pumui')
-        let page = this.context.pages().find((p) => isDirectTarget('edufine-pumui', p.url()))
-        if (!page) {
-          page = this.context.pages()[0] ?? (await this.context.newPage())
-          if (url && page.url() === 'about:blank') {
-            await page.goto(url, { timeout: 20_000, waitUntil: 'domcontentloaded' })
-          }
-        }
-        await page.bringToFront()
-        return {
-          ok: false,
-          reason:
-            '전용 브라우저에서 소속 교육청 업무포털에 로그인하고 K-에듀파인 품의등록 화면과 예산을 선택한 뒤, 앱에서 다시 보내 주세요.',
-        }
+          .catch(() => ({
+            ok: false as const,
+            reason: '입력 화면이 바뀌었어요. 화면의 입력 내용을 확인해 주세요.',
+          }))
+        if (result.ok) options.onStage?.('verifying')
+        // A failed write may already have called the form's add-row handler.
+        // Returning its exact reason prevents a retry from adding duplicate rows.
+        // The synchronous page script may have finished before the cancellation
+        // arrived. Report that verified outcome to prevent an unsafe repeat.
+        options.onStage?.(result.ok ? 'done' : cancelled() ? 'cancelled' : 'failed')
+        return result
       }
-
-      const candidates: Frame[] = []
-      for (const page of this.context.pages()) {
-        for (const frame of page.frames()) {
-          const url = effectiveFrameUrl(frame)
-          if (!isDirectTarget('neis-record', url)) continue
-          this.rememberOrigin('neis-record', url)
-          const ready = (await frame.locator('.cl-grid-row.cl-selected:visible').count()) > 0
-          if (ready) candidates.push(frame)
-        }
+      options.onStage?.('failed')
+      return {
+        ok: false,
+        reason: '화면 준비 대기 시간이 지났어요. 화면을 확인한 뒤 다시 보내 주세요.',
       }
-      if (candidates.length > 1)
-        return {
-          ok: false,
-          reason: '입력 가능한 업무 화면이 여러 개예요. 보낼 화면 하나만 남긴 뒤 다시 보내 주세요.',
-        }
-      if (!candidates.length) {
-        const url =
-          this.options.neisUrl || this.readSavedOrigin('neis-record') || 'https://www.neis.go.kr'
-        let page = this.context.pages().find((p) => isDirectTarget('neis-record', p.url()))
-        if (!page) {
-          page = this.context.pages()[0] ?? (await this.context.newPage())
-          if (page.url() === 'about:blank')
-            await page.goto(url, {
-              timeout: 20_000,
-              waitUntil: 'domcontentloaded',
-            })
-        }
-        await page.bringToFront()
-        return {
-          ok: false,
-          reason:
-            '전용 브라우저에서 업무포털에 로그인하고 나이스 입력 화면의 첫 학생 줄을 선택한 뒤, 앱에서 다시 보내 주세요.',
-        }
-      }
-      const frame = candidates[0]
-      await frame.page().bringToFront()
-      return await fillNeis(frame, payload as RecordPackage)
     } finally {
+      if (preparingBrowser && signal.aborted && this.context) {
+        const context = this.context
+        this.context = null
+        this.trackCleanup(context.close())
+      }
+      if (this.activeCancel === internalCancel) this.activeCancel = null
       this.busy = false
     }
   }
 
   async close(): Promise<void> {
+    this.activeCancel?.abort()
     const context = this.context
     this.context = null
-    await context?.close()
+    if (context) await this.trackCleanup(context.close())
+    else await this.cleanup
   }
 }
 

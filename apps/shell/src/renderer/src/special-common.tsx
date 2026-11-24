@@ -136,9 +136,12 @@ export async function copyText(text: string): Promise<void> {
     area.style.position = 'fixed'
     area.style.opacity = '0'
     document.body.appendChild(area)
-    area.select()
-    document.execCommand('copy')
-    area.remove()
+    try {
+      area.select()
+      if (!document.execCommand('copy')) throw new Error('클립보드에 복사할 수 없어요.')
+    } finally {
+      area.remove()
+    }
   }
 }
 
