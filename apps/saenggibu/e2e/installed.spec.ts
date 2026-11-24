@@ -54,6 +54,16 @@ test('the installed app downloads its model and writes a 행발', async () => {
     console.log('[installed] 행발', JSON.stringify(said))
     expect(said).toMatch(NOMINAL)
   } finally {
+    // the 행발 written is work not kept with [임시 저장]: closing would ask first and wait (on
+    // the Windows runner the test then hung until its 30 minutes ran out)
+    for (const window of app.windows())
+      await window
+        .evaluate(() =>
+          (
+            globalThis as unknown as { saenggibu: { setUnsaved(unsaved: boolean): void } }
+          ).saenggibu.setUnsaved(false),
+        )
+        .catch(() => undefined)
     await app.close()
   }
 })
