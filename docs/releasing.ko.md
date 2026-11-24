@@ -161,7 +161,7 @@ Linux판은 지금 만들지 않습니다(작업 파일 없음). 다시 낼 때 
 
 1. `apps/saenggibu/package.json`과 잠금 파일의 버전을 올려 커밋·push하고, 같은 커밋에 `saenggibu-v<버전>` 태그를 붙여 push합니다.
 2. Actions → **똑딱생기부 Windows build** 실행(설치판이 실제 GitHub에서 모델을 받아 행발을 쓰는 시험 포함). 동시에 이 Mac에서 `taskpolicy -b nice -n 19 npm run dist:mac -w @ttokttak/saenggibu`.
-3. 이 Mac 설치본 교체: 실행 중이 아닌지 확인 → 옛 앱을 `~/Documents/똑딱작업실-이전-앱.noindex/`로 옮기고 등록 해제 → `release/mac-arm64/TtokttakSaenggibu.app`을 `~/Applications`에 `ditto` → 등록. 그 뒤 `SAENGGIBU_PACKAGED_EXECUTABLE=… npx playwright test -c apps/saenggibu/e2e/playwright.config.ts installed.spec.ts`.
+3. 이 Mac 설치본 교체: 실행 중이 아닌지 확인 → 옛 앱을 `~/Documents/똑딱작업실-이전-앱.noindex/`로 옮기고 등록 해제 → `release/mac-arm64/TtokttakSaenggibu.app`을 `~/Applications`에 `ditto` → 등록. 그 뒤 `SAENGGIBU_PACKAGED_EXE=… npx playwright test -c apps/saenggibu/e2e/playwright.config.ts installed.spec.ts`.
 4. 파일을 모아 `SHA256SUMS.txt`를 만들고 `ttokttak-saenggibu`에 `gh release create v<버전> --latest`. 배포 저장소 안내(`~/Documents/똑딱-배포/ttokttak-saenggibu/README.md`)가 바뀌었으면 커밋·push.
 
 ## 부록: Windows 손 빌드 (Actions를 쓸 수 없을 때만, 결정 0056)
