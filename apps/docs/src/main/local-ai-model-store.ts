@@ -409,7 +409,9 @@ export class LocalAiModels {
     const { model, adapters } = LOCAL_AI_RUNS[run]
     const pathOf = (id: LocalAiModelFile['id']) => this.stores.get(id)!.path
     // V10-94 comes after the run's own adapters, so their numbering stays as it was
-    const extra: LocalAiModelFile['id'][] = this.verified.has('school_record_v10') ? ['school_record_v10'] : []
+    const extra: LocalAiModelFile['id'][] = this.verified.has('school_record_v10')
+      ? ['school_record_v10']
+      : []
     return {
       model: pathOf(model),
       adapters: [...adapters, ...extra].map((name) => ({ name, path: pathOf(name) })),
