@@ -38,7 +38,6 @@ export const LOCAL_AI_MODEL_CHANNELS = {
 /** what the settings page shows: the state, and how much there is to download in all */
 export type LocalAiModelsInfo = LocalAiModelState & {
   totalBytes: number
-  schoolRecordVersion?: string
 }
 
 let models: LocalAiModels | null = null

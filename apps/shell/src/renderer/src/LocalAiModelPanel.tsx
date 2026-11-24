@@ -49,7 +49,7 @@ export function LocalAiModelPanel({ lang }: { lang: Lang }) {
   switch (info.state) {
     case 'ready':
       text = ko
-        ? (info.schoolRecordVersion ?? '똑딱AI 모델') + ' · ' + gb(info.totalBytes)
+        ? '똑딱AI 모델: 이 컴퓨터에 있어요 (' + gb(info.totalBytes) + ').'
         : 'TtokTtak AI model: on this computer (' + gb(info.totalBytes) + ').'
       break
     case 'idle':
