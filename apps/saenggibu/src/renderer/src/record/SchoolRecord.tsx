@@ -129,8 +129,9 @@ const RESULT_NAME: Record<RecordMode, string> = {
   activity: '특기사항',
 }
 const NEIS_STAGE_TEXT: Record<NeisStage, string> = {
-  'browser-opening': '전송용 브라우저를 열고 있어요.',
-  'waiting-login': '전송용 브라우저에서 업무포털에 로그인하고 나이스를 열어 주세요.',
+  'browser-opening': '브라우저에 연결하고 있어요.',
+  'waiting-login':
+    '업무포털에 로그인하고 나이스를 열어 주세요. 이미 로그인한 크롬을 쓰려면 크롬 주소창에 chrome://inspect/#remote-debugging 을 열고 원격 디버깅 허용을 켜 주세요.',
   'finding-screen': '나이스에서 보낼 글을 입력하는 화면을 열어 주세요.',
   'waiting-selection': '나이스 표에서 입력을 시작할 학생 줄을 선택해 주세요.',
   writing: '이름을 확인하며 학생 글을 입력하고 있어요.',

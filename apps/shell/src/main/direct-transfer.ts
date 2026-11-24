@@ -18,6 +18,7 @@ import type {
 import { edufinePage, edufineProbe } from './direct-transfer-edufine'
 import { fillNeis, readSelection } from './direct-transfer-neis'
 import { waitForTransferFrame, type ReadyFrame } from './direct-transfer-wait'
+import { TEACHER_CONTEXTS, connectTeacherBrowser } from './teacher-browser'
 
 export type { DirectFeature, DirectTransferResult }
 export type DriverResult =
@@ -140,7 +141,10 @@ function effectiveFrameUrl(frame: Frame): string {
 const PLACES_FILE = 'ttokttak-places.json'
 
 type Launch = (options: DirectTransferOptions) => Promise<BrowserContext>
+/** the teacher's logged-in Chrome or Edge when it allows remote debugging, else the app's own window */
 async function launchBrowser(options: DirectTransferOptions): Promise<BrowserContext> {
+  const teacher = await connectTeacherBrowser()
+  if (teacher) return teacher
   const executablePath = findDirectBrowser(options.executablePath)
   if (!executablePath) throw new Error('Chrome 또는 Edge를 설치한 뒤 다시 보내 주세요.')
   mkdirSync(options.userDataDir, { recursive: true, mode: 0o700 })
@@ -345,8 +349,9 @@ export class PlaywrightDirectTransferDriver implements DirectTransferDriver {
       if (cancelled()) return cancelResult()
       const context = this.context
       if (!hasTargetPage(context)) {
+        // the teacher's own browser gets a new tab: their open tabs are left as they are
         const page =
-          context.pages()[0] ??
+          (TEACHER_CONTEXTS.has(context) ? undefined : context.pages()[0]) ??
           (await awaitPreparation(context.newPage(), signal, (late) => {
             void late.close().catch(() => undefined)
           }))

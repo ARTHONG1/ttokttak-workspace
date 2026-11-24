@@ -8,20 +8,29 @@ submit an approval, or send undocumented HTTP requests.
 
 ## Use
 
-1. Install Chrome or Edge. For a first K-Edufine transfer, register the HTTPS
+1. Recommended: in the Chrome (or Edge) where you are already logged in, open
+   `chrome://inspect/#remote-debugging` (`edge://inspect/#remote-debugging`) once and
+   allow remote debugging. The browser then writes `DevToolsActivePort` into its
+   user folder, and the app connects to it (`teacher-browser.ts`): it fills the
+   NEIS or K-Edufine tab you already opened, or opens a new tab, and leaves your
+   other tabs alone. Closing the app only disconnects. While remote debugging is
+   allowed, other programs on the PC can control that browser too; turn it off
+   there when you no longer send. Without it the app opens its own browser as
+   described below.
+2. Install Chrome or Edge. For a first K-Edufine transfer, register the HTTPS
    address of your education office's work portal in the proposal screen.
    Press the transfer button once to open the dedicated browser.
-2. In that window, navigate to the education office's work portal, sign in and
+3. In that window, navigate to the education office's work portal, sign in and
    complete certificate authentication yourself. Existing personal-browser
    sessions are not imported.
-3. Open the intended NEIS entry grid and select the first student's row. For
+4. Open the intended NEIS entry grid and select the first student's row. For
    K-Edufine, select the budget row and item type on the proposal registration
    form. Keep one matching work screen open. The app looks for the screen
    across tabs and popups in its dedicated browser.
-4. The pending request starts filling when the screen is ready. The desktop
+5. The pending request starts filling when the screen is ready. The desktop
    app shows its progress and offers cancellation. A pending request waits
    for screen readiness for up to ten minutes.
-5. Review the filled form and save or submit it yourself before closing the app.
+6. Review the filled form and save or submit it yourself before closing the app.
    The app owns and closes its dedicated browser when it exits.
 
 The web edition sends through its browser extension. Optional desktop startup

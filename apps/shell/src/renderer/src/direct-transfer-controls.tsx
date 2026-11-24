@@ -6,8 +6,9 @@ import type {
 } from '../../shared/direct-transfer-api'
 
 const STAGE_TEXT: Record<DirectTransferStage, string> = {
-  'browser-opening': '전용 브라우저 열기',
-  'waiting-login': '로그인과 업무 화면 열기를 기다리고 있어요',
+  'browser-opening': '브라우저에 연결하고 있어요',
+  'waiting-login':
+    '로그인과 업무 화면 열기를 기다리고 있어요. 이미 로그인한 크롬을 쓰려면 크롬 주소창에 chrome://inspect/#remote-debugging 을 열고 원격 디버깅 허용을 켜 주세요.',
   'finding-screen': '입력 화면을 찾고 있어요',
   'waiting-selection': '학생 또는 예산 줄 선택을 기다리고 있어요',
   writing: '입력 중이에요',

@@ -16,6 +16,7 @@ import {
   type RecordPackage,
 } from '../shared/record-package'
 import { fillNeis, pinNeis, probeNeis } from './neis-fill'
+import { TEACHER_CONTEXTS, connectTeacherBrowser } from './teacher-browser'
 
 export type DriverResult =
   { ok: true; written: number; next: number; startedFrom?: number } | { ok: false; reason: string }
@@ -204,7 +205,10 @@ function observeBrowser(context: BrowserContext, abort: () => void) {
 }
 
 type Launch = (options: NeisDriverOptions) => Promise<BrowserContext>
+/** the teacher's logged-in Chrome or Edge when it allows remote debugging, else the app's own window */
 async function launchBrowser(options: NeisDriverOptions): Promise<BrowserContext> {
+  const teacher = await connectTeacherBrowser()
+  if (teacher) return teacher
   const executablePath = findBrowser(options.executablePath)
   if (!executablePath) throw new Error('Chrome 또는 Edge를 설치한 뒤 다시 보내 주세요.')
   mkdirSync(options.userDataDir, { recursive: true, mode: 0o700 })
@@ -507,7 +511,8 @@ export class PlaywrightNeisDriver implements NeisDriver {
     const url = this.options.neisUrl || this.readSavedOrigin() || 'https://www.neis.go.kr'
     let page = context.pages().find((p) => isNeisTarget(p.url()))
     if (!page) {
-      page = context.pages()[0]
+      // the teacher's own browser gets a new tab: their open tabs are left as they are
+      page = TEACHER_CONTEXTS.has(context) ? undefined : context.pages()[0]
       if (!page) {
         const newPage = context.newPage()
         page = signal
