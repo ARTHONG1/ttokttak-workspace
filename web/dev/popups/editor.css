@@ -674,9 +674,12 @@ input[type='file']::file-selector-button {
 }
 .pe-promo-picture {
   position: relative;
-  display: grid;
-  place-items: center;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 150px;
+  padding: 10px;
   overflow: hidden;
   border-radius: 10px;
   background: var(--pe-bg);
@@ -684,10 +687,16 @@ input[type='file']::file-selector-button {
   font-size: 36px;
   font-weight: 800;
 }
-.pe-promo-picture img,
-.pe-promo-picture video {
+.pe-promo-picture img {
   max-width: 100%;
   max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 18px -10px rgb(15 23 42 / 55%);
+}
+.pe-promo-picture video {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .pe-promo-play {
