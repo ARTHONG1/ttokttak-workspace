@@ -28,7 +28,8 @@ const promo = (changes = {}) => ({
   enabled: true,
   title: '교실로 ON 제미나이',
   text: '교실에서 Gemini 바로 쓰기',
-  imageUrl: '',
+  mediaType: 'none',
+  mediaUrl: '',
   linkUrl: 'https://example.com/book',
   linkLabel: '책 보기',
   startsAt: '2026-12-01',
@@ -42,6 +43,11 @@ test('validates popups and promos, their links, places, pictures and dates', () 
   const ok = normalizeNotices(list([popup()], [promo()]))
   assert.equal(ok.popups[0].title, '새 소식')
   assert.equal(ok.promos[0].endsAt, '2027-01-06')
+  for (const media of [
+    { mediaType: 'youtube', mediaUrl: 'https://youtu.be/tLxKYB8qInY' },
+    { mediaType: 'video', mediaUrl: 'https://example.com/film.mp4' },
+  ])
+    assert.equal(normalizeNotices(list([], [promo(media)])).promos[0].mediaType, media.mediaType)
   for (const mediaUrl of [
     'https://youtu.be/tLxKYB8qInY/',
     'https://www.youtube.com/live/tLxKYB8qInY/',
@@ -70,7 +76,9 @@ test('validates popups and promos, their links, places, pictures and dates', () 
   }
   for (const change of [
     { title: '' },
-    { imageUrl: 'https://evil.test/x.png' },
+    { mediaType: 'image', mediaUrl: 'https://evil.test/x.png' },
+    { mediaType: 'video', mediaUrl: 'http://example.com/a.mp4' },
+    { mediaType: 'youtube', mediaUrl: 'https://example.com/watch?v=tLxKYB8qInY' },
     { text: 'x'.repeat(301) },
   ]) {
     assert.throws(() => normalizeNotices(list([], [promo(change)])), JSON.stringify(change))

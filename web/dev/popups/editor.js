@@ -10,7 +10,7 @@ const LIMIT = 12
 const COMMON = ['enabled', 'title', 'linkLabel', 'linkUrl', 'startsAt', 'endsAt']
 const FIELDS = {
   popups: [...COMMON, 'body', 'mediaType', 'mediaUrl'],
-  promos: [...COMMON, 'text', 'imageUrl'],
+  promos: [...COMMON, 'text', 'mediaType', 'mediaUrl'],
 }
 const KIND_NAME = { popups: '팝업', promos: '홈 홍보 칸' }
 const PLACE_NAME = { home: '소개', app: '웹앱', desktop: '데스크톱' }
@@ -30,7 +30,7 @@ function current() {
   return items().find((item) => item.id === selected[kind])
 }
 function dirty() {
-  return JSON.stringify(lists) !== baseline
+  return loaded && JSON.stringify(lists) !== baseline
 }
 function message(id, text) {
   $(id).textContent = text
@@ -148,12 +148,26 @@ function renderList() {
 
 function mediaVisibility() {
   const item = current()
-  const popup = kind === 'popups'
-  $('media-fields').hidden = !popup || !item || item.mediaType === 'none'
-  $('upload-area').hidden = popup ? item?.mediaType !== 'image' : !item
-  $('image-state').textContent =
-    item && item.imageUrl ? '그림을 올렸습니다.' : '그림이 없으면 제목 첫 글자를 보여 줍니다.'
-  $('image-clear').hidden = popup || !item?.imageUrl
+  $('media-fields').hidden = !item || item.mediaType === 'none'
+  $('upload-area').hidden = item?.mediaType !== 'image'
+  const help = {
+    image:
+      kind === 'promos'
+        ? '아래에서 그림 파일을 올리세요.'
+        : 'HTTPS 그림 주소를 넣거나 아래에서 파일을 올리세요. 데스크톱 앱에는 올린 그림만 보입니다.',
+    youtube: 'YouTube 동영상·공유·Shorts 주소를 넣으세요. 누르기 전에는 재생되지 않습니다.',
+    video: 'mp4처럼 브라우저가 바로 재생하는 HTTPS 동영상 주소를 넣으세요.',
+  }
+  $('media-help').textContent = help[item?.mediaType] ?? ''
+}
+
+/** the 11-character id of a YouTube address, or null */
+function youtubeIdOf(value) {
+  if (!validYoutube(value)) return null
+  const url = new URL(value)
+  if (url.hostname === 'youtu.be') return url.pathname.slice(1, 12)
+  if (url.pathname === '/watch') return url.searchParams.get('v')
+  return url.pathname.split('/')[2]
 }
 
 function renderPromoPreview() {
@@ -161,15 +175,34 @@ function renderPromoPreview() {
   if (kind !== 'promos' || !item) return
   const picture = $('promo-picture')
   picture.replaceChildren()
-  if (item.imageUrl) {
+  const url = item.mediaUrl.trim()
+  const youtube = item.mediaType === 'youtube' ? youtubeIdOf(url) : null
+  if ((item.mediaType === 'image' && localMedia.test(url)) || youtube) {
     const img = document.createElement('img')
-    img.src = item.imageUrl
+    img.src = youtube ? 'https://i.ytimg.com/vi/' + youtube + '/hqdefault.jpg' : url
     img.alt = ''
     picture.append(img)
+  } else if (item.mediaType === 'video' && validUrl(url)) {
+    const video = document.createElement('video')
+    video.src = url
+    video.muted = true
+    video.preload = 'metadata'
+    picture.append(video)
   } else picture.textContent = item.title.trim().slice(0, 1)
+  const plays = Boolean(youtube) || (item.mediaType === 'video' && validUrl(url))
+  if (plays) {
+    const badge = document.createElement('span')
+    badge.className = 'pe-promo-play'
+    badge.textContent = '▶'
+    picture.append(badge)
+  }
   $('promo-title').textContent = item.title.trim() || '제목'
   $('promo-text').textContent = item.text
-  $('promo-link').textContent = item.linkUrl ? (item.linkLabel || '보러 가기') + ' ↗' : ''
+  $('promo-link').textContent = plays
+    ? '영상 보기'
+    : item.linkUrl
+      ? (item.linkLabel || '보러 가기') + ' ↗'
+      : ''
 }
 
 function showKind() {
@@ -252,14 +285,16 @@ function validate(item, itemKind) {
     if (item.placements.length === 0) return ['placements', '보일 곳을 하나 이상 골라 주세요.']
     if (!item.body.trim() && item.mediaType === 'none')
       return ['body', '전할 본문 또는 그림·영상을 넣어 주세요.']
-    if (item.mediaType !== 'none') {
-      const url = item.mediaUrl.trim()
-      if (!url) return ['mediaUrl', '미디어 주소를 넣거나 그림 파일을 올려 주세요.']
-      if (!validUrl(url) && !(item.mediaType === 'image' && localMedia.test(url)))
-        return ['mediaUrl', 'HTTPS 주소 또는 이 화면에서 올린 그림을 사용해 주세요.']
-      if (item.mediaType === 'youtube' && !validYoutube(url))
-        return ['mediaUrl', '올바른 YouTube 동영상 주소를 넣어 주세요. 영상 ID는 11자리입니다.']
-    }
+  }
+  if (item.mediaType !== 'none') {
+    const url = item.mediaUrl.trim()
+    if (!url) return ['mediaUrl', '미디어 주소를 넣거나 그림 파일을 올려 주세요.']
+    if (item.mediaType === 'image' && itemKind === 'promos' && !localMedia.test(url))
+      return ['mediaUrl', '홍보 칸 그림은 아래에서 파일을 올려 주세요.']
+    if (!validUrl(url) && !(item.mediaType === 'image' && localMedia.test(url)))
+      return ['mediaUrl', 'HTTPS 주소 또는 이 화면에서 올린 그림을 사용해 주세요.']
+    if (item.mediaType === 'youtube' && !validYoutube(url))
+      return ['mediaUrl', '올바른 YouTube 동영상 주소를 넣어 주세요. 영상 ID는 11자리입니다.']
   }
   if (item.linkLabel.trim() && !item.linkUrl.trim())
     return ['linkUrl', '버튼을 누르면 열릴 연결 주소를 넣어 주세요.']
@@ -409,7 +444,7 @@ $('add').addEventListener('click', () => {
           mediaUrl: '',
           placements: ['home', 'app', 'desktop'],
         }
-      : { ...shared, text: '', imageUrl: '' }
+      : { ...shared, text: '', mediaType: 'none', mediaUrl: '' }
   items().push(item)
   selectItem(item.id)
   changed()
@@ -430,15 +465,6 @@ $('delete').addEventListener('click', () => {
   const index = list.indexOf(item)
   list.splice(index, 1)
   selectItem(list[Math.min(index, list.length - 1)]?.id ?? null)
-  changed()
-})
-
-$('image-clear').addEventListener('click', () => {
-  const item = current()
-  if (!item || busy) return
-  item.imageUrl = ''
-  form.elements.namedItem('imageUrl').value = ''
-  mediaVisibility()
   changed()
 })
 
@@ -528,9 +554,8 @@ $('image-file').addEventListener('change', async (event) => {
     })
     if (typeof result.url !== 'string' || !localMedia.test(result.url))
       throw new Error('올린 그림의 주소를 받지 못했습니다.')
-    const field = kind === 'popups' ? 'mediaUrl' : 'imageUrl'
-    item[field] = result.url
-    form.elements.namedItem(field).value = result.url
+    item.mediaUrl = result.url
+    form.elements.namedItem('mediaUrl').value = result.url
     message('upload-status', '그림을 올렸습니다. 저장을 눌러 반영하세요.')
   } catch (failure) {
     message('form-error', failure.message)

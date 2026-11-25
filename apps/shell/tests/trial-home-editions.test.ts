@@ -31,6 +31,8 @@ it.each(['web', 'desktop'])(
               linkUrl: 'https://example.com/book',
               linkLabel: '책 보기',
               imageSrc: null,
+              youtubeId: null,
+              videoUrl: null,
             },
           ],
         }),

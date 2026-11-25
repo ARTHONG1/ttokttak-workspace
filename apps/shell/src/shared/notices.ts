@@ -19,7 +19,7 @@ export interface NoticePopup {
   enabled: boolean
   title: string
   body: string
-  mediaType: 'none' | 'image' | 'youtube' | 'video'
+  mediaType: NoticeMediaType
   mediaUrl: string
   linkUrl: string
   linkLabel: string
@@ -29,13 +29,17 @@ export interface NoticePopup {
   endsAt: string
 }
 
+/** none, an uploaded picture (or an https one, for the web), a YouTube video, an https video file */
+export type NoticeMediaType = 'none' | 'image' | 'youtube' | 'video'
+
 export interface NoticePromo {
   id: string
   enabled: boolean
   title: string
   text: string
-  /** an uploaded picture ('/__web/popup-media/<name>'), or '' */
-  imageUrl: string
+  /** a promo's picture is an uploaded one ('/__web/popup-media/<name>') */
+  mediaType: NoticeMediaType
+  mediaUrl: string
   linkUrl: string
   linkLabel: string
   startsAt: string
@@ -55,8 +59,14 @@ export interface ShownPromo {
   text: string
   linkUrl: string
   linkLabel: string
-  /** a data URL (desktop) or a path on the web server; null without a picture */
+  /**
+   * the picture: a data URL (desktop) or a path on the web server, or a YouTube video's
+   * thumbnail; null without one
+   */
   imageSrc: string | null
+  /** a video the card plays when pressed */
+  youtubeId: string | null
+  videoUrl: string | null
 }
 
 /** a desktop popup as the home shows it */
@@ -68,6 +78,7 @@ export interface ShownPopup {
   linkLabel: string
   imageSrc: string | null
   youtubeId: string | null
+  videoUrl: string | null
 }
 
 export interface ShownNotices {
@@ -175,34 +186,39 @@ function common(raw: Raw) {
 function popupOf(raw: Raw): NoticePopup | null {
   const base = common(raw)
   const body = text(raw, 'body', 4000)
-  const mediaType = raw.mediaType
-  if (!base || body === null) return null
-  if (
-    mediaType !== 'none' &&
-    mediaType !== 'image' &&
-    mediaType !== 'youtube' &&
-    mediaType !== 'video'
-  )
-    return null
-  const mediaUrl = mediaType === 'none' ? '' : (text(raw, 'mediaUrl', 2048) ?? '')
-  if (mediaType === 'image' && !uploadedName(mediaUrl) && !httpsUrl(mediaUrl)) return null
-  if (mediaType === 'youtube' && !youtubeId(mediaUrl)) return null
-  if (mediaType === 'video' && !httpsUrl(mediaUrl)) return null
+  const media = mediaOf(raw, false)
+  if (!base || body === null || !media) return null
   const placements = Array.isArray(raw.placements)
     ? PLACEMENTS.filter((p) => (raw.placements as unknown[]).includes(p))
     : []
   if (placements.length === 0) return null
-  if (!base.title && !body && mediaType === 'none') return null
-  return { ...base, body, mediaType, mediaUrl, placements }
+  if (!base.title && !body && media.mediaType === 'none') return null
+  return { ...base, body, ...media, placements }
 }
 
 function promoOf(raw: Raw): NoticePromo | null {
   const base = common(raw)
   const promoText = text(raw, 'text', 300)
-  const imageUrl = text(raw, 'imageUrl', 200) ?? ''
-  if (!base || promoText === null || !base.title) return null
-  if (imageUrl && !uploadedName(imageUrl)) return null
-  return { ...base, text: promoText, imageUrl }
+  const media = mediaOf(raw, true)
+  if (!base || promoText === null || !base.title || !media) return null
+  return { ...base, text: promoText, ...media }
+}
+
+/** an item's media, or null when it does not pass; a promo's picture must be an uploaded one */
+function mediaOf(
+  raw: Raw,
+  uploadedOnly: boolean,
+): { mediaType: NoticeMediaType; mediaUrl: string } | null {
+  const mediaType = raw.mediaType ?? 'none'
+  if (mediaType === 'none') return { mediaType, mediaUrl: '' }
+  const mediaUrl = text(raw, 'mediaUrl', 2048) ?? ''
+  if (mediaType === 'image') {
+    const ok = uploadedName(mediaUrl) !== null || (!uploadedOnly && httpsUrl(mediaUrl) !== null)
+    return ok ? { mediaType, mediaUrl } : null
+  }
+  if (mediaType === 'youtube') return youtubeId(mediaUrl) ? { mediaType, mediaUrl } : null
+  if (mediaType === 'video') return httpsUrl(mediaUrl) ? { mediaType, mediaUrl } : null
+  return null
 }
 
 function itemsOf<T extends { id: string }>(value: unknown, make: (raw: Raw) => T | null): T[] {

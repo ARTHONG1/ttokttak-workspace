@@ -9028,6 +9028,19 @@ app.whenReady().then(async () => {
     app.exit(await runRevealEntry(secretCodec))
     return
   }
+  // YouTube's embedded player refuses a page that sends no Referer (error 153). The home is a
+  // file page and sends none, so its YouTube videos (promos, popups) name the app's site. The
+  // web edition's pages have their own address
+  if (!process.env.WEB_SESSION_DIR) {
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+      { urls: ['https://www.youtube-nocookie.com/embed/*', 'https://www.youtube.com/embed/*'] },
+      (details, callback) => {
+        callback({
+          requestHeaders: { ...details.requestHeaders, Referer: 'https://classddok.com/' },
+        })
+      },
+    )
+  }
   // first scan waits for the windows to come up; later ones follow folder changes
   setTimeout(() => ensureFileIndexer()?.refresh(), 4000)
   installRendererProtocol({

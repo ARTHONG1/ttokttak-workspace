@@ -13,7 +13,8 @@ const promo = (changes: Record<string, unknown> = {}) => ({
   enabled: true,
   title: '바로 배워서 바로 써먹는 AI 에이전트',
   text: 'Codex·Claude에 학교 업무 맡기기',
-  imageUrl: PICTURE,
+  mediaType: 'image',
+  mediaUrl: PICTURE,
   linkUrl: 'https://www.yes24.com/product/goods/195612765',
   linkLabel: '책 보기',
   startsAt: '',
@@ -43,7 +44,13 @@ describe('알림·홍보 목록 검사', () => {
       promos: [
         promo(),
         promo({ id: 'bad-link', linkUrl: 'javascript:alert(1)' }),
-        promo({ id: 'outside-picture', imageUrl: 'https://evil.test/x.png' }),
+        promo({ id: 'outside-picture', mediaUrl: 'https://evil.test/x.png' }),
+        promo({ id: 'bad-video', mediaType: 'video', mediaUrl: 'http://example.com/a.mp4' }),
+        promo({
+          id: 'bad-youtube',
+          mediaType: 'youtube',
+          mediaUrl: 'https://evil.test/watch?v=tLxKYB8qInY',
+        }),
         promo({ id: 'bad-day', endsAt: '2026/12/31' }),
         promo(),
       ],
@@ -115,7 +122,11 @@ describe('알림·홍보 목록 받기', () => {
     expect(remote.calls.filter((c) => c.url === listUrl).at(-1)!.tag).toBe('"one"')
 
     // the list changed: the next question brings it
-    remote.change({ version: 1, promos: [promo({ id: 'book-2', imageUrl: '' })], popups: [] })
+    remote.change({
+      version: 1,
+      promos: [promo({ id: 'book-2', mediaType: 'none', mediaUrl: '' })],
+      popups: [],
+    })
     clock += 60 * 60 * 1000
     expect((await feed.list()).promos.map((p) => p.id)).toEqual(['book-2'])
 
@@ -146,5 +157,28 @@ describe('알림·홍보 목록 받기', () => {
     const shown = await web.shown('2026-11-25', false)
     expect(shown.promos[0]!.imageSrc).toBe(PICTURE)
     expect(shown.popups).toEqual([])
+  })
+
+  it('plays a YouTube video or a video file from a promo and a popup', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'notices-'))
+    const remote = server({
+      version: 1,
+      promos: [
+        promo({ id: 'clip', mediaType: 'youtube', mediaUrl: 'https://youtu.be/tLxKYB8qInY' }),
+        promo({ id: 'film', mediaType: 'video', mediaUrl: 'https://example.com/film.mp4' }),
+      ],
+      popups: [popup({ mediaType: 'video', mediaUrl: 'https://example.com/news.mp4' })],
+    })
+    const feed = createNoticeFeed({
+      dir,
+      listUrl: 'https://raw.example.test/notice/main/notices.json',
+      fetch: remote.fetch,
+    })
+    const shown = await feed.shown('2026-11-25', true)
+    expect(shown.promos.map((p) => [p.imageSrc, p.youtubeId, p.videoUrl])).toEqual([
+      ['https://i.ytimg.com/vi/tLxKYB8qInY/hqdefault.jpg', 'tLxKYB8qInY', null],
+      [null, null, 'https://example.com/film.mp4'],
+    ])
+    expect(shown.popups[0]!.videoUrl).toBe('https://example.com/news.mp4')
   })
 })

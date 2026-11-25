@@ -12,12 +12,13 @@ import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
 
 const PICTURE = '0f8fad5b-d9cb-469f-a165-70867728950e.png'
 const PNG = readFileSync(join(__dirname, '..', 'apps', 'shell', 'build', 'icon.png'))
-const promo = (id: string, title: string, imageUrl = '') => ({
+const promo = (id: string, title: string, mediaType = 'none', mediaUrl = '') => ({
   id,
   enabled: true,
   title,
   text: title + ' 소개',
-  imageUrl,
+  mediaType,
+  mediaUrl,
   linkUrl: 'https://example.com/' + id,
   linkLabel: '보러 가기',
   startsAt: '',
@@ -54,9 +55,9 @@ const NOTICES = {
     },
   ],
   promos: [
-    promo('book', '바로 배워서 바로 써먹는 AI 에이전트', '/__web/popup-media/' + PICTURE),
+    promo('book', '바로 배워서 바로 써먹는 AI 에이전트', 'image', '/__web/popup-media/' + PICTURE),
     promo('gemini', '교실로 ON 제미나이'),
-    promo('training', '클래스똑딱 연수'),
+    promo('training', '클래스똑딱 연수', 'youtube', 'https://youtu.be/37n2EIFW6Hw'),
     { ...promo('later', '나중 소식'), startsAt: '2099-01-01' },
   ],
 }
@@ -106,6 +107,21 @@ test('the desktop home shows the list from outside: its popup, then the promos',
     await expect(promos).not.toContainText('나중 소식')
     await expect(promos.locator('img').first()).toHaveAttribute('src', /^data:image\/png;base64,/)
     await page.screenshot({ path: screenshotPath('home-notices-promos') })
+
+    // a YouTube promo: its thumbnail on the card, and pressing it plays the video over the home
+    await promos.getByRole('button', { name: '클래스똑딱 연수 보기' }).click()
+    const clip = promos.getByRole('button', { name: /클래스똑딱 연수/ }).first()
+    await expect(clip.locator('img')).toHaveAttribute('src', /i\.ytimg\.com\/vi\/37n2EIFW6Hw/)
+    await clip.click()
+    const player = page.getByTestId('promo-player')
+    await expect(player).toBeVisible()
+    await expect(player.locator('iframe')).toHaveAttribute(
+      'src',
+      /youtube-nocookie\.com\/embed\/37n2EIFW6Hw/,
+    )
+    await page.screenshot({ path: screenshotPath('home-notices-player') })
+    await player.getByRole('button', { name: '닫기' }).click()
+    await expect(player).toBeHidden()
 
     // put away for today: opening the home again does not bring it back
     await page.reload()

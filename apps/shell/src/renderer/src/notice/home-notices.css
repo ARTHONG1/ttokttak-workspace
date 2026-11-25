@@ -32,7 +32,20 @@ a.promo-card:hover {
     0 0 0 1px var(--t-line-2) inset,
     var(--t-shadow-md);
 }
+button.promo-card {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.promo-card:hover {
+  box-shadow:
+    0 0 0 1px var(--t-line-2) inset,
+    var(--t-shadow-md);
+}
 .promo-picture {
+  position: relative;
   display: grid;
   place-items: center;
   height: 170px;
@@ -41,10 +54,26 @@ a.promo-card:hover {
   border-radius: 12px;
   background: var(--t-bg);
 }
-.promo-picture img {
+.promo-picture img,
+.promo-picture video {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+.promo-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding-left: 4px;
+  border-radius: 50%;
+  background: rgb(15 23 42 / 70%);
+  color: #fff;
+  font-size: 18px;
+  transform: translate(-50%, -50%);
 }
 .promo-picture-letter {
   font-size: 40px;
@@ -140,7 +169,8 @@ a.promo-card:hover {
   white-space: pre-line;
 }
 .home-popup-body img,
-.home-popup-body iframe {
+.home-popup-body iframe,
+.home-popup-body video {
   width: 100%;
   border: 0;
   border-radius: 12px;
@@ -195,4 +225,10 @@ a.promo-card:hover {
     animation: none;
     transition: none;
   }
+}
+.home-player {
+  width: min(720px, calc(100vw - 48px));
+}
+.home-player-foot {
+  justify-content: flex-end;
 }

@@ -7,6 +7,7 @@ import {
   uploadedName,
   youtubeId,
   type Notices,
+  type NoticeMediaType,
   type ShownNotices,
 } from '../shared/notices'
 
@@ -152,20 +153,36 @@ export function createNoticeFeed(options: NoticeFeedOptions) {
     return 'data:' + type.mime + ';base64,' + Buffer.from(bytes).toString('base64')
   }
 
+  /** what an item shows: its uploaded picture, or the video it plays */
+  async function media(item: { mediaType: NoticeMediaType; mediaUrl: string }) {
+    return {
+      imageSrc: item.mediaType === 'image' ? await picture(item.mediaUrl) : null,
+      youtubeId: item.mediaType === 'youtube' ? youtubeId(item.mediaUrl) : null,
+      videoUrl: item.mediaType === 'video' ? item.mediaUrl : null,
+    }
+  }
+
   /** what the home shows today: the promos, and the popups for the desktop app */
   async function shown(today: string, withPopups: boolean): Promise<ShownNotices> {
     const notices = await list()
     const promos = await Promise.all(
       notices.promos
         .filter((promo) => activeOn(promo, today))
-        .map(async (promo) => ({
-          id: promo.id,
-          title: promo.title,
-          text: promo.text,
-          linkUrl: promo.linkUrl,
-          linkLabel: promo.linkLabel,
-          imageSrc: await picture(promo.imageUrl),
-        })),
+        .map(async (promo) => {
+          const shownMedia = await media(promo)
+          return {
+            id: promo.id,
+            title: promo.title,
+            text: promo.text,
+            linkUrl: promo.linkUrl,
+            linkLabel: promo.linkLabel,
+            ...shownMedia,
+            // a YouTube promo's card shows the video's thumbnail
+            imageSrc: shownMedia.youtubeId
+              ? 'https://i.ytimg.com/vi/' + shownMedia.youtubeId + '/hqdefault.jpg'
+              : shownMedia.imageSrc,
+          }
+        }),
     )
     const popups = withPopups
       ? await Promise.all(
@@ -177,8 +194,7 @@ export function createNoticeFeed(options: NoticeFeedOptions) {
               body: popup.body,
               linkUrl: popup.linkUrl,
               linkLabel: popup.linkLabel,
-              imageSrc: popup.mediaType === 'image' ? await picture(popup.mediaUrl) : null,
-              youtubeId: popup.mediaType === 'youtube' ? youtubeId(popup.mediaUrl) : null,
+              ...(await media(popup)),
             })),
         )
       : []

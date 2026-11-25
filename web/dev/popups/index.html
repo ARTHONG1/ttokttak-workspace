@@ -127,7 +127,7 @@
                 </section>
                 <section class="pe-form-section" aria-labelledby="media-heading">
                   <h3 id="media-heading"><span>그림과 영상</span></h3>
-                  <div data-kind="popups">
+                  <div>
                     <label class="pe-label" for="mediaType">미디어 종류</label>
                     <select id="mediaType" name="mediaType">
                       <option value="none">사용하지 않음</option>
@@ -145,18 +145,8 @@
                         placeholder="https://…"
                         aria-describedby="media-help"
                       />
-                      <p id="media-help" class="pe-hint">
-                        HTTPS 주소만 사용할 수 있습니다. 데스크톱 앱에는 올린 그림과 YouTube 영상만
-                        보입니다.
-                      </p>
+                      <p id="media-help" class="pe-hint"></p>
                     </div>
-                  </div>
-                  <div data-kind="promos">
-                    <input id="imageUrl" name="imageUrl" type="hidden" />
-                    <p class="pe-hint" id="image-state">
-                      그림이 없으면 제목 첫 글자를 보여 줍니다.
-                    </p>
-                    <button type="button" id="image-clear" class="pe-text-button">그림 빼기</button>
                   </div>
                   <div id="upload-area" class="pe-upload">
                     <label class="pe-label" for="image-file">그림 파일 올리기</label

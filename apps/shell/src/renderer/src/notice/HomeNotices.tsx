@@ -72,29 +72,101 @@ function MakerCard(): ReactElement {
   )
 }
 
-function PromoCard({ promo }: { promo: ShownPromo }): ReactElement {
+/** a promo card: a link, or with a video, a button that plays it */
+function PromoCard({
+  promo,
+  onPlay,
+}: {
+  promo: ShownPromo
+  onPlay: (promo: ShownPromo) => void
+}): ReactElement {
+  const plays = Boolean(promo.youtubeId || promo.videoUrl)
   const inside = (
     <>
       <span className="promo-picture">
         {promo.imageSrc ? (
           <img src={promo.imageSrc} alt="" draggable={false} />
+        ) : promo.videoUrl ? (
+          <video src={promo.videoUrl} preload="metadata" muted playsInline />
         ) : (
           <span className="promo-picture-letter" aria-hidden="true">
             {promo.title.slice(0, 1)}
           </span>
         )}
+        {plays && (
+          <span className="promo-play" aria-hidden="true">
+            ▶
+          </span>
+        )}
       </span>
       <b className="promo-title">{promo.title}</b>
       {promo.text && <span className="promo-text">{promo.text}</span>}
-      {promo.linkUrl && <span className="promo-go">{promo.linkLabel} ↗</span>}
+      {plays ? (
+        <span className="promo-go">영상 보기</span>
+      ) : (
+        promo.linkUrl && <span className="promo-go">{promo.linkLabel} ↗</span>
+      )}
     </>
   )
+  if (plays) {
+    return (
+      <button type="button" className="promo-card" onClick={() => onPlay(promo)}>
+        {inside}
+      </button>
+    )
+  }
   return promo.linkUrl ? (
     <a className="promo-card" href={promo.linkUrl} target="_blank" rel="noopener noreferrer">
       {inside}
     </a>
   ) : (
     <div className="promo-card">{inside}</div>
+  )
+}
+
+/** a promo's video, played in a window over the home; closing it stops the video */
+function PromoPlayer({ promo, onClose }: { promo: ShownPromo; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    dialog.current?.showModal()
+  }, [])
+  return (
+    <dialog
+      ref={dialog}
+      className="home-popup home-player"
+      aria-labelledby="promo-player-title"
+      data-testid="promo-player"
+      onClose={onClose}
+    >
+      <div className="home-popup-body">
+        <h2 id="promo-player-title">{promo.title}</h2>
+        {promo.youtubeId && (
+          <iframe
+            src={'https://www.youtube-nocookie.com/embed/' + promo.youtubeId + '?autoplay=1&rel=0'}
+            title={promo.title + ' 동영상'}
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        )}
+        {promo.videoUrl && <video src={promo.videoUrl} controls autoPlay playsInline />}
+        {promo.text && <p>{promo.text}</p>}
+        {promo.linkUrl && (
+          <a
+            className="home-popup-link"
+            href={promo.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {promo.linkLabel}
+          </a>
+        )}
+      </div>
+      <footer className="home-popup-foot home-player-foot">
+        <button type="button" onClick={() => dialog.current?.close()} autoFocus>
+          닫기
+        </button>
+      </footer>
+    </dialog>
   )
 }
 
@@ -111,6 +183,7 @@ export function HomePromos({ promos }: { promos: ShownPromo[] }): ReactElement {
   const [auto, setAuto] = useState(true)
   const [held, setHeld] = useState(false)
   const [seen, setSeen] = useState(false)
+  const [playing, setPlaying] = useState<ShownPromo | null>(null)
 
   useEffect(() => {
     if (!turns) return
@@ -162,7 +235,15 @@ export function HomePromos({ promos }: { promos: ShownPromo[] }): ReactElement {
       <div className={'home-promo-grid home-promo-grid-' + (shown.length + 1)}>
         <MakerCard />
         {shown.map((promo) => (
-          <PromoCard key={promo.id} promo={promo} />
+          <PromoCard
+            key={promo.id}
+            promo={promo}
+            onPlay={(picked) => {
+              setPlaying(picked)
+              // a video was opened: the cards stay where they are
+              setAuto(false)
+            }}
+          />
         ))}
       </div>
       {turns && (
@@ -181,6 +262,7 @@ export function HomePromos({ promos }: { promos: ShownPromo[] }): ReactElement {
           ))}
         </div>
       )}
+      {playing && <PromoPlayer promo={playing} onClose={() => setPlaying(null)} />}
     </div>
   )
 }
@@ -246,6 +328,7 @@ export function DesktopPopups({ popups }: { popups: ShownPopup[] }): ReactElemen
             allowFullScreen
           />
         )}
+        {popup.videoUrl && <video src={popup.videoUrl} controls playsInline preload="metadata" />}
         {popup.linkUrl && (
           <a
             className="home-popup-link"

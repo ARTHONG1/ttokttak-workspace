@@ -64,24 +64,30 @@ function common(raw, ids) {
   if (linkUrl && (!https(linkUrl) || !linkLabel)) fail('버튼에는 HTTPS 주소와 문구가 필요해요.')
   return { id, enabled: raw.enabled, title: text(raw.title, 120, '제목'), linkUrl, linkLabel }
 }
+// a picture (uploaded, or for a popup also an https one), a YouTube video or an https video file
+function media(raw, uploadedOnly) {
+  const mediaType = raw.mediaType ?? 'none'
+  if (!['none', 'image', 'youtube', 'video'].includes(mediaType))
+    fail('미디어 종류를 확인해 주세요.')
+  const mediaUrl = mediaType === 'none' ? '' : text(raw.mediaUrl, 2048, '미디어 주소')
+  if (mediaType === 'youtube' && !youtube(mediaUrl)) fail('올바른 유튜브 영상 주소를 넣어 주세요.')
+  if (mediaType === 'video' && !https(mediaUrl)) fail('동영상은 HTTPS 주소를 넣어 주세요.')
+  if (mediaType === 'image' && !UPLOADED.test(mediaUrl) && (uploadedOnly || !https(mediaUrl)))
+    fail(
+      uploadedOnly
+        ? '홍보 칸 그림은 이 화면에서 올린 그림만 쓸 수 있어요.'
+        : 'HTTPS 그림 주소 또는 올린 그림을 사용해 주세요.',
+    )
+  return { mediaType, mediaUrl }
+}
 function popup(raw, ids) {
   const base = common(raw, ids)
   const body = text(raw.body, 4000, '내용')
-  const mediaType = raw.mediaType
-  if (!['none', 'image', 'youtube', 'video'].includes(mediaType))
-    fail('미디어 종류를 확인해 주세요.')
   const placements = PLACEMENTS.filter(
     (p) => Array.isArray(raw.placements) && raw.placements.includes(p),
   )
   if (placements.length === 0) fail('보일 곳을 하나 이상 골라 주세요.')
-  const mediaUrl = mediaType === 'none' ? '' : text(raw.mediaUrl, 2048, '미디어 주소')
-  if (mediaType === 'youtube' && !youtube(mediaUrl)) fail('올바른 유튜브 영상 주소를 넣어 주세요.')
-  if (
-    ['image', 'video'].includes(mediaType) &&
-    !https(mediaUrl) &&
-    !(mediaType === 'image' && UPLOADED.test(mediaUrl))
-  )
-    fail('HTTPS 미디어 주소 또는 올린 그림을 사용해 주세요.')
+  const { mediaType, mediaUrl } = media(raw, false)
   if (!base.title && !body && mediaType === 'none')
     fail('제목, 내용, 미디어 중 하나는 넣어 주세요.')
   return { ...base, body, mediaType, mediaUrl, placements, ...days(raw) }
@@ -89,10 +95,7 @@ function popup(raw, ids) {
 function promo(raw, ids) {
   const base = common(raw, ids)
   if (!base.title) fail('홍보 칸에는 제목이 필요해요.')
-  const imageUrl = text(raw.imageUrl ?? '', 200, '그림')
-  if (imageUrl && !UPLOADED.test(imageUrl))
-    fail('홍보 칸 그림은 이 화면에서 올린 그림만 쓸 수 있어요.')
-  return { ...base, text: text(raw.text ?? '', 300, '설명'), imageUrl, ...days(raw) }
+  return { ...base, text: text(raw.text ?? '', 300, '설명'), ...media(raw, true), ...days(raw) }
 }
 export function normalizeNotices(value) {
   if (!value || value.version !== 1) fail('목록 형식이 올바르지 않아요.')
