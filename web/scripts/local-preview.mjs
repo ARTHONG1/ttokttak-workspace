@@ -12,8 +12,11 @@ if (!process.env.GOOGLE_CLOUD_PROJECT) {
 }
 process.env.PORT ||= '5188'
 process.env.WEB_HOST ||= '127.0.0.1'
-// Only the local preview can edit the announcement files shipped by the next build.
+// Only the local preview opens the 알림·홍보 관리 screen (popup-routes.mjs).
 process.env.WEB_POPUP_EDITOR = '1'
+// the checked-out 알림·홍보 목록 (ARTHONG1/ttokttak-notice): the 관리 screen saves into it, and
+// 게시하기 pushes it to GitHub, where the web and the desktop app read it
+process.env.WEB_NOTICE_REPO ||= join(homedir(), 'Documents', 'ttokttak-notice')
 process.env.VERTEX_LOCATION ||= 'global'
 process.env.WEB_SESSIONS_ROOT ||= '/tmp/hs-preview'
 if (!process.env.VERTEX_ACCESS_TOKEN) process.env.VERTEX_GCLOUD ||= 'gcloud'

@@ -161,6 +161,8 @@ import {
 } from './document-convert/routes'
 import { runConversion } from './document-convert/run'
 import { registerOrganizeIpc } from './organize/organize-ipc'
+import { createNoticeFeed } from './notices'
+import { NOTICE_RAW_BASE, localDay } from '../shared/notices'
 import { droppedPaths } from './dropped-paths'
 import { nodeConvertDeps } from './document-convert/node-steps'
 import {
@@ -6034,6 +6036,18 @@ function registerHomeIpc(): void {
 
   // 똑딱업무 > 똑딱정리: documents picked here and kept in this process; the page asks by token
   registerOrganizeIpc(() => shellWindow)
+
+  // the home's promos and the desktop popups, from the 알림·홍보 목록 outside the app. The web
+  // edition reads the copy its server keeps (WEB_NOTICE_URL) and loads pictures from it
+  const webEdition = Boolean(process.env.WEB_SESSION_DIR)
+  const noticeFeed = createNoticeFeed({
+    dir: join(app.getPath('userData'), 'notices'),
+    listUrl: webEdition
+      ? (process.env.WEB_NOTICE_URL ?? '')
+      : (process.env.TTOKTTAK_NOTICE_URL ?? NOTICE_RAW_BASE + 'notices.json'),
+    webPictures: webEdition,
+  })
+  ipcMain.handle(HOME_CHANNELS.notices, () => noticeFeed.shown(localDay(), !webEdition))
 
   // 특화 기능's exports: the page makes the bytes, the user picks where they go
   ipcMain.handle(HOME_CHANNELS.saveFeatureFile, async (event, raw: unknown) => {

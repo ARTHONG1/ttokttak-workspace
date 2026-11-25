@@ -62,6 +62,19 @@ function today() {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
 }
 
+/** today as 'YYYY-MM-DD', the form of an item's startsAt and endsAt */
+function day() {
+  const date = new Date()
+  const two = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
+}
+
+function inDates(item) {
+  const now = day()
+  if (typeof item.startsAt === 'string' && item.startsAt && now < item.startsAt) return false
+  return !(typeof item.endsAt === 'string' && item.endsAt && now > item.endsAt)
+}
+
 function dismissed(id) {
   try {
     return localStorage.getItem(`pp-hide:${id}`) === today()
@@ -249,7 +262,9 @@ async function init() {
       if (
         !item ||
         item.enabled !== true ||
-        !['both', placement].includes(item.placement) ||
+        !Array.isArray(item.placements) ||
+        !item.placements.includes(placement) ||
+        !inDates(item) ||
         typeof item.id !== 'string' ||
         dismissed(item.id)
       )

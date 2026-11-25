@@ -1,7 +1,12 @@
+import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { createPopupStore, popupError } from './popup-store.mjs'
+import { promisify } from 'node:util'
+import { createNoticeStore, popupError } from './popup-store.mjs'
+
+const run = promisify(execFile)
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 export function popupDevEnabled(env = process.env) {
@@ -57,8 +62,32 @@ function imageExtension(bytes, type) {
     return 'webp'
   throw popupError('PNG, JPG, WebP, GIF 이미지 파일을 골라 주세요.')
 }
-export function createPopupRoutes({ clientDir, devDir, enabled = () => popupDevEnabled() }) {
-  const store = createPopupStore(join(clientDir, 'announcements.json'))
+/**
+ * The local preview's 알림·홍보 관리 screen. It saves into the checked-out notice repository
+ * (repoDir: notices.json and media/), where the local preview already shows the draft, and
+ * 게시하기 commits and pushes it; the web and the desktop app then read it from GitHub.
+ */
+export function createPopupRoutes({ repoDir, devDir, enabled = () => popupDevEnabled() }) {
+  const store = createNoticeStore(join(repoDir || '.', 'notices.json'))
+  const git = (...args) => run('git', ['-C', repoDir, ...args], { timeout: 60_000 })
+  /** saved but not yet published: uncommitted files, or commits not yet pushed */
+  async function pending() {
+    try {
+      const changed = (await git('status', '--porcelain')).stdout.trim()
+      const ahead = Number((await git('rev-list', '--count', '@{u}..HEAD')).stdout.trim())
+      return Boolean(changed) || ahead > 0
+    } catch {
+      return null
+    }
+  }
+  async function publish() {
+    if ((await git('status', '--porcelain')).stdout.trim()) {
+      const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ')
+      await git('add', '-A')
+      await git('commit', '-q', '-m', '알림·홍보 게시 ' + stamp + ' UTC')
+    }
+    await git('push', '-q', 'origin', 'HEAD')
+  }
   const files = {
     '/__dev/popups/': ['index.html', 'text/html; charset=utf-8'],
     '/__dev/popups/editor.js': ['editor.js', 'text/javascript; charset=utf-8'],
@@ -74,8 +103,17 @@ export function createPopupRoutes({ clientDir, devDir, enabled = () => popupDevE
       if (req.method === 'GET' && files[p]) {
         const [file, type] = files[p]
         send(res, 200, await readFile(join(devDir, file)), type)
-      } else if (req.method === 'GET' && p === '/__dev/popups/config')
-        send(res, 200, await store.read())
+        return true
+      }
+      if (!repoDir || !existsSync(join(repoDir, '.git')))
+        throw popupError(
+          '알림 목록 저장소를 찾지 못했어요. ARTHONG1/ttokttak-notice를 ' +
+            (repoDir || '~/Documents/ttokttak-notice') +
+            '에 받아 주세요.',
+          500,
+        )
+      if (req.method === 'GET' && p === '/__dev/popups/config')
+        send(res, 200, { ...(await store.read()), pending: await pending() })
       else if (['PUT', 'POST'].includes(req.method)) {
         if (req.headers.origin !== 'http://' + req.headers.host)
           throw popupError('미리보기 화면에서 다시 시도해 주세요.', 403)
@@ -89,15 +127,25 @@ export function createPopupRoutes({ clientDir, devDir, enabled = () => popupDevE
             if (e.status) throw e
             throw popupError('내용을 읽을 수 없어요.')
           }
-          send(res, 200, await store.save(input))
+          send(res, 200, { ...(await store.save(input)), pending: await pending() })
         } else if (req.method === 'POST' && p === '/__dev/popups/media') {
           const bytes = await body(req, 8 * 1024 * 1024),
             ext = imageExtension(bytes, req.headers['content-type'])
           const name = randomUUID() + '.' + ext,
-            dir = join(clientDir, 'popup-media')
+            dir = join(repoDir, 'media')
           await mkdir(dir, { recursive: true })
           await writeFile(join(dir, name), bytes, { flag: 'wx' })
           send(res, 200, { url: '/__web/popup-media/' + name })
+        } else if (req.method === 'POST' && p === '/__dev/popups/publish') {
+          try {
+            await publish()
+          } catch (e) {
+            const why = String(e.stderr || e.message || '')
+              .trim()
+              .split('\n')[0]
+            throw popupError('게시하지 못했어요. ' + why, 502)
+          }
+          send(res, 200, { published: true, pending: await pending() })
         } else send(res, 405, { error: '지원하지 않는 요청이에요.' })
       } else send(res, 405, { error: '지원하지 않는 요청이에요.' })
     } catch (e) {

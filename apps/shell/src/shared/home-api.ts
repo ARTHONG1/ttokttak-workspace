@@ -22,6 +22,7 @@ import type {
   OrganizeRunResult,
   OrganizeUnitsResult,
 } from './organize-api'
+import type { ShownNotices } from './notices'
 import type {
   ConvertFormat,
   ConvertOpenResult,
@@ -344,6 +345,8 @@ export interface HomeApi {
   closeOrganize(token: string): Promise<void>
   /** 특화 기능: save bytes the page made where the user picks; resolves to the path (null = canceled) */
   saveFeatureFile(request: QuizSaveRequest): Promise<string | null>
+  /** the home: today's promos (and the desktop app's popups) from the 알림·홍보 목록 */
+  notices(): Promise<ShownNotices>
   /** 특화 기능: the bytes of a template the app ships (quiz worksheets, the QuizN sheet) */
   readFeatureAsset(name: string): Promise<Uint8Array | null>
   /** 특화 기능 · 똑딱수업: open one of the fixed partner or class-tool sites in the browser */
@@ -669,6 +672,7 @@ export const HOME_CHANNELS = {
   organizeProgress: 'home:organize-progress',
   organizeClose: 'home:organize-close',
   saveFeatureFile: 'home:save-feature-file',
+  notices: 'home:notices',
   readFeatureAsset: 'home:read-feature-asset',
   openFeatureLink: 'home:open-feature-link',
   newDoc: 'home:new-doc',

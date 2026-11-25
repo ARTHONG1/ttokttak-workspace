@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 import { REFUSALS, clientIp, createSessionGuard } from './abuse-guard.mjs'
 import { createPopupRoutes, popupDevEnabled, popupLocalRequest } from './popup-routes.mjs'
+import { createNoticeFeed } from './notice-feed.mjs'
 import zlib from 'node:zlib'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -27,16 +28,21 @@ const PORT = Number(process.env.PORT || 8080)
 // local preview binds to 127.0.0.1 (WEB_HOST); Cloud Run leaves it unset
 const HOST = process.env.WEB_HOST || undefined
 const popupRoutes = createPopupRoutes({
-  clientDir: CLIENT,
+  repoDir: process.env.WEB_NOTICE_REPO,
   devDir: path.join(HERE, '..', 'dev', 'popups'),
 })
+// the 알림·홍보 목록: the public repository on Cloud Run, the checked-out drafts in the local preview
+const noticeFeed = createNoticeFeed({
+  repoDir: popupDevEnabled() ? process.env.WEB_NOTICE_REPO : undefined,
+})
+const PICTURE_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' }
 function withPopupEditor(body, req) {
   if (!popupDevEnabled() || !popupLocalRequest(req)) return body
   return body
     .toString()
     .replace(
       '</body>',
-      '<a href="/__dev/popups/" class="pp-dev-entry">팝업 등록 · 미리보기 전용</a></body>',
+      '<a href="/__dev/popups/" class="pp-dev-entry">알림·홍보 관리 · 미리보기 전용</a></body>',
     )
 }
 const IDLE_MS = Number(process.env.WEB_SESSION_IDLE_MS || 15 * 60 * 1000)
@@ -152,6 +158,8 @@ class Session {
         TMPDIR: path.join(this.dir, 'tmp'),
         WEB_SESSION_DIR: this.dir,
         WEB_APP_ROOT: APP_ROOT,
+        // the session's home reads the 알림·홍보 목록 from this server's copy
+        WEB_NOTICE_URL: 'http://127.0.0.1:' + PORT + '/__web/notices.json',
         NODE_ENV: 'production',
       },
       serialization: 'advanced',
@@ -614,6 +622,33 @@ async function handleHttp(req, res) {
     })
   }
   if (p.startsWith('/__web/') && p !== '/__web/preload.js') {
+    // the 알림·홍보 목록: the popups for the intro page and the web app, everything for the
+    // session's home, and their uploaded pictures
+    if (p === '/__web/announcements.json' || p === '/__web/notices.json') {
+      const notices = await noticeFeed.list()
+      const body =
+        p === '/__web/notices.json'
+          ? notices
+          : {
+              version: 1,
+              items: notices.popups.filter((item) =>
+                item.placements.some((place) => place === 'home' || place === 'app'),
+              ),
+            }
+      return send(res, 200, JSON.stringify(body), {
+        'Content-Type': 'application/json; charset=utf-8',
+      })
+    }
+    const picture = /^\/__web\/popup-media\/([a-f0-9-]{36}\.(png|jpg|webp|gif))$/.exec(p)
+    if (picture) {
+      const bytes = await noticeFeed.picture(picture[1])
+      if (!bytes) return send(res, 404, 'not found')
+      return send(res, 200, bytes, {
+        'Content-Type': PICTURE_TYPES[picture[2]],
+        'Cache-Control': 'public, max-age=300',
+        'X-Content-Type-Options': 'nosniff',
+      })
+    }
     // the license notices the desktop installer ships (apps/shell/build, copied by web/build.mjs)
     if (p === '/__web/licenses') {
       const body = await fsp

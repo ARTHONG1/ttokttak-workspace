@@ -368,6 +368,11 @@ const homeApi: HomeApi = {
     const path: unknown = await ipcRenderer.invoke(HOME_CHANNELS.saveFeatureFile, request)
     return typeof path === 'string' ? path : null
   },
+  async notices() {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.notices)) as Awaited<
+      ReturnType<HomeApi['notices']>
+    >
+  },
   async readFeatureAsset(name) {
     const bytes: unknown = await ipcRenderer.invoke(HOME_CHANNELS.readFeatureAsset, name)
     return bytes instanceof Uint8Array ? bytes : null

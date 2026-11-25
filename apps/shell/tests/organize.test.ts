@@ -276,14 +276,15 @@ describe('똑딱정리 PDF', () => {
 
   it('keeps the last result for its preview, and names the files of a ZIP', async () => {
     const s = service()
-    const opened = await s.open([a])
+    // the small PDF without a photo: this runs beside the whole suite
+    const opened = await s.open([b])
     if (!opened.ok) throw new Error(opened.error)
     const removed = ok(
       await s.run({ token: opened.token, action: 'remove', remove: [0] }, () => {}),
     )
     expect(removed.previewId).toBeTruthy()
     const units = await s.units(opened.token, removed.previewId!)
-    expect(units.ok && units.units.length).toBe(2)
+    expect(units.ok && units.units.length).toBe(1)
     expect(units.ok && units.preview).toBe('pdf')
     expect(await s.pdfBytes(opened.token, removed.previewId!)).toEqual(removed.bytes)
 
@@ -291,7 +292,7 @@ describe('똑딱정리 PDF', () => {
       await s.run({ token: opened.token, action: 'split', split: { mode: 'each' } }, () => {}),
     )
     expect(split.previewId).toBeUndefined()
-    expect(split.pieces).toEqual(['A-1쪽.pdf', 'A-2쪽.pdf', 'A-3쪽.pdf'])
+    expect(split.pieces).toEqual(['B-1쪽.pdf', 'B-2쪽.pdf'])
     // the next run lets the earlier result go
     expect((await s.units(opened.token, removed.previewId!)).ok).toBe(false)
   })

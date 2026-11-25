@@ -177,6 +177,8 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
       GENOFFICE_USER_DATA: userDataDir,
       GENOFFICE_NO_SPARE_VIEW: '1',
       GENOFFICE_LANG: options.lang ?? 'en',
+      // the 알림·홍보 목록 stays off: a popup published on GitHub must not cover a test
+      TTOKTTAK_NOTICE_URL: '',
       ...(options.env ?? {}),
       ...(process.platform === 'linux' ? { ELECTRON_DISABLE_SANDBOX: '1' } : {}),
     },

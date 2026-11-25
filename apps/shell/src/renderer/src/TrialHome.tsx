@@ -15,6 +15,7 @@ import { HubTiles, type HubPage } from './HubTiles'
 import { SpecialFeatures } from './SpecialFeatures'
 import { SHOW_INTRO_EVENT } from './desktop-start'
 import { isWebEdition } from './edition'
+import { DesktopPopups, HomePromos, useNotices } from './notice/HomeNotices'
 import './trial-home.css'
 
 /**
@@ -133,6 +134,7 @@ function ago(ms: number): string {
 
 export function TrialHome(): ReactElement {
   const recents = useRecents()
+  const notices = useNotices()
   const [dragging, setDragging] = useState(false)
   const [page, setPage] = useState<HubPage | null>(null)
 
@@ -267,22 +269,9 @@ export function TrialHome(): ReactElement {
               ? '체험판은 문서를 잠시만 보관해요. 저장한 뒤 내려받아 두세요.'
               : '작업을 마치면 문서를 저장해 주세요.'}
           </p>
-          <a
-            className="trial-maker"
-            href="https://classddok.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className="trial-maker-mark" aria-hidden="true">
-              똑
-            </span>
-            <span className="trial-maker-text">
-              <b>인천봉수초 홍찬우가 만들었어요</b>
-              <span>수업과 업무를 덜어 주는 다른 도구는 클래스똑딱에서 만나 보세요</span>
-            </span>
-            <span className="trial-maker-go">classddok.com ↗</span>
-          </a>
+          <HomePromos promos={notices.promos} />
         </footer>
+        {!isWebEdition() && <DesktopPopups popups={notices.popups} />}
       </main>
     </div>
   )

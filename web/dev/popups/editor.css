@@ -616,3 +616,88 @@ input[type='file']::file-selector-button {
     scroll-behavior: auto !important;
   }
 }
+
+/* 알림·홍보 관리: save and publish, the two lists, where a popup shows, a promo's look */
+.pe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pe-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid var(--pe-border);
+  border-radius: 12px;
+  background: var(--pe-surface);
+}
+.pe-tabs button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--pe-muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+.pe-tabs button[aria-selected='true'] {
+  background: var(--pe-tint);
+  color: var(--pe-accent);
+}
+.pe-checks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.pe-checks legend {
+  float: left;
+  margin-right: 6px;
+}
+.pe-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pe-promo {
+  display: grid;
+  gap: 6px;
+  width: min(260px, 100%);
+  padding: 12px;
+  border: 1px solid var(--pe-border);
+  border-radius: 16px;
+  background: var(--pe-surface);
+}
+.pe-promo-picture {
+  display: grid;
+  place-items: center;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--pe-bg);
+  color: var(--pe-muted);
+  font-size: 36px;
+  font-weight: 800;
+}
+.pe-promo-picture img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.pe-promo b {
+  font-size: 14.5px;
+}
+.pe-promo span {
+  font-size: 13px;
+  color: var(--pe-muted);
+}
+.pe-promo em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pe-accent);
+}
