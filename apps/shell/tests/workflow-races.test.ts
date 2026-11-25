@@ -57,7 +57,7 @@ const organizeDoc = {
   files: [{ id: 'file-1', name: '회의록', extension: 'pdf', size: 10 }],
   cards: [
     { action: 'split' as const, title: '나누기', summary: '나눠 저장' },
-    { action: 'remove' as const, title: '쪽 지우기', summary: '쪽을 지워 저장' },
+    { action: 'remove' as const, title: '쪽 고르기', summary: '쪽을 빼거나 남겨 저장' },
   ],
 }
 
@@ -165,6 +165,7 @@ describe('똑딱업무 화면의 비동기 작업', () => {
     const host = await mount(createElement(TtokOrganize, { onBack: () => {} }))
     await click(host, '[data-testid="to-open"]')
     await click(host, '[data-testid="to-card-shrink"]')
+    await click(host, '[data-testid="to-run"]')
     const button = host.querySelector<HTMLButtonElement>('[data-testid="to-download"]')!
     await act(async () => {
       button.click()
@@ -177,7 +178,7 @@ describe('똑딱업무 화면의 비동기 작업', () => {
     })
   })
 
-  it('다른 정리 카드로 이동하면 먼저 요청한 쪽 목록 응답을 무시한다', async () => {
+  it('다른 문서로 바꾸면 먼저 올린 문서의 쪽 목록 응답을 무시한다', async () => {
     const earlier = deferred<{
       ok: true
       word: string
@@ -197,15 +198,17 @@ describe('똑딱업무 화면의 비동기 작업', () => {
     Object.assign(window, {
       aiOffice: {
         onOrganizeProgress: () => () => {},
-        openOrganizeDocuments: async () => organizeDoc,
+        openOrganizeDocuments: vi
+          .fn()
+          .mockResolvedValueOnce(organizeDoc)
+          .mockResolvedValueOnce({ ...organizeDoc, token: 'organize-2' }),
         organizeUnits,
         closeOrganize: async () => {},
       },
     })
     const host = await mount(createElement(TtokOrganize, { onBack: () => {} }))
     await click(host, '[data-testid="to-open"]')
-    await click(host, '[data-testid="to-card-split"]')
-    await click(host, '.to-setup-actions .sf-secondary')
+    await click(host, '.tc-file-change')
     await click(host, '[data-testid="to-card-remove"]')
     earlier.resolve({
       ok: true,
@@ -219,5 +222,15 @@ describe('똑딱업무 화면의 비동기 작업', () => {
     expect(organizeUnits).toHaveBeenCalledTimes(2)
     // The latest response is allowed to populate the picker; the old response must not.
     expect(host.querySelector('[data-testid="to-unit-0"]')).toBeNull()
+    later.resolve({
+      ok: true,
+      word: '쪽',
+      preview: 'text',
+      units: [{ index: 0, label: '1쪽', text: '새 문서' }],
+    })
+    await act(async () => {
+      await later.promise
+    })
+    expect(host.querySelector('[data-testid="to-unit-0"]')?.textContent).toContain('새 문서')
   })
 })

@@ -9,10 +9,11 @@ import { test, expect, type ElectronApplication } from '@playwright/test'
 import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
 
 /**
- * 똑딱정리 end to end on the desktop app: documents in through the open dialog, the cards a
+ * 똑딱정리 end to end on the desktop app: documents in through the open dialog, the tabs a
  * kind can have (with 주의 where the result may differ), pages picked and taken out of a
- * Hangul document, two PDFs joined in a new order, a Word file's photos made smaller and a
- * deck split; each result saved through the save dialog and read back.
+ * Hangul document with the result shown page by page, two PDFs joined in a new order, a Word
+ * file's photos made smaller and a deck split; each result saved through the save dialog and
+ * read back, and a saved result opened in its editor tab.
  */
 
 const ROOT = join(__dirname, '..')
@@ -98,7 +99,7 @@ async function hangulPages(bytes: Uint8Array): Promise<number> {
   }
 }
 
-test('똑딱정리 shows the cards a document can have and hands each result out', async () => {
+test('똑딱정리 shows the tabs a document can have and hands each result out', async () => {
   test.setTimeout(5 * 60_000)
   const dir = await mkdtemp(join(tmpdir(), 'ttok-organize-e2e-'))
   const at = (name: string) => join(dir, name)
@@ -146,22 +147,30 @@ test('똑딱정리 shows the cards a document can have and hands each result out
       await expect.poll(() => existsSync(path), { timeout: 30_000 }).toBe(true)
     }
 
-    // a Hangul document: four cards, three of them with 주의; pages 2 and 4 taken out
+    // a Hangul document opens on its pages, one of four tabs; pages 2 and 4 taken out
     await upload([HWP], at('정리.hwp'))
     await expect(page.locator('[data-testid^="to-card-"]')).toHaveCount(4)
-    await expect(page.locator('.to-card.has-caution')).toHaveCount(3)
+    await expect(page.getByTestId('to-setup-remove')).toBeVisible()
+    await expect(page.locator('.to-caution')).toBeVisible()
+    await expect(page.getByTestId('to-unit-39')).toBeVisible()
     await page.screenshot({ path: screenshotPath('ttok-organize-hwp-cards') })
-    await page.getByTestId('to-card-remove').click()
     await page.getByTestId('to-unit-1').click()
     await page.getByTestId('to-unit-3').click()
-    await expect(page.getByTestId('to-run')).toHaveText('2개 빼고 만들기')
+    await expect(page.getByTestId('to-run')).toHaveText('2쪽 빼고 38쪽으로 만들기')
+    await expect(page.getByTestId('to-run-keep')).toHaveText('2쪽만 새 파일로')
+    await expect(page.locator('.to-actionbar-text')).toContainText('2, 4쪽')
     await page.waitForTimeout(1500)
     await page.screenshot({ path: screenshotPath('ttok-organize-hwp-picker') })
     await page.getByTestId('to-run').click()
     await expect(page.getByTestId('to-result')).toContainText('38쪽', { timeout: 60_000 })
     await expect(page.getByTestId('to-result')).toContainText('원본과 글 대조함')
+    // the result's pages show before anything is saved
+    await expect(page.locator('.to-result-view .to-tile')).toHaveCount(38, { timeout: 30_000 })
+    await page.waitForTimeout(1500)
     await page.screenshot({ path: screenshotPath('ttok-organize-hwp-done') })
     await download(at('정리.hwp'))
+    await expect(page.getByTestId('to-saved')).toContainText('정리.hwp')
+    await expect(page.getByTestId('to-open-result')).toBeVisible()
     const hwp = new Uint8Array(await readFile(at('정리.hwp')))
     expect([...hwp.subarray(0, 4)]).toEqual([0xd0, 0xcf, 0x11, 0xe0])
     expect(await hangulPages(hwp)).toBe(38)
@@ -169,17 +178,19 @@ test('똑딱정리 shows the cards a document can have and hands each result out
     // two PDFs, joined with the second one first
     await upload([at('보고서.pdf'), at('결과.pdf')], at('합본.pdf'))
     await expect(page.locator('[data-testid^="to-card-"]')).toHaveCount(1)
-    await page.getByTestId('to-card-merge').click()
+    await expect(page.getByTestId('to-setup-merge')).toBeVisible()
     await page.getByRole('button', { name: '결과 위로' }).click()
     await page.getByTestId('to-run').click()
     await expect(page.getByTestId('to-result')).toContainText('5쪽', { timeout: 60_000 })
+    await expect(page.locator('.to-result-view .to-tile')).toHaveCount(5)
     await download(at('합본.pdf'))
     const merged = await PDFDocument.load(await readFile(at('합본.pdf')))
     expect(merged.getPageCount()).toBe(5)
 
     // a Word file's photos made smaller, its text kept
     await upload([at('사진 기록.docx')], at('작게.docx'))
-    await page.getByTestId('to-card-shrink').click()
+    await expect(page.getByTestId('to-setup-shrink')).toBeVisible()
+    await page.getByTestId('to-run').click()
     await expect(page.getByTestId('to-result')).toContainText('사진 1장 줄임', { timeout: 60_000 })
     await page.screenshot({ path: screenshotPath('ttok-organize-docx-shrunk') })
     await download(at('작게.docx'))
@@ -194,9 +205,12 @@ test('똑딱정리 shows the cards a document can have and hands each result out
     await expect(page.getByTestId('to-run')).toBeEnabled()
     await page.getByTestId('to-run').click()
     await expect(page.getByTestId('to-result')).toContainText('ZIP으로 묶음', { timeout: 60_000 })
+    await expect(page.locator('.to-pieces li').first()).toBeVisible()
+    await expect(page.getByTestId('to-save-open')).toHaveCount(0)
     await download(at('나눔.zip'))
     const pieces = Object.keys((await JSZip.loadAsync(await readFile(at('나눔.zip')))).files)
     expect(pieces.length).toBeGreaterThan(1)
+    await expect(page.locator('.to-pieces li')).toHaveCount(pieces.length)
     expect(pieces.every((n) => n.endsWith('.pptx'))).toBe(true)
 
     // different kinds cannot be joined
@@ -207,7 +221,7 @@ test('똑딱정리 shows the cards a document can have and hands each result out
   }
 })
 
-test('똑딱정리 keeps documents dragged onto it and adds more for a merge', async () => {
+test('똑딱정리 keeps documents dragged onto it, adds more for a merge and opens the result', async () => {
   test.setTimeout(3 * 60_000)
   const dir = await mkdtemp(join(tmpdir(), 'ttok-organize-drop-'))
   const at = (name: string) => join(dir, name)
@@ -270,15 +284,25 @@ test('똑딱정리 keeps documents dragged onto it and adds more for a merge', a
     )
     expect(dropped).toEqual(['merge'])
 
-    // one document up, then 더 올리기 joins a second one for a merge
+    // one document up, then 더 올리기 on the merge tab joins two more
     await answerDialogs(app, [at('하나.pdf')], at('unused'))
     await page.getByTestId('to-open').click()
-    await expect(page.getByTestId('to-card-merge')).toBeVisible()
+    await page.getByTestId('to-card-merge').click()
+    await expect(page.getByTestId('to-run')).toBeDisabled()
     await answerDialogs(app, [at('둘.pdf'), at('셋.pdf')], at('unused'))
     await page.getByTestId('to-add-more').click()
     await expect(page.getByTestId('to-setup-merge')).toBeVisible()
     await expect(page.locator('.to-order li')).toHaveCount(3)
     await page.screenshot({ path: screenshotPath('ttok-organize-add-more') })
+
+    // the merged result shows its four pages, then 저장하고 열기 saves it and opens a tab
+    await answerDialogs(app, [], at('합본.pdf'))
+    await page.getByTestId('to-run').click()
+    await expect(page.locator('.to-result-view .to-tile')).toHaveCount(4, { timeout: 60_000 })
+    const withResult = await views()
+    await page.getByTestId('to-save-open').click()
+    await expect.poll(() => existsSync(at('합본.pdf')), { timeout: 30_000 }).toBe(true)
+    await expect.poll(views, { timeout: 30_000 }).toBeGreaterThan(withResult)
   } finally {
     await closeAndSaveVideo(launched, 'ttok-organize-drop')
   }

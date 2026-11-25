@@ -9,13 +9,13 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { openPptx } from '@genoffice/pptx-engine'
 import { hwpToText, loadRhwpEngine } from '@genoffice/file-parse'
 import { hangulPages, joinHangul, keepHangulPages } from '../src/main/organize/hangul'
-import { OrganizeService, cardsFor, piecesOf, rangeLabel } from '../src/main/organize/service'
+import { OrganizeService, cardsFor, piecesOf } from '../src/main/organize/service'
 import { droppedPaths } from '../src/main/dropped-paths'
 import { recodePdfImageInJs, recodePictureInJs } from '../src/main/organize/pictures'
 import { docxText } from '../src/main/organize/docx'
 import { readText, readZip, writeText, writeZip } from '../src/main/organize/zip'
 import { danglingRels } from '../src/main/organize/pptx'
-import type { OrganizeRunResult } from '../src/shared/organize-api'
+import { rangeLabel, type OrganizeRunResult } from '../src/shared/organize-api'
 
 const ROOT = join(__dirname, '..', '..', '..')
 const HWP = join(ROOT, 'apps', 'hwp', 'tests', 'fixtures')
@@ -183,27 +183,28 @@ async function docx(
 
 describe('똑딱정리 cards', () => {
   it('shows only what a file can have, and 주의 where the result may differ', () => {
+    // one file opens on its pages; several open on the merge
     expect(cardsFor('pdf', 1, 3).map((c) => [c.action, Boolean(c.caution)])).toEqual([
-      ['merge', false],
-      ['split', false],
       ['remove', false],
+      ['split', false],
       ['shrink', false],
+      ['merge', false],
     ])
-    expect(cardsFor('pdf', 1, 1).map((c) => c.action)).toEqual(['merge', 'shrink'])
+    expect(cardsFor('pdf', 1, 1).map((c) => c.action)).toEqual(['shrink', 'merge'])
     expect(cardsFor('hangul', 3, 0).map((c) => c.action)).toEqual(['merge'])
     expect(
       cardsFor('hangul', 1, 5)
         .filter((c) => c.caution)
         .map((c) => c.action),
-    ).toEqual(['merge', 'split', 'remove'])
-    expect(cardsFor('pptx', 1, 4).find((c) => c.action === 'remove')?.title).toBe('슬라이드 지우기')
+    ).toEqual(['remove', 'split', 'merge'])
+    expect(cardsFor('pptx', 1, 4).find((c) => c.action === 'remove')?.title).toBe('슬라이드 고르기')
     expect(cardsFor('pptx', 1, 4).find((c) => c.action === 'remove')?.summary).toContain(
-      '슬라이드를 골라',
+      '고른 슬라이드를 빼거나',
     )
     expect(cardsFor('hangul', 1, 4).find((c) => c.action === 'remove')?.summary).toContain(
-      '쪽을 골라',
+      '고른 쪽만 새 파일로',
     )
-    expect(cardsFor('docx', 1, 1).map((c) => c.action)).toEqual(['merge', 'shrink'])
+    expect(cardsFor('docx', 1, 1).map((c) => c.action)).toEqual(['shrink', 'merge'])
   })
 
   it('splits into pieces and names them by their pages', () => {
@@ -271,6 +272,28 @@ describe('똑딱정리 PDF', () => {
     if (!opened.ok) throw new Error(opened.error)
     const all = await s.run({ token: opened.token, action: 'remove', remove: [0, 1] }, () => {})
     expect(all.ok).toBe(false)
+  })
+
+  it('keeps the last result for its preview, and names the files of a ZIP', async () => {
+    const s = service()
+    const opened = await s.open([a])
+    if (!opened.ok) throw new Error(opened.error)
+    const removed = ok(
+      await s.run({ token: opened.token, action: 'remove', remove: [0] }, () => {}),
+    )
+    expect(removed.previewId).toBeTruthy()
+    const units = await s.units(opened.token, removed.previewId!)
+    expect(units.ok && units.units.length).toBe(2)
+    expect(units.ok && units.preview).toBe('pdf')
+    expect(await s.pdfBytes(opened.token, removed.previewId!)).toEqual(removed.bytes)
+
+    const split = ok(
+      await s.run({ token: opened.token, action: 'split', split: { mode: 'each' } }, () => {}),
+    )
+    expect(split.previewId).toBeUndefined()
+    expect(split.pieces).toEqual(['A-1쪽.pdf', 'A-2쪽.pdf', 'A-3쪽.pdf'])
+    // the next run lets the earlier result go
+    expect((await s.units(opened.token, removed.previewId!)).ok).toBe(false)
   })
 })
 

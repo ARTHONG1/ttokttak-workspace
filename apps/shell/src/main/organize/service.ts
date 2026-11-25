@@ -12,6 +12,7 @@ import type {
   OrganizeUnit,
   OrganizeUnitsResult,
 } from '../../shared/organize-api'
+import { rangeLabel } from '../../shared/organize-api'
 import {
   appendDocx,
   assertWellFormed,
@@ -112,9 +113,13 @@ function unitWord(family: OrganizeFamily): string {
   return family === 'pptx' ? '슬라이드' : family === 'docx' ? '부분' : '쪽'
 }
 
-/** the cards for one file of a kind with this many units, or for several files */
+/**
+ * the cards for one file of a kind with this many units, or for several files. The page opens
+ * on the first: one file's pages (or its size when it has one page), several files' merge.
+ */
 export function cardsFor(family: OrganizeFamily, files: number, units: number): OrganizeCard[] {
   const word = unitWord(family)
+  const object = word + (word === '슬라이드' ? '를' : '을')
   const caution = (key: keyof typeof CAUTION | null) => (key ? { caution: CAUTION[key] } : {})
   const merge: OrganizeCard = {
     action: 'merge',
@@ -135,23 +140,19 @@ export function cardsFor(family: OrganizeFamily, files: number, units: number): 
   }
   if (files > 1) return [merge]
   const pages = family === 'hangul' ? 'hangulPages' : family === 'docx' ? 'docxParts' : null
-  const cards: OrganizeCard[] = [merge]
+  const cards: OrganizeCard[] = []
   if (units >= 2) {
     cards.push(
       {
-        action: 'split',
-        title: '나누기',
-        summary: word + '마다, 또는 고른 ' + word + '만 따로 떼어 새 파일로 만들어요.',
+        action: 'remove',
+        title: word + ' 고르기',
+        summary: '고른 ' + object + ' 빼거나, 고른 ' + word + '만 새 파일로 만들어요.',
         ...caution(pages),
       },
       {
-        action: 'remove',
-        title: word === '슬라이드' ? '슬라이드 지우기' : word + ' 지우기',
-        summary:
-          '필요 없는 ' +
-          word +
-          (word === '슬라이드' ? '를' : '을') +
-          ' 골라 빼고 나머지로 새 파일을 만들어요.',
+        action: 'split',
+        title: '나누기',
+        summary: word + '마다, 또는 몇 개씩 묶어 여러 파일로 나눠 ZIP 하나로 받아요.',
         ...caution(pages),
       },
     )
@@ -161,7 +162,7 @@ export function cardsFor(family: OrganizeFamily, files: number, units: number): 
     title: '용량 줄이기',
     summary: '문서 속 큰 사진을 작게 저장해 파일 크기를 줄여요. 글과 서식은 그대로예요.',
   })
-  return cards
+  return [...cards, merge]
 }
 
 export interface OrganizeDeps {
@@ -177,12 +178,19 @@ interface Held extends OrganizeFile {
   path: string
 }
 
+/** the last result, kept in memory for its preview until the next run or the page goes */
+interface Kept {
+  id: string
+  bytes: Uint8Array
+}
+
 interface Session {
   token: string
   family: OrganizeFamily
   files: Held[]
   /** units of a single file, read when it came in */
   units: number
+  result?: Kept
 }
 
 type Hangul = 'hwp' | 'hwpx'
@@ -255,22 +263,6 @@ export function piecesOf(units: number, split: OrganizeRunRequest['split']): num
   return out
 }
 
-/** '3', '3-5' or '1,4' for a file name */
-export function rangeLabel(units: number[]): string {
-  const runs: string[] = []
-  let a = units[0]!
-  let b = a
-  for (const u of units.slice(1).concat([-2])) {
-    if (u === b + 1) b = u
-    else {
-      runs.push(a === b ? String(a + 1) : a + 1 + '-' + (b + 1))
-      a = u
-      b = u
-    }
-  }
-  return runs.join(',')
-}
-
 export class OrganizeService {
   private session: Session | null = null
   private running = false
@@ -337,7 +329,7 @@ export class OrganizeService {
       const family = familyOf(paths[0]!)!
       let units = 0
       if (held.length === 1) {
-        const counted = await this.unitsOf(family, held[0]!)
+        const counted = await this.unitsOf(family, () => this.deps.readFile(held[0]!.path))
         if (!counted.ok) return { ok: false, error: counted.error }
         units = counted.units.length
       }
@@ -375,15 +367,22 @@ export class OrganizeService {
     return this.session?.token === token ? this.session.family : null
   }
 
-  private file(token: string, id: string): Held | null {
+  /** how to read a picked file or the kept result, by its id */
+  private reader(token: string, id: string): (() => Promise<Uint8Array>) | null {
     const s = this.session
     if (!s || s.token !== token) return null
-    return s.files.find((f) => f.id === id) ?? null
+    const result = s.result
+    if (result?.id === id) return async () => result.bytes
+    const file = s.files.find((f) => f.id === id)
+    return file ? () => this.deps.readFile(file.path) : null
   }
 
-  private async unitsOf(family: OrganizeFamily, file: Held): Promise<OrganizeUnitsResult> {
+  private async unitsOf(
+    family: OrganizeFamily,
+    read: () => Promise<Uint8Array>,
+  ): Promise<OrganizeUnitsResult> {
     try {
-      const bytes = await this.deps.readFile(file.path)
+      const bytes = await read()
       const word = unitWord(family)
       const label = (i: number): string =>
         family === 'pptx'
@@ -442,28 +441,28 @@ export class OrganizeService {
   }
 
   async units(token: string, id: string): Promise<OrganizeUnitsResult> {
-    const file = this.file(token, id)
-    if (!file) return { ok: false, error: ORGANIZE_ERRORS.again }
-    return this.unitsOf(this.session!.family, file)
+    const read = this.reader(token, id)
+    if (!read) return { ok: false, error: ORGANIZE_ERRORS.again }
+    return this.unitsOf(this.session!.family, read)
   }
 
-  /** a picked PDF itself, for the page picker's pictures */
+  /** a picked PDF (or the PDF result) itself, for the page pictures */
   async pdfBytes(token: string, id: string): Promise<Uint8Array | null> {
-    const file = this.file(token, id)
-    if (!file || this.session!.family !== 'pdf') return null
+    const read = this.reader(token, id)
+    if (!read || this.session!.family !== 'pdf') return null
     try {
-      return await this.deps.readFile(file.path)
+      return await read()
     } catch {
       return null
     }
   }
 
-  /** one page of a Hangul document drawn as SVG, for the page picker */
+  /** one page of a Hangul document (or the Hangul result) drawn as SVG, for the page pictures */
   async pageSvg(token: string, id: string, page: number): Promise<string | null> {
-    const file = this.file(token, id)
-    if (!file || this.session!.family !== 'hangul' || !Number.isInteger(page)) return null
+    const read = this.reader(token, id)
+    if (!read || this.session!.family !== 'hangul' || !Number.isInteger(page)) return null
     try {
-      return await hangulPageSvg(await this.deps.readFile(file.path), page)
+      return await hangulPageSvg(await read(), page)
     } catch {
       return null
     }
@@ -477,6 +476,7 @@ export class OrganizeService {
     if (!s || s.token !== request.token) return { ok: false, error: ORGANIZE_ERRORS.again }
     if (this.running) return { ok: false, error: ORGANIZE_ERRORS.busy }
     this.running = true
+    delete s.result
     try {
       const result = await this.work(s, request, onProgress)
       if (result.ok && result.bytes.byteLength > ORGANIZE_MAX_BYTES) {
@@ -485,6 +485,11 @@ export class OrganizeService {
       // what was checked before the result was handed out (a PDF keeps its pages as they are)
       if (result.ok && s.family !== 'pdf') {
         result.facts.push(s.family === 'pptx' ? '다시 열어 확인함' : '원본과 글 대조함')
+      }
+      // one document of the session's kind: kept so the page can show its pages
+      if (result.ok && result.extension !== 'zip') {
+        s.result = { id: crypto.randomUUID(), bytes: result.bytes }
+        result.previewId = s.result.id
       }
       return result
     } catch (err) {
@@ -634,12 +639,13 @@ export class OrganizeService {
     if (made.length === 1) return this.done(made[0]!.name, made[0]!.bytes, facts, [...warnings])
     onProgress('파일 ' + made.length + '개를 ZIP으로 묶는 중')
     const zip = await zipOf(made)
-    return this.done(
+    const zipped = this.done(
       first.name + '-나눔.zip',
       zip,
       ['파일 ' + made.length + '개', 'ZIP으로 묶음'],
       [...warnings],
     )
+    return zipped.ok ? { ...zipped, pieces: made.map((m) => m.name) } : zipped
   }
 
   private done(

@@ -6,7 +6,6 @@
   --to-safe-line: #b7e1c6;
   --to-safe-ink: #1d6b3a;
   --to-safe-soft: #effaf3;
-  --to-off: #dc2626;
 }
 
 /* where the documents go */
@@ -63,22 +62,6 @@
   min-width: 0;
 }
 
-/* cards */
-.to-card {
-  min-height: 190px;
-}
-.to-card-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--tc-accent-soft);
-  color: var(--tc-accent);
-}
-.to-card .tc-card-sum {
-  flex: 1;
-}
 .to-caution {
   display: block;
   padding: 8px 10px;
@@ -100,17 +83,55 @@
   font-weight: 800;
 }
 
-/* setting one tidy-up up */
+/* one screen for the set: a tab for each tidy-up it can have */
 .to-setup {
   display: grid;
   gap: 14px;
 }
-.to-setup h2 {
+.to-tabs {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--sf-line);
+  border-radius: 14px;
+  background: var(--sf-soft);
+}
+.to-tab {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 18px;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--sf-ink-2);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.to-tab svg {
+  width: 20px;
+  height: 20px;
+}
+.to-tab:hover {
+  color: var(--sf-ink);
+}
+.to-tab:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: 2px;
+}
+.to-tab.is-on {
+  background: var(--sf-card);
+  color: var(--tc-accent);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 14%);
+}
+.to-tab:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 .to-help,
 .to-note {
@@ -121,8 +142,32 @@
 .to-note {
   color: var(--sf-ink-3);
 }
-.to-setup-actions {
-  justify-content: flex-end;
+
+/* what the run will make, and the buttons: kept in sight at the bottom while the pages scroll */
+.to-actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px -20px -20px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--sf-line);
+  border-radius: 0 0 14px 14px;
+  background: var(--sf-card);
+  box-shadow: 0 -12px 24px -20px rgb(15 23 42 / 40%);
+}
+.to-actionbar-text {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  color: var(--sf-ink-2);
+  font-size: 14px;
+}
+.to-actionbar-text b {
+  color: var(--sf-ink);
 }
 
 .to-order {
@@ -140,6 +185,16 @@
   border: 1px solid var(--sf-line);
   border-radius: 12px;
   background: var(--sf-card);
+  cursor: grab;
+}
+.to-order li.is-dragging {
+  opacity: 0.5;
+}
+.to-order-grip {
+  color: var(--sf-ink-3);
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
 }
 .to-order-no {
   display: inline-grid;
@@ -225,10 +280,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: 12px;
-  max-height: 520px;
   margin: 0;
   padding: 4px;
-  overflow: auto;
   list-style: none;
 }
 .to-tiles-text {
@@ -246,16 +299,16 @@
   font: inherit;
   cursor: pointer;
 }
-.to-tile:hover,
-.to-tile:focus-visible {
+button.to-tile:hover,
+button.to-tile:focus-visible {
   border-color: var(--sf-line-2);
 }
-.to-tile.is-on.to-tile-keep {
+.to-tile.is-on {
   border-color: var(--tc-accent);
   background: var(--tc-accent-soft);
 }
-.to-tile.is-on.to-tile-remove {
-  border-color: var(--to-off);
+.to-tile.is-static {
+  cursor: default;
 }
 .to-tile-face {
   position: relative;
@@ -272,9 +325,6 @@
   min-height: 92px;
   place-items: start;
   padding: 10px;
-}
-.to-tile.is-on.to-tile-remove .to-tile-face {
-  opacity: 0.45;
 }
 .to-thumb-svg {
   display: grid;
@@ -308,13 +358,7 @@
   font-size: 13px;
   font-weight: 800;
   color: var(--sf-on-color);
-}
-.to-tile.is-on.to-tile-keep .to-tile-check {
   background: var(--tc-accent);
-}
-.to-tile.is-on.to-tile-remove .to-tile-check {
-  background: var(--to-off);
-  opacity: 1;
 }
 .to-tile-label {
   display: grid;
@@ -336,19 +380,84 @@
   font-weight: 700;
   color: var(--sf-ink);
 }
+/* the result: its pages (or a ZIP's files) beside what it is and the save */
 .to-done {
   display: grid;
-  gap: 12px;
-  max-width: 640px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
 }
-.to-done h2 {
+.to-result-view {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--sf-line);
+  border-radius: 16px;
+  background: var(--sf-soft);
+}
+.to-result-view:empty {
+  display: none;
+}
+.to-result-view .to-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  max-height: min(640px, 70vh);
+  overflow: auto;
+}
+.to-result-title {
+  margin: 0 0 10px;
+  color: var(--sf-ink-2);
+  font-size: 14px;
+}
+.to-result-side {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.to-result-side h2 {
   margin: 0;
 }
-.to-done .sf-btn-row {
-  align-items: center;
+.to-result-actions {
+  display: grid;
+  gap: 8px;
 }
-.to-done .tc-download {
-  margin-top: 0;
+.to-result-actions button {
+  justify-content: center;
+  width: 100%;
+}
+.to-saved {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--to-safe-soft);
+  color: var(--to-safe-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  word-break: break-all;
+}
+.to-pieces {
+  display: grid;
+  gap: 6px;
+  max-height: min(560px, 70vh);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.to-pieces li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--sf-card);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.to-pieces li span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .to-add {
   justify-self: start;
@@ -365,6 +474,14 @@
   color: var(--tc-accent);
 }
 
+@media (max-width: 860px) {
+  .to-done {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .to-result-side {
+    position: static;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .to-tile {
     transition: none;

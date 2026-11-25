@@ -90,6 +90,13 @@ export type OrganizeRunResult =
       warnings: string[]
       /** shrink: the size before, in bytes */
       before?: number
+      /**
+       * the result's id while it is kept for its preview: organizeUnits, organizePdfBytes and
+       * organizePageSvg take it like a picked file's id (not for a ZIP)
+       */
+      previewId?: string
+      /** a ZIP's files, by name */
+      pieces?: string[]
     }
   | { ok: false; error: string }
 
@@ -97,4 +104,20 @@ export type OrganizeRunResult =
 export interface OrganizeProgress {
   token: string
   label: string
+}
+
+/** 0-based units, sorted, as '3', '3-5' or '1,4' (1-based): for a file name and the page */
+export function rangeLabel(units: number[]): string {
+  const runs: string[] = []
+  let a = units[0]!
+  let b = a
+  for (const u of units.slice(1).concat([-2])) {
+    if (u === b + 1) b = u
+    else {
+      runs.push(a === b ? String(a + 1) : a + 1 + '-' + (b + 1))
+      a = u
+      b = u
+    }
+  }
+  return runs.join(',')
 }
