@@ -127,7 +127,7 @@
 .to-tab.is-on {
   background: var(--sf-card);
   color: var(--tc-accent);
-  box-shadow: 0 1px 3px rgb(15 23 42 / 14%);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--sf-ink) 14%, transparent);
 }
 .to-tab:disabled {
   cursor: default;
@@ -157,7 +157,7 @@
   border-top: 1px solid var(--sf-line);
   border-radius: 0 0 14px 14px;
   background: var(--sf-card);
-  box-shadow: 0 -12px 24px -20px rgb(15 23 42 / 40%);
+  box-shadow: 0 -12px 24px -20px color-mix(in srgb, var(--sf-ink) 40%, transparent);
 }
 .to-actionbar-text {
   flex: 1;

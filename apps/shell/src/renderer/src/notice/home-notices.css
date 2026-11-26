@@ -63,7 +63,7 @@ button.promo-card:hover {
   max-height: 100%;
   object-fit: contain;
   border-radius: 4px;
-  box-shadow: 0 8px 18px -10px rgb(15 23 42 / 55%);
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--t-ink) 55%, transparent);
 }
 .promo-picture video {
   width: 100%;
@@ -80,8 +80,8 @@ button.promo-card:hover {
   height: 48px;
   padding-left: 4px;
   border-radius: 50%;
-  background: rgb(15 23 42 / 70%);
-  color: #fff;
+  background: color-mix(in srgb, var(--t-ink) 70%, transparent);
+  color: var(--t-on-accent);
   font-size: 18px;
   transform: translate(-50%, -50%);
 }
@@ -158,10 +158,10 @@ button.promo-card:hover {
   border-radius: 20px;
   background: var(--t-card);
   color: var(--t-ink);
-  box-shadow: 0 24px 60px -20px rgb(15 23 42 / 45%);
+  box-shadow: 0 24px 60px -20px color-mix(in srgb, var(--t-ink) 45%, transparent);
 }
 .home-popup::backdrop {
-  background: rgb(15 23 42 / 40%);
+  background: color-mix(in srgb, var(--t-ink) 40%, transparent);
 }
 .home-popup-body {
   display: grid;
